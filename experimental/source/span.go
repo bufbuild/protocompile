@@ -227,6 +227,20 @@ func GetSpan(s Spanner) Span {
 	return s.Span()
 }
 
+// Between is a helper function that returns a [Span] for the space between spans a and b,
+// inclusive. If a and b do not have the same [File] or if the spans overlap, then this
+// returns a zero span.
+func Between(a, b Span) Span {
+	if a.File != b.File || b.Start < a.End {
+		return Span{}
+	}
+	return Span{
+		File:  a.File,
+		Start: a.Start,
+		End:   b.End,
+	}
+}
+
 // idxToByteOffset converts a byte index into s into a byte offset.
 //
 // If i is negative, this produces the index of the -ith byte from the end of

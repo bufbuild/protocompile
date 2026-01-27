@@ -35,6 +35,11 @@ file:
       output_type: "buf.test.Foo"
       client_streaming: false
       server_streaming: false
+    - name: "BarForBar"
+      input_type: "buf.test.Bar"
+      output_type: "buf.test.Bar"
+      client_streaming: false
+      server_streaming: false
   extension:
   - name: "c"
     number: 1000
@@ -50,7 +55,7 @@ file:
     json_name: "a"
   options: { java_package: "build.buf.protocompile", java_multiple_files: true }
   source_code_info.location:
-  - span: [16, 0, 91, 1]
+  - span: [16, 0, 95, 1]
   - path: [12]
     span: [16, 0, 17]
     leading_comments: "% descriptor: true\n% source_code_info: true\n"
@@ -60,11 +65,11 @@ file:
     span: [19, 0, 17]
     leading_comments: " This is a leading comment for the package.\n"
     trailing_comments: " This is still a trailing comment for the package.\n"
+  - { path: [8], span: [24, 0, 47] }
   - path: [8, 1]
     span: [24, 0, 47]
     leading_comments: " This is a leading comment for the java_package option source code info, but not the\n top-level option source code info.\n"
     trailing_comments: " Similarly, this is a trailing comment."
-  - { path: [8], span: [24, 0, 47] }
   - { path: [8], span: [25, 0, 34] }
   - { path: [8, 10], span: [25, 0, 34] }
   - path: [3, 0]
@@ -116,13 +121,13 @@ file:
   - { path: [4, 0, 2, 1, 5], span: [50, 11, 16] }
   - { path: [4, 0, 2, 1, 1], span: [50, 17, 24] }
   - { path: [4, 0, 2, 1, 3], span: [50, 27, 29] }
-  - { path: [4, 0, 2, 1, 8], span: [50, 30, 55, 3] }
+  - { path: [4, 0, 2, 1, 8], span: [50, 53, 55, 3] }
   - { path: [4, 0, 2, 1, 8, 21, 3], span: [52, 4, 45] }
   - { path: [4, 0, 2, 1, 8, 1000, 0], span: [53, 4, 12] }
   - { path: [4, 0, 2, 1, 8, 1000, 1], span: [54, 4, 12] }
   - path: [4, 1]
     span: [72, 0, 14]
-    leading_comments: "\n A leading block comment for Bar.\n/"
+    leading_comments: "\n A leading block comment for Bar.\n "
     leading_detached_comments:
     - " This IS a detached comment for Bar.\n"
     - " This is also a detached comment for Bar.\n"
@@ -136,29 +141,37 @@ file:
   - { path: [5, 0, 2, 0], span: [76, 2, 14] }
   - { path: [5, 0, 2, 0, 2], span: [76, 12, 13] }
   - path: [6, 0]
-    span: [80, 0, 83, 1]
+    span: [80, 0, 87, 1]
     leading_comments: " This is the leading comment for service FooService.\n"
     trailing_comments: " This is a trailing comment for service FooService."
   - { path: [6, 0, 1], span: [80, 8, 18] }
   - path: [6, 0, 2, 0]
     span: [82, 2, 35]
     leading_comments: " Leading comment for method FooForBar.\n"
+    trailing_comments: " Trailing comment for FooForBar."
   - { path: [6, 0, 2, 0, 1], span: [82, 6, 15] }
   - { path: [6, 0, 2, 0, 2], span: [82, 16, 19] }
   - { path: [6, 0, 2, 0, 3], span: [82, 30, 33] }
-  - { path: [7], span: [85, 0, 87, 1] }
-  - { path: [7, 0, 2], span: [85, 7, 35] }
-  - { path: [7, 0, 4], span: [86, 2, 10] }
-  - { path: [7, 0], span: [86, 2, 26] }
-  - { path: [7, 0, 5], span: [86, 11, 16] }
-  - { path: [7, 0, 1], span: [86, 17, 18] }
-  - { path: [7, 0, 3], span: [86, 21, 25] }
+  - path: [6, 0, 2, 1]
+    span: [85, 2, 86, 3]
+    leading_comments: " Leading comment for method BarForBar.\n"
+    trailing_comments: " Trailing comment for BarForBar."
+  - { path: [6, 0, 2, 1, 1], span: [85, 6, 15] }
+  - { path: [6, 0, 2, 1, 2], span: [85, 16, 19] }
+  - { path: [6, 0, 2, 1, 3], span: [85, 30, 33] }
   - { path: [7], span: [89, 0, 91, 1] }
-  - { path: [7, 1, 2], span: [89, 7, 37] }
-  - { path: [7, 1, 4], span: [90, 2, 10] }
-  - { path: [7, 1], span: [90, 2, 26] }
-  - { path: [7, 1, 5], span: [90, 11, 16] }
-  - { path: [7, 1, 1], span: [90, 17, 18] }
-  - { path: [7, 1, 3], span: [90, 21, 25] }
+  - { path: [7, 0, 2], span: [89, 7, 35] }
+  - { path: [7, 0, 4], span: [90, 2, 10] }
+  - { path: [7, 0], span: [90, 2, 26] }
+  - { path: [7, 0, 5], span: [90, 11, 16] }
+  - { path: [7, 0, 1], span: [90, 17, 18] }
+  - { path: [7, 0, 3], span: [90, 21, 25] }
+  - { path: [7], span: [93, 0, 95, 1] }
+  - { path: [7, 1, 2], span: [93, 7, 37] }
+  - { path: [7, 1, 4], span: [94, 2, 10] }
+  - { path: [7, 1], span: [94, 2, 26] }
+  - { path: [7, 1, 5], span: [94, 11, 16] }
+  - { path: [7, 1, 1], span: [94, 17, 18] }
+  - { path: [7, 1, 3], span: [94, 21, 25] }
   syntax: "editions"
   edition: EDITION_2023

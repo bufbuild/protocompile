@@ -15,41 +15,97 @@
 package fdp
 
 import (
+	"fmt"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // commentTracker is used to track and attribute comments in a token stream. All attributed
-// comments are stored in [commentTracker].donated for easy look-up by [token.ID].
+// comments are stored in [commentTracker].attributed for easy look-up by [token.ID].
 type commentTracker struct {
-	currentCursor *token.Cursor
-	donated       map[token.ID]comments
-	tracked       []paragraph
+	cursor     *token.Cursor
+	attributed map[token.ID]*comments // [token.ID] and its attributed comments.
+	tracked    []paragraph
 
-	current                []token.Token
-	prev                   token.ID // The last non-skippable token.
+	current []token.Token
+	prev    token.ID // The last non-skippable token.
+	// The first line of the current comment tokens is on the same line as the last non-skippable token.
 	firstCommentOnSameLine bool
 }
 
 // A paragraph is a group of comment and whitespace tokens that make up a single paragraph comment.
 type paragraph []token.Token
 
+// stringify returns the paragraph is a single string. It also trims off the leading "//"
+// for line comments, and enclosing "/* */" for block comments.
+func (p paragraph) stringify() string {
+	var str strings.Builder
+	for _, t := range p {
+		text := t.Text()
+		if t.Kind() == token.Comment {
+			switch {
+			case strings.HasPrefix(text, "//"):
+				// For line comments, the leading "//" needs to be trimmed off.
+				fmt.Fprint(&str, strings.TrimPrefix(text, "//"))
+			case strings.HasPrefix(text, "/*"):
+				// For block comments, we iterate through each line and trim the leading "/*",
+				// "*", and "*/".
+				for _, line := range strings.SplitAfter(text, "\n") {
+					switch {
+					case strings.HasPrefix(line, "/*"):
+						fmt.Fprint(&str, strings.TrimPrefix(line, "/*"))
+					case strings.HasSuffix(line, "*/"):
+						fmt.Fprint(&str, strings.TrimSuffix(line, "*/"))
+					case strings.HasPrefix(strings.TrimSpace(line), "*"):
+						// We check the line with all spaces trimmed because of leading whitespace.
+						fmt.Fprint(&str, strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*"))
+					}
+				}
+			}
+		} else {
+			fmt.Fprint(&str, text)
+		}
+	}
+	return str.String()
+}
+
 // Comments are the leading, trailing, and detached comments associated with a token.
 type comments struct {
-	leading  []token.Token
-	trailing []token.Token
+	leading  paragraph
+	trailing paragraph
 	detached []paragraph
 }
 
+// leadingComment returns the leading comment string.
+func (c comments) leadingComment() string {
+	return c.leading.stringify()
+}
+
+// trailingComment returns the trailing comment string.
+func (c comments) trailingComment() string {
+	return c.trailing.stringify()
+}
+
+// detachedComments returns a slice of detached comment strings.
+func (c comments) detachedComments() []string {
+	detached := make([]string, len(c.detached))
+	for i, paragraph := range c.detached {
+		detached[i] = paragraph.stringify()
+	}
+	return detached
+}
+
 // attributeComments walks the given token stream and groups comment and space tokens
-// into [paragraph]s and "donates" them to non-skippable tokens as leading, trailing, and
+// into [paragraph]s and attributes them to non-skippable tokens as leading, trailing, and
 // detached comments.
 func (ct *commentTracker) attributeComments(cursor *token.Cursor) {
-	ct.currentCursor = cursor
+	ct.cursor = cursor
 	t := cursor.NextSkippable()
 	for !t.IsZero() {
 		switch t.Kind() {
@@ -64,230 +120,213 @@ func (ct *commentTracker) attributeComments(cursor *token.Cursor) {
 			ct.attributeComments(t.Children())
 			_, end := t.StartEnd()
 			ct.handleNonSkippableToken(end)
-			ct.currentCursor = cursor
+			ct.cursor = cursor
 		}
 		t = cursor.NextSkippable()
 	}
 }
 
-// For comment tokens, we need to determine whether to start a new comment or track it as
-// part of an existing comment.
+// handleCommentToken looks at the current comment [token.Token] and determines whether to
+// start tracking a new comment paragraph or track it as part of an existing paragraph.
 //
-// For line comments, we track whether or not it is on the same line as the previous
-// non-skippable token. A line comment is always in a [paragraph] starting with itself if
-// there are no newlines between it and the previous non-skippable tokens.
+// For line comments, if it is on the same line as the previous non-skippable token, it is
+// always considered its own paragraph.
 //
-// A block comment cannot be made into a paragraph with other tokens, so we need to close
-// out the [paragraph] we are currently tracking and track it as its own paragraph.
+// A block comment cannot be made into a paragraph with other tokens, so the currently
+// tracked paragraph is closed out, and the block comment is also closed out as its own
+// paragraph.
 //
-// We always track the first comment token since the last non-skippable token.
+// The first comment token since the last non-skippable token is always tracked.
 func (ct *commentTracker) handleCommentToken(t token.Token) {
-	prev := id.Wrap(ct.currentCursor.Context(), ct.prev)
+	prev := id.Wrap(ct.cursor.Context(), ct.prev)
 	isLineComment := strings.HasPrefix(t.Text(), "//")
 
 	if !isLineComment {
-		// Block comments are their own paragraph, so we close the current paragraph and track
-		// the current block comment as its own paragraph.
+		// Block comments are their own paragraph, close the current paragraph and track the
+		// current block comment as its own paragraph.
 		ct.closeParagraph()
 		ct.current = append(ct.current, t)
 		ct.closeParagraph()
 		return
 	}
 
-	if ct.current == nil {
-		ct.current = append(ct.current, t)
-
-		if !prev.IsZero() && ct.newLinesBetween(prev, t, 1) == 0 {
-			// This first comment is always in a paragraph by itself if there are no newlines
-			// between it and the previous non-skippable token.
-			ct.closeParagraph()
-			ct.firstCommentOnSameLine = true
-		}
-		return
-	}
-
-	// Track the current comment token.
 	ct.current = append(ct.current, t)
-}
+	// If this is not the first comment in the current paragraph, move on.
+	if len(ct.current) > 1 {
+		return
+	}
 
-// For space tokens, we need to determine whether this space token is part of a comment or
-// if it requires us to break the current paragraph.
-//
-// We first check if there are any tokens already being tracked as part of the paragraph.
-// If not, then we do not start paragraphs with spaces, and the token is dropped.
-//
-// If a newline token is preceded by another token that ends with a newline, then we break
-// the current paragraph and start a new one. Otherwise, we attach it to the current paragraph.
-//
-// We throw away all other space tokens.
-func (ct *commentTracker) handleSpaceToken(t token.Token) {
-	if strings.HasSuffix(t.Text(), "\n") && len(ct.current) > 0 {
-		if strings.HasSuffix(ct.current[len(ct.current)-1].Text(), "\n") {
-			ct.closeParagraph()
-		} else {
-			ct.current = append(ct.current, t)
-		}
+	if !prev.IsZero() && ct.cursor.NewLinesBetween(prev, t, 1) == 0 {
+		// This first comment is always in a paragraph by itself if there are no newlines
+		// between it and the previous non-skippable token.
+		ct.closeParagraph()
+		ct.firstCommentOnSameLine = true
 	}
 }
 
-// For non-skippable tokens, we first break off the current paragraph. We then determine
-// where to donate currently tracked comments and reset currently tracked comments.
+// handleSpaceToken looks at the current space [token.Token] and determines whether this
+// space token is part of the current comment paragraph or if the current paragraph needs
+// to be closed.
 //
-// Comments are either donated as leading or detached leading comments on the current token
-// or as trailing comments on the last seen non-skippable token.
+// If there are no currently tracked paragraphs, then the space token is thrown away,
+// paragraphs are not started with space tokens.
+//
+// If the current space token is a newline, and is preceded by another token that ends with
+// a newline, then the current paragraph is closed, and the current newline token is dropped.
+// Otherwise, the newline token is attached to the current paragraph.
+//
+// All other space tokens are thrown away.
+func (ct *commentTracker) handleSpaceToken(t token.Token) {
+	if !strings.HasSuffix(t.Text(), "\n") || len(ct.current) == 0 {
+		return
+	}
+
+	if strings.HasSuffix(ct.current[len(ct.current)-1].Text(), "\n") {
+		ct.closeParagraph()
+	} else {
+		ct.current = append(ct.current, t)
+	}
+}
+
+// handleNonSkippableToken looks at the current non-skippable [token.Token], closes out the
+// currently tracked paragraph, and determines attributions for the tracked comment paragraphs.
+//
+// Comments are either attributed as leading or detached leading comments on the current
+// token or as trailing comments on the last seen non-skippable token.
 func (ct *commentTracker) handleNonSkippableToken(t token.Token) {
 	ct.closeParagraph()
-	prev := id.Wrap(ct.currentCursor.Context(), ct.prev)
+	prev := id.Wrap(ct.cursor.Context(), ct.prev)
+
+	// Set new non-skippable token
+	ct.prev = t.ID()
+
+	if len(ct.tracked) == 0 {
+		return
+	}
+
+	var donate bool // Donate the first tracked paragraph as a trailing comment to prev
+	switch {
+	case prev.IsZero():
+		donate = false
+	case ct.firstCommentOnSameLine:
+		donate = true
+		// Check if there are more than 2 newlines between the previous non-skippable token
+		// and the first line of the first tracked paragraph.
+	case ct.cursor.NewLinesBetween(prev, ct.tracked[0][0], 2) < 2:
+		// If yes, check the remaining criteria for donation:
+		//
+		// 1. Is there more than one comment? If not, donate.
+		// 2. Is the current token one of the closers, ), ], or } (but not >). If yes, donate
+		//    the currently tracked paragraphs because a body is closed.
+		// 3. Is there more than one newline between the current token and the end of the
+		//    first tracked paragraph? If yes, donate.
+		switch {
+		case len(ct.tracked) > 1 && ct.tracked[1] != nil:
+			donate = true
+		case slicesx.Among(
+			t.Text(),
+			keyword.LParen.String(),
+			keyword.LBracket.String(),
+			keyword.LBrace.String(),
+		):
+			donate = true
+		case ct.cursor.NewLinesBetween(ct.tracked[0][len(ct.tracked[0])-1], t, 2) > 1:
+			donate = true
+		}
+	}
+
+	if donate {
+		ct.setTrailing(ct.tracked[0], prev)
+		ct.tracked = ct.tracked[1:]
+	}
 
 	if len(ct.tracked) > 0 {
-		var donate bool
-		switch {
-		case prev.IsZero():
-			donate = false
-		case ct.firstCommentOnSameLine:
-			donate = true
-		case ct.newLinesBetween(prev, ct.tracked[0][0], 2) < 2:
-			// We check the remaining three criteria for donation if there are more than 2
-			// newlines between the previous non-skippable token and the beginning of the first
-			// currently tracked paragraph. These are:
-			//
-			// 1. Is there more than one comment? If not, donate.
-			// 2. Is the current token one of the closers, ), ], or } (but not >). If yes, we
-			//    donate the currently tracked paragraphs because a body is closed.
-			// 3. Is there more than one newline between the current token and the end of the
-			//    first tracked paragraph? If yes, donate.
-			switch {
-			case len(ct.tracked) > 1 && ct.tracked[1] != nil:
-				donate = true
-			case slices.Contains([]string{
-				keyword.LParen.String(),
-				keyword.LBracket.String(),
-				keyword.LBrace.String(),
-			}, t.Text()):
-				donate = true
-			case ct.newLinesBetween(ct.tracked[0][len(ct.tracked[0])-1], t, 2) > 1:
-				donate = true
-			}
+		// The leading comment must have precisely one new line between it and the current token.
+		if last := ct.tracked[len(ct.tracked)-1]; ct.cursor.NewLinesBetween(last[len(last)-1], t, 2) == 1 {
+			ct.setLeading(last, t)
+			ct.tracked = ct.tracked[:len(ct.tracked)-1]
 		}
-
-		if donate {
-			ct.setTrailing(ct.tracked[0], prev)
-			ct.tracked = ct.tracked[1:]
-		}
-
-		if len(ct.tracked) > 0 {
-			// The leading comment must have precisely one new line between it and the current token.
-			if last := ct.tracked[len(ct.tracked)-1]; ct.newLinesBetween(last[len(last)-1], t, 2) == 1 {
-				ct.setLeading(last, t)
-				ct.tracked = ct.tracked[:len(ct.tracked)-1]
-			}
-		}
-
-		// Check the remaining tracked comments to see if they are detached comments.
-		// Detached comments must be separated from other non-space tokens by at least 2
-		// newlines (unless they are at the top of the file), e.g.
-		//
-		// // This is a detached comment at the top of the file.
-		//
-		//  edition = "2023";
-		//
-		// message Foo {}
-		// // This is neither a detached nor trailing comment, since it is not separated from
-		// // the closing brace above by an empty line.
-		//
-		// // This IS a detached comment for Bar.
-		//
-		// // A leading comment for Bar.
-		// message Bar {}
-		for i, remaining := range ct.tracked {
-			prev := remaining[0].Prev()
-			for prev.Kind() == token.Space {
-				prev = prev.Prev()
-			}
-			next := remaining[len(remaining)-1].Next()
-			for next.Kind() == token.Space {
-				next = next.Next()
-			}
-			if prev.IsZero() || ct.newLinesBetween(prev, remaining[0], 2) == 2 {
-				if !next.IsZero() && ct.newLinesBetween(remaining[len(remaining)-1], next, 2) == 2 {
-					ct.setDetached(ct.tracked[i:], t)
-					break
-				}
-			}
-		}
-		// Reset tracked comment information
-		ct.firstCommentOnSameLine = false
-		ct.tracked = nil
 	}
-	ct.prev = t.ID()
-}
 
-func (ct *commentTracker) closeParagraph() {
-	// If the current paragraph only contains whitespace tokens, then we throw it away.
-	var containsComment bool
-	for _, t := range ct.current {
-		if t.Kind() == token.Comment {
-			containsComment = true
+	// Check the remaining tracked comments to see if they are detached comments.
+	// Detached comments must be separated from other non-space tokens by at least 2
+	// newlines (unless they are at the top of the file), e.g. a file with contents:
+	//
+	// 	// This is a detached comment at the top of the file.
+	//
+	// 	 edition = "2023";
+	//
+	// 	message Foo {}
+	// 	// This is neither a detached nor trailing comment, since it is not separated from
+	// 	// the closing brace above by an empty line.
+	//
+	// 	// This IS a detached comment for Bar.
+	//
+	// 	// A leading comment for Bar.
+	// 	message Bar {}
+	//
+	for i, remaining := range ct.tracked {
+		prev := remaining[0].Prev()
+		for prev.Kind() == token.Space {
+			prev = prev.Prev()
+		}
+		next := remaining[len(remaining)-1].Next()
+		for next.Kind() == token.Space {
+			next = next.Next()
+		}
+		if !prev.IsZero() && ct.cursor.NewLinesBetween(prev, remaining[0], 2) < 2 {
+			continue
+		}
+		if !next.IsZero() && ct.cursor.NewLinesBetween(remaining[len(remaining)-1], next, 2) == 2 {
+			ct.setDetached(ct.tracked[i:], t)
 			break
 		}
 	}
-	if containsComment {
+	// Reset tracked comment information
+	ct.firstCommentOnSameLine = false
+	ct.tracked = nil
+}
+
+// closeParagraph takes the currently tracked paragraph, closes it, and tracks it.
+func (ct *commentTracker) closeParagraph() {
+	// If the current paragraph only contains whitespace tokens, then throw it away.
+	if slices.ContainsFunc(ct.current, func(t token.Token) bool {
+		return t.Kind() == token.Comment
+	}) {
 		ct.tracked = append(ct.tracked, ct.current)
 	}
 	ct.current = nil
 }
 
-// newLinesBetween counts the number of \n characters between the end of [token.Token] a
-// and the start of b, up to the limit.
-//
-// The final rune of a is included in this count, since comments may end in a \n rune.
-func (ct *commentTracker) newLinesBetween(a, b token.Token, limit int) int {
-	end := a.LeafSpan().End
-	if end != 0 {
-		// Account for the final rune of a
-		end--
-	}
-
-	start := b.LeafSpan().Start
-	between := ct.currentCursor.Context().Text()[end:start]
-
-	var total int
-	for total < limit {
-		var found bool
-		_, between, found = strings.Cut(between, "\n")
-		if !found {
-			break
-		}
-
-		total++
-	}
-	return total
-}
-
+// setLeading sets the given paragraph as the leading comment on the given token.
 func (ct *commentTracker) setLeading(leading paragraph, t token.Token) {
-	ct.mutateComment(t, func(raw *comments) {
-		raw.leading = leading
+	ct.mutateComment(t, func(c *comments) {
+		c.leading = leading
 	})
 }
 
+// setTrailing sets the given paragraph as the trailing comment on the given token.
 func (ct *commentTracker) setTrailing(trailing paragraph, t token.Token) {
-	ct.mutateComment(t, func(raw *comments) {
-		raw.trailing = trailing
+	ct.mutateComment(t, func(c *comments) {
+		c.trailing = trailing
 	})
 }
 
+// setDetached sets the given slice of paragraphs as the detached comments on the given token.
 func (ct *commentTracker) setDetached(detached []paragraph, t token.Token) {
-	ct.mutateComment(t, func(raw *comments) {
-		raw.detached = detached
+	ct.mutateComment(t, func(c *comments) {
+		c.detached = detached
 	})
 }
 
-func (ct *commentTracker) mutateComment(t token.Token, cb func(*comments)) {
-	if ct.donated == nil {
-		ct.donated = make(map[token.ID]comments)
+// mutateComment mutates the attributed comments on the given token.
+func (ct *commentTracker) mutateComment(t token.Token, mutate func(*comments)) {
+	if ct.attributed == nil {
+		ct.attributed = make(map[token.ID]*comments)
 	}
 
-	raw := ct.donated[t.ID()]
-	cb(&raw)
-	ct.donated[t.ID()] = raw
+	if ct.attributed[t.ID()] == nil {
+		ct.attributed[t.ID()] = &comments{}
+	}
+	mutate(ct.attributed[t.ID()])
 }

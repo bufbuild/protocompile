@@ -48,9 +48,9 @@ message /*this is thrown away*/ Foo {
   // This is a leading comment for the reserved names declaration.
   reserved foo, /*this gets dropped*/ bar; // This is a trailing comment for the reserved range.
 
-  repeated int32 options = 11 [
+  repeated int32 options = 11 /* This is dropped. */ [
     // Comments for option messages are dropped.
-    features.repeated_field_encoding = PACKED,
+    features.repeated_field_encoding = PACKED, // This is also dropped
     (c) = 15,
     (c) = 16
   ];
@@ -80,7 +80,11 @@ enum Baz { // This is a trailing comment for enum Baz.
 // This is the leading comment for service FooService.
 service FooService { // This is a trailing comment for service FooService.
   // Leading comment for method FooForBar.
-  rpc FooForBar(Bar) returns (Foo);
+  rpc FooForBar(Bar) returns (Foo); // Trailing comment for FooForBar.
+
+  // Leading comment for method BarForBar.
+  rpc BarForBar(Bar) returns (Bar) /* This is thrown away */ { // Trailing comment for BarForBar.
+  }; // This is NOT a trailing comment for BarForBar. It is discarded.
 } // This is NOT a trailing comment for FooService. It is discarded.
 
 extend google.protobuf.FieldOptions {

@@ -18,8 +18,6 @@ import (
 	"math"
 	"slices"
 	"strconv"
-	"strings"
-	"unicode"
 
 	descriptorv1 "buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go/buf/descriptor/v1"
 	"google.golang.org/protobuf/proto"
@@ -70,32 +68,29 @@ func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet)
 
 func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	g.currentFile = file
-	path := new(path)
-	g.path = path
 	fdp.Name = addr(file.Path())
+	g.path = new(path)
 
 	if g.includeDebugInfo {
 		g.sourceCodeInfo = new(descriptorpb.SourceCodeInfo)
+		fdp.SourceCodeInfo = g.sourceCodeInfo
 
 		ct := new(commentTracker)
 		g.commentTracker = ct
 		ct.attributeComments(g.currentFile.AST().Stream().Cursor())
-
-		fdp.SourceCodeInfo = g.sourceCodeInfo
 
 		g.sourceCodeInfoExtn = new(descriptorv1.SourceCodeInfoExtension)
 		proto.SetExtension(g.sourceCodeInfo, descriptorv1.E_BufSourceCodeInfoExtension, g.sourceCodeInfoExtn)
 	}
 
 	fdp.Package = addr(string(file.Package()))
+	reset := g.path.with(internal.FilePackageTag)
 	g.addSourceLocation(
 		file.AST().Package().Span(),
-		[]int32{internal.FilePackageTag},
-		[]token.ID{
-			file.AST().Package().KeywordToken().ID(),
-			file.AST().Package().Semicolon().ID(),
-		},
+		file.AST().Package().KeywordToken().ID(),
+		file.AST().Package().Semicolon().ID(),
 	)
+	reset()
 
 	if file.Syntax().IsEdition() {
 		fdp.Syntax = addr("editions")
@@ -103,16 +98,15 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	} else {
 		fdp.Syntax = addr(file.Syntax().String())
 	}
+	// According to descriptor.proto and protoc behavior, the path is always set to [12] for
+	// both syntax and editions.
+	reset = g.path.with(internal.FileSyntaxTag)
 	g.addSourceLocation(
 		file.AST().Syntax().Span(),
-		// According to descriptor.proto and protoc behavior, the path is always set to [12] for
-		// both syntax and editions.
-		[]int32{internal.FileSyntaxTag},
-		[]token.ID{
-			file.AST().Syntax().KeywordToken().ID(),
-			file.AST().Syntax().Semicolon().ID(),
-		},
+		file.AST().Syntax().KeywordToken().ID(),
+		file.AST().Syntax().Semicolon().ID(),
 	)
+	reset()
 
 	if g.sourceCodeInfoExtn != nil {
 		g.sourceCodeInfoExtn.IsSyntaxUnspecified = file.AST().Syntax().IsZero()
@@ -128,25 +122,22 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	var publicDepIndex, weakDepIndex int32
 	for i, imp := range imports {
 		fdp.Dependency = append(fdp.Dependency, imp.Path())
+		reset := g.path.with(internal.FileDependencyTag, int32(i))
 		g.addSourceLocation(
 			imp.Decl.Span(),
-			[]int32{internal.FileDependencyTag, int32(i)},
-			[]token.ID{
-				imp.Decl.KeywordToken().ID(),
-				imp.Decl.Semicolon().ID(),
-			},
+			imp.Decl.KeywordToken().ID(),
+			imp.Decl.Semicolon().ID(),
 		)
+		reset()
 
 		if imp.Public {
 			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
 			_, public := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
 				return t.Keyword() == keyword.Public
 			})
-			g.addSourceLocation(
-				public.Span(),
-				[]int32{internal.FilePublicDependencyTag, publicDepIndex},
-				nil, // Comments are only attached to the top-level import source code info
-			)
+			reset := g.path.with(internal.FilePublicDependencyTag, publicDepIndex)
+			g.addSourceLocation(public.Span())
+			reset()
 			publicDepIndex++
 		}
 		if imp.Weak {
@@ -154,12 +145,9 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 			_, weak := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
 				return t.Keyword() == keyword.Weak
 			})
-			g.addSourceLocation(
-				weak.Span(),
-				[]int32{internal.FileWeakDependencyTag, weakDepIndex},
-				nil, // Comments are only attached to the top-level import source code info
-			)
-			weakDepIndex++
+			reset := g.path.with(internal.FileWeakDependencyTag, weakDepIndex)
+			g.addSourceLocation(weak.Span())
+			reset()
 		}
 
 		if g.sourceCodeInfoExtn != nil && !imp.Used {
@@ -172,52 +160,50 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 		if ty.IsEnum() {
 			edp := new(descriptorpb.EnumDescriptorProto)
 			fdp.EnumType = append(fdp.EnumType, edp)
-			g.enum(ty, edp, []int32{internal.FileEnumsTag, enumIndex})
+			g.enum(ty, edp, internal.FileEnumsTag, enumIndex)
 			enumIndex++
 			continue
 		}
 
 		mdp := new(descriptorpb.DescriptorProto)
 		fdp.MessageType = append(fdp.MessageType, mdp)
-		g.message(ty, mdp, []int32{internal.FileMessagesTag, msgIndex})
+		g.message(ty, mdp, internal.FileMessagesTag, msgIndex)
 		msgIndex++
 	}
 
 	for i, service := range seq.All(file.Services()) {
 		sdp := new(descriptorpb.ServiceDescriptorProto)
 		fdp.Service = append(fdp.Service, sdp)
-		g.service(service, sdp, []int32{internal.FileServicesTag, int32(i)})
+		g.service(service, sdp, internal.FileServicesTag, int32(i))
 	}
 
 	var extnIndex int32
 	for extend := range seq.Values(file.Extends()) {
+		reset := g.path.with(internal.FileExtensionsTag)
 		g.addSourceLocation(
 			extend.AST().Span(),
-			[]int32{internal.FileExtensionsTag},
-			[]token.ID{
-				extend.AST().KeywordToken().ID(),
-				extend.AST().Body().Braces().ID(),
-			},
+			extend.AST().KeywordToken().ID(),
+			extend.AST().Body().Braces().ID(),
 		)
+		reset()
 
 		for extn := range seq.Values(extend.Extensions()) {
 			fd := new(descriptorpb.FieldDescriptorProto)
 			fdp.Extension = append(fdp.Extension, fd)
-			g.field(extn, fd, []int32{internal.FileExtensionsTag, extnIndex})
+			g.field(extn, fd, internal.FileExtensionsTag, extnIndex)
 			extnIndex++
 		}
 	}
 
 	if options := file.Options(); !iterx.Empty(options.Fields()) {
-		fdp.Options = new(descriptorpb.FileOptions)
 		for option := range file.AST().Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.FileOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.FileOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, fdp.Options, []int32{internal.FileOptionsTag})
+
+		fdp.Options = new(descriptorpb.FileOptions)
+		g.options(options, fdp.Options, internal.FileOptionsTag)
 	}
 
 	if g.sourceCodeInfoExtn != nil && iterx.Empty2(g.sourceCodeInfoExtn.ProtoReflect().Range) {
@@ -235,47 +221,38 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	}
 }
 
-func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	messageAST := ty.AST().AsMessage()
-	g.addSourceLocation(
-		messageAST.Span(),
-		sourcePath,
-		[]token.ID{
-			messageAST.Keyword.ID(),
-			messageAST.Body.Braces().ID(),
-		},
-	)
+	g.addSourceLocation(messageAST.Span(), messageAST.Keyword.ID(), messageAST.Body.Braces().ID())
 
 	mdp.Name = addr(ty.Name())
-	g.addSourceLocation(
-		messageAST.Name.Span(),
-		[]int32{internal.MessageNameTag},
-		nil, // Comments are only attached to the top-level message source code info
-	)
+	reset := g.path.with(internal.MessageNameTag)
+	g.addSourceLocation(messageAST.Name.Span())
+	reset()
 
 	for i, field := range seq.All(ty.Members()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
 		mdp.Field = append(mdp.Field, fd)
-		g.field(field, fd, []int32{internal.MessageFieldsTag, int32(i)})
+		g.field(field, fd, internal.MessageFieldsTag, int32(i))
 	}
 
 	var extnIndex int32
 	for extend := range seq.Values(ty.Extends()) {
+		reset := g.path.with(internal.MessageExtensionsTag)
 		g.addSourceLocation(
 			extend.AST().Span(),
-			[]int32{internal.MessageExtensionsTag},
-			[]token.ID{
-				extend.AST().KeywordToken().ID(),
-				extend.AST().Body().Braces().ID(),
-			},
+			extend.AST().KeywordToken().ID(),
+			extend.AST().Body().Braces().ID(),
 		)
+		reset()
 
 		for extn := range seq.Values(extend.Extensions()) {
 			fd := new(descriptorpb.FieldDescriptorProto)
 			mdp.Extension = append(mdp.Extension, fd)
-			g.field(extn, fd, []int32{internal.MessageExtensionsTag, extnIndex})
+			g.field(extn, fd, internal.MessageExtensionsTag, extnIndex)
 			extnIndex++
 		}
 	}
@@ -285,14 +262,14 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		if ty.IsEnum() {
 			edp := new(descriptorpb.EnumDescriptorProto)
 			mdp.EnumType = append(mdp.EnumType, edp)
-			g.enum(ty, edp, []int32{internal.MessageEnumsTag, enumIndex})
+			g.enum(ty, edp, internal.MessageEnumsTag, enumIndex)
 			enumIndex++
 			continue
 		}
 
 		nested := new(descriptorpb.DescriptorProto)
 		mdp.NestedType = append(mdp.NestedType, nested)
-		g.message(ty, nested, []int32{internal.MessageNestedMessagesTag, nestedMsgIndex})
+		g.message(ty, nested, internal.MessageNestedMessagesTag, nestedMsgIndex)
 		nestedMsgIndex++
 	}
 
@@ -304,14 +281,13 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		er.Start = addr(start)
 		er.End = addr(end + 1) // Exclusive.
 
+		reset := g.path.with(internal.MessageExtensionRangesTag)
 		g.addSourceLocation(
 			extensions.DeclAST().Span(),
-			[]int32{internal.MessageExtensionRangesTag},
-			[]token.ID{
-				extensions.DeclAST().KeywordToken().ID(),
-				extensions.DeclAST().Semicolon().ID(),
-			},
+			extensions.DeclAST().KeywordToken().ID(),
+			extensions.DeclAST().Semicolon().ID(),
 		)
+		reset()
 
 		g.rangeSourceCodeInfo(
 			extensions.AST(),
@@ -322,27 +298,25 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		)
 
 		if options := extensions.Options(); !iterx.Empty(options.Fields()) {
+			reset := g.path.with(internal.ExtensionRangeOptionsTag)
+			g.addSourceLocation(extensions.DeclAST().Options().Span())
+			reset()
+
 			er.Options = new(descriptorpb.ExtensionRangeOptions)
-			g.addSourceLocation(
-				extensions.DeclAST().Options().Span(),
-				[]int32{internal.ExtensionRangeOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
-			g.options(options, er.Options, []int32{internal.ExtensionRangeOptionsTag})
+			g.options(options, er.Options, internal.ExtensionRangeOptionsTag)
 		}
 	}
 
 	var topLevelSourceLocation bool
 	for i, reserved := range seq.All(ty.ReservedRanges()) {
 		if !topLevelSourceLocation {
+			reset := g.path.with(internal.MessageReservedRangesTag)
 			g.addSourceLocation(
 				reserved.DeclAST().Span(),
-				[]int32{internal.MessageReservedRangesTag},
-				[]token.ID{
-					reserved.DeclAST().KeywordToken().ID(),
-					reserved.DeclAST().Semicolon().ID(),
-				},
+				reserved.DeclAST().KeywordToken().ID(),
+				reserved.DeclAST().Semicolon().ID(),
 			)
+			reset()
 			topLevelSourceLocation = true
 		}
 
@@ -365,29 +339,26 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	topLevelSourceLocation = false
 	for i, name := range seq.All(ty.ReservedNames()) {
 		if !topLevelSourceLocation {
+			reset := g.path.with(internal.MessageReservedNamesTag)
 			g.addSourceLocation(
 				name.DeclAST().Span(),
-				[]int32{internal.MessageReservedNamesTag},
-				[]token.ID{
-					name.DeclAST().KeywordToken().ID(),
-					name.DeclAST().Semicolon().ID(),
-				},
+				name.DeclAST().KeywordToken().ID(),
+				name.DeclAST().Semicolon().ID(),
 			)
+			reset()
 			topLevelSourceLocation = true
 		}
 
 		mdp.ReservedName = append(mdp.ReservedName, name.Name())
-		g.addSourceLocation(
-			name.AST().Span(),
-			[]int32{internal.MessageReservedNamesTag, int32(i)},
-			nil, // Comments are only attached to the top-level reserved names source code info
-		)
+		reset := g.path.with(internal.MessageReservedNamesTag, int32(i))
+		g.addSourceLocation(name.AST().Span())
+		reset()
 	}
 
 	for i, oneof := range seq.All(ty.Oneofs()) {
 		odp := new(descriptorpb.OneofDescriptorProto)
 		mdp.OneofDecl = append(mdp.OneofDecl, odp)
-		g.oneof(oneof, odp, []int32{internal.MessageOneofsTag, int32(i)})
+		g.oneof(oneof, odp, internal.MessageOneofsTag, int32(i))
 	}
 
 	if g.currentFile.Syntax() == syntax.Proto3 {
@@ -411,19 +382,15 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	}
 
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
-		mdp.Options = new(descriptorpb.MessageOptions)
 		for option := range messageAST.Body.Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.MessageOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.MessageOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, mdp.Options, []int32{internal.MessageOptionsTag})
-	}
 
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
+		mdp.Options = new(descriptorpb.MessageOptions)
+		g.options(options, mdp.Options, internal.MessageOptionsTag)
+	}
 }
 
 var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
@@ -447,32 +414,22 @@ var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
 	predeclared.Bytes:  descriptorpb.FieldDescriptorProto_TYPE_BYTES,
 }
 
-func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	fieldAST := f.AST().AsField()
-	g.addSourceLocation(
-		fieldAST.Span(),
-		sourcePath,
-		[]token.ID{
-			token.ID(fieldAST.Type.ID()),
-			fieldAST.Semicolon.ID(),
-		},
-	)
+	g.addSourceLocation(fieldAST.Span(), token.ID(fieldAST.Type.ID()), fieldAST.Semicolon.ID())
 
 	fdp.Name = addr(f.Name())
-	g.addSourceLocation(
-		fieldAST.Name.Span(),
-		[]int32{internal.FieldNameTag},
-		nil, // Comments are only attached to the top-level field source code info
-	)
+	reset := g.path.with(internal.FieldNameTag)
+	g.addSourceLocation(fieldAST.Name.Span())
+	reset()
 
 	fdp.Number = addr(f.Number())
-	g.addSourceLocation(
-		fieldAST.Tag.Span(),
-		[]int32{internal.FieldNumberTag},
-		nil, // Comments are only attached to the top-level field source code info
-	)
+	reset = g.path.with(internal.FieldNumberTag)
+	g.addSourceLocation(fieldAST.Tag.Span())
+	reset()
 
 	switch f.Presence() {
 	case presence.Explicit, presence.Implicit, presence.Shared:
@@ -487,18 +444,16 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	// AST allows for arbitrary nesting of prefixes, so the API returns an iterator, but
 	// [descriptorpb.FieldDescriptorProto] expects a single label.
 	for prefix := range fieldAST.Type.Prefixes() {
-		g.addSourceLocation(
-			prefix.PrefixToken().Span(),
-			[]int32{internal.FieldLabelTag},
-			nil, // Comments are only attached to the top-level field source code info
-		)
+		reset := g.path.with(internal.FieldLabelTag)
+		g.addSourceLocation(prefix.PrefixToken().Span())
+		reset()
 	}
 
-	fieldTypeSourcePath := []int32{internal.FieldTypeNameTag}
+	fieldTypeSourcePathElement := internal.FieldTypeNameTag
 	if ty := f.Element(); !ty.IsZero() {
 		if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
 			fdp.Type = kind.Enum()
-			fieldTypeSourcePath = []int32{internal.FieldTypeTag}
+			fieldTypeSourcePathElement = internal.FieldTypeTag
 		} else {
 			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
 			switch {
@@ -511,19 +466,15 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 			}
 		}
 	}
-	g.addSourceLocation(
-		fieldAST.Type.RemovePrefixes().Span(),
-		fieldTypeSourcePath,
-		nil, // Comments are only attached to the top-level field source code info
-	)
+	reset = g.path.with(int32(fieldTypeSourcePathElement))
+	g.addSourceLocation(fieldAST.Type.RemovePrefixes().Span())
+	reset()
 
 	if f.IsExtension() && f.Container().FullName() != "" {
 		fdp.Extendee = addr(string(f.Container().FullName().ToAbsolute()))
-		g.addSourceLocation(
-			f.Extend().AST().Name().Span(),
-			[]int32{internal.FieldExtendeeTag},
-			nil, // Comments are only attached to the top-level field source code info
-		)
+		reset := g.path.with(internal.FieldExtendeeTag)
+		g.addSourceLocation(f.Extend().AST().Name().Span())
+		reset()
 	}
 
 	if oneof := f.Oneof(); !oneof.IsZero() {
@@ -531,13 +482,12 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	}
 
 	if options := f.Options(); !iterx.Empty(options.Fields()) {
+		reset := g.path.with(internal.FieldOptionsTag)
+		g.addSourceLocation(fieldAST.Options.Span())
+		reset()
+
 		fdp.Options = new(descriptorpb.FieldOptions)
-		g.addSourceLocation(
-			fieldAST.Options.Span(),
-			[]int32{internal.FieldOptionsTag},
-			nil, // Comments are not attached from compact options
-		)
-		g.options(options, fdp.Options, []int32{internal.FieldOptionsTag})
+		g.options(options, fdp.Options, internal.FieldOptionsTag)
 	}
 
 	fdp.JsonName = addr(f.JSONName())
@@ -565,84 +515,60 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 			fdp.DefaultValue = addr(v)
 		}
 	}
-
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
 }
 
-func (g *generator) oneof(o ir.Oneof, odp *descriptorpb.OneofDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) oneof(o ir.Oneof, odp *descriptorpb.OneofDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	oneofAST := o.AST().AsOneof()
-	g.addSourceLocation(
-		oneofAST.Span(),
-		sourcePath,
-		[]token.ID{
-			oneofAST.Keyword.ID(),
-			oneofAST.Body.Braces().ID(),
-		},
-	)
+	g.addSourceLocation(oneofAST.Span(), oneofAST.Keyword.ID(), oneofAST.Body.Braces().ID())
 
 	odp.Name = addr(o.Name())
-	g.addSourceLocation(
-		oneofAST.Name.Span(),
-		[]int32{internal.OneofNameTag},
-		nil, // Comments are only attached to the top-level oneof source code info
-	)
+	reset := g.path.with(internal.OneofNameTag)
+	g.addSourceLocation(oneofAST.Name.Span())
+	reset()
 
 	if options := o.Options(); !iterx.Empty(options.Fields()) {
-		odp.Options = new(descriptorpb.OneofOptions)
 		for option := range oneofAST.Body.Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.OneofOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.OneofOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, odp.Options, []int32{internal.OneofOptionsTag})
-	}
 
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
+		odp.Options = new(descriptorpb.OneofOptions)
+		g.options(options, odp.Options, internal.OneofOptionsTag)
+	}
 }
 
-func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	enumAST := ty.AST().AsEnum()
-	g.addSourceLocation(
-		enumAST.Span(),
-		sourcePath,
-		[]token.ID{
-			enumAST.Keyword.ID(),
-			enumAST.Body.Braces().ID(),
-		},
-	)
+	g.addSourceLocation(enumAST.Span(), enumAST.Keyword.ID(), enumAST.Body.Braces().ID())
 
 	edp.Name = addr(ty.Name())
-	g.addSourceLocation(
-		enumAST.Name.Span(),
-		[]int32{internal.EnumNameTag},
-		nil, // Comments are only attached to the top-level enum source code info
-	)
+	reset := g.path.with(internal.EnumNameTag)
+	g.addSourceLocation(enumAST.Name.Span())
+	reset()
 
 	for i, enumValue := range seq.All(ty.Members()) {
 		evd := new(descriptorpb.EnumValueDescriptorProto)
 		edp.Value = append(edp.Value, evd)
-		g.enumValue(enumValue, evd, []int32{internal.EnumValuesTag, int32(i)})
+		g.enumValue(enumValue, evd, internal.EnumValuesTag, int32(i))
 	}
 
 	var topLevelSourceLocation bool
 	for i, reserved := range seq.All(ty.ReservedRanges()) {
 		if !topLevelSourceLocation {
+			reset := g.path.with(internal.EnumReservedRangesTag)
 			g.addSourceLocation(
 				reserved.DeclAST().Span(),
-				[]int32{internal.EnumReservedRangesTag},
-				[]token.ID{
-					reserved.DeclAST().KeywordToken().ID(),
-					reserved.DeclAST().Semicolon().ID(),
-				},
+				reserved.DeclAST().KeywordToken().ID(),
+				reserved.DeclAST().Semicolon().ID(),
 			)
+			reset()
 			topLevelSourceLocation = true
 		}
 
@@ -665,143 +591,123 @@ func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto, sour
 	topLevelSourceLocation = false
 	for i, name := range seq.All(ty.ReservedNames()) {
 		if !topLevelSourceLocation {
+			reset := g.path.with(internal.EnumReservedNamesTag)
 			g.addSourceLocation(
 				name.DeclAST().Span(),
-				[]int32{internal.MessageReservedNamesTag},
-				[]token.ID{
-					name.DeclAST().KeywordToken().ID(),
-					name.DeclAST().Semicolon().ID(),
-				},
+				name.DeclAST().KeywordToken().ID(),
+				name.DeclAST().Semicolon().ID(),
 			)
+			reset()
 			topLevelSourceLocation = true
 		}
 
 		edp.ReservedName = append(edp.ReservedName, name.Name())
-		g.addSourceLocation(
-			name.AST().Span(),
-			[]int32{internal.EnumReservedNamesTag, int32(i)},
-			nil, // Comments are only attached to the top-level reserved names source code info
-		)
+		reset := g.path.with(internal.EnumReservedNamesTag, int32(i))
+		g.addSourceLocation(name.AST().Span())
+		reset()
 	}
 
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
-		edp.Options = new(descriptorpb.EnumOptions)
 		for option := range enumAST.Body.Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.EnumOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.EnumOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, edp.Options, []int32{internal.EnumOptionsTag})
-	}
 
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
+		edp.Options = new(descriptorpb.EnumOptions)
+		g.options(options, edp.Options, internal.EnumOptionsTag)
+	}
 }
 
-func (g *generator) enumValue(f ir.Member, evdp *descriptorpb.EnumValueDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) enumValue(f ir.Member, evdp *descriptorpb.EnumValueDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	enumValueAST := f.AST().AsEnumValue()
-	g.addSourceLocation(
-		enumValueAST.Span(),
-		sourcePath,
-		[]token.ID{
-			enumValueAST.Name.ID(),
-			enumValueAST.Semicolon.ID(),
-		},
-	)
+	g.addSourceLocation(enumValueAST.Span(), enumValueAST.Name.ID(), enumValueAST.Semicolon.ID())
 
 	evdp.Name = addr(f.Name())
-	g.addSourceLocation(
-		enumValueAST.Name.Span(),
-		[]int32{internal.EnumValNameTag},
-		nil, // Comments are only attached to the top-level enum value source code info
-	)
+	reset := g.path.with(internal.EnumValNameTag)
+	g.addSourceLocation(enumValueAST.Name.Span())
+	reset()
+
 	evdp.Number = addr(f.Number())
-	g.addSourceLocation(
-		enumValueAST.Tag.Span(),
-		[]int32{internal.EnumValNumberTag},
-		nil, // Comments are only attached to the top-level enum value source code info
-	)
+	reset = g.path.with(internal.EnumValNumberTag)
+	g.addSourceLocation(enumValueAST.Tag.Span())
+	reset()
 
 	if options := f.Options(); !iterx.Empty(options.Fields()) {
+		reset := g.path.with(internal.EnumValOptionsTag)
+		g.addSourceLocation(enumValueAST.Options.Span())
+		reset()
+
 		evdp.Options = new(descriptorpb.EnumValueOptions)
-		g.addSourceLocation(
-			enumValueAST.Options.Span(),
-			[]int32{internal.EnumValOptionsTag},
-			nil, // Comments are not attached from compact options
-		)
-
-		g.options(options, evdp.Options, []int32{internal.EnumValOptionsTag})
+		g.options(options, evdp.Options, internal.EnumValOptionsTag)
 	}
-
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
 }
 
-func (g *generator) service(s ir.Service, sdp *descriptorpb.ServiceDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) service(s ir.Service, sdp *descriptorpb.ServiceDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	serviceAST := s.AST().AsService()
-	g.addSourceLocation(
-		serviceAST.Span(),
-		sourcePath,
-		[]token.ID{
-			serviceAST.Keyword.ID(),
-			serviceAST.Body.Braces().ID(),
-		},
-	)
+	g.addSourceLocation(serviceAST.Span(), serviceAST.Keyword.ID(), serviceAST.Body.Braces().ID())
 
 	sdp.Name = addr(s.Name())
-	g.addSourceLocation(
-		serviceAST.Name.Span(),
-		[]int32{internal.ServiceNameTag},
-		nil, // Comments are only attached to the top-level service source code info
-	)
+	reset := g.path.with(internal.ServiceNameTag)
+	g.addSourceLocation(serviceAST.Name.Span())
+	reset()
 
 	for i, method := range seq.All(s.Methods()) {
 		mdp := new(descriptorpb.MethodDescriptorProto)
 		sdp.Method = append(sdp.Method, mdp)
-		g.method(method, mdp, []int32{internal.ServiceMethodsTag, int32(i)})
+		g.method(method, mdp, internal.ServiceMethodsTag, int32(i))
 	}
 
 	if options := s.Options(); !iterx.Empty(options.Fields()) {
 		sdp.Options = new(descriptorpb.ServiceOptions)
 		for option := range serviceAST.Body.Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.ServiceOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.ServiceOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, sdp.Options, []int32{internal.ServiceOptionsTag})
+		g.options(options, sdp.Options, internal.ServiceOptionsTag)
 	}
-
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
 }
 
-func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto, sourcePath []int32) {
-	g.path.descend(len(sourcePath))
+func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto, sourcePath ...int32) {
+	topLevelReset := g.path.with(sourcePath...)
+	defer topLevelReset()
 
 	methodAST := m.AST().AsMethod()
-	g.addSourceLocation(
-		methodAST.Span(),
-		sourcePath,
-		[]token.ID{
-			methodAST.Keyword.ID(),
-			methodAST.Body.Braces().ID(),
-		},
-	)
+
+	// Comment attribution for tokens is unique. The behavior in protoc for method leading
+	// comments is as follows for methods without a body:
+	//
+	// service FooService {
+	//   // I'm the leading comment for GetFoo
+	//   rpc GetFoo (GetFooRequest) returns (GetFooResponse); // I'm the trailing comment for GetFoo
+	// }
+	//
+	// And for methods with a body:
+	//
+	// service FooService {
+	//   // I'm still the leading comment for GetFoo
+	//   rpc GetFoo (GetFooRequest) returns (GetFooResponse) { // I'm the trailing comment for GetFoo
+	//   }; // I am NOT the trailing comment for GetFoo, and am instead dropped.
+	// }
+	//
+	closingToken := m.AST().Semicolon().ID()
+	if !methodAST.Body.Braces().IsZero() {
+		closingToken = methodAST.Body.Braces().ID()
+	}
+
+	g.addSourceLocation(methodAST.Span(), methodAST.Keyword.ID(), closingToken)
 
 	mdp.Name = addr(m.Name())
-	g.addSourceLocation(
-		methodAST.Name.Span(),
-		[]int32{internal.MethodNameTag},
-		nil, // Comments are only attached to the top-level method source code info
-	)
+	reset := g.path.with(internal.MethodNameTag)
+	g.addSourceLocation(methodAST.Name.Span())
+	reset()
 
 	in, inStream := m.Input()
 	mdp.InputType = addr(string(in.FullName()))
@@ -810,17 +716,13 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto,
 	// Methods only have a single input, see [descriptorpb.MethodDescriptorProto].
 	inputAST := methodAST.Signature.Inputs().At(0)
 	if prefixed := inputAST.AsPrefixed(); !prefixed.IsZero() {
-		g.addSourceLocation(
-			prefixed.PrefixToken().Span(),
-			[]int32{internal.MethodInputStreamTag},
-			nil, // Comments are only attached to the top-level method source code info
-		)
+		reset := g.path.with(internal.MethodInputStreamTag)
+		g.addSourceLocation(prefixed.PrefixToken().Span())
+		reset()
 	}
-	g.addSourceLocation(
-		inputAST.RemovePrefixes().Span(),
-		[]int32{internal.MethodInputTag},
-		nil, // Comments are only attached to the top-level method source code info
-	)
+	reset = g.path.with(internal.MethodInputTag)
+	g.addSourceLocation(inputAST.RemovePrefixes().Span())
+	reset()
 
 	out, outStream := m.Output()
 	mdp.OutputType = addr(string(out.FullName()))
@@ -829,40 +731,31 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto,
 	// Methods only have a single output, see [descriptorpb.MethodDescriptorProto].
 	outputAST := methodAST.Signature.Outputs().At(0)
 	if prefixed := outputAST.AsPrefixed(); !prefixed.IsZero() {
-		g.addSourceLocation(
-			prefixed.PrefixToken().Span(),
-			[]int32{internal.MethodOutputStreamTag},
-			nil, // Comments are only attached to the top-level method source code info
-		)
+		reset := g.path.with(internal.MethodOutputStreamTag)
+		g.addSourceLocation(prefixed.PrefixToken().Span())
+		reset()
 	}
-	g.addSourceLocation(
-		outputAST.RemovePrefixes().Span(),
-		[]int32{internal.MethodOutputTag},
-		nil, // Comments are only attached to the top-level method source code info
-	)
+	reset = g.path.with(internal.MethodOutputTag)
+	g.addSourceLocation(outputAST.RemovePrefixes().Span())
+	reset()
 
 	if options := m.Options(); !iterx.Empty(options.Fields()) {
 		mdp.Options = new(descriptorpb.MethodOptions)
 		for option := range methodAST.Body.Options() {
-			g.addSourceLocation(
-				option.Span(),
-				[]int32{internal.MethodOptionsTag},
-				nil, // Comments are attached to individual option spans
-			)
+			reset := g.path.with(internal.MethodOptionsTag)
+			g.addSourceLocation(option.Span())
+			reset()
 		}
-		g.options(options, mdp.Options, []int32{internal.MethodOptionsTag})
+		g.options(options, mdp.Options, internal.MethodOptionsTag)
 	}
-
-	g.path.ascend(len(sourcePath))
-	g.path.resetPath()
 }
 
-func (g *generator) options(v ir.MessageValue, target proto.Message, sourcePath []int32) {
+func (g *generator) options(v ir.MessageValue, target proto.Message, sourcePathElement int32) {
 	target.ProtoReflect().SetUnknown(v.Marshal(nil, nil))
-	g.messageValueSourceCodeInfo(v, sourcePath)
+	g.messageValueSourceCodeInfo(v, sourcePathElement)
 }
 
-func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue, sourcePath []int32) {
+func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue, sourcePath ...int32) {
 	for field := range v.Fields() {
 		var optionSpanIndex int32
 		for optionSpan := range seq.Values(field.OptionSpans()) {
@@ -871,40 +764,54 @@ func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue, sourcePath []i
 			}
 
 			if messageField := field.AsMessage(); !messageField.IsZero() {
-				g.messageValueSourceCodeInfo(messageField, append(sourcePath, field.Field().Number()))
+				g.messageValueSourceCodeInfo(messageField, append(sourcePath, field.Field().Number())...)
 				continue
 			}
 
-			// HACK: For each optionSpan, check around it for the option keyword and semicolon.
-			// If the non-skippable token directly before this optionSpan is the option keyword,
-			// and the non-skippable token directly after the optionSpan is the semicolon, we
-			// include both tokens as part of the span.
-			// We also check the option keyword token and semicolon tokens for comments.
 			span := optionSpan.Span()
+			// For declarations with bodies, e.g. messages, enums, services, methods, files,
+			// leading and trailing comments are attributed on the option declarations based on
+			// the option keyword and semicolon, respectively, e.g.
+			//
+			// message Foo {
+			//   // Leading comment for the following option declaration, (a) = 10.
+			//   option (a) = 10;
+			//   option (b) = 20; // Trailing comment for the option declaration (b) = 20.
+			// }
+			//
+			// However, the optionSpan in the IR does not capture the keyword and semicolon
+			// tokens. In addition to the comments, the span including the option keyword and
+			// semicolon is needed for the source location.
+			//
+			// So this hack checks the non-skippable token directly before and after the
+			// optionSpan for the option keyword and semicolon tokens respectively.
+			//
+			// For declarations with compact options, e.g. fields, enum values, there are no
+			// comments attributed to the option spans, e.g.
+			//
+			// message Foo {
+			//   string name = 1 [
+			//     // This is dropped.
+			//     (c) = 15, // This is also dropped.
+			//   ]
+			// }
+			//
 			var checkCommentTokens []token.ID
 			keyword, semicolon := g.optionKeywordAndSemicolon(span)
 			if !keyword.IsZero() && !semicolon.IsZero() {
 				checkCommentTokens = []token.ID{keyword.ID(), semicolon.ID()}
-				span = source.Span{
-					File:  span.File,
-					Start: keyword.Span().Start,
-					End:   semicolon.Span().End,
-				}
+				span = source.Between(keyword.Span(), semicolon.Span())
 			}
 
 			if field.Field().IsRepeated() {
-				g.addSourceLocation(
-					span,
-					append(sourcePath, field.Field().Number(), optionSpanIndex),
-					checkCommentTokens,
-				)
+				reset := g.path.with(append(sourcePath, field.Field().Number(), optionSpanIndex)...)
+				g.addSourceLocation(span, checkCommentTokens...)
+				reset()
 				optionSpanIndex++
 			} else {
-				g.addSourceLocation(
-					span,
-					append(sourcePath, field.Field().Number()),
-					checkCommentTokens,
-				)
+				reset := g.path.with(append(sourcePath, field.Field().Number())...)
+				g.addSourceLocation(span, checkCommentTokens...)
+				reset()
 			}
 		}
 	}
@@ -930,11 +837,9 @@ func (g *generator) optionKeywordAndSemicolon(optionSpan source.Span) (token.Tok
 }
 
 func (g *generator) rangeSourceCodeInfo(rangeAST ast.ExprAny, baseTag, startTag, endTag, index int32) {
-	g.addSourceLocation(
-		rangeAST.Span(),
-		[]int32{baseTag, index},
-		nil, // Comments are only attached to the top-level declaration source code info
-	)
+	reset := g.path.with(baseTag, index)
+	defer reset()
+	g.addSourceLocation(rangeAST.Span())
 
 	var startSpan, endSpan source.Span
 	switch rangeAST.Kind() {
@@ -948,83 +853,45 @@ func (g *generator) rangeSourceCodeInfo(rangeAST ast.ExprAny, baseTag, startTag,
 	}
 
 	if startTag != 0 {
-		g.addSourceLocation(
-			startSpan,
-			[]int32{baseTag, index, startTag},
-			nil, // Comments are only attached to the top-level declaration source code info
-		)
+		reset := g.path.with(startTag)
+		g.addSourceLocation(startSpan)
+		reset()
 	}
 
 	if endTag != 0 {
-		g.addSourceLocation(
-			endSpan,
-			[]int32{baseTag, index, endTag},
-			nil, // Comments are only attached to the top-level declaration source code info
-		)
+		reset := g.path.with(endTag)
+		g.addSourceLocation(endSpan)
+		reset()
 	}
 }
 
 // addSourceLocation adds the source code info location based on the current path tracked
-// by the [generator].
-func (g *generator) addSourceLocation(
-	span source.Span,
-	pathElements []int32,
-	checkForComments []token.ID,
-) {
-	if g.sourceCodeInfo != nil && !span.IsZero() {
-		location := new(descriptorpb.SourceCodeInfo_Location)
-		g.sourceCodeInfo.Location = append(g.sourceCodeInfo.Location, location)
+// by the [generator]. It also checks the given token IDs for comments.
+func (g *generator) addSourceLocation(span source.Span, checkForComments ...token.ID) {
+	if g.sourceCodeInfo == nil || span.IsZero() {
+		return
+	}
 
-		location.Span = locationSpan(span)
-		g.path.appendElements(pathElements...)
-		location.Path = internal.ClonePath(g.path.path)
-		g.path.resetPath()
+	location := new(descriptorpb.SourceCodeInfo_Location)
+	g.sourceCodeInfo.Location = append(g.sourceCodeInfo.Location, location)
 
-		stringify := func(tokens []token.Token) string {
-			var str string
-			for _, t := range tokens {
-				text := t.Text()
-				if t.Kind() == token.Comment {
-					switch {
-					case strings.HasPrefix(text, "//"):
-						// For line comments, the leading "//" needs to be trimmed off.
-						str += strings.TrimPrefix(text, "//")
-					case strings.HasPrefix(text, "/*"):
-						// For block comments, we iterate through each line and trim the leading "/*",
-						// "*", and "*/".
-						for _, line := range strings.SplitAfter(text, "\n") {
-							switch {
-							case strings.HasPrefix(line, "/*"):
-								str += strings.TrimPrefix(line, "/*")
-							case strings.HasPrefix(strings.TrimSpace(line), "*"):
-								// We check the line with all spaces trimmed because of leading whitespace.
-								str += strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
-							case strings.HasSuffix(line, "*/"):
-								str += strings.TrimSuffix(line, "*/")
-							}
-						}
-					}
-				} else {
-					str += text
-				}
-			}
-			return str
+	location.Span = locationSpan(span)
+	location.Path = g.path.clone()
+
+	// Comments are merged across the provided [token.ID]s.
+	for _, id := range checkForComments {
+		comments, ok := g.commentTracker.attributed[id]
+		if !ok {
+			continue
 		}
-
-		// Comments are merged across the provided [token.ID]s.
-		for _, id := range checkForComments {
-			comments, ok := g.commentTracker.donated[id]
-			if ok {
-				if leadingComments := stringify(comments.leading); leadingComments != "" {
-					location.LeadingComments = addr(leadingComments)
-				}
-				if trailingComments := stringify(comments.trailing); trailingComments != "" {
-					location.TrailingComments = addr(trailingComments)
-				}
-				for _, paragraph := range comments.detached {
-					location.LeadingDetachedComments = append(location.LeadingDetachedComments, stringify(paragraph))
-				}
-			}
+		if leadingComment := comments.leadingComment(); leadingComment != "" {
+			location.LeadingComments = addr(leadingComment)
+		}
+		if trailingComment := comments.trailingComment(); trailingComment != "" {
+			location.TrailingComments = addr(trailingComment)
+		}
+		if detachedComments := comments.detachedComments(); len(detachedComments) > 0 {
+			location.LeadingDetachedComments = detachedComments
 		}
 	}
 }
