@@ -89,9 +89,8 @@ func (p *printer) printToken(tok token.Token) {
 		p.push(dom.Text(tok.Text()))
 	} else {
 		// For original tokens, flush whitespace from cursor to this token.
-		// We track the span of skippable tokens and emit them as a single text block
-		// because the DOM merges consecutive whitespace tokens, which would lose
-		// multiple newlines if emitted separately.
+		// We only emit the whitespace immediately preceding the target token.
+		// Any whitespace before skipped (deleted) content is discarded.
 		if p.cursor != nil {
 			targetSpan := tok.Span()
 			wsStart, wsEnd := -1, -1
@@ -105,6 +104,10 @@ func (p *printer) printToken(tok token.Token) {
 						wsStart = span.Start
 					}
 					wsEnd = span.End
+				} else {
+					// Hit a non-skippable token that we're skipping over.
+					// Discard accumulated whitespace - it belongs to the skipped content.
+					wsStart, wsEnd = -1, -1
 				}
 			}
 			if wsStart >= 0 {
@@ -139,7 +142,9 @@ func (p *printer) applySyntheticGap(current token.Token) {
 	// After opening BRACE (body context): newline
 	// Check BOTH leaf (LBrace) and fused (Braces) forms
 	if lastKw == keyword.LBrace || lastKw == keyword.Braces {
-		p.push(dom.Text("\n"))
+		if !(currentKw == keyword.RBrace || currentKw == keyword.Braces) {
+			p.push(dom.Text("\n"))
+		}
 		return
 	}
 	// Tight gaps: no space around dots
@@ -174,6 +179,8 @@ func (p *printer) applySyntheticGap(current token.Token) {
 // flushSkippableUntil emits all whitespace/comments from the cursor up to the target token.
 // This does NOT advance the cursor past the target - used for fused brackets where we
 // need to handle the cursor specially.
+// Only emits whitespace immediately preceding the target; whitespace before skipped content
+// is discarded.
 func (p *printer) flushSkippableUntil(target token.Token) {
 	if p.cursor == nil || target.IsSynthetic() {
 		return
@@ -191,6 +198,10 @@ func (p *printer) flushSkippableUntil(target token.Token) {
 				wsStart = span.Start
 			}
 			wsEnd = span.End
+		} else {
+			// Hit a non-skippable token that we're skipping over.
+			// Discard accumulated whitespace - it belongs to the skipped content.
+			wsStart, wsEnd = -1, -1
 		}
 	}
 	if wsStart >= 0 {
@@ -230,7 +241,8 @@ func (p *printer) newline() {
 }
 
 // flushRemaining emits any remaining skippable tokens from the cursor.
-// Uses span-based approach to preserve multiple consecutive newlines.
+// Only emits trailing whitespace after the last printed content.
+// Whitespace before any remaining non-skippable (unprinted) content is discarded.
 func (p *printer) flushRemaining() {
 	if p.cursor == nil {
 		return
@@ -244,6 +256,10 @@ func (p *printer) flushRemaining() {
 				wsStart = span.Start
 			}
 			wsEnd = span.End
+		} else {
+			// Hit a non-skippable token that we're not printing.
+			// Discard accumulated whitespace - it belongs to unprinted content.
+			wsStart, wsEnd = -1, -1
 		}
 	}
 	if wsStart >= 0 {
@@ -280,6 +296,10 @@ func (p *printer) emitOpen(open token.Token) {
 
 // emitClose prints a close token and advances the parent cursor.
 func (p *printer) emitClose(closeToken token.Token, openToken token.Token) {
+	// For synthetic close tokens, apply gap logic (e.g., newline after last semicolon)
+	if closeToken.IsSynthetic() {
+		p.applySyntheticGap(closeToken)
+	}
 	p.push(dom.Text(closeToken.Text()))
 	p.lastTok = closeToken
 	// Advance parent cursor past the whole fused pair

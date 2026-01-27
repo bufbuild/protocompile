@@ -1,0 +1,40 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test multiple complex edits: add message, add fields, add options.
+
+source: |
+  syntax = "proto3";
+  package test;
+  message Existing {
+    string name = 1;
+  }
+
+edits:
+  - kind: add_message
+    name: NewMessage
+  - kind: add_field
+    target: NewMessage
+    name: id
+    type: int64
+    tag: "1"
+  - kind: add_field
+    target: NewMessage
+    name: data
+    type: bytes
+    tag: "2"
+  - kind: add_option
+    target: NewMessage
+    option: deprecated
+    value: "true"

@@ -227,13 +227,16 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	decls := body.Decls()
 	if decls.Len() > 0 {
+		var child *printer
 		p.push(dom.Indent(p.opts.Indent, func(push dom.Sink) {
-			child := p.childWithCursor(push, braces, openTok)
+			child = p.childWithCursor(push, braces, openTok)
 			for d := range seq.Values(decls) {
 				child.printDecl(d)
 			}
 			child.flushRemaining()
 		}))
+		// Propagate child's lastTok to parent for proper gap handling on close
+		p.lastTok = child.lastTok
 	}
 
 	p.emitClose(closeTok, openTok)

@@ -1,0 +1,10 @@
+syntax = "proto3";
+package test;
+// First comment.
+message First {
+  string name = 1;
+}
+// Third comment.
+message Third {
+  bool flag = 1;
+}

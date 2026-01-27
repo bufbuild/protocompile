@@ -1,0 +1,6 @@
+syntax = "proto3";
+package test;
+message M {
+  string name = 1;
+  bool active = 3;
+}
