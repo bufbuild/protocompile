@@ -1,6 +1,0 @@
-syntax = "proto3";
-package test;
-message M {
-  string name = 1;
-  int32 age = 2;
-}

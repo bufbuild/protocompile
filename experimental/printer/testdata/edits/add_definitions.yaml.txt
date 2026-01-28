@@ -1,0 +1,19 @@
+syntax = "proto3";
+package test;
+message Outer {
+  string name = 1;
+  message Inner {}
+  int32 age = 2;
+}
+message Request {
+  string query = 1;
+}
+message Response {
+  string result = 1;
+}
+message NewMessage {}
+enum Status {
+  UNKNOWN = 0;
+  ACTIVE = 1;
+}
+service MyService {}

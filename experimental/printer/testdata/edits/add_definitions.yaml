@@ -12,18 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test adding a new service.
+# Tests for adding new definitions:
+# - Add top-level message
+# - Add nested message inside existing message
+# - Add field to existing message
+# - Add enum with values
+# - Add service
 
 source: |
   syntax = "proto3";
   package test;
-  message Request {
+  message Outer {
     string name = 1;
+  }
+  message Request {
+    string query = 1;
   }
   message Response {
     string result = 1;
   }
 
 edits:
+  # Add a new top-level message
+  - kind: add_message
+    name: NewMessage
+  # Add a nested message inside Outer
+  - kind: add_message
+    target: Outer
+    name: Inner
+  # Add a field to Outer
+  - kind: add_field
+    target: Outer
+    name: age
+    type: int32
+    tag: "2"
+  # Add an enum with values
+  - kind: add_enum
+    name: Status
+  - kind: add_enum_value
+    target: Status
+    name: UNKNOWN
+    tag: "0"
+  - kind: add_enum_value
+    target: Status
+    name: ACTIVE
+    tag: "1"
+  # Add a service
   - kind: add_service
     name: MyService

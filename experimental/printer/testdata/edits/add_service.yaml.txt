@@ -1,9 +1,0 @@
-syntax = "proto3";
-package test;
-message Request {
-  string name = 1;
-}
-message Response {
-  string result = 1;
-}
-service MyService {}

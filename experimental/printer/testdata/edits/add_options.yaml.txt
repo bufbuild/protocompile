@@ -1,0 +1,25 @@
+syntax = "proto3";
+package test;
+message Simple {
+  option deprecated = true;
+  string name = 1 [deprecated = true];
+  int32 age = 2 [deprecated = true];
+}
+message WithExisting {
+  option deprecated = true;
+  option map_entry = true;
+  string value = 1;
+}
+message Outer {
+  option deprecated = true;
+  string outer_field = 1;
+  message Inner {
+    option deprecated = true;
+    string inner_field = 1;
+  }
+}
+enum Status {
+  UNKNOWN = 0;
+  ACTIVE = 1;
+  INACTIVE = 2 [deprecated = true];
+}

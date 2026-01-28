@@ -1,8 +1,0 @@
-syntax = "proto3";
-package test;
-
-message Foo {
-  string name = 1;
-}
-
-// This EOF comment should be preserved

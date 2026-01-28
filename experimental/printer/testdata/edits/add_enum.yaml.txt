@@ -1,9 +1,0 @@
-syntax = "proto3";
-package test;
-message M {
-  string name = 1;
-}
-enum Status {
-  UNKNOWN = 0;
-  ACTIVE = 1;
-}

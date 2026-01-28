@@ -1,7 +1,0 @@
-syntax = "proto3";
-package test;
-message M {
-  option deprecated = true;
-  option map_entry = true;
-  string name = 1;
-}

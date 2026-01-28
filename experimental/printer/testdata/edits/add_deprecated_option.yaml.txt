@@ -1,6 +1,0 @@
-syntax = "proto3";
-package test;
-message M {
-  option deprecated = true;
-  string name = 1;
-}
