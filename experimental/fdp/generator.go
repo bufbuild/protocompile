@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -35,7 +34,6 @@ import (
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type generator struct {
@@ -84,13 +82,12 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	}
 
 	fdp.Package = addr(string(file.Package()))
-	reset := g.path.with(internal.FilePackageTag)
-	g.addSourceLocation(
+	g.addSourceLocationWithSourcePathElements(
 		file.AST().Package().Span(),
+		[]int32{internal.FilePackageTag},
 		file.AST().Package().KeywordToken().ID(),
 		file.AST().Package().Semicolon().ID(),
 	)
-	reset()
 
 	if file.Syntax().IsEdition() {
 		fdp.Syntax = addr("editions")
@@ -98,15 +95,14 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	} else {
 		fdp.Syntax = addr(file.Syntax().String())
 	}
-	// According to descriptor.proto and protoc behavior, the path is always set to [12] for
-	// both syntax and editions.
-	reset = g.path.with(internal.FileSyntaxTag)
-	g.addSourceLocation(
+	g.addSourceLocationWithSourcePathElements(
 		file.AST().Syntax().Span(),
+		// According to descriptor.proto and protoc behavior, the path is always set to [12]
+		// for both syntax and editions.
+		[]int32{internal.FileSyntaxTag},
 		file.AST().Syntax().KeywordToken().ID(),
 		file.AST().Syntax().Semicolon().ID(),
 	)
-	reset()
 
 	if g.sourceCodeInfoExtn != nil {
 		g.sourceCodeInfoExtn.IsSyntaxUnspecified = file.AST().Syntax().IsZero()
@@ -122,22 +118,22 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	var publicDepIndex, weakDepIndex int32
 	for i, imp := range imports {
 		fdp.Dependency = append(fdp.Dependency, imp.Path())
-		reset := g.path.with(internal.FileDependencyTag, int32(i))
-		g.addSourceLocation(
+		g.addSourceLocationWithSourcePathElements(
 			imp.Decl.Span(),
+			[]int32{internal.FileDependencyTag, int32(i)},
 			imp.Decl.KeywordToken().ID(),
 			imp.Decl.Semicolon().ID(),
 		)
-		reset()
 
 		if imp.Public {
 			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
 			_, public := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
 				return t.Keyword() == keyword.Public
 			})
-			reset := g.path.with(internal.FilePublicDependencyTag, publicDepIndex)
-			g.addSourceLocation(public.Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(
+				public.Span(),
+				[]int32{internal.FilePublicDependencyTag, publicDepIndex},
+			)
 			publicDepIndex++
 		}
 		if imp.Weak {
@@ -145,9 +141,10 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 			_, weak := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
 				return t.Keyword() == keyword.Weak
 			})
-			reset := g.path.with(internal.FileWeakDependencyTag, weakDepIndex)
-			g.addSourceLocation(weak.Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(
+				weak.Span(),
+				[]int32{internal.FileWeakDependencyTag, weakDepIndex},
+			)
 		}
 
 		if g.sourceCodeInfoExtn != nil && !imp.Used {
@@ -179,13 +176,12 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 
 	var extnIndex int32
 	for extend := range seq.Values(file.Extends()) {
-		reset := g.path.with(internal.FileExtensionsTag)
-		g.addSourceLocation(
+		g.addSourceLocationWithSourcePathElements(
 			extend.AST().Span(),
+			[]int32{internal.FileExtensionsTag},
 			extend.AST().KeywordToken().ID(),
 			extend.AST().Body().Braces().ID(),
 		)
-		reset()
 
 		for extn := range seq.Values(extend.Extensions()) {
 			fd := new(descriptorpb.FieldDescriptorProto)
@@ -197,9 +193,7 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 
 	if options := file.Options(); !iterx.Empty(options.Fields()) {
 		for option := range file.AST().Options() {
-			reset := g.path.with(internal.FileOptionsTag)
-			g.addSourceLocation(option.Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(option.Span(), []int32{internal.FileOptionsTag})
 		}
 
 		fdp.Options = new(descriptorpb.FileOptions)
@@ -222,16 +216,14 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 }
 
 func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourcePath ...int32) {
-	topLevelReset := g.path.with(sourcePath...)
-	defer topLevelReset()
+	reset := g.path.with(sourcePath...)
+	defer reset()
 
 	messageAST := ty.AST().AsMessage()
 	g.addSourceLocation(messageAST.Span(), messageAST.Keyword.ID(), messageAST.Body.Braces().ID())
 
 	mdp.Name = addr(ty.Name())
-	reset := g.path.with(internal.MessageNameTag)
-	g.addSourceLocation(messageAST.Name.Span())
-	reset()
+	g.addSourceLocationWithSourcePathElements(messageAST.Name.Span(), []int32{internal.MessageNameTag})
 
 	for i, field := range seq.All(ty.Members()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
@@ -241,13 +233,12 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 
 	var extnIndex int32
 	for extend := range seq.Values(ty.Extends()) {
-		reset := g.path.with(internal.MessageExtensionsTag)
-		g.addSourceLocation(
+		g.addSourceLocationWithSourcePathElements(
 			extend.AST().Span(),
+			[]int32{internal.MessageExtensionsTag},
 			extend.AST().KeywordToken().ID(),
 			extend.AST().Body().Braces().ID(),
 		)
-		reset()
 
 		for extn := range seq.Values(extend.Extensions()) {
 			fd := new(descriptorpb.FieldDescriptorProto)
@@ -281,13 +272,12 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		er.Start = addr(start)
 		er.End = addr(end + 1) // Exclusive.
 
-		reset := g.path.with(internal.MessageExtensionRangesTag)
-		g.addSourceLocation(
+		g.addSourceLocationWithSourcePathElements(
 			extensions.DeclAST().Span(),
+			[]int32{internal.MessageExtensionRangesTag},
 			extensions.DeclAST().KeywordToken().ID(),
 			extensions.DeclAST().Semicolon().ID(),
 		)
-		reset()
 
 		g.rangeSourceCodeInfo(
 			extensions.AST(),
@@ -298,9 +288,10 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		)
 
 		if options := extensions.Options(); !iterx.Empty(options.Fields()) {
-			reset := g.path.with(internal.ExtensionRangeOptionsTag)
-			g.addSourceLocation(extensions.DeclAST().Options().Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(
+				extensions.DeclAST().Options().Span(),
+				[]int32{internal.ExtensionRangeOptionsTag},
+			)
 
 			er.Options = new(descriptorpb.ExtensionRangeOptions)
 			g.options(options, er.Options, internal.ExtensionRangeOptionsTag)
@@ -310,13 +301,12 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	var topLevelSourceLocation bool
 	for i, reserved := range seq.All(ty.ReservedRanges()) {
 		if !topLevelSourceLocation {
-			reset := g.path.with(internal.MessageReservedRangesTag)
-			g.addSourceLocation(
+			g.addSourceLocationWithSourcePathElements(
 				reserved.DeclAST().Span(),
+				[]int32{internal.MessageReservedRangesTag},
 				reserved.DeclAST().KeywordToken().ID(),
 				reserved.DeclAST().Semicolon().ID(),
 			)
-			reset()
 			topLevelSourceLocation = true
 		}
 
@@ -339,20 +329,20 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	topLevelSourceLocation = false
 	for i, name := range seq.All(ty.ReservedNames()) {
 		if !topLevelSourceLocation {
-			reset := g.path.with(internal.MessageReservedNamesTag)
-			g.addSourceLocation(
+			g.addSourceLocationWithSourcePathElements(
 				name.DeclAST().Span(),
+				[]int32{internal.MessageReservedNamesTag},
 				name.DeclAST().KeywordToken().ID(),
 				name.DeclAST().Semicolon().ID(),
 			)
-			reset()
 			topLevelSourceLocation = true
 		}
 
 		mdp.ReservedName = append(mdp.ReservedName, name.Name())
-		reset := g.path.with(internal.MessageReservedNamesTag, int32(i))
-		g.addSourceLocation(name.AST().Span())
-		reset()
+		g.addSourceLocationWithSourcePathElements(
+			name.AST().Span(),
+			[]int32{internal.MessageReservedNamesTag, int32(i)},
+		)
 	}
 
 	for i, oneof := range seq.All(ty.Oneofs()) {
@@ -383,9 +373,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		for option := range messageAST.Body.Options() {
-			reset := g.path.with(internal.MessageOptionsTag)
-			g.addSourceLocation(option.Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(option.Span(), []int32{internal.MessageOptionsTag})
 		}
 
 		mdp.Options = new(descriptorpb.MessageOptions)
@@ -393,43 +381,18 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	}
 }
 
-var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
-	predeclared.Int32:  descriptorpb.FieldDescriptorProto_TYPE_INT32,
-	predeclared.Int64:  descriptorpb.FieldDescriptorProto_TYPE_INT64,
-	predeclared.UInt32: descriptorpb.FieldDescriptorProto_TYPE_UINT32,
-	predeclared.UInt64: descriptorpb.FieldDescriptorProto_TYPE_UINT64,
-	predeclared.SInt32: descriptorpb.FieldDescriptorProto_TYPE_SINT32,
-	predeclared.SInt64: descriptorpb.FieldDescriptorProto_TYPE_SINT64,
-
-	predeclared.Fixed32:  descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
-	predeclared.Fixed64:  descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
-	predeclared.SFixed32: descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
-	predeclared.SFixed64: descriptorpb.FieldDescriptorProto_TYPE_SFIXED64,
-
-	predeclared.Float32: descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
-	predeclared.Float64: descriptorpb.FieldDescriptorProto_TYPE_DOUBLE,
-
-	predeclared.Bool:   descriptorpb.FieldDescriptorProto_TYPE_BOOL,
-	predeclared.String: descriptorpb.FieldDescriptorProto_TYPE_STRING,
-	predeclared.Bytes:  descriptorpb.FieldDescriptorProto_TYPE_BYTES,
-}
-
 func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, sourcePath ...int32) {
-	topLevelReset := g.path.with(sourcePath...)
-	defer topLevelReset()
+	reset := g.path.with(sourcePath...)
+	defer reset()
 
 	fieldAST := f.AST().AsField()
 	g.addSourceLocation(fieldAST.Span(), token.ID(fieldAST.Type.ID()), fieldAST.Semicolon.ID())
 
 	fdp.Name = addr(f.Name())
-	reset := g.path.with(internal.FieldNameTag)
-	g.addSourceLocation(fieldAST.Name.Span())
-	reset()
+	g.addSourceLocationWithSourcePathElements(fieldAST.Name.Span(), []int32{internal.FieldNameTag})
 
 	fdp.Number = addr(f.Number())
-	reset = g.path.with(internal.FieldNumberTag)
-	g.addSourceLocation(fieldAST.Tag.Span())
-	reset()
+	g.addSourceLocationWithSourcePathElements(fieldAST.Tag.Span(), []int32{internal.FieldNumberTag})
 
 	switch f.Presence() {
 	case presence.Explicit, presence.Implicit, presence.Shared:
@@ -444,14 +407,15 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	// AST allows for arbitrary nesting of prefixes, so the API returns an iterator, but
 	// [descriptorpb.FieldDescriptorProto] expects a single label.
 	for prefix := range fieldAST.Type.Prefixes() {
-		reset := g.path.with(internal.FieldLabelTag)
-		g.addSourceLocation(prefix.PrefixToken().Span())
-		reset()
+		g.addSourceLocationWithSourcePathElements(
+			prefix.PrefixToken().Span(),
+			[]int32{internal.FieldLabelTag},
+		)
 	}
 
 	fieldTypeSourcePathElement := internal.FieldTypeNameTag
 	if ty := f.Element(); !ty.IsZero() {
-		if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
+		if kind := ty.Predeclared().FDPType(); kind != 0 {
 			fdp.Type = kind.Enum()
 			fieldTypeSourcePathElement = internal.FieldTypeTag
 		} else {
@@ -466,15 +430,17 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 			}
 		}
 	}
-	reset = g.path.with(int32(fieldTypeSourcePathElement))
-	g.addSourceLocation(fieldAST.Type.RemovePrefixes().Span())
-	reset()
+	g.addSourceLocationWithSourcePathElements(
+		fieldAST.Type.RemovePrefixes().Span(),
+		[]int32{int32(fieldTypeSourcePathElement)},
+	)
 
 	if f.IsExtension() && f.Container().FullName() != "" {
 		fdp.Extendee = addr(string(f.Container().FullName().ToAbsolute()))
-		reset := g.path.with(internal.FieldExtendeeTag)
-		g.addSourceLocation(f.Extend().AST().Name().Span())
-		reset()
+		g.addSourceLocationWithSourcePathElements(
+			f.Extend().AST().Name().Span(),
+			[]int32{internal.FieldExtendeeTag},
+		)
 	}
 
 	if oneof := f.Oneof(); !oneof.IsZero() {
@@ -482,9 +448,10 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	}
 
 	if options := f.Options(); !iterx.Empty(options.Fields()) {
-		reset := g.path.with(internal.FieldOptionsTag)
-		g.addSourceLocation(fieldAST.Options.Span())
-		reset()
+		g.addSourceLocationWithSourcePathElements(
+			fieldAST.Options.Span(),
+			[]int32{internal.FieldOptionsTag},
+		)
 
 		fdp.Options = new(descriptorpb.FieldOptions)
 		g.options(options, fdp.Options, internal.FieldOptionsTag)
@@ -863,6 +830,19 @@ func (g *generator) rangeSourceCodeInfo(rangeAST ast.ExprAny, baseTag, startTag,
 		g.addSourceLocation(endSpan)
 		reset()
 	}
+}
+
+// addSourceLocationWithSourcePathElements is a helper that adds a new source location for
+// the given span, source path elements, and comment tokens, then resets the path immediately.
+func (g *generator) addSourceLocationWithSourcePathElements(
+	span source.Span,
+	sourcePathElements []int32,
+	checkForComments ...token.ID,
+) {
+	reset := g.path.with(sourcePathElements...)
+	defer reset()
+
+	g.addSourceLocation(span, checkForComments...)
 }
 
 // addSourceLocation adds the source code info location based on the current path tracked

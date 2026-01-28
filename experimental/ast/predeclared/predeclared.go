@@ -26,7 +26,10 @@ import (
 	"fmt"
 	"iter"
 
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Name is one of the built-in Protobuf names. These represent particular
@@ -63,6 +66,29 @@ const (
 	Float64 = Double
 )
 
+// predeclaredToFDPType maps the scalar predeclared [Name]s to their respective
+// [descriptorpb.FieldDescriptorProto_Type].
+var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
+	Int32:  descriptorpb.FieldDescriptorProto_TYPE_INT32,
+	Int64:  descriptorpb.FieldDescriptorProto_TYPE_INT64,
+	UInt32: descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+	UInt64: descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+	SInt32: descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+	SInt64: descriptorpb.FieldDescriptorProto_TYPE_SINT64,
+
+	Fixed32:  descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
+	Fixed64:  descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
+	SFixed32: descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
+	SFixed64: descriptorpb.FieldDescriptorProto_TYPE_SFIXED64,
+
+	Float32: descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
+	Float64: descriptorpb.FieldDescriptorProto_TYPE_DOUBLE,
+
+	Bool:   descriptorpb.FieldDescriptorProto_TYPE_BOOL,
+	String: descriptorpb.FieldDescriptorProto_TYPE_STRING,
+	Bytes:  descriptorpb.FieldDescriptorProto_TYPE_BYTES,
+}
+
 // FromKeyword performs a vast from a [keyword.Keyword], but also validates
 // that it is in-range. If it isn't, returns [Unknown].
 func FromKeyword(kw keyword.Keyword) Name {
@@ -87,6 +113,13 @@ func (n Name) GoString() string {
 		return fmt.Sprintf("predeclared.Name(%d)", int(n))
 	}
 	return keyword.Keyword(n).GoString()
+}
+
+// FDPType returns the [descriptorpb.FieldDescriptorProto_Type] for the predeclared name,
+// if it is a scalar type. Otherwise, it returns 0.
+func (n Name) FDPType() descriptorpb.FieldDescriptorProto_Type {
+	kind, _ := slicesx.Get(predeclaredToFDPType, n)
+	return kind
 }
 
 // InRange returns whether this name value is within the range of declared
