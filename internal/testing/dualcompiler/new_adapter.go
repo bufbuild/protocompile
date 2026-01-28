@@ -24,6 +24,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -33,9 +34,10 @@ import (
 
 // newCompilerAdapter wraps the experimental incremental compiler.
 type newCompilerAdapter struct {
-	executor *incremental.Executor
-	opener   source.Opener
-	session  *ir.Session
+	executor              *incremental.Executor
+	opener                source.Opener
+	session               *ir.Session
+	includeSourceCodeInfo bool
 }
 
 // NewNewCompiler creates a new CompilerInterface wrapping the experimental compiler.
@@ -58,10 +60,16 @@ func NewNewCompiler(opts ...CompilerOption) CompilerInterface {
 		opener = source.WKTs()
 	}
 
+	var includeSourceCodeInfo bool
+	if config.sourceInfoMode != 0 {
+		includeSourceCodeInfo = true
+	}
+
 	return &newCompilerAdapter{
-		executor: incremental.New(),
-		opener:   opener,
-		session:  &ir.Session{},
+		executor:              incremental.New(),
+		opener:                opener,
+		session:               &ir.Session{},
+		includeSourceCodeInfo: includeSourceCodeInfo,
 	}
 }
 
@@ -105,13 +113,15 @@ func (a *newCompilerAdapter) Compile(ctx context.Context, files ...string) (Comp
 	}
 
 	return &newCompilationResult{
-		files: irFiles,
+		files:                 irFiles,
+		includeSourceCodeInfo: a.includeSourceCodeInfo,
 	}, nil
 }
 
 // newCompilationResult wraps IR files.
 type newCompilationResult struct {
-	files []*ir.File
+	files                 []*ir.File
+	includeSourceCodeInfo bool
 }
 
 // Files implements CompilationResult.
@@ -119,7 +129,8 @@ func (r *newCompilationResult) Files() []CompiledFile {
 	result := make([]CompiledFile, len(r.files))
 	for i, file := range r.files {
 		result[i] = &newCompiledFile{
-			file: file,
+			file:                  file,
+			includeSourceCodeInfo: r.includeSourceCodeInfo,
 		}
 	}
 	return result
@@ -127,7 +138,8 @@ func (r *newCompilationResult) Files() []CompiledFile {
 
 // newCompiledFile wraps an ir.File.
 type newCompiledFile struct {
-	file *ir.File
+	file                  *ir.File
+	includeSourceCodeInfo bool
 }
 
 // Path implements CompiledFile.
@@ -149,7 +161,10 @@ func (f *newCompiledFile) FileDescriptor() (protoreflect.FileDescriptor, error) 
 
 // FileDescriptorProto implements CompiledFile.
 func (f *newCompiledFile) FileDescriptorProto() (*descriptorpb.FileDescriptorProto, error) {
-	data, err := ir.DescriptorProtoBytes(f.file)
+	data, err := fdp.DescriptorProtoBytes(
+		f.file,
+		fdp.IncludeSourceCodeInfo(f.includeSourceCodeInfo),
+	)
 	if err != nil {
 		return nil, err
 	}

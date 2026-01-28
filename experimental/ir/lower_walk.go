@@ -194,6 +194,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 				ty.Raw().reservedNames = append(ty.Raw().reservedNames, rawReservedName{
 					ast:  v,
 					name: ty.Context().session.intern.Intern(name),
+					decl: rangeDecl.ID(),
 				})
 				continue
 			}

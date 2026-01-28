@@ -716,6 +716,7 @@ type ReservedName struct {
 type rawReservedName struct {
 	ast  ast.ExprAny
 	name intern.ID
+	decl id.ID[ast.DeclRange]
 }
 
 // AST returns the expression that this name was evaluated from, if known.
@@ -724,6 +725,16 @@ func (r ReservedName) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 	return r.raw.ast
+}
+
+// DeclAST returns the declaration this name came from. Multiple names may
+// have the same declaration.
+func (r ReservedName) DeclAST() ast.DeclRange {
+	if r.IsZero() {
+		return ast.DeclRange{}
+	}
+
+	return id.Wrap(r.Context().AST(), r.raw.decl)
 }
 
 // Name returns the name (i.e., an identifier) that was reserved.

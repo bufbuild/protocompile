@@ -149,7 +149,10 @@ func generateSourceInfoForFile(opts OptionIndex, sci *sourceCodeInfo, file *ast.
 		sci.newLocWithComments(file.Syntax, append(path, internal.FileSyntaxTag))
 	}
 	if file.Edition != nil {
-		sci.newLocWithComments(file.Edition, append(path, internal.FileEditionTag))
+		// Despite editions having its own field, protoc behavior sets the path in source code
+		// info as [internal.FileSyntaxTag] and this is vaguely outlined in descriptor.proto
+		// https://github.com/protocolbuffers/protobuf/blob/22e1e6bd90aa8dc35f8cc28b5d7fc03858060f0b/src/google/protobuf/descriptor.proto#L137-L144
+		sci.newLocWithComments(file.Edition, append(path, internal.FileSyntaxTag))
 	}
 
 	var depIndex, pubDepIndex, weakDepIndex, optIndex, msgIndex, enumIndex, extendIndex, svcIndex int32
@@ -379,6 +382,16 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 				resPath = append(resPath, internal.MessageReservedNamesTag)
 				sci.newLocWithComments(child, resPath)
 				for _, rn := range child.Names {
+					sci.newLoc(rn, append(resPath, reservedNameIndex))
+					reservedNameIndex++
+				}
+			}
+			// For editions, reserved names are identifiers.
+			if len(child.Identifiers) > 0 {
+				resPath := path
+				resPath = append(resPath, internal.MessageReservedNamesTag)
+				sci.newLocWithComments(child, resPath)
+				for _, rn := range child.Identifiers {
 					sci.newLoc(rn, append(resPath, reservedNameIndex))
 					reservedNameIndex++
 				}
