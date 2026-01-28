@@ -15,6 +15,8 @@
 package printer
 
 import (
+	"strings"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -88,32 +90,9 @@ func (p *printer) printToken(tok token.Token) {
 		p.applySyntheticGap(tok)
 		p.push(dom.Text(tok.Text()))
 	} else {
-		// For original tokens, flush whitespace from cursor to this token.
-		// We only emit the whitespace immediately preceding the target token.
-		// Any whitespace before skipped (deleted) content is discarded.
+		// For original tokens, flush whitespace/comments from cursor to this token.
+		p.flushSkippableUntil(tok)
 		if p.cursor != nil {
-			targetSpan := tok.Span()
-			wsStart, wsEnd := -1, -1
-			for skipped := range p.cursor.RestSkippable() {
-				if !skipped.IsSynthetic() && skipped.Span().Start >= targetSpan.Start {
-					break
-				}
-				if skipped.Kind().IsSkippable() {
-					span := skipped.Span()
-					if wsStart < 0 {
-						wsStart = span.Start
-					}
-					wsEnd = span.End
-				} else {
-					// Hit a non-skippable token that we're skipping over.
-					// Discard accumulated whitespace - it belongs to the skipped content.
-					wsStart, wsEnd = -1, -1
-				}
-			}
-			if wsStart >= 0 {
-				wsSpan := source.Span{File: p.cursor.Context().File, Start: wsStart, End: wsEnd}
-				p.push(dom.Text(wsSpan.Text()))
-			}
 			// Advance cursor past the semantic token we're about to print
 			p.cursor.NextSkippable()
 		}
@@ -176,38 +155,80 @@ func (p *printer) applySyntheticGap(current token.Token) {
 	p.push(dom.Text(" "))
 }
 
-// flushSkippableUntil emits all whitespace/comments from the cursor up to the target token.
-// This does NOT advance the cursor past the target - used for fused brackets where we
-// need to handle the cursor specially.
-// Only emits whitespace immediately preceding the target; whitespace before skipped content
-// is discarded.
+// flushSkippableUntil emits whitespace/comments from the cursor up to target.
+// Pass token.Zero to flush all remaining tokens.
+//
+// When encountering deleted content (non-skippable tokens before target):
+//   - Detached comments (preceded by blank line) are preserved
+//   - Attached comments (no blank line before deleted content) are discarded
+//   - Trailing comments (same line as deleted content) are discarded
 func (p *printer) flushSkippableUntil(target token.Token) {
-	if p.cursor == nil || target.IsSynthetic() {
+	if p.cursor == nil {
 		return
 	}
 
-	targetSpan := target.Span()
-	wsStart, wsEnd := -1, -1
-	for skipped := range p.cursor.RestSkippable() {
-		if !skipped.IsSynthetic() && skipped.Span().Start >= targetSpan.Start {
+	stopAt := -1
+	if !target.IsZero() && !target.IsSynthetic() {
+		stopAt = target.Span().Start
+	}
+
+	spanStart, spanEnd := -1, -1 // Accumulated whitespace/comment span
+	afterDeleted := false        // True after deleted content; skip until newline
+
+	for tok := range p.cursor.RestSkippable() {
+		if stopAt >= 0 && !tok.IsSynthetic() && tok.Span().Start >= stopAt {
 			break
 		}
-		if skipped.Kind().IsSkippable() {
-			span := skipped.Span()
-			if wsStart < 0 {
-				wsStart = span.Start
+
+		// Deleted content: flush detached comments, enter skip mode
+		if !tok.Kind().IsSkippable() {
+			if spanStart >= 0 {
+				text := p.spanText(spanStart, spanEnd)
+				if blankIdx := strings.LastIndex(text, "\n\n"); blankIdx >= 0 {
+					// Flush detached content BEFORE the blank line separator.
+					// The spacing will come entirely from whitespace after the deleted content.
+					p.push(dom.Text(text[:blankIdx]))
+				}
 			}
-			wsEnd = span.End
-		} else {
-			// Hit a non-skippable token that we're skipping over.
-			// Discard accumulated whitespace - it belongs to the skipped content.
-			wsStart, wsEnd = -1, -1
+			spanStart, spanEnd = -1, -1
+			afterDeleted = true
+			continue
 		}
+
+		span := tok.Span()
+
+		if afterDeleted {
+			// Skip same-line trailing comment; resume at first newline
+			newlineIdx := strings.Index(span.Text(), "\n")
+			if newlineIdx < 0 {
+				continue
+			}
+			afterDeleted = false
+			spanStart = span.Start + newlineIdx
+			spanEnd = span.End
+			continue
+		}
+
+		// Normal: accumulate span
+		if spanStart < 0 {
+			spanStart = span.Start
+		}
+		spanEnd = span.End
 	}
-	if wsStart >= 0 {
-		wsSpan := source.Span{File: p.cursor.Context().File, Start: wsStart, End: wsEnd}
-		p.push(dom.Text(wsSpan.Text()))
+
+	if spanStart >= 0 {
+		p.push(dom.Text(p.spanText(spanStart, spanEnd)))
 	}
+}
+
+// spanText returns the source text for the given byte range.
+func (p *printer) spanText(start, end int) string {
+	return source.Span{File: p.cursor.Context().File, Start: start, End: end}.Text()
+}
+
+// flushRemaining emits any remaining skippable tokens from the cursor.
+func (p *printer) flushRemaining() {
+	p.flushSkippableUntil(token.Zero)
 }
 
 // printFusedBrackets handles fused bracket pairs (parens, brackets) specially.
@@ -238,34 +259,6 @@ func (p *printer) text(s string) {
 // newline emits a newline character.
 func (p *printer) newline() {
 	p.push(dom.Text("\n"))
-}
-
-// flushRemaining emits any remaining skippable tokens from the cursor.
-// Only emits trailing whitespace after the last printed content.
-// Whitespace before any remaining non-skippable (unprinted) content is discarded.
-func (p *printer) flushRemaining() {
-	if p.cursor == nil {
-		return
-	}
-
-	wsStart, wsEnd := -1, -1
-	for tok := range p.cursor.RestSkippable() {
-		if tok.Kind().IsSkippable() {
-			span := tok.Span()
-			if wsStart < 0 {
-				wsStart = span.Start
-			}
-			wsEnd = span.End
-		} else {
-			// Hit a non-skippable token that we're not printing.
-			// Discard accumulated whitespace - it belongs to unprinted content.
-			wsStart, wsEnd = -1, -1
-		}
-	}
-	if wsStart >= 0 {
-		wsSpan := source.Span{File: p.cursor.Context().File, Start: wsStart, End: wsEnd}
-		p.push(dom.Text(wsSpan.Text()))
-	}
 }
 
 // childWithCursor creates a child printer with a cursor over the fused token's children.
