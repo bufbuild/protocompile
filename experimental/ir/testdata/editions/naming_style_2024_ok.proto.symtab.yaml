@@ -1,0 +1,162 @@
+tables:
+  "testdata/editions/naming_style_2024_ok.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+    - fqn: "buf.test.MyMessage"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
+    - fqn: "buf.test.bad_message_but_ok.nested_message"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 4
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 5
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 1 } } }
+    - fqn: "buf.test.MyEnum"
+      kind: KIND_ENUM
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.bad_enum"
+      kind: KIND_ENUM
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 6
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
+    - fqn: "buf.test.MyMessage.a_field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.MyMessage.Another_Field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.MyMessage.field_v1"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.MyMessage.field_version2"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 4
+      visible: true
+    - fqn: "buf.test.MyMessage.option_a"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 5
+      visible: true
+    - fqn: "buf.test.MyMessage.option_b"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 6
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.BadField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 11
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.field_1"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 12
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok._underscore"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 13
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.opt_a"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 14
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.nested_message.AnyName"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 15
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested.good_field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 16
+      visible: true
+    - fqn: "buf.test.MY_ENUM_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 7
+      visible: true
+    - fqn: "buf.test.MY_ENUM_VALUE_ONE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 8
+      visible: true
+    - fqn: "buf.test.MY_ENUM_VALUE_TWO"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 9
+      visible: true
+    - fqn: "buf.test.MY_ENUM_V1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 10
+      visible: true
+    - fqn: "buf.test.unspecified"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 17
+      visible: true
+    - fqn: "buf.test.valueOne"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 18
+      visible: true
+    - fqn: "buf.test._VALUE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 19
+      visible: true
+    - fqn: "buf.test.MyMessage.my_choice"
+      kind: KIND_ONEOF
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.BadChoice"
+      kind: KIND_ONEOF
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.MyService"
+      kind: 9
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.MyService.GetMessage"
+      kind: 10
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.MyService.ListMessages"
+      kind: 10
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 2
+      visible: true

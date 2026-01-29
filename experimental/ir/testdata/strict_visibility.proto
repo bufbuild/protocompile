@@ -1,0 +1,54 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+edition = "2024";
+package buf.test;
+
+option features.default_symbol_visibility = STRICT;
+
+export message Complete {
+    export message M {}
+    export enum E { Z = 0; }
+    reserved 1 to max;
+}
+
+export message Complete2 {
+    export message M {}
+    export enum E { Z = 0; }
+    reserved 1 to 536870911;
+}
+
+export message Split {
+    export message M {}
+    export enum E { Z = 0; } 
+    reserved 1 to 5, 6 to max;
+}
+
+export message Incomplete1 {
+    export message M {}
+    export enum E { Z = 0; } 
+    reserved 1 to 5;
+}
+
+export message Incomplete2 {
+    export message M {}
+    export enum E { Z = 0; } 
+    reserved 6 to max;
+}
+
+export message Incomplete3 {
+    export message M {}
+    export enum E { Z = 0; } 
+    reserved 1 to 5, 6 to 10;
+}

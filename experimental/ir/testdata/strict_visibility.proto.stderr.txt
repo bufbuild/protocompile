@@ -1,0 +1,215 @@
+error: nested message type marked as exported
+  --> testdata/strict_visibility.proto:21:5
+   |
+20 | / export message Complete {
+21 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+22 | |     export enum E { Z = 0; }
+23 | |     reserved 1 to max;
+24 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nested message types cannot be marked as exported,
+           even if all the field numbers of its parent are reserved
+
+error: nested message type marked as exported
+  --> testdata/strict_visibility.proto:27:5
+   |
+26 | / export message Complete2 {
+27 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+28 | |     export enum E { Z = 0; }
+29 | |     reserved 1 to 536870911;
+30 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nested message types cannot be marked as exported,
+           even if all the field numbers of its parent are reserved
+
+error: expected exactly one reserved range
+  --> testdata/strict_visibility.proto:33:5
+   |
+32 | / export message Split {
+33 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+34 | |     export enum E { Z = 0; }
+35 | |     reserved 1 to 5, 6 to max;
+   | |              ------  -------- another here
+   | |               |
+   | |               one here
+36 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type declare `reserved 1 to max;`, even if all of its field
+           numbers are `reserved`
+   = help: protoc erroneously rejects this, despite being equivalent
+
+error: expected exactly one reserved range
+  --> testdata/strict_visibility.proto:34:5
+   |
+32 | / export message Split {
+33 | |     export message M {}
+34 | |     export enum E { Z = 0; }
+   | |     ^^^^^^ nested type exported here
+35 | |     reserved 1 to 5, 6 to max;
+   | |              ------  -------- another here
+   | |               |
+   | |               one here
+36 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type declare `reserved 1 to max;`, even if all of its field
+           numbers are `reserved`
+   = help: protoc erroneously rejects this, despite being equivalent
+
+warning: message type `buf.test.Incomplete1` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:39:5
+   |
+38 | / export message Incomplete1 {
+39 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+40 | |     export enum E { Z = 0; }
+41 | |     reserved 1 to 5;
+42 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 6
+   = help: protoc erroneously accepts this code due to a bug: it only checks
+           that there is exactly one reserved range
+
+warning: message type `buf.test.Incomplete1` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:40:5
+   |
+38 | / export message Incomplete1 {
+39 | |     export message M {}
+40 | |     export enum E { Z = 0; }
+   | |     ^^^^^^ nested type exported here
+41 | |     reserved 1 to 5;
+42 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 6
+   = help: protoc erroneously accepts this code due to a bug: it only checks
+           that there is exactly one reserved range
+
+warning: message type `buf.test.Incomplete2` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:45:5
+   |
+44 | / export message Incomplete2 {
+45 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+46 | |     export enum E { Z = 0; }
+47 | |     reserved 6 to max;
+48 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 1
+   = help: protoc erroneously accepts this code due to a bug: it only checks
+           that there is exactly one reserved range
+
+warning: message type `buf.test.Incomplete2` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:46:5
+   |
+44 | / export message Incomplete2 {
+45 | |     export message M {}
+46 | |     export enum E { Z = 0; }
+   | |     ^^^^^^ nested type exported here
+47 | |     reserved 6 to max;
+48 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 1
+   = help: protoc erroneously accepts this code due to a bug: it only checks
+           that there is exactly one reserved range
+
+error: message type `buf.test.Incomplete3` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:51:5
+   |
+50 | / export message Incomplete3 {
+51 | |     export message M {}
+   | |     ^^^^^^ nested type exported here
+52 | |     export enum E { Z = 0; }
+53 | |     reserved 1 to 5, 6 to 10;
+54 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 11
+
+error: message type `buf.test.Incomplete3` does not reserve all field numbers
+  --> testdata/strict_visibility.proto:52:5
+   |
+50 | / export message Incomplete3 {
+51 | |     export message M {}
+52 | |     export enum E { Z = 0; }
+   | |     ^^^^^^ nested type exported here
+53 | |     reserved 1 to 5, 6 to 10;
+54 | | }
+   | \_- ... within this type
+   |
+  ::: testdata/strict_visibility.proto:18:45
+   |
+18 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 11
+
+encountered 6 errors and 4 warnings

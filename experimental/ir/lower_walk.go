@@ -166,13 +166,25 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
+	var visibility token.ID
+	for prefix := range def.Type().Prefixes() {
+		switch prefix.Prefix() {
+		case keyword.Local, keyword.Export:
+			visibility = prefix.PrefixToken().ID()
+		default:
+			continue
+		}
+		break
+	}
+
 	ty := id.Wrap(w.File, id.ID[Type](w.arenas.types.NewCompressed(rawType{
 		def:    def.ID(),
 		name:   w.session.intern.Intern(name),
 		fqn:    w.session.intern.Intern(fqn),
 		parent: parentTy.ID(),
 
-		isEnum: def.Keyword() == keyword.Enum,
+		isEnum:     def.Keyword() == keyword.Enum,
+		visibility: visibility,
 	})))
 	ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 

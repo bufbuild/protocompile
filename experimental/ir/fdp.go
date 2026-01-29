@@ -141,12 +141,16 @@ func (dg *descGenerator) file(file *File, fdp *descriptorpb.FileDescriptorProto)
 		return imp.Decl.KeywordToken().Span().Start
 	}))
 	for i, imp := range imports {
-		fdp.Dependency = append(fdp.Dependency, imp.Path())
-		if imp.Public {
-			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
-		}
-		if imp.Weak {
-			fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+		if !imp.Option {
+			fdp.Dependency = append(fdp.Dependency, imp.Path())
+			if imp.Public {
+				fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
+			}
+			if imp.Weak {
+				fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+			}
+		} else if imp.Option {
+			fdp.OptionDependency = append(fdp.OptionDependency, imp.Path())
 		}
 
 		if dg.sourceCodeInfoExtn != nil && !imp.Used {
@@ -273,6 +277,15 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		mdp.Options = new(descriptorpb.MessageOptions)
 		dg.options(options, mdp.Options)
+	}
+
+	switch exported, explicit := ty.IsExported(); {
+	case !explicit:
+		break
+	case exported:
+		mdp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
+	case !exported:
+		mdp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
 	}
 }
 
@@ -401,6 +414,15 @@ func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		edp.Options = new(descriptorpb.EnumOptions)
 		dg.options(options, edp.Options)
+	}
+
+	switch exported, explicit := ty.IsExported(); {
+	case !explicit:
+		break
+	case exported:
+		edp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
+	case !exported:
+		edp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
 	}
 }
 
