@@ -110,6 +110,19 @@ func (d *Diagnostic) Primary() source.Span {
 	return source.Span{}
 }
 
+// NonPrimary returns this diagnostic's non-primary spans, if it has any.
+//
+// If it doesn't have any, it returns nil.
+func (d *Diagnostic) NonPrimary() []source.Span {
+	var nonPrimarySpans []source.Span
+	for _, annotation := range d.snippets {
+		if !annotation.primary {
+			nonPrimarySpans = append(nonPrimarySpans, annotation.Span)
+		}
+	}
+	return nonPrimarySpans
+}
+
 // Level returns this diagnostic's level.
 func (d *Diagnostic) Level() Level {
 	return d.level
