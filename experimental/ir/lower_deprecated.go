@@ -16,6 +16,7 @@ package ir
 
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
 )
@@ -128,5 +129,6 @@ func (e errDeprecated) Diagnose(d *report.Diagnostic) {
 		report.Message("`%s` is deprecated", e.name),
 		report.Snippet(e.ref),
 		report.Snippetf(e.cause, "deprecated here"),
+		report.Tag(tags.Deprecated),
 	)
 }

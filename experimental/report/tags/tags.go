@@ -25,4 +25,7 @@ const (
 	// in the current scope. This may indicate a missing import or a reference
 	// to a non-existent symbol.
 	UnknownSymbol = "protobuf:unknown_symbol"
+
+	// Deprecated is the tag for a diagnostic where a symbol is deprecated.
+	Deprecated = "protobuf:deprecated"
 )
