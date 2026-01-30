@@ -27,7 +27,7 @@ func TestSyntheticNames(t *testing.T) {
 	t.Parallel()
 
 	table := new(intern.Table)
-	names := SyntheticNames(mapsx.Set(
+	names := syntheticNames(mapsx.Set(
 		table.Intern("foo"),
 		table.Intern("bar"),
 		table.Intern("baz"),

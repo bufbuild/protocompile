@@ -352,13 +352,10 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	}
 
 	if g.currentFile.Syntax() == syntax.Proto3 {
-		var names ir.SyntheticNames
-
 		// Only now that we have added all of the normal oneofs do we add the
 		// synthetic oneofs.
 		for i, field := range seq.All(ty.Members()) {
-			if field.Presence() != presence.Explicit ||
-				!field.Oneof().IsZero() {
+			if field.SyntheticOneofName() == "" {
 				continue
 			}
 
@@ -366,7 +363,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 			fdp.Proto3Optional = addr(true)
 			fdp.OneofIndex = addr(int32(len(mdp.OneofDecl)))
 			mdp.OneofDecl = append(mdp.OneofDecl, &descriptorpb.OneofDescriptorProto{
-				Name: addr(names.Generate(field.Name(), ty)),
+				Name: addr(field.SyntheticOneofName()),
 			})
 		}
 	}

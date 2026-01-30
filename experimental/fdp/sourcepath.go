@@ -35,7 +35,7 @@ func (p *path) with(elements ...int32) func() {
 	*p = append(*p, elements...)
 	return func() {
 		if len(*p) > 0 {
-			*p = []int32(*p)[:len(*p)-len(elements)]
+			*p = (*p)[:len(*p)-len(elements)]
 		}
 	}
 }

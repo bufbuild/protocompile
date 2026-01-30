@@ -26,7 +26,7 @@ import (
 
 // Set of all names that are defined in scope of some message; used for
 // generating synthetic names.
-type SyntheticNames intern.Set
+type syntheticNames intern.Set
 
 // generate generates a new synthetic name, according to the rules for synthetic
 // oneofs.
@@ -43,7 +43,7 @@ type SyntheticNames intern.Set
 // For example, the candidate "foo" will have the sequence of potential
 // synthetic names: "_foo" -> "X_foo" -> "XX_foo" -> ...; notably, "_foo" also
 // has the same sequence of synthetic names.
-func (sn *SyntheticNames) Generate(candidate string, message Type) string {
+func (sn *syntheticNames) generate(candidate string, message Type) string {
 	if *sn == nil {
 		// The elements within a message that contribute names scoped to that
 		// message are:
@@ -79,7 +79,7 @@ func (sn *SyntheticNames) Generate(candidate string, message Type) string {
 // the string.
 //
 // it is outlined so that it can be tested separately.
-func (sn *SyntheticNames) generateIn(candidate string, table *intern.Table) string {
+func (sn *syntheticNames) generateIn(candidate string, table *intern.Table) string {
 	// The _ prefix is unconditional, but only if candidate does not already
 	// start with one.
 	if !strings.HasPrefix(candidate, "_") {
