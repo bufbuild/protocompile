@@ -630,3 +630,31 @@ func deleteFromDecls(decls seq.Inserter[ast.DeclAny], name string) error {
 	}
 	return fmt.Errorf("declaration %q not found", name)
 }
+
+// TestFormat tests the printer against bufformat golden files.
+// These tests verify that our printer produces output matching the
+// canonical buf format style.
+func TestFormat(t *testing.T) {
+	t.Parallel()
+
+	corpus := golden.Corpus{
+		Root:       "testdata/format",
+		Extensions: []string{"proto"},
+		Outputs: []golden.Output{
+			{Extension: "golden"},
+		},
+	}
+
+	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
+		// Parse the source
+		errs := &report.Report{}
+		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
+		for diagnostic := range errs.Diagnostics {
+			t.Logf("parse error: %v", diagnostic)
+		}
+
+		// Print the file
+		opts := printer.Options{}
+		outputs[0] = printer.PrintFile(file, opts)
+	})
+}
