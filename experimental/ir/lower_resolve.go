@@ -44,8 +44,8 @@ func resolveNames(file *File, r *report.Report) {
 
 				// For proto3 sources, we need to resolve the synthetic oneof names for fields with
 				// explicit optional presence. See the docs for [Member.SyntheticOneofName] for details.
-				if file.syntax == syntax.Proto3 {
-					if field.Presence() != presence.Explicit || !field.Oneof().IsZero() {
+				if file.syntax == syntax.Proto3 && field.Presence() == presence.Explicit {
+					if !field.Oneof().IsZero() {
 						continue
 					}
 					field.Raw().syntheticOneofName = file.session.intern.Intern(
