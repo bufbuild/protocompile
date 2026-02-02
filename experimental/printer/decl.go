@@ -237,6 +237,10 @@ func (p *printer) printBody(body ast.DeclBody) {
 		}))
 		// Propagate child's lastTok to parent for proper gap handling on close
 		p.lastTok = child.lastTok
+	} else {
+		// Empty body - still need to flush whitespace between braces (e.g., "{ }")
+		child := p.childWithCursor(p.push, braces, openTok)
+		child.flushRemaining()
 	}
 
 	p.emitClose(closeTok, openTok)

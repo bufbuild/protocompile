@@ -262,14 +262,21 @@ func findEnumValueDef(file *ast.File, targetPath string) ast.DeclDef {
 	return ast.DeclDef{}
 }
 
-// addOptionToMessage adds an option declaration to a message.
+// addOptionToMessage adds an option declaration to a message or method.
 func addOptionToMessage(file *ast.File, targetPath, optionName, optionValue string) error {
 	stream := file.Stream()
 	nodes := file.Nodes()
 
-	msgBody := findMessageBody(file, targetPath)
-	if msgBody.IsZero() {
-		return fmt.Errorf("message %q not found", targetPath)
+	// Try finding a message body first
+	body := findMessageBody(file, targetPath)
+
+	// If not found, try finding a method body (Service.Method pattern)
+	if body.IsZero() {
+		body = findOrCreateMethodBody(file, targetPath)
+	}
+
+	if body.IsZero() {
+		return fmt.Errorf("message or method %q not found", targetPath)
 	}
 
 	// Create the option declaration
@@ -277,8 +284,8 @@ func addOptionToMessage(file *ast.File, targetPath, optionName, optionValue stri
 
 	// Find the right position to insert (after existing options, before fields)
 	insertPos := 0
-	for i := range msgBody.Decls().Len() {
-		decl := msgBody.Decls().At(i)
+	for i := range body.Decls().Len() {
+		decl := body.Decls().At(i)
 		def := decl.AsDef()
 		if def.IsZero() {
 			continue
@@ -289,8 +296,51 @@ func addOptionToMessage(file *ast.File, targetPath, optionName, optionValue stri
 			break
 		}
 	}
-	msgBody.Decls().Insert(insertPos, optionDecl.AsAny())
+	body.Decls().Insert(insertPos, optionDecl.AsAny())
 	return nil
+}
+
+// findOrCreateMethodBody finds a method and returns its body, creating one if needed.
+func findOrCreateMethodBody(file *ast.File, targetPath string) ast.DeclBody {
+	parts := strings.Split(targetPath, ".")
+	if len(parts) != 2 {
+		return ast.DeclBody{}
+	}
+	serviceName, methodName := parts[0], parts[1]
+
+	for decl := range seq.Values(file.Decls()) {
+		def := decl.AsDef()
+		if def.IsZero() || def.Classify() != ast.DefKindService {
+			continue
+		}
+		if def.Name().AsIdent().Text() != serviceName {
+			continue
+		}
+
+		svcBody := def.Body()
+		for i := range svcBody.Decls().Len() {
+			methodDecl := svcBody.Decls().At(i).AsDef()
+			if methodDecl.IsZero() || methodDecl.Classify() != ast.DefKindMethod {
+				continue
+			}
+			if methodDecl.Name().AsIdent().Text() != methodName {
+				continue
+			}
+
+			// Found the method - get or create body
+			if methodDecl.Body().IsZero() {
+				stream := file.Stream()
+				nodes := file.Nodes()
+				openBrace := stream.NewPunct(keyword.LBrace.String())
+				closeBrace := stream.NewPunct(keyword.RBrace.String())
+				stream.NewFused(openBrace, closeBrace)
+				body := nodes.NewDeclBody(openBrace)
+				methodDecl.SetBody(body)
+			}
+			return methodDecl.Body()
+		}
+	}
+	return ast.DeclBody{}
 }
 
 // addCompactOption adds a compact option to a field or enum value.
@@ -345,8 +395,14 @@ func addCompactOptionToDef(stream *token.Stream, nodes *ast.Nodes, def ast.DeclD
 		Equals: equals,
 		Value:  optionValueExpr.AsAny(),
 	}
-	seq.Append(options.Entries(), opt)
 
+	entries := options.Entries()
+	if entries.Len() > 0 && entries.Comma(entries.Len()-1).IsZero() {
+		// Add a comma after the last existing entry (only if it doesn't already have one)
+		comma := stream.NewPunct(keyword.Comma.String())
+		entries.SetComma(entries.Len()-1, comma)
+	}
+	seq.Append(entries, opt)
 	return nil
 }
 

@@ -21,5 +21,13 @@ message Outer {
 enum Status {
   UNKNOWN = 0;
   ACTIVE = 1;
-  INACTIVE = 2 [deprecated = true];
+  INACTIVE = 2 [debug_redact = true, deprecated = true];
+}
+message MultiLineOptions {
+  string field = 1 [
+    debug_redact = true, deprecated = true
+  ];
+}
+message TrailingComma {
+  string field = 1 [debug_redact = true, deprecated = true];
 }

@@ -102,6 +102,42 @@ func (p *printer) printToken(tok token.Token) {
 	p.lastTok = tok
 }
 
+// isOpenBracket returns true if tok is an open bracket (including fused tokens).
+func isOpenBracket(tok token.Token) bool {
+	kw := tok.Keyword()
+	if !kw.IsBrackets() {
+		return false
+	}
+	left, _, joined := kw.Brackets()
+	if kw == left {
+		return true // Leaf open bracket (LParen, LBracket, LBrace, Lt)
+	}
+	if kw == joined {
+		// Fused bracket - check if this is the open end by comparing IDs
+		open, _ := tok.StartEnd()
+		return tok.ID() == open.ID()
+	}
+	return false
+}
+
+// isCloseBracket returns true if tok is a close bracket (including fused tokens).
+func isCloseBracket(tok token.Token) bool {
+	kw := tok.Keyword()
+	if !kw.IsBrackets() {
+		return false
+	}
+	_, right, joined := kw.Brackets()
+	if kw == right {
+		return true // Leaf close bracket (RParen, RBracket, RBrace, Gt)
+	}
+	if kw == joined {
+		// Fused bracket - check if this is the close end by comparing IDs
+		_, close := tok.StartEnd()
+		return tok.ID() == close.ID()
+	}
+	return false
+}
+
 // applySyntheticGap emits appropriate spacing before a synthetic token
 // based on what was previously printed.
 func (p *printer) applySyntheticGap(current token.Token) {
@@ -112,45 +148,58 @@ func (p *printer) applySyntheticGap(current token.Token) {
 	lastKw := p.lastTok.Keyword()
 	currentKw := current.Keyword()
 
+	// Classify last token
+	lastIsOpenBrace := lastKw == keyword.LBrace || (lastKw == keyword.Braces && isOpenBracket(p.lastTok))
+	lastIsCloseBrace := lastKw == keyword.RBrace || (lastKw == keyword.Braces && isCloseBracket(p.lastTok))
+	lastIsOpenParen := isOpenBracket(p.lastTok) && (lastKw == keyword.LParen || lastKw == keyword.Parens)
+	lastIsOpenBracket := isOpenBracket(p.lastTok) && (lastKw == keyword.LBracket || lastKw == keyword.Brackets)
+	lastIsOpenAngle := isOpenBracket(p.lastTok) && (lastKw == keyword.Lt || lastKw == keyword.Angles)
+	lastIsSemi := lastKw == keyword.Semi
+	lastIsDot := lastKw == keyword.Dot
+
+	// Classify current token
+	currentIsCloseBrace := isCloseBracket(current) && (currentKw == keyword.RBrace || currentKw == keyword.Braces)
+	currentIsCloseParen := isCloseBracket(current) && (currentKw == keyword.RParen || currentKw == keyword.Parens)
+	currentIsCloseBracket := isCloseBracket(current) && (currentKw == keyword.RBracket || currentKw == keyword.Brackets)
+	currentIsCloseAngle := isCloseBracket(current) && (currentKw == keyword.Gt || currentKw == keyword.Angles)
+	currentIsSemi := currentKw == keyword.Semi
+	currentIsComma := currentKw == keyword.Comma
+	currentIsDot := currentKw == keyword.Dot
+
 	// After semicolon or closing brace: newline needed
-	if lastKw == keyword.Semi || lastKw == keyword.RBrace {
+	if lastIsSemi || lastIsCloseBrace {
 		p.push(dom.Text("\n"))
 		return
 	}
 
-	// After opening BRACE (body context): newline
-	// Check BOTH leaf (LBrace) and fused (Braces) forms
-	if lastKw == keyword.LBrace || lastKw == keyword.Braces {
-		if !(currentKw == keyword.RBrace || currentKw == keyword.Braces) {
+	// After opening BRACE (body context): newline (unless immediately followed by close)
+	if lastIsOpenBrace {
+		if !currentIsCloseBrace {
 			p.push(dom.Text("\n"))
 		}
 		return
 	}
+
 	// Tight gaps: no space around dots
-	if currentKw == keyword.Dot || lastKw == keyword.Dot {
+	if currentIsDot || lastIsDot {
 		return
 	}
+
 	// Before punctuation: no space (semicolons, commas)
-	if currentKw == keyword.Semi || currentKw == keyword.Comma {
+	if currentIsSemi || currentIsComma {
 		return
 	}
-	// After open paren/bracket (inline context): no space
-	// Check BOTH leaf and fused forms
-	if lastKw == keyword.LParen || lastKw == keyword.Parens ||
-		lastKw == keyword.LBracket || lastKw == keyword.Brackets {
+
+	// After open paren/bracket/angle (inline context): no space
+	if lastIsOpenParen || lastIsOpenBracket || lastIsOpenAngle {
 		return
 	}
-	// Before close paren/bracket/brace: no space
-	// Check both leaf keywords and text (for fused tokens which return the fused keyword)
-	if currentKw == keyword.RParen || currentKw == keyword.RBracket || currentKw == keyword.RBrace {
+
+	// Before close paren/bracket/brace/angle: no space
+	if currentIsCloseParen || currentIsCloseBracket || currentIsCloseBrace || currentIsCloseAngle {
 		return
 	}
-	// For fused close tokens, Keyword() returns the fused form (e.g., Brackets instead of RBracket)
-	// So also check by text
-	currentText := current.Text()
-	if currentText == ")" || currentText == "]" || currentText == "}" {
-		return
-	}
+
 	// Default: space between tokens
 	p.push(dom.Text(" "))
 }
@@ -289,8 +338,11 @@ func (p *printer) emitOpen(open token.Token) {
 
 // emitClose prints a close token and advances the parent cursor.
 func (p *printer) emitClose(closeToken token.Token, openToken token.Token) {
-	// For synthetic close tokens, apply gap logic (e.g., newline after last semicolon)
-	if closeToken.IsSynthetic() {
+	// Apply gap logic when:
+	// 1. The close token is synthetic, OR
+	// 2. The close token is non-synthetic but follows synthetic content
+	//    (e.g., original `{}` with inserted content needs newline before `}`)
+	if closeToken.IsSynthetic() || p.lastTok.IsSynthetic() {
 		p.applySyntheticGap(closeToken)
 	}
 	p.push(dom.Text(closeToken.Text()))

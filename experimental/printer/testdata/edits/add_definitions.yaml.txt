@@ -11,6 +11,11 @@ message Request {
 message Response {
   string result = 1;
 }
+service ExistingService {
+  rpc Get(Request) returns (Response) {
+    option deprecated = true;
+  }
+}
 message NewMessage {}
 enum Status {
   UNKNOWN = 0;

@@ -31,6 +31,9 @@ source: |
   message Response {
     string result = 1;
   }
+  service ExistingService {
+    rpc Get(Request) returns (Response);
+  }
 
 edits:
   # Add a new top-level message
@@ -60,3 +63,8 @@ edits:
   # Add a service
   - kind: add_service
     name: MyService
+  # Add an option to an existing method (also tests spacing before synthetic {)
+  - kind: add_option
+    target: ExistingService.Get
+    option: deprecated
+    value: "true"
