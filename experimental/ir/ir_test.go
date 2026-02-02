@@ -353,13 +353,14 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 			}
 
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
-				Fqn:      string(sym.FullName()),
-				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
-				File:     sym.Context().Path(),
-				Index:    uint32(sym.RawData()),
-				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(file),
-				Options:  new(optionWalker).message(options),
-				Features: dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
+				Fqn:        string(sym.FullName()),
+				Kind:       compilerpb.Symbol_Kind(sym.Kind()),
+				File:       sym.Context().Path(),
+				Index:      uint32(sym.RawData()),
+				Visible:    sym.Kind() != ir.SymbolKindPackage && sym.Visible(file, false),
+				OptionOnly: sym.Kind() != ir.SymbolKindPackage && !sym.Visible(file, true) && sym.Visible(file, true),
+				Options:    new(optionWalker).message(options),
+				Features:   dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,

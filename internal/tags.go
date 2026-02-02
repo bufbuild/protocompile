@@ -76,6 +76,9 @@ const (
 	// FileWeakDependencyTag is the tag number of the weak dependency element
 	// in a file descriptor proto.
 	FileWeakDependencyTag = 11
+	// FileOptionDependencyTag is the tag number of the option dependency element
+	// in a file descriptor proto.
+	FileOptionDependencyTag = 15
 	// FileSyntaxTag is the tag number of the syntax element in a file
 	// descriptor proto.
 	FileSyntaxTag = 12

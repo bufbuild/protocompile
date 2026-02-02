@@ -115,35 +115,44 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 		return imp.Decl.KeywordToken().Span().Start
 	}))
 
-	var publicDepIndex, weakDepIndex int32
+	var publicDepIndex, weakDepIndex, optionDepIndex int32
 	for i, imp := range imports {
-		fdp.Dependency = append(fdp.Dependency, imp.Path())
-		g.addSourceLocationWithSourcePathElements(
-			imp.Decl.Span(),
-			[]int32{internal.FileDependencyTag, int32(i)},
-			imp.Decl.KeywordToken().ID(),
-			imp.Decl.Semicolon().ID(),
-		)
-
-		if imp.Public {
-			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
-			_, public := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
-				return t.Keyword() == keyword.Public
-			})
+		if !imp.Option {
+			fdp.Dependency = append(fdp.Dependency, imp.Path())
 			g.addSourceLocationWithSourcePathElements(
-				public.Span(),
-				[]int32{internal.FilePublicDependencyTag, publicDepIndex},
+				imp.Decl.Span(),
+				[]int32{internal.FileDependencyTag, int32(i)},
+				imp.Decl.KeywordToken().ID(),
+				imp.Decl.Semicolon().ID(),
 			)
-			publicDepIndex++
-		}
-		if imp.Weak {
-			fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
-			_, weak := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
-				return t.Keyword() == keyword.Weak
-			})
+			if imp.Public {
+				fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
+				_, public := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
+					return t.Keyword() == keyword.Public
+				})
+				g.addSourceLocationWithSourcePathElements(
+					public.Span(),
+					[]int32{internal.FilePublicDependencyTag, publicDepIndex},
+				)
+				publicDepIndex++
+			}
+			if imp.Weak {
+				fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+				_, weak := iterx.Find(seq.Values(imp.Decl.ModifierTokens()), func(t token.Token) bool {
+					return t.Keyword() == keyword.Weak
+				})
+				g.addSourceLocationWithSourcePathElements(
+					weak.Span(),
+					[]int32{internal.FileWeakDependencyTag, weakDepIndex},
+				)
+			}
+		} else if imp.Option {
+			fdp.OptionDependency = append(fdp.OptionDependency, imp.Path())
 			g.addSourceLocationWithSourcePathElements(
-				weak.Span(),
-				[]int32{internal.FileWeakDependencyTag, weakDepIndex},
+				imp.Decl.Span(),
+				[]int32{internal.FileOptionDependencyTag, optionDepIndex},
+				imp.Decl.KeywordToken().ID(),
+				imp.Decl.Semicolon().ID(),
 			)
 		}
 
@@ -376,6 +385,16 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		mdp.Options = new(descriptorpb.MessageOptions)
 		g.options(options, mdp.Options, internal.MessageOptionsTag)
 	}
+
+	switch exported, explicit := ty.IsExported(); {
+	case !explicit:
+		break
+	case exported:
+		mdp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
+	case !exported:
+		mdp.Visibility =
+			descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
+	}
 }
 
 func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, sourcePath ...int32) {
@@ -580,6 +599,16 @@ func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto, sour
 
 		edp.Options = new(descriptorpb.EnumOptions)
 		g.options(options, edp.Options, internal.EnumOptionsTag)
+	}
+
+	switch exported, explicit := ty.IsExported(); {
+	case !explicit:
+		break
+	case exported:
+		edp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
+	case !exported:
+		edp.Visibility =
+			descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
 	}
 }
 

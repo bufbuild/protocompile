@@ -7,7 +7,7 @@ warning: `b` is deprecated in Edition 2023
 23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                 ^
    = help: deprecated since Edition 2023
-   = help: deprecated: This is a bad feature. Don't use it.
+   = help: this is a bad feature; don't use it
 
 error: `c` is not supported in Edition 2023
   --> testdata/editions/lifetime.proto:23:42

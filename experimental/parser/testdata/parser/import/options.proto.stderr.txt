@@ -4,11 +4,16 @@ error: import cannot specify compact options
 19 | import "foo.proto" [(not.allowed) = "here"];
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
-warning: `import weak` is deprecated
-  --> testdata/parser/import/options.proto:20:1
+warning: `import weak` is deprecated in "proto2"
+  --> testdata/parser/import/options.proto:20:8
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+19 | import "foo.proto" [(not.allowed) = "here"];
 20 | import weak "weak.proto" [(not.allowed) = "here"];
-   | ^^^^^^^^^^^
+   |        ^^^^
+   = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 

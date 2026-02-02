@@ -1,0 +1,62 @@
+tables:
+  "main.proto":
+    imports:
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "option.proto", visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main.proto" }
+    - fqn: "buf.test.Bar"
+      kind: KIND_MESSAGE
+      file: "main.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.e": { message.fields: { "x": { i32: 1 } } }
+    - fqn: "buf.test.Bar.y"
+      kind: KIND_FIELD
+      file: "main.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_FIELD
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.e"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 2
+  "main2.proto":
+    imports:
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "option.proto", visible: true }
+    - { path: "public.proto", visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main2.proto" }
+    - fqn: "buf.test.Bar"
+      kind: KIND_MESSAGE
+      file: "main2.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.e": { message.fields: { "x": { i32: 1 } } }
+    - fqn: "buf.test.Bar.y"
+      kind: KIND_FIELD
+      file: "main2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_FIELD
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.e"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 2

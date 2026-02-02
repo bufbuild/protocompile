@@ -1,0 +1,18 @@
+error: `java_multiple_files` is not supported in Edition 2024
+  --> testdata/options/validate/java_multiple_files_2024.proto:19:8
+   |
+15 | edition = "2024";
+   |           ------ edition specified here
+...
+19 | option java_multiple_files = true;
+   |        ^^^^^^^^^^^^^^^^^^^
+  help: replace with `features.(pb.java).nest_in_file_class`
+   |
+19 | - option java_multiple_files = true;
+19 | + option features.(pb.java).nest_in_file_class = YES;
+   |
+   = help: deprecated since Edition 2023, removed in Edition 2024
+   = help: `java_multiple_files` has been replaced with
+           `features.(pb.java).nest_in_file_class`
+
+encountered 1 error

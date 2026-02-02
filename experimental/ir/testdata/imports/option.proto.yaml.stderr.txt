@@ -1,0 +1,28 @@
+error: `Foo` is only imported for use in options
+  --> main.proto:8:3
+   |
+ 4 | import option "option.proto";
+   | ----------------------------- imported as `option` here
+...
+ 7 |   option (e).x = 1;
+ 8 |   Foo y = 2;
+   |   ^^^ requires non-`option` import
+   |
+  help: delete `option`
+   |
+ 4 | - import option "option.proto";
+ 4 | + import "option.proto";
+   |
+
+warning: unused import "public.proto"
+  --> main2.proto:4:8
+   |
+ 4 | import "public.proto";
+   |        ^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "public.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 1 error and 1 warning

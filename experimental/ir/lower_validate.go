@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -35,6 +36,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -64,9 +66,11 @@ func diagnoseUnusedImports(f *File, r *report.Report) {
 // whole IR being constructed properly.
 func validateConstraints(f *File, r *report.Report) {
 	validateFileOptions(f, r)
+	validateNamingStyle(f, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
 		validateReservedNames(ty, r)
+		validateVisibility(ty, r)
 		switch {
 		case ty.IsEnum():
 			validateEnum(ty, r)
@@ -194,6 +198,24 @@ func validateFileOptions(f *File, r *report.Report) {
 			report.Snippet(javaUTF8.KeyAST()),
 			javaUTF8.suggestEdit("features.(pb.java).utf8_validation", want, "replace with `features.(pb.java).utf8_validation`"),
 		)
+	}
+
+	javaMultipleFiles := f.Options().Field(builtins.JavaMultipleFiles)
+	if !javaMultipleFiles.IsZero() && f.Syntax() >= syntax.Edition2024 {
+		want := "YES"
+		if b, _ := javaMultipleFiles.AsBool(); !b {
+			want = "NO"
+		}
+
+		r.Error(erredition.TooNew{
+			Current:       f.Syntax(),
+			Decl:          f.AST().Syntax(),
+			Deprecated:    syntax.Edition2023,
+			Removed:       syntax.Edition2024,
+			RemovedReason: "`java_multiple_files` has been replaced with `features.(pb.java).nest_in_file_class`",
+			What:          javaMultipleFiles.Field().Name(),
+			Where:         javaMultipleFiles.KeyAST(),
+		}).Apply(javaMultipleFiles.suggestEdit("features.(pb.java).nest_in_file_class", want, "replace with `features.(pb.java).nest_in_file_class`"))
 	}
 
 	optimize := f.Options().Field(builtins.OptimizeFor)
@@ -752,12 +774,13 @@ func validatePacked(m Member, r *report.Report) {
 			if !packed {
 				want = "EXPANDED"
 			}
-			r.Error(errEditionTooNew{
-				file:    m.Context(),
-				removed: syntax.Edition2023,
+			r.Error(erredition.TooNew{
+				Current: m.Context().Syntax(),
+				Decl:    m.Context().AST().Syntax(),
+				Removed: syntax.Edition2023,
 
-				what:  option.Field().Name(),
-				where: option.KeyAST(),
+				What:  option.Field().Name(),
+				Where: option.KeyAST(),
 			}).Apply(option.suggestEdit(
 				builtins.FeaturePacked.Name(), want,
 				"replace with `%s`", builtins.FeaturePacked.Name(),
@@ -870,13 +893,14 @@ func validateCType(m Member, r *report.Report) {
 	is2023 := f.Syntax() == syntax.Edition2023
 	switch {
 	case f.Syntax() > syntax.Edition2023:
-		r.Error(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Error(erredition.TooNew{
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
@@ -892,7 +916,7 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
@@ -902,17 +926,18 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case is2023:
-		r.Warn(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Warn(erredition.TooNew{
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
@@ -1038,6 +1063,362 @@ func validateUTF8Values(v Value, r *report.Report) {
 			}
 		}
 	}
+}
+
+func validateVisibility(ty Type, r *report.Report) {
+	key := ty.Context().builtins().FeatureVisibility
+	if key.IsZero() {
+		return
+	}
+	feature := ty.FeatureSet().Lookup(key)
+	value, _ := feature.Value().AsInt()
+	strict := value == 4 // STRICT
+	var impliedExport bool
+	switch value {
+	case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+		impliedExport = true
+	case 2: // EXPORT_TOP_LEVEL
+		impliedExport = ty.Parent().IsZero()
+	case 3, 4: // LOCAL_ALL, STRICT
+		impliedExport = false
+	}
+
+	var why source.Span
+	if feature.IsDefault() {
+		why = ty.Context().AST().Syntax().Value().Span()
+	} else {
+		why = feature.Value().ValueAST().Span()
+	}
+
+	vis := id.Wrap(ty.AST().Context().Stream(), ty.Raw().visibility)
+	export := vis.Keyword() == keyword.Export
+	if !ty.Raw().visibility.IsZero() && export == impliedExport {
+		r.Warnf("redundant visibility modifier").Apply(
+			report.Snippetf(vis, "specified here"),
+			report.PageBreak,
+			report.Snippetf(why, "this implies it"),
+		)
+	}
+
+	if !strict || !export { // STRICT
+		return
+	}
+
+	// STRICT requires that we check two things:
+	//
+	// 1. Nested types are not explicitly exported.
+	// 2. Unless they are nested within a message that reserves all of its
+	//    field numbers.
+	parent := ty.Parent()
+	if ty.Parent().IsZero() {
+		return
+	}
+
+	start, end := parent.AbsoluteRange()
+
+	// Find any gaps in the reserved ranges.
+	gap := start
+	ranges := slices.Collect(seq.Values(parent.ReservedRanges()))
+	if len(ranges) > 0 {
+		slices.SortFunc(ranges, cmpx.Join(
+			cmpx.Key(func(r ReservedRange) int32 {
+				start, _ := r.Range()
+				return start
+			}),
+			cmpx.Key(func(r ReservedRange) int32 {
+				start, end := r.Range()
+				return end - start
+			}),
+		))
+
+		// Skip all ranges whose end is less than start.
+		for len(ranges) > 0 {
+			_, end := ranges[0].Range()
+			if end >= start {
+				break
+			}
+			ranges = ranges[1:]
+		}
+
+		for _, rr := range ranges {
+			a, b := rr.Range()
+			if gap < a {
+				// We're done, gap is not reserved.
+				break
+			}
+			gap = b + 1
+		}
+	}
+
+	if end <= gap {
+		// If there are multiple reserved ranges, protoc rejects this, because it
+		// doesn't do the same sophisticated interval sorting we do.
+		switch {
+		case parent.ReservedRanges().Len() != 1:
+			d := r.Errorf("expected exactly one reserved range").Apply(
+				report.Snippetf(vis, "nested type exported here"),
+				report.Snippetf(parent.AST(), "... within this type"),
+			)
+			ranges := parent.ReservedRanges()
+			if ranges.Len() > 0 {
+				d.Apply(
+					report.Snippetf(ranges.At(0).AST(), "one here"),
+					report.Snippetf(ranges.At(1).AST(), "another here"),
+				)
+			}
+			//nolint:dupword
+			d.Apply(
+				report.PageBreak,
+				report.Snippetf(why, "`STRICT` specified here"),
+				report.Helpf("in strict mode, nesting an exported type within another type "+
+					"requires that that type declare `reserved 1 to max;`, even if all of its field "+
+					"numbers are `reserved`"),
+				report.Helpf("protoc erroneously rejects this, despite being equivalent"),
+			)
+		case ty.IsMessage():
+			r.Errorf("nested message type marked as exported").Apply(
+				report.Snippetf(vis, "nested type exported here"),
+				report.Snippetf(parent.AST(), "... within this type"),
+				report.PageBreak,
+				report.Snippetf(why, "`STRICT` specified here"),
+				report.Helpf("in strict mode, nested message types cannot be marked as "+
+					"exported, even if all the field numbers of its parent are reserved"),
+			)
+		}
+
+		return
+	}
+
+	// If this is true, the protoc check is bugged and we emit a warning...
+	bugged := parent.ReservedRanges().Len() == 1
+	//nolint:dupword
+	d := r.SoftErrorf(!bugged, "%s `%s` does not reserve all field numbers", parent.noun(), parent.FullName()).Apply(
+		report.Snippetf(vis, "nested type exported here"),
+		report.Snippetf(parent.AST(), "... within this type"),
+		report.PageBreak,
+		report.Snippetf(why, "`STRICT` specified here"),
+		report.Helpf("in strict mode, nesting an exported type within another type "+
+			`requires that that type reserve every field number (the "C++ namespace exception"), `+
+			"but this type does not reserve the field number %d", gap),
+	)
+	if bugged {
+		d.Apply(report.Helpf("protoc erroneously accepts this code due to a bug: it only " +
+			"checks that there is exactly one reserved range"))
+	}
+}
+
+func validateNamingStyle(f *File, r *report.Report) {
+	key := f.builtins().FeatureNamingStyle
+	if key.IsZero() {
+		return // Feature doesn't exist (pre-2024)
+	}
+
+	// Helper to check if STYLE2024 is enabled at a given scope.
+	isStyle2024 := func(featureSet FeatureSet) bool {
+		feature := featureSet.Lookup(key)
+		value, _ := feature.Value().AsInt()
+		return value == 1 // STYLE2024
+	}
+
+	// Validate package name (file-level scope).
+	if isStyle2024(f.FeatureSet()) {
+		pkg := f.Package()
+		if pkg != "" && !isValidPackageName(string(pkg)) {
+			r.Errorf("package name should be lower_snake_case").Apply(
+				report.Snippetf(f.AST().Package().Path(), "this name violates STYLE2024"),
+				report.Helpf("STYLE2024 requires package names to be lower_snake_case or dot.delimited.lower_snake_case"),
+			)
+		}
+	}
+
+	// Validate all services in the file.
+	for svc := range seq.Values(f.Services()) {
+		name := svc.Name()
+		// PascalCase required for services.
+		if isStyle2024(svc.FeatureSet()) && !isPascalCase(name) {
+			r.Errorf("service name should be PascalCase").Apply(
+				report.Snippetf(svc.AST().Name(), "this name violates STYLE2024"),
+				report.Helpf("STYLE2024 requires service names to be PascalCase (e.g., MyService)"),
+			)
+		}
+
+		// Validate RPC method names.
+		for method := range seq.Values(svc.Methods()) {
+			if method.IsZero() || !isStyle2024(method.FeatureSet()) {
+				continue
+			}
+			methodName := method.Name()
+			if !isPascalCase(methodName) {
+				r.Errorf("RPC method name should be PascalCase").Apply(
+					report.Snippetf(method.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires RPC method names to be PascalCase (e.g., GetMessage)"),
+				)
+			}
+		}
+	}
+
+	// Validate naming conventions based on type.
+	for ty := range seq.Values(f.AllTypes()) {
+		name := ty.Name()
+		switch {
+		case ty.IsMessage():
+			// PascalCase required for messages.
+			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
+				r.Errorf("%s name should be PascalCase", ty.noun()).Apply(
+					report.Snippetf(ty.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires message names to be PascalCase (e.g., MyMessage)"),
+				)
+			}
+
+			// Validate field names (check at field level).
+			for field := range seq.Values(ty.Members()) {
+				if field.IsZero() || field.IsGroup() || !isStyle2024(field.FeatureSet()) {
+					continue
+				}
+				fieldName := field.Name()
+				if !isSnakeCase(fieldName) {
+					r.Errorf("field name should be snake_case").Apply(
+						report.Snippetf(field.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires field names to be snake_case (e.g., my_field)"),
+					)
+				}
+			}
+
+			// Validate oneof names (check at oneof level).
+			for oneof := range seq.Values(ty.Oneofs()) {
+				if oneof.IsZero() || !isStyle2024(oneof.FeatureSet()) {
+					continue
+				}
+				oneofName := oneof.Name()
+				if !isSnakeCase(oneofName) {
+					r.Errorf("oneof name should be snake_case").Apply(
+						report.Snippetf(oneof.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires oneof names to be snake_case (e.g., my_choice)"),
+					)
+				}
+			}
+		case ty.IsEnum():
+			// PascalCase required for enums.
+			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
+				r.Errorf("%s name should be PascalCase", ty.noun()).Apply(
+					report.Snippetf(ty.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires enum names to be PascalCase (e.g., MyEnum)"),
+				)
+			}
+
+			// Validate enum value names (check at value level).
+			for value := range seq.Values(ty.Members()) {
+				if value.IsZero() || !isStyle2024(value.FeatureSet()) {
+					continue
+				}
+				valueName := value.Name()
+				if !isScreamingSnakeCase(valueName) {
+					r.Errorf("enum value name should be SCREAMING_SNAKE_CASE").Apply(
+						report.Snippetf(value.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires enum value names to be SCREAMING_SNAKE_CASE (e.g., MY_VALUE)"),
+					)
+				}
+			}
+		}
+	}
+}
+
+// isPascalCase checks if a name is in PascalCase format.
+func isPascalCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Must start with uppercase letter.
+	if !unicode.IsUpper(rune(name[0])) {
+		return false
+	}
+	// Should not contain underscores.
+	if strings.Contains(name, "_") {
+		return false
+	}
+	// All characters should be letters or digits.
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// isSnakeCase checks if a name is in snake_case format.
+func isSnakeCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Must start with lowercase letter.
+	if !unicode.IsLower(rune(name[0])) {
+		return false
+	}
+	// Should not have leading underscore.
+	if strings.HasPrefix(name, "_") {
+		return false
+	}
+	// Should only contain lowercase letters, digits, and underscores.
+	for i, r := range name {
+		if !unicode.IsLower(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+		// Underscore must be followed by a letter (not a digit or another underscore).
+		if r == '_' && i+1 < len(name) {
+			next := rune(name[i+1])
+			if !unicode.IsLower(next) {
+				return false
+			}
+		}
+	}
+	// Should not have consecutive underscores or end with underscore.
+	if strings.Contains(name, "__") || strings.HasSuffix(name, "_") {
+		return false
+	}
+	return true
+}
+
+// isScreamingSnakeCase checks if a name is in SCREAMING_SNAKE_CASE format.
+func isScreamingSnakeCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Should only contain uppercase letters, digits, and underscores.
+	for i, r := range name {
+		if !unicode.IsUpper(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+		// Underscore must be followed by a letter (not a digit or another underscore).
+		if r == '_' && i+1 < len(name) {
+			next := rune(name[i+1])
+			if !unicode.IsUpper(next) {
+				return false
+			}
+		}
+	}
+	// Should not have consecutive underscores or start/end with underscore.
+	if strings.Contains(name, "__") || strings.HasPrefix(name, "_") || strings.HasSuffix(name, "_") {
+		return false
+	}
+	return true
+}
+
+// isValidPackageName checks if a package name is in lower_snake_case or dot.delimited.lower_snake_case format.
+func isValidPackageName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Split on dots and validate each component.
+	for part := range strings.SplitSeq(name, ".") {
+		if len(part) == 0 {
+			return false
+		}
+		// Each part should be lower_snake_case.
+		if !isSnakeCase(part) {
+			return false
+		}
+	}
+	return true
 }
 
 // errNotUTF8 diagnoses a non-UTF8 value.
