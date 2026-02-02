@@ -46,21 +46,22 @@ import (
 type Member id.Node[Member, *File, *rawMember]
 
 type rawMember struct {
-	featureInfo   *rawFeatureInfo
-	elem          Ref[Type]
-	number        int32
-	extendee      id.ID[Extend]
-	fqn           intern.ID
-	name          intern.ID
-	def           id.ID[ast.DeclDef]
-	parent        id.ID[Type]
-	features      id.ID[FeatureSet]
-	options       id.ID[Value]
-	oneof         int32
-	optionTargets uint32
-	jsonName      intern.ID
-	isGroup       bool
-	numberOk      bool
+	featureInfo        *rawFeatureInfo
+	elem               Ref[Type]
+	number             int32
+	extendee           id.ID[Extend]
+	fqn                intern.ID
+	name               intern.ID
+	syntheticOneofName intern.ID
+	def                id.ID[ast.DeclDef]
+	parent             id.ID[Type]
+	features           id.ID[FeatureSet]
+	options            id.ID[Value]
+	oneof              int32
+	optionTargets      uint32
+	jsonName           intern.ID
+	isGroup            bool
+	numberOk           bool
 }
 
 // IsMessageField returns whether this is a non-extension message field.
@@ -390,6 +391,19 @@ func (m Member) Deprecated() Value {
 	return Value{}
 }
 
+// SyntheticOneofName returns the name of the corresponding synthetic oneof for this
+// member, if there should be one.
+//
+// For proto3 sources, a oneof is synthesized to track explicit optional presence of a
+// field. For details on generating the synthesized name, see the docs for [syntheticNames]
+// and/or refer to https://protobuf.com/docs/descriptors#synthetic-oneofs.
+func (m Member) SyntheticOneofName() string {
+	if m.IsZero() {
+		return ""
+	}
+	return m.Context().session.intern.Value(m.Raw().syntheticOneofName)
+}
+
 // CanTarget returns whether this message field can be set as an option for the
 // given option target type.
 //
@@ -716,6 +730,7 @@ type ReservedName struct {
 type rawReservedName struct {
 	ast  ast.ExprAny
 	name intern.ID
+	decl id.ID[ast.DeclRange]
 }
 
 // AST returns the expression that this name was evaluated from, if known.
@@ -724,6 +739,16 @@ func (r ReservedName) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 	return r.raw.ast
+}
+
+// DeclAST returns the declaration this name came from. Multiple names may
+// have the same declaration.
+func (r ReservedName) DeclAST() ast.DeclRange {
+	if r.IsZero() {
+		return ast.DeclRange{}
+	}
+
+	return id.Wrap(r.Context().AST(), r.raw.decl)
 }
 
 // Name returns the name (i.e., an identifier) that was reserved.

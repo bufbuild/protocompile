@@ -31,11 +31,6 @@ import (
 func TestDualCompiler_ParseFilesMessageComments(t *testing.T) {
 	t.Parallel()
 
-	skip := dualcompiler.SkipConfig{
-		SkipNew:    true,
-		SkipReason: "source code info not yet fully implemented in experimental compiler",
-	}
-
 	resolver := protocompile.WithStandardImports(&protocompile.SourceResolver{
 		ImportPaths: []string{"internal/testdata"},
 	})
@@ -46,7 +41,7 @@ func TestDualCompiler_ParseFilesMessageComments(t *testing.T) {
 
 	dualcompiler.RunWithBothCompilersIf(
 		t,
-		skip,
+		dualcompiler.SkipConfig{},
 		opts,
 		func(t *testing.T, compiler dualcompiler.CompilerInterface) {
 			ctx := t.Context()
@@ -115,11 +110,6 @@ func TestDualCompiler_ParseFilesWithImportsNoImportPath(t *testing.T) {
 func TestDualCompiler_ParseCommentsBeforeDot(t *testing.T) {
 	t.Parallel()
 
-	skip := dualcompiler.SkipConfig{
-		SkipNew:    true,
-		SkipReason: "source code info not yet fully implemented in experimental compiler",
-	}
-
 	accessor := protocompile.SourceAccessorFromMap(map[string]string{
 		"test.proto": `
 syntax = "proto3";
@@ -137,7 +127,7 @@ message Foo {
 
 	dualcompiler.RunWithBothCompilersIf(
 		t,
-		skip,
+		dualcompiler.SkipConfig{},
 		opts,
 		func(t *testing.T, compiler dualcompiler.CompilerInterface) {
 			ctx := t.Context()

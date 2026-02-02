@@ -38,8 +38,20 @@ func resolveNames(file *File, r *report.Report) {
 
 	for ty := range seq.Values(file.AllTypes()) {
 		if ty.IsMessage() {
+			var names syntheticNames
 			for field := range seq.Values(ty.Members()) {
 				resolveFieldType(field, r)
+
+				// For proto3 sources, we need to resolve the synthetic oneof names for fields with
+				// explicit optional presence. See the docs for [Member.SyntheticOneofName] for details.
+				if file.syntax == syntax.Proto3 && field.Presence() == presence.Explicit {
+					if !field.Oneof().IsZero() {
+						continue
+					}
+					field.Raw().syntheticOneofName = file.session.intern.Intern(
+						names.generate(field.Name(), field.Parent()),
+					)
+				}
 			}
 		}
 	}
