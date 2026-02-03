@@ -14,124 +14,103 @@
 
 package printer
 
-import (
-	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/dom"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
-)
+import "github.com/bufbuild/protocompile/experimental/ast"
 
-// printExpr prints an expression.
-func (p *printer) printExpr(expr ast.ExprAny) {
+// printExpr prints an expression with the specified leading gap.
+func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
 
 	switch expr.Kind() {
 	case ast.ExprKindLiteral:
-		p.printLiteral(expr.AsLiteral())
+		p.printToken(expr.AsLiteral().Token, gap)
 	case ast.ExprKindPath:
-		p.printPath(expr.AsPath().Path)
+		p.printPath(expr.AsPath().Path, gap)
 	case ast.ExprKindPrefixed:
-		p.printPrefixed(expr.AsPrefixed())
+		p.printPrefixed(expr.AsPrefixed(), gap)
 	case ast.ExprKindRange:
-		p.printExprRange(expr.AsRange())
+		p.printExprRange(expr.AsRange(), gap)
 	case ast.ExprKindArray:
-		p.printArray(expr.AsArray())
+		p.printArray(expr.AsArray(), gap)
 	case ast.ExprKindDict:
-		p.printDict(expr.AsDict())
+		p.printDict(expr.AsDict(), gap)
 	case ast.ExprKindField:
-		p.printExprField(expr.AsField())
+		p.printExprField(expr.AsField(), gap)
 	}
 }
 
-func (p *printer) printLiteral(lit ast.ExprLiteral) {
-	if lit.IsZero() {
-		return
-	}
-	p.printToken(lit.Token)
-}
-
-func (p *printer) printPrefixed(expr ast.ExprPrefixed) {
+func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
-	p.printToken(expr.PrefixToken())
-	p.printExpr(expr.Expr())
+	p.printToken(expr.PrefixToken(), gap)
+	p.printExpr(expr.Expr(), gapNone)
 }
 
-func (p *printer) printExprRange(expr ast.ExprRange) {
+func (p *printer) printExprRange(expr ast.ExprRange, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
 	start, end := expr.Bounds()
-	p.printExpr(start)
-	p.printToken(expr.Keyword())
-	p.printExpr(end)
+	p.printExpr(start, gap)
+	p.printToken(expr.Keyword(), gapSpace)
+	p.printExpr(end, gapSpace)
 }
 
-func (p *printer) printArray(expr ast.ExprArray) {
+func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
 
-	brackets := expr.Brackets()
-	if !brackets.IsZero() {
-		p.printFusedBrackets(brackets, func(child *printer) {
-			elements := expr.Elements()
-			for i := range elements.Len() {
-				if i > 0 {
-					child.printToken(elements.Comma(i - 1))
-				}
-				child.printExpr(elements.At(i))
-			}
-		})
-	} else {
-		// Synthetic array - emit brackets manually
-		p.text(keyword.LBracket.String())
+	p.printFusedBrackets(expr.Brackets(), gap, func(child *printer) {
 		elements := expr.Elements()
 		for i := range elements.Len() {
+			elemGap := gapNone
 			if i > 0 {
-				p.text(keyword.Comma.String())
-				p.text(" ")
+				child.printToken(elements.Comma(i-1), gapNone)
+				elemGap = gapSpace
 			}
-			p.printExpr(elements.At(i))
+			child.printExpr(elements.At(i), elemGap)
 		}
-		p.text(keyword.RBracket.String())
-	}
+	})
 }
 
-func (p *printer) printDict(expr ast.ExprDict) {
+func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
 
-	p.text(keyword.LBrace.String())
-	elements := expr.Elements()
-	if elements.Len() > 0 {
-		p.push(dom.Indent(p.opts.Indent, func(push dom.Sink) {
-			child := newPrinter(push, p.opts)
-			for i := range elements.Len() {
-				child.newline()
-				child.printExprField(elements.At(i))
-			}
-		}))
-		p.newline()
-	}
-	p.text(keyword.RBrace.String())
+	p.printFusedBrackets(expr.Braces(), gap, func(child *printer) {
+		elements := expr.Elements()
+		if elements.Len() > 0 {
+			child.withIndent(func(indented *printer) {
+				for i := range elements.Len() {
+					indented.printExprField(elements.At(i), gapNewline)
+				}
+			})
+		}
+	})
 }
 
-func (p *printer) printExprField(expr ast.ExprField) {
+func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
 
+	first := true
 	if !expr.Key().IsZero() {
-		p.printExpr(expr.Key())
+		p.printExpr(expr.Key(), gap)
+		first = false
 	}
 	if !expr.Colon().IsZero() {
-		p.printToken(expr.Colon())
+		p.printToken(expr.Colon(), gapNone)
 	}
 	if !expr.Value().IsZero() {
-		p.printExpr(expr.Value())
+		valueGap := gapSpace
+		if first {
+			valueGap = gap
+		}
+		p.printExpr(expr.Value(), valueGap)
 	}
 }

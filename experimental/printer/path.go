@@ -14,42 +14,37 @@
 
 package printer
 
-import (
-	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
-)
+import "github.com/bufbuild/protocompile/experimental/ast"
 
-// printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)").
-func (p *printer) printPath(path ast.Path) {
+// printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
+func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	if path.IsZero() {
 		return
 	}
 
+	first := true
 	for pc := range path.Components {
 		// Print separator (dot or slash) if present
 		if !pc.Separator().IsZero() {
-			p.printToken(pc.Separator())
+			p.printToken(pc.Separator(), gapNone)
 		}
 
 		// Print the name component
 		if !pc.Name().IsZero() {
+			componentGap := gapNone
+			if first {
+				componentGap = gap
+				first = false
+			}
+
 			if extn := pc.AsExtension(); !extn.IsZero() {
 				// Extension path component like (foo.bar)
-				// The Name() token is the fused parens containing the extension path
-				nameTok := pc.Name()
-				if !nameTok.IsSynthetic() && !nameTok.IsLeaf() {
-					p.printFusedBrackets(nameTok, func(child *printer) {
-						child.printPath(extn)
-					})
-				} else {
-					// Synthetic - emit manually
-					p.text(keyword.LParen.String())
-					p.printPath(extn)
-					p.text(keyword.RParen.String())
-				}
+				p.printFusedBrackets(pc.Name(), componentGap, func(child *printer) {
+					child.printPath(extn, gapNone)
+				})
 			} else {
 				// Simple identifier
-				p.printToken(pc.Name())
+				p.printToken(pc.Name(), componentGap)
 			}
 		}
 	}

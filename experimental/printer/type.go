@@ -16,43 +16,45 @@ package printer
 
 import "github.com/bufbuild/protocompile/experimental/ast"
 
-// printType prints a type.
-func (p *printer) printType(ty ast.TypeAny) {
+// printType prints a type with the specified leading gap.
+func (p *printer) printType(ty ast.TypeAny, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
 
 	switch ty.Kind() {
 	case ast.TypeKindPath:
-		p.printPath(ty.AsPath().Path)
+		p.printPath(ty.AsPath().Path, gap)
 	case ast.TypeKindPrefixed:
-		p.printTypePrefixed(ty.AsPrefixed())
+		p.printTypePrefixed(ty.AsPrefixed(), gap)
 	case ast.TypeKindGeneric:
-		p.printTypeGeneric(ty.AsGeneric())
+		p.printTypeGeneric(ty.AsGeneric(), gap)
 	}
 }
 
-func (p *printer) printTypePrefixed(ty ast.TypePrefixed) {
+func (p *printer) printTypePrefixed(ty ast.TypePrefixed, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
-	p.printToken(ty.PrefixToken())
-	p.printType(ty.Type())
+	p.printToken(ty.PrefixToken(), gap)
+	p.printType(ty.Type(), gapSpace)
 }
 
-func (p *printer) printTypeGeneric(ty ast.TypeGeneric) {
+func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
 
-	p.printPath(ty.Path())
+	p.printPath(ty.Path(), gap)
 	args := ty.Args()
-	p.printFusedBrackets(args.Brackets(), func(child *printer) {
+	p.printFusedBrackets(args.Brackets(), gapNone, func(child *printer) {
 		for i := range args.Len() {
+			argGap := gapNone
 			if i > 0 {
-				child.printToken(args.Comma(i - 1))
+				child.printToken(args.Comma(i-1), gapNone)
+				argGap = gapSpace
 			}
-			child.printType(args.At(i))
+			child.printType(args.At(i), argGap)
 		}
 	})
 }

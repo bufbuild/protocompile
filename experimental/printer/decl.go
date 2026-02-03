@@ -16,7 +16,6 @@ package printer
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
@@ -24,7 +23,7 @@ import (
 func (p *printer) printDecl(decl ast.DeclAny) {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
-		p.printEmpty(decl.AsEmpty())
+		p.printToken(decl.AsEmpty().Semicolon(), gapNone)
 	case ast.DeclKindSyntax:
 		p.printSyntax(decl.AsSyntax())
 	case ast.DeclKindPackage:
@@ -40,34 +39,30 @@ func (p *printer) printDecl(decl ast.DeclAny) {
 	}
 }
 
-func (p *printer) printEmpty(decl ast.DeclEmpty) {
-	p.printToken(decl.Semicolon())
-}
-
 func (p *printer) printSyntax(decl ast.DeclSyntax) {
-	p.printToken(decl.KeywordToken())
-	p.printToken(decl.Equals())
-	p.printExpr(decl.Value())
+	p.printToken(decl.KeywordToken(), gapNewline)
+	p.printToken(decl.Equals(), gapSpace)
+	p.printExpr(decl.Value(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon())
+	p.printToken(decl.Semicolon(), gapNone)
 }
 
 func (p *printer) printPackage(decl ast.DeclPackage) {
-	p.printToken(decl.KeywordToken())
-	p.printPath(decl.Path())
+	p.printToken(decl.KeywordToken(), gapNewline)
+	p.printPath(decl.Path(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon())
+	p.printToken(decl.Semicolon(), gapNone)
 }
 
 func (p *printer) printImport(decl ast.DeclImport) {
-	p.printToken(decl.KeywordToken())
+	p.printToken(decl.KeywordToken(), gapNewline)
 	modifiers := decl.ModifierTokens()
 	for i := range modifiers.Len() {
-		p.printToken(modifiers.At(i))
+		p.printToken(modifiers.At(i), gapSpace)
 	}
-	p.printExpr(decl.ImportPath())
+	p.printExpr(decl.ImportPath(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon())
+	p.printToken(decl.Semicolon(), gapNone)
 }
 
 func (p *printer) printDef(decl ast.DeclDef) {
@@ -96,85 +91,85 @@ func (p *printer) printDef(decl ast.DeclDef) {
 }
 
 func (p *printer) printOption(opt ast.DefOption) {
-	p.printToken(opt.Keyword)
-	p.printPath(opt.Path)
+	p.printToken(opt.Keyword, gapNewline)
+	p.printPath(opt.Path, gapSpace)
 	if !opt.Equals.IsZero() {
-		p.printToken(opt.Equals)
-		p.printExpr(opt.Value)
+		p.printToken(opt.Equals, gapSpace)
+		p.printExpr(opt.Value, gapSpace)
 	}
-	p.printToken(opt.Semicolon)
+	p.printToken(opt.Semicolon, gapNone)
 }
 
 func (p *printer) printMessage(msg ast.DefMessage) {
-	p.printToken(msg.Keyword)
-	p.printToken(msg.Name)
+	p.printToken(msg.Keyword, gapNewline)
+	p.printToken(msg.Name, gapSpace)
 	p.printBody(msg.Body)
 }
 
 func (p *printer) printEnum(e ast.DefEnum) {
-	p.printToken(e.Keyword)
-	p.printToken(e.Name)
+	p.printToken(e.Keyword, gapNewline)
+	p.printToken(e.Name, gapSpace)
 	p.printBody(e.Body)
 }
 
 func (p *printer) printService(svc ast.DefService) {
-	p.printToken(svc.Keyword)
-	p.printToken(svc.Name)
+	p.printToken(svc.Keyword, gapNewline)
+	p.printToken(svc.Name, gapSpace)
 	p.printBody(svc.Body)
 }
 
 func (p *printer) printExtend(ext ast.DefExtend) {
-	p.printToken(ext.Keyword)
-	p.printPath(ext.Extendee)
+	p.printToken(ext.Keyword, gapNewline)
+	p.printPath(ext.Extendee, gapSpace)
 	p.printBody(ext.Body)
 }
 
 func (p *printer) printOneof(o ast.DefOneof) {
-	p.printToken(o.Keyword)
-	p.printToken(o.Name)
+	p.printToken(o.Keyword, gapNewline)
+	p.printToken(o.Name, gapSpace)
 	p.printBody(o.Body)
 }
 
 func (p *printer) printGroup(g ast.DefGroup) {
-	p.printToken(g.Keyword)
-	p.printToken(g.Name)
+	p.printToken(g.Keyword, gapNewline)
+	p.printToken(g.Name, gapSpace)
 	if !g.Equals.IsZero() {
-		p.printToken(g.Equals)
-		p.printExpr(g.Tag)
+		p.printToken(g.Equals, gapSpace)
+		p.printExpr(g.Tag, gapSpace)
 	}
 	p.printCompactOptions(g.Options)
 	p.printBody(g.Body)
 }
 
 func (p *printer) printField(f ast.DefField) {
-	p.printType(f.Type)
-	p.printToken(f.Name)
+	p.printType(f.Type, gapNewline)
+	p.printToken(f.Name, gapSpace)
 	if !f.Equals.IsZero() {
-		p.printToken(f.Equals)
-		p.printExpr(f.Tag)
+		p.printToken(f.Equals, gapSpace)
+		p.printExpr(f.Tag, gapSpace)
 	}
 	p.printCompactOptions(f.Options)
-	p.printToken(f.Semicolon)
+	p.printToken(f.Semicolon, gapNone)
 }
 
 func (p *printer) printEnumValue(ev ast.DefEnumValue) {
-	p.printToken(ev.Name)
+	p.printToken(ev.Name, gapNewline)
 	if !ev.Equals.IsZero() {
-		p.printToken(ev.Equals)
-		p.printExpr(ev.Tag)
+		p.printToken(ev.Equals, gapSpace)
+		p.printExpr(ev.Tag, gapSpace)
 	}
 	p.printCompactOptions(ev.Options)
-	p.printToken(ev.Semicolon)
+	p.printToken(ev.Semicolon, gapNone)
 }
 
 func (p *printer) printMethod(m ast.DefMethod) {
-	p.printToken(m.Keyword)
-	p.printToken(m.Name)
+	p.printToken(m.Keyword, gapNewline)
+	p.printToken(m.Name, gapSpace)
 	p.printSignature(m.Signature)
 	if !m.Body.IsZero() {
 		p.printBody(m.Body)
 	} else {
-		p.printToken(m.Decl.Semicolon())
+		p.printToken(m.Decl.Semicolon(), gapNone)
 	}
 }
 
@@ -183,23 +178,18 @@ func (p *printer) printSignature(sig ast.Signature) {
 		return
 	}
 
-	// Print input parameter list with its brackets
-	// Note: brackets are fused tokens, so we handle them specially to preserve whitespace
 	inputs := sig.Inputs()
-	inputBrackets := inputs.Brackets()
-	if !inputBrackets.IsZero() {
-		p.printFusedBrackets(inputBrackets, func(child *printer) {
+	if !inputs.Brackets().IsZero() {
+		p.printFusedBrackets(inputs.Brackets(), gapNone, func(child *printer) {
 			child.printTypeListContents(inputs)
 		})
 	}
 
-	// Print returns clause if present
 	if !sig.Returns().IsZero() {
-		p.printToken(sig.Returns())
+		p.printToken(sig.Returns(), gapSpace)
 		outputs := sig.Outputs()
-		outputBrackets := outputs.Brackets()
-		if !outputBrackets.IsZero() {
-			p.printFusedBrackets(outputBrackets, func(child *printer) {
+		if !outputs.Brackets().IsZero() {
+			p.printFusedBrackets(outputs.Brackets(), gapSpace, func(child *printer) {
 				child.printTypeListContents(outputs)
 			})
 		}
@@ -208,10 +198,12 @@ func (p *printer) printSignature(sig ast.Signature) {
 
 func (p *printer) printTypeListContents(list ast.TypeList) {
 	for i := range list.Len() {
+		gap := gapNone
 		if i > 0 {
-			p.printToken(list.Comma(i - 1))
+			p.printToken(list.Comma(i-1), gapNone)
+			gap = gapSpace
 		}
-		p.printType(list.At(i))
+		p.printType(list.At(i), gap)
 	}
 }
 
@@ -220,63 +212,54 @@ func (p *printer) printBody(body ast.DeclBody) {
 		return
 	}
 
-	braces := body.Braces()
-	openTok, closeTok := braces.StartEnd()
-
-	p.emitOpen(openTok)
-
-	decls := body.Decls()
-	if decls.Len() > 0 {
-		var child *printer
-		p.push(dom.Indent(p.opts.Indent, func(push dom.Sink) {
-			child = p.childWithCursor(push, braces, openTok)
-			for d := range seq.Values(decls) {
-				child.printDecl(d)
-			}
-			child.flushRemaining()
-		}))
-		// Propagate child's lastTok to parent for proper gap handling on close
-		p.lastTok = child.lastTok
-	} else {
-		// Empty body - still need to flush whitespace between braces (e.g., "{ }")
-		child := p.childWithCursor(p.push, braces, openTok)
-		child.flushRemaining()
-	}
-
-	p.emitClose(closeTok, openTok)
+	p.printFusedBrackets(body.Braces(), gapSpace, func(child *printer) {
+		if body.Decls().Len() > 0 {
+			child.withIndent(func(indented *printer) {
+				for d := range seq.Values(body.Decls()) {
+					indented.printDecl(d)
+				}
+				indented.flushRemaining()
+			})
+		}
+	})
 }
 
 func (p *printer) printRange(r ast.DeclRange) {
 	if !r.KeywordToken().IsZero() {
-		p.printToken(r.KeywordToken())
+		p.printToken(r.KeywordToken(), gapNone)
 	}
 
 	ranges := r.Ranges()
 	for i := range ranges.Len() {
+		gap := gapSpace
 		if i > 0 {
-			p.printToken(ranges.Comma(i - 1))
+			p.printToken(ranges.Comma(i-1), gapNone)
 		}
-		p.printExpr(ranges.At(i))
+		p.printExpr(ranges.At(i), gap)
 	}
 	p.printCompactOptions(r.Options())
-	p.printToken(r.Semicolon())
+	p.printToken(r.Semicolon(), gapNone)
 }
 
 func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	if co.IsZero() {
 		return
 	}
-	p.printFusedBrackets(co.Brackets(), func(child *printer) {
+	p.printFusedBrackets(co.Brackets(), gapSpace, func(child *printer) {
 		entries := co.Entries()
 		for i := range entries.Len() {
 			if i > 0 {
-				child.printToken(entries.Comma(i - 1))
+				child.printToken(entries.Comma(i-1), gapNone)
 			}
 			opt := entries.At(i)
-			child.printPath(opt.Path)
+			gap := gapNone
+			if i > 0 {
+				gap = gapSpace
+			}
+			child.printPath(opt.Path, gap)
 			if !opt.Equals.IsZero() {
-				child.printToken(opt.Equals)
-				child.printExpr(opt.Value)
+				child.printToken(opt.Equals, gapSpace)
+				child.printExpr(opt.Value, gapSpace)
 			}
 		}
 	})
