@@ -343,7 +343,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	// that symbol names are global!
 	for i := range e.refs {
 		s := e.symbol(i)
-		if s.Visible(e.File) {
+		if s.Visible(e.File, true) {
 			continue
 		}
 

@@ -384,6 +384,7 @@ type Symbol struct {
 	Index uint32 `protobuf:"varint,4,opt,name=index,proto3" json:"index,omitempty"`
 	// Whether this symbol can be validly referenced in the current file.
 	Visible       bool       `protobuf:"varint,5,opt,name=visible,proto3" json:"visible,omitempty"`
+	OptionOnly    bool       `protobuf:"varint,8,opt,name=option_only,json=optionOnly,proto3" json:"option_only,omitempty"`
 	Options       *Value     `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
 	Features      []*Feature `protobuf:"bytes,7,rep,name=features,proto3" json:"features,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -451,6 +452,13 @@ func (x *Symbol) GetIndex() uint32 {
 func (x *Symbol) GetVisible() bool {
 	if x != nil {
 		return x.Visible
+	}
+	return false
+}
+
+func (x *Symbol) GetOptionOnly() bool {
+	if x != nil {
+		return x.OptionOnly
 	}
 	return false
 }
@@ -889,13 +897,15 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\x04extn\x18\x01 \x01(\tR\x04extn\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\tR\x05value\x12\x1a\n" +
-	"\bexplicit\x18\x04 \x01(\bR\bexplicit\"\xb6\x03\n" +
+	"\bexplicit\x18\x04 \x01(\bR\bexplicit\"\xd7\x03\n" +
 	"\x06Symbol\x12\x10\n" +
 	"\x03fqn\x18\x01 \x01(\tR\x03fqn\x126\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\".buf.compiler.v1alpha1.Symbol.KindR\x04kind\x12\x12\n" +
 	"\x04file\x18\x03 \x01(\tR\x04file\x12\x14\n" +
 	"\x05index\x18\x04 \x01(\rR\x05index\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\x126\n" +
+	"\avisible\x18\x05 \x01(\bR\avisible\x12\x1f\n" +
+	"\voption_only\x18\b \x01(\bR\n" +
+	"optionOnly\x126\n" +
 	"\aoptions\x18\x06 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\x12:\n" +
 	"\bfeatures\x18\a \x03(\v2\x1e.buf.compiler.v1alpha1.FeatureR\bfeatures\"\xa9\x01\n" +
 	"\x04Kind\x12\x14\n" +

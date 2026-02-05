@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -360,6 +361,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		return
 	}
 
+	var isOption bool
 	for i, mod := range seq.All(decl.ModifierTokens()) {
 		if i > 0 {
 			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
@@ -376,19 +378,31 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		case keyword.Public:
 
 		case keyword.Weak:
-			p.Warnf("`import weak` is deprecated").Apply(
-				report.Snippet(source.Join(decl.KeywordToken(), mod)),
-				report.Helpf("`import weak` is not implemented correctly in most Protobuf implementations"),
-			)
+			p.SoftError(p.syntax >= syntax.Edition2024, erredition.TooNew{
+				Current:          p.syntax,
+				Decl:             p.syntaxNode,
+				Deprecated:       syntax.Proto2,
+				DeprecatedReason: "`import weak` is not implemented correctly in most Protobuf implementations",
+				Removed:          syntax.Edition2024,
+				RemovedReason:    "`import weak` has been replaced with `import option`",
+
+				What:  "import weak",
+				Where: mod,
+			})
 
 		case keyword.Option:
-			p.Error(errRequiresEdition{
-				edition:       syntax.Edition2024,
-				node:          source.Join(decl.KeywordToken(), mod),
-				what:          "`import option`",
-				decl:          p.syntaxNode,
-				unimplemented: p.syntax >= syntax.Edition2024,
-			})
+			p.importOptionNode = decl
+			isOption = true
+
+			if p.syntax < syntax.Edition2024 {
+				p.Error(erredition.TooOld{
+					Current: p.syntax,
+					Decl:    p.syntaxNode,
+					Intro:   syntax.Edition2024,
+					What:    "import option",
+					Where:   mod,
+				})
+			}
 
 		default:
 			d := p.Error(errUnexpectedMod{
@@ -411,5 +425,13 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 				}))
 			}
 		}
+	}
+
+	if !isOption && !p.importOptionNode.IsZero() {
+		p.Errorf("%s after `import option`", taxa.Import).Apply(
+			report.Snippet(decl),
+			report.Snippetf(p.importOptionNode, "previous `import option` here"),
+			report.Helpf("`import option`s must be the last imports in a file"),
+		)
 	}
 }

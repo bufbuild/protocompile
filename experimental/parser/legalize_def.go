@@ -19,6 +19,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -118,13 +119,15 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 		isType := what == taxa.Message || what == taxa.Enum
 
 		if isType && mod.Prefix().IsTypeModifier() {
-			p.Error(errRequiresEdition{
-				edition: syntax.Edition2024,
-				node:    mod.PrefixToken(),
-				decl:    p.syntaxNode,
-
-				unimplemented: p.syntax >= syntax.Edition2024,
-			})
+			if p.syntax < syntax.Edition2024 {
+				p.Error(erredition.TooOld{
+					Current: p.syntax,
+					Decl:    p.syntaxNode,
+					Intro:   syntax.Edition2024,
+					What:    mod.Prefix(),
+					Where:   mod.PrefixToken(),
+				})
+			}
 			continue
 		}
 

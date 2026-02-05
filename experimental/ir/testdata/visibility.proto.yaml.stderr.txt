@@ -1,0 +1,254 @@
+warning: redundant visibility modifier
+  --> export.proto:8:3
+   |
+ 8 |   export message E {}
+   |   ^^^^^^ specified here
+   |
+  ::: export.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = EXPORT_ALL;
+   |                                             ---------- this implies it
+
+warning: redundant visibility modifier
+  --> export.proto:12:1
+   |
+12 | export message E {}
+   | ^^^^^^ specified here
+   |
+  ::: export.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = EXPORT_ALL;
+   |                                             ---------- this implies it
+
+warning: redundant visibility modifier
+  --> local.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ^^^^^ specified here
+   |
+  ::: local.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = LOCAL_ALL;
+   |                                             --------- this implies it
+
+warning: redundant visibility modifier
+  --> local.proto:13:1
+   |
+13 | local message L {}
+   | ^^^^^ specified here
+   |
+  ::: local.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = LOCAL_ALL;
+   |                                             --------- this implies it
+
+error: found unexported message type `test.export.L`
+  --> main.proto:12:3
+   |
+12 |   export.L l = 3;
+   |   ^^^^^^^^ unexported type
+   |
+  ::: export.proto:13:1
+   |
+13 | local message L {}
+   | ----- marked as local here
+
+error: found unexported message type `test.export.N.L`
+  --> main.proto:15:3
+   |
+15 |   export.N.L nl = 6;
+   |   ^^^^^^^^^^ unexported type
+   |
+  ::: export.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ----- marked as local here
+
+error: found unexported message type `test.local.D`
+  --> main.proto:19:3
+   |
+19 |   local.D d = 1;
+   |   ^^^^^^^ unexported type
+   |
+  ::: local.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = LOCAL_ALL;
+   |                                             --------- this implies `local`
+
+error: found unexported message type `test.local.L`
+  --> main.proto:21:3
+   |
+21 |   local.L l = 3;
+   |   ^^^^^^^ unexported type
+   |
+  ::: local.proto:13:1
+   |
+13 | local message L {}
+   | ----- marked as local here
+
+error: found unexported message type `test.local.N.D`
+  --> main.proto:22:3
+   |
+22 |   local.N.D nd = 4;
+   |   ^^^^^^^^^ unexported type
+   |
+  ::: local.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = LOCAL_ALL;
+   |                                             --------- this implies `local`
+
+error: found unexported message type `test.local.N.L`
+  --> main.proto:24:3
+   |
+24 |   local.N.L nl = 6;
+   |   ^^^^^^^^^ unexported type
+   |
+  ::: local.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ----- marked as local here
+
+error: found unexported message type `test.top_level.L`
+  --> main.proto:30:3
+   |
+30 |   top_level.L l = 3;
+   |   ^^^^^^^^^^^ unexported type
+   |
+  ::: top_level.proto:13:1
+   |
+13 | local message L {}
+   | ----- marked as local here
+
+error: found unexported message type `test.top_level.N.D`
+  --> main.proto:31:3
+   |
+31 |   top_level.N.D nd = 4;
+   |   ^^^^^^^^^^^^^ unexported type
+   |
+  ::: top_level.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+   |                                             ----------------
+   |                                              |
+   |                                              this implies `local`
+
+error: found unexported message type `test.top_level.N.L`
+  --> main.proto:33:3
+   |
+33 |   top_level.N.L nl = 6;
+   |   ^^^^^^^^^^^^^ unexported type
+   |
+  ::: top_level.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ----- marked as local here
+
+error: found unexported message type `test.strict.D`
+  --> main.proto:37:3
+   |
+37 |   strict.D d = 1;
+   |   ^^^^^^^^ unexported type
+   |
+  ::: strict.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ this implies `local`
+
+error: found unexported message type `test.strict.L`
+  --> main.proto:39:3
+   |
+39 |   strict.L l = 3;
+   |   ^^^^^^^^ unexported type
+   |
+  ::: strict.proto:13:1
+   |
+13 | local message L {}
+   | ----- marked as local here
+
+error: found unexported message type `test.strict.N.D`
+  --> main.proto:40:3
+   |
+40 |   strict.N.D nd = 4;
+   |   ^^^^^^^^^^ unexported type
+   |
+  ::: strict.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ this implies `local`
+
+error: found unexported message type `test.strict.N.L`
+  --> main.proto:42:3
+   |
+42 |   strict.N.L nl = 6;
+   |   ^^^^^^^^^^ unexported type
+   |
+  ::: strict.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ----- marked as local here
+
+error: message type `test.strict.N` does not reserve all field numbers
+  --> strict.proto:8:3
+   |
+ 6 | / message N {
+ 7 | |   message D {}
+ 8 | |   export message E {}
+   | |   ^^^^^^ nested type exported here
+ 9 | |   local message L {}
+10 | | }
+   | \_- ... within this type
+   |
+  ::: strict.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ `STRICT` specified here
+   |
+   = help: in strict mode, nesting an exported type within another type requires
+           that that type reserve every field number (the "C++ namespace
+           exception"), but this type does not reserve the field number 1
+
+warning: redundant visibility modifier
+  --> strict.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ^^^^^ specified here
+   |
+  ::: strict.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ this implies it
+
+warning: redundant visibility modifier
+  --> strict.proto:13:1
+   |
+13 | local message L {}
+   | ^^^^^ specified here
+   |
+  ::: strict.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = STRICT;
+   |                                             ------ this implies it
+
+warning: redundant visibility modifier
+  --> top_level.proto:9:3
+   |
+ 9 |   local message L {}
+   |   ^^^^^ specified here
+   |
+  ::: top_level.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+   |                                             ---------------- this implies it
+
+warning: redundant visibility modifier
+  --> top_level.proto:12:1
+   |
+12 | export message E {}
+   | ^^^^^^ specified here
+   |
+  ::: top_level.proto:4:45
+   |
+ 4 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+   |                                             ---------------- this implies it
+
+encountered 14 errors and 8 warnings

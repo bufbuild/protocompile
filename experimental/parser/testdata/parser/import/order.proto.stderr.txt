@@ -1,0 +1,22 @@
+error: `import weak` is not supported in Edition 2024
+  --> testdata/parser/import/order.proto:21:8
+   |
+15 | edition = "2024";
+   |           ------ edition specified here
+...
+20 | import "bar.proto";
+21 | import weak "weak.proto";
+   |        ^^^^
+   = help: deprecated since "proto2", removed in Edition 2024
+   = help: `import weak` has been replaced with `import option`
+
+error: import after `import option`
+  --> testdata/parser/import/order.proto:24:1
+   |
+23 | import option "bang.proto";
+   | --------------------------- previous `import option` here
+24 | import "wrong.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^
+   = help: `import option`s must be the last imports in a file
+
+encountered 2 errors

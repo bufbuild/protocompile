@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 )
@@ -28,27 +29,28 @@ func TestPredicates(t *testing.T) {
 	tests := []struct {
 		v           predeclared.Name
 		scalar, key bool
+		fdpType     descriptorpb.FieldDescriptorProto_Type
 	}{
 		{v: predeclared.Unknown},
 
-		{v: predeclared.Int32, scalar: true, key: true},
-		{v: predeclared.Int64, scalar: true, key: true},
-		{v: predeclared.UInt32, scalar: true, key: true},
-		{v: predeclared.UInt64, scalar: true, key: true},
-		{v: predeclared.SInt32, scalar: true, key: true},
-		{v: predeclared.SInt64, scalar: true, key: true},
+		{v: predeclared.Int32, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_INT32},
+		{v: predeclared.Int64, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_INT64},
+		{v: predeclared.UInt32, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_UINT32},
+		{v: predeclared.UInt64, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_UINT64},
+		{v: predeclared.SInt32, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_SINT32},
+		{v: predeclared.SInt64, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_SINT64},
 
-		{v: predeclared.Fixed32, scalar: true, key: true},
-		{v: predeclared.Fixed64, scalar: true, key: true},
-		{v: predeclared.SFixed32, scalar: true, key: true},
-		{v: predeclared.SFixed64, scalar: true, key: true},
+		{v: predeclared.Fixed32, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_FIXED32},
+		{v: predeclared.Fixed64, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_FIXED64},
+		{v: predeclared.SFixed32, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_SFIXED32},
+		{v: predeclared.SFixed64, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_SFIXED64},
 
-		{v: predeclared.Float, scalar: true},
-		{v: predeclared.Double, scalar: true},
+		{v: predeclared.Float, scalar: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_FLOAT},
+		{v: predeclared.Double, scalar: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_DOUBLE},
 
-		{v: predeclared.String, scalar: true, key: true},
-		{v: predeclared.Bytes, scalar: true},
-		{v: predeclared.Bool, scalar: true, key: true},
+		{v: predeclared.String, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_STRING},
+		{v: predeclared.Bytes, scalar: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_BYTES},
+		{v: predeclared.Bool, scalar: true, key: true, fdpType: descriptorpb.FieldDescriptorProto_TYPE_BOOL},
 
 		{v: predeclared.Map},
 		{v: predeclared.Max},
@@ -61,5 +63,6 @@ func TestPredicates(t *testing.T) {
 	for _, test := range tests {
 		assert.Equal(t, test.scalar, test.v.IsScalar())
 		assert.Equal(t, test.key, test.v.IsMapKey())
+		assert.Equal(t, test.fdpType, test.v.FDPType())
 	}
 }

@@ -1,6 +1,6 @@
 file:
-- { name: "a.proto", package: "buf.test", syntax: "proto2" }
 - { name: "c.proto", package: "buf.test", syntax: "proto2" }
+- { name: "a.proto", package: "buf.test", syntax: "proto2" }
 - { name: "b.proto", package: "buf.test", syntax: "proto2" }
 - name: "main.proto"
   package: "buf.test"
