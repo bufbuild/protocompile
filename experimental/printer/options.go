@@ -25,6 +25,10 @@ type Options struct {
 	// MaxWidth is the maximum line width before the printer attempts
 	// to break lines. A value of 0 means no limit.
 	MaxWidth int
+
+	// Format, when true, normalizes whitespace according to formatting rules.
+	// When false (default), preserves original whitespace.
+	Format bool
 }
 
 // withDefaults returns a copy of opts with default values applied.

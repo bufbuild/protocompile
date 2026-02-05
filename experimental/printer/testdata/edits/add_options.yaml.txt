@@ -25,7 +25,8 @@ enum Status {
 }
 message MultiLineOptions {
   string field = 1 [
-    debug_redact = true, deprecated = true
+    debug_redact = true,
+    deprecated = true
   ];
 }
 message TrailingComma {

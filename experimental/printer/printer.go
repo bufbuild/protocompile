@@ -32,6 +32,7 @@ const (
 	gapNone gapStyle = iota
 	gapSpace
 	gapNewline
+	gapSoftline // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
 )
 
 // PrintFile renders an AST file to protobuf source text.
@@ -79,7 +80,7 @@ func (p *printer) printFile(file *ast.File) {
 	for d := range seq.Values(file.Decls()) {
 		p.printDecl(d)
 	}
-	p.flushRemaining()
+	p.printRemaining()
 }
 
 // printToken is the standard entry point for printing a semantic token.
@@ -87,11 +88,9 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
 	}
-
-	// 1. Emit content with gaps/trivia
 	p.emitTokenContent(tok, gap)
 
-	// 2. Advance cursor past this token
+	// Advance cursor past this token
 	if p.cursor != nil && !tok.IsSynthetic() {
 		p.cursor.NextSkippable()
 	}
@@ -100,20 +99,7 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 // emitTokenContent handles the Gap -> Trivia -> Token flow.
 // It does NOT advance the cursor.
 func (p *printer) emitTokenContent(tok token.Token, gap gapStyle) {
-	if tok.IsSynthetic() {
-		switch gap {
-		case gapNewline:
-			p.emit("\n")
-		case gapSpace:
-			p.emit(" ")
-		}
-		p.emit(tok.Text())
-		p.lastTok = tok
-		return
-	}
-
-	// Original token: flush trivia (preserves original whitespace/comments) then emit
-	p.flushSkippableUntil(tok)
+	p.printSkippableUntil(tok, gap)
 	p.emit(tok.Text())
 	p.lastTok = tok
 }
@@ -123,34 +109,49 @@ func (p *printer) printFusedBrackets(brackets token.Token, gap gapStyle, printCo
 	if brackets.IsZero() {
 		return
 	}
-
 	openTok, closeTok := brackets.StartEnd()
 	p.emitTokenContent(openTok, gap)
-	child := p.childWithCursor(p.push, brackets, openTok)
-	printContents(child)
-	child.flushRemaining()
+	originalCursor := p.cursor
+	p.cursor = brackets.Children()
+	p.lastTok = openTok
+
+	printContents(p)
+	p.printRemaining()
 	closeGap := gapNone
-	if child.lastTok != openTok && isBrace(openTok) {
+	if p.lastTok != openTok && isBrace(openTok) {
 		closeGap = gapNewline
 	}
 	p.emitTokenContent(closeTok, closeGap)
 	p.lastTok = closeTok
 
 	// Advance parent cursor past the fused group
+	p.cursor = originalCursor
 	if p.cursor != nil && !openTok.IsSynthetic() {
 		p.cursor.NextSkippable()
 	}
 }
 
-// flushSkippableUntil emits whitespace/comments from the cursor up to target.
+// printSkippableUntil emits whitespace/comments from the cursor up to target.
 // Pass token.Zero to flush all remaining tokens.
-func (p *printer) flushSkippableUntil(target token.Token) {
+func (p *printer) printSkippableUntil(target token.Token, gap gapStyle) {
+	if target.IsSynthetic() {
+		switch gap {
+		case gapNewline:
+			p.emit("\n")
+		case gapSpace:
+			p.emit(" ")
+		case gapSoftline:
+			p.push(dom.TextIf(dom.Flat, " "))
+			p.push(dom.TextIf(dom.Broken, "\n"))
+		}
+		return
+	}
 	if p.cursor == nil {
 		return
 	}
 
 	stopAt := -1
-	if !target.IsZero() && !target.IsSynthetic() {
+	if !target.IsZero() {
 		stopAt = target.Span().Start
 	}
 
@@ -195,9 +196,9 @@ func (p *printer) flushSkippableUntil(target token.Token) {
 	}
 }
 
-// flushRemaining emits any remaining skippable tokens from the cursor.
-func (p *printer) flushRemaining() {
-	p.flushSkippableUntil(token.Zero)
+// printRemaining emits any remaining skippable tokens from the cursor.
+func (p *printer) printRemaining() {
+	p.printSkippableUntil(token.Zero, gapNone)
 }
 
 // spanText returns the source text for the given byte range.
@@ -222,17 +223,14 @@ func (p *printer) withIndent(fn func(p *printer)) {
 	p.push = originalPush
 }
 
-// childWithCursor creates a child printer with a cursor over the fused token's children.
-func (p *printer) childWithCursor(push dom.Sink, brackets token.Token, open token.Token) *printer {
-	child := &printer{
-		push:    push,
-		opts:    p.opts,
-		lastTok: open,
-	}
-	if !brackets.IsLeaf() && !open.IsSynthetic() {
-		child.cursor = brackets.Children()
-	}
-	return child
+// withGroup runs fn with an grouped printer, swapping the sink temporarily.
+func (p *printer) withGroup(fn func(p *printer)) {
+	originalPush := p.push
+	p.push(dom.Group(p.opts.MaxWidth, func(groupSink dom.Sink) {
+		p.push = groupSink
+		fn(p)
+	}))
+	p.push = originalPush
 }
 
 // isBrace returns true if tok is a brace (not paren, bracket, or angle).

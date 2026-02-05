@@ -16,6 +16,7 @@ package printer
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
@@ -180,8 +181,14 @@ func (p *printer) printSignature(sig ast.Signature) {
 
 	inputs := sig.Inputs()
 	if !inputs.Brackets().IsZero() {
-		p.printFusedBrackets(inputs.Brackets(), gapNone, func(child *printer) {
-			child.printTypeListContents(inputs)
+		p.withGroup(func(p *printer) {
+			p.printFusedBrackets(inputs.Brackets(), gapNone, func(p *printer) {
+				p.withIndent(func(indented *printer) {
+					indented.push(dom.TextIf(dom.Broken, "\n"))
+					indented.printTypeListContents(inputs)
+					p.push(dom.TextIf(dom.Broken, "\n"))
+				})
+			})
 		})
 	}
 
@@ -189,19 +196,26 @@ func (p *printer) printSignature(sig ast.Signature) {
 		p.printToken(sig.Returns(), gapSpace)
 		outputs := sig.Outputs()
 		if !outputs.Brackets().IsZero() {
-			p.printFusedBrackets(outputs.Brackets(), gapSpace, func(child *printer) {
-				child.printTypeListContents(outputs)
+			p.withGroup(func(p *printer) {
+				p.printFusedBrackets(outputs.Brackets(), gapSpace, func(p *printer) {
+					p.withIndent(func(indented *printer) {
+						indented.push(dom.TextIf(dom.Broken, "\n"))
+						indented.printTypeListContents(outputs)
+						p.push(dom.TextIf(dom.Broken, "\n"))
+					})
+				})
 			})
 		}
 	}
 }
 
 func (p *printer) printTypeListContents(list ast.TypeList) {
+	gap := gapNone
 	for i := range list.Len() {
-		gap := gapNone
 		if i > 0 {
 			p.printToken(list.Comma(i-1), gapNone)
-			gap = gapSpace
+			// Use Softline here so args break onto new lines if needed
+			gap = gapSoftline
 		}
 		p.printType(list.At(i), gap)
 	}
@@ -218,7 +232,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 				for d := range seq.Values(body.Decls()) {
 					indented.printDecl(d)
 				}
-				indented.flushRemaining()
+				indented.printRemaining()
 			})
 		}
 	})
@@ -231,11 +245,10 @@ func (p *printer) printRange(r ast.DeclRange) {
 
 	ranges := r.Ranges()
 	for i := range ranges.Len() {
-		gap := gapSpace
 		if i > 0 {
 			p.printToken(ranges.Comma(i-1), gapNone)
 		}
-		p.printExpr(ranges.At(i), gap)
+		p.printExpr(ranges.At(i), gapSpace)
 	}
 	p.printCompactOptions(r.Options())
 	p.printToken(r.Semicolon(), gapNone)
@@ -245,22 +258,25 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	if co.IsZero() {
 		return
 	}
-	p.printFusedBrackets(co.Brackets(), gapSpace, func(child *printer) {
-		entries := co.Entries()
-		for i := range entries.Len() {
-			if i > 0 {
-				child.printToken(entries.Comma(i-1), gapNone)
-			}
-			opt := entries.At(i)
-			gap := gapNone
-			if i > 0 {
-				gap = gapSpace
-			}
-			child.printPath(opt.Path, gap)
-			if !opt.Equals.IsZero() {
-				child.printToken(opt.Equals, gapSpace)
-				child.printExpr(opt.Value, gapSpace)
-			}
-		}
+	p.withGroup(func(p *printer) {
+		p.printFusedBrackets(co.Brackets(), gapSpace, func(p *printer) {
+			entries := co.Entries()
+			p.withIndent(func(indented *printer) {
+				for i := range entries.Len() {
+					if i > 0 {
+						indented.printToken(entries.Comma(i-1), gapNone)
+						indented.printPath(entries.At(i).Path, gapSoftline)
+					} else {
+						indented.printPath(entries.At(i).Path, gapNone)
+					}
+
+					opt := entries.At(i)
+					if !opt.Equals.IsZero() {
+						indented.printToken(opt.Equals, gapSpace)
+						indented.printExpr(opt.Value, gapSpace)
+					}
+				}
+			})
+		})
 	})
 }
