@@ -17,7 +17,6 @@ package printer
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
-	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
 // printDecl dispatches to the appropriate printer based on declaration kind.
@@ -182,13 +181,15 @@ func (p *printer) printSignature(sig ast.Signature) {
 	inputs := sig.Inputs()
 	if !inputs.Brackets().IsZero() {
 		p.withGroup(func(p *printer) {
-			p.printFusedBrackets(inputs.Brackets(), gapNone, func(p *printer) {
-				p.withIndent(func(indented *printer) {
-					indented.push(dom.TextIf(dom.Broken, "\n"))
-					indented.printTypeListContents(inputs)
-					p.push(dom.TextIf(dom.Broken, "\n"))
-				})
+			openTok, closeTok := inputs.Brackets().StartEnd()
+			slots := p.trivia.scopeSlots(inputs.Brackets().ID())
+			p.printToken(openTok, gapNone)
+			p.withIndent(func(indented *printer) {
+				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.printTypeListContents(inputs, slots)
+				p.push(dom.TextIf(dom.Broken, "\n"))
 			})
+			p.printToken(closeTok, gapNone)
 		})
 	}
 
@@ -197,28 +198,31 @@ func (p *printer) printSignature(sig ast.Signature) {
 		outputs := sig.Outputs()
 		if !outputs.Brackets().IsZero() {
 			p.withGroup(func(p *printer) {
-				p.printFusedBrackets(outputs.Brackets(), gapSpace, func(p *printer) {
-					p.withIndent(func(indented *printer) {
-						indented.push(dom.TextIf(dom.Broken, "\n"))
-						indented.printTypeListContents(outputs)
-						p.push(dom.TextIf(dom.Broken, "\n"))
-					})
+				openTok, closeTok := outputs.Brackets().StartEnd()
+				slots := p.trivia.scopeSlots(outputs.Brackets().ID())
+				p.printToken(openTok, gapSpace)
+				p.withIndent(func(indented *printer) {
+					indented.push(dom.TextIf(dom.Broken, "\n"))
+					indented.printTypeListContents(outputs, slots)
+					p.push(dom.TextIf(dom.Broken, "\n"))
 				})
+				p.printToken(closeTok, gapNone)
 			})
 		}
 	}
 }
 
-func (p *printer) printTypeListContents(list ast.TypeList) {
+func (p *printer) printTypeListContents(list ast.TypeList, slots []slot) {
 	gap := gapNone
 	for i := range list.Len() {
+		p.emitSlot(slots, i)
 		if i > 0 {
 			p.printToken(list.Comma(i-1), gapNone)
-			// Use Softline here so args break onto new lines if needed
 			gap = gapSoftline
 		}
 		p.printType(list.At(i), gap)
 	}
+	p.emitSlot(slots, list.Len())
 }
 
 func (p *printer) printBody(body ast.DeclBody) {
@@ -226,16 +230,24 @@ func (p *printer) printBody(body ast.DeclBody) {
 		return
 	}
 
-	p.printFusedBrackets(body.Braces(), gapSpace, func(child *printer) {
-		if body.Decls().Len() > 0 {
-			child.withIndent(func(indented *printer) {
-				for d := range seq.Values(body.Decls()) {
-					indented.printDecl(d)
-				}
-				indented.printRemaining()
-			})
-		}
-	})
+	braces := body.Braces()
+	if braces.IsZero() {
+		return
+	}
+
+	openTok, closeTok := braces.StartEnd()
+	slots := p.trivia.scopeSlots(braces.ID())
+
+	p.printToken(openTok, gapSpace)
+
+	closeGap := gapNone
+	if body.Decls().Len() > 0 || len(slots) > 0 {
+		closeGap = gapNewline
+		p.withIndent(func(indented *printer) {
+			indented.printScopeDecls(slots, body.Decls())
+		})
+	}
+	p.printToken(closeTok, closeGap)
 }
 
 func (p *printer) printRange(r ast.DeclRange) {
@@ -258,25 +270,36 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	if co.IsZero() {
 		return
 	}
-	p.withGroup(func(p *printer) {
-		p.printFusedBrackets(co.Brackets(), gapSpace, func(p *printer) {
-			entries := co.Entries()
-			p.withIndent(func(indented *printer) {
-				for i := range entries.Len() {
-					if i > 0 {
-						indented.printToken(entries.Comma(i-1), gapNone)
-						indented.printPath(entries.At(i).Path, gapSoftline)
-					} else {
-						indented.printPath(entries.At(i).Path, gapNone)
-					}
 
-					opt := entries.At(i)
-					if !opt.Equals.IsZero() {
-						indented.printToken(opt.Equals, gapSpace)
-						indented.printExpr(opt.Value, gapSpace)
-					}
+	brackets := co.Brackets()
+	if brackets.IsZero() {
+		return
+	}
+
+	openTok, closeTok := brackets.StartEnd()
+	slots := p.trivia.scopeSlots(brackets.ID())
+
+	p.withGroup(func(p *printer) {
+		p.printToken(openTok, gapSpace)
+		entries := co.Entries()
+		p.withIndent(func(indented *printer) {
+			for i := range entries.Len() {
+				indented.emitSlot(slots, i)
+				if i > 0 {
+					indented.printToken(entries.Comma(i-1), gapNone)
+					indented.printPath(entries.At(i).Path, gapSoftline)
+				} else {
+					indented.printPath(entries.At(i).Path, gapNone)
 				}
-			})
+
+				opt := entries.At(i)
+				if !opt.Equals.IsZero() {
+					indented.printToken(opt.Equals, gapSpace)
+					indented.printExpr(opt.Value, gapSpace)
+				}
+			}
+			p.emitSlot(slots, entries.Len())
 		})
+		p.printToken(closeTok, gapNone)
 	})
 }

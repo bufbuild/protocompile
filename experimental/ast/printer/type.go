@@ -47,14 +47,24 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 
 	p.printPath(ty.Path(), gap)
 	args := ty.Args()
-	p.printFusedBrackets(args.Brackets(), gapNone, func(child *printer) {
-		for i := range args.Len() {
-			argGap := gapNone
-			if i > 0 {
-				child.printToken(args.Comma(i-1), gapNone)
-				argGap = gapSpace
-			}
-			child.printType(args.At(i), argGap)
+	brackets := args.Brackets()
+	if brackets.IsZero() {
+		return
+	}
+
+	openTok, closeTok := brackets.StartEnd()
+	slots := p.trivia.scopeSlots(brackets.ID())
+
+	p.printToken(openTok, gapNone)
+	for i := range args.Len() {
+		p.emitSlot(slots, i)
+		argGap := gapNone
+		if i > 0 {
+			p.printToken(args.Comma(i-1), gapNone)
+			argGap = gapSpace
 		}
-	})
+		p.printType(args.At(i), argGap)
+	}
+	p.emitSlot(slots, args.Len())
+	p.printToken(closeTok, gapNone)
 }

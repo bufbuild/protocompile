@@ -109,6 +109,8 @@ func applyEdit(file *ast.File, edit Edit) error {
 		return addService(file, edit.Name)
 	case "delete_decl":
 		return deleteDecl(file, edit.Target)
+	case "move_decl":
+		return moveDecl(file, edit.Target, edit.Name)
 	default:
 		return fmt.Errorf("unknown edit kind: %s", edit.Kind)
 	}
@@ -685,4 +687,53 @@ func deleteFromDecls(decls seq.Inserter[ast.DeclAny], name string) error {
 		}
 	}
 	return fmt.Errorf("declaration %q not found", name)
+}
+
+// moveDecl moves the declaration named target so that it appears before the
+// declaration named before. Both must be top-level declarations.
+func moveDecl(file *ast.File, target, before string) error {
+	decls := file.Decls()
+
+	// Find the target declaration and save it.
+	srcIdx := -1
+	var saved ast.DeclAny
+	for i := range decls.Len() {
+		def := decls.At(i).AsDef()
+		if def.IsZero() {
+			continue
+		}
+		name := def.Name()
+		if !name.IsZero() && name.AsIdent().Text() == target {
+			srcIdx = i
+			saved = decls.At(i)
+			break
+		}
+	}
+	if srcIdx < 0 {
+		return fmt.Errorf("declaration %q not found", target)
+	}
+
+	// Delete the source declaration.
+	decls.Delete(srcIdx)
+
+	// Find the "before" declaration in the (now shorter) list.
+	dstIdx := -1
+	for i := range decls.Len() {
+		def := decls.At(i).AsDef()
+		if def.IsZero() {
+			continue
+		}
+		name := def.Name()
+		if !name.IsZero() && name.AsIdent().Text() == before {
+			dstIdx = i
+			break
+		}
+	}
+	if dstIdx < 0 {
+		return fmt.Errorf("declaration %q not found", before)
+	}
+
+	// Insert the saved declaration before the target position.
+	decls.Insert(dstIdx, saved)
+	return nil
 }

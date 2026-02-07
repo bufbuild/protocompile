@@ -20,9 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // gapStyle specifies the whitespace intent before a token.
@@ -39,10 +37,11 @@ const (
 func PrintFile(file *ast.File, opts Options) string {
 	opts = opts.withDefaults()
 	return dom.Render(opts.domOptions(), func(push dom.Sink) {
+		trivia := buildTriviaIndex(file.Stream())
 		p := &printer{
+			trivia: trivia,
 			push:   push,
 			opts:   opts,
-			cursor: file.Stream().Cursor(),
 		}
 		p.printFile(file)
 	})
@@ -54,156 +53,105 @@ func PrintFile(file *ast.File, opts Options) string {
 func Print(decl ast.DeclAny, opts Options) string {
 	opts = opts.withDefaults()
 	return dom.Render(opts.domOptions(), func(push dom.Sink) {
-		p := newPrinter(push, opts)
+		p := &printer{
+			push: push,
+			opts: opts,
+		}
 		p.printDecl(decl)
 	})
 }
 
 // printer tracks state for printing AST nodes with fidelity.
 type printer struct {
-	cursor  *token.Cursor
-	push    dom.Sink
-	opts    Options
-	lastTok token.Token
+	trivia *triviaIndex
+	push   dom.Sink
+	opts   Options
 }
 
-// newPrinter creates a new printer with the given options.
-func newPrinter(push dom.Sink, opts Options) *printer {
-	return &printer{
-		push: push,
-		opts: opts,
-	}
-}
-
-// printFile prints all declarations in a file, preserving whitespace between them.
+// printFile prints all declarations in a file, zipping with trivia slots.
 func (p *printer) printFile(file *ast.File) {
-	for d := range seq.Values(file.Decls()) {
-		p.printDecl(d)
-	}
-	p.printRemaining()
+	slots := p.trivia.scopeSlots(0)
+	p.printScopeDecls(slots, file.Decls())
+	// Emit any remaining trivia at the end of the file (e.g., EOF comments).
+	p.emitScopeEnd(0)
 }
 
 // printToken is the standard entry point for printing a semantic token.
+// It emits leading attached trivia, the gap, the token text, and trailing
+// attached trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
 	}
-	p.emitTokenContent(tok, gap)
 
-	// Advance cursor past this token
-	if p.cursor != nil && !tok.IsSynthetic() {
-		p.cursor.NextSkippable()
+	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
+
+	// Emit leading attached trivia. When the token was seen during building
+	// (natural token), its leading trivia contains the original whitespace
+	// (possibly empty for the very first token). For synthetic tokens
+	// (hasTrivia=false), fall back to the gap style.
+	if hasTrivia {
+		p.emitTriviaRun(att.leading)
+	} else {
+		p.emitGap(gap)
 	}
-}
 
-// emitTokenContent handles the Gap -> Trivia -> Token flow.
-// It does NOT advance the cursor.
-func (p *printer) emitTokenContent(tok token.Token, gap gapStyle) {
-	p.printSkippableUntil(tok, gap)
+	// Emit the token text.
 	p.emit(tok.Text())
-	p.lastTok = tok
+
+	// Emit trailing attached trivia.
+	if hasTrivia && len(att.trailing.tokens) > 0 {
+		p.emitTriviaRun(att.trailing)
+	}
 }
 
-// printFusedBrackets handles parens/braces where the AST token is "fused" (skips children).
-func (p *printer) printFusedBrackets(brackets token.Token, gap gapStyle, printContents func(child *printer)) {
-	if brackets.IsZero() {
+// printScopeDecls zips trivia slots with declarations.
+// If there are more slots than children+1 (due to AST mutations),
+// remaining slots are flushed after the last child.
+func (p *printer) printScopeDecls(slots []slot, decls seq.Indexer[ast.DeclAny]) {
+	limit := max(len(slots), decls.Len()+1)
+	for i := range limit {
+		p.emitSlot(slots, i)
+		if i < decls.Len() {
+			p.printDecl(decls.At(i))
+		}
+	}
+}
+
+// emitSlot emits the detached trivia for slot[i], if it exists.
+func (p *printer) emitSlot(slots []slot, i int) {
+	if i >= len(slots) {
 		return
 	}
-	openTok, closeTok := brackets.StartEnd()
-	p.emitTokenContent(openTok, gap)
-	originalCursor := p.cursor
-	p.cursor = brackets.Children()
-	p.lastTok = openTok
-
-	printContents(p)
-	p.printRemaining()
-	closeGap := gapNone
-	if p.lastTok != openTok && isBrace(openTok) {
-		closeGap = gapNewline
-	}
-	p.emitTokenContent(closeTok, closeGap)
-	p.lastTok = closeTok
-
-	// Advance parent cursor past the fused group
-	p.cursor = originalCursor
-	if p.cursor != nil && !openTok.IsSynthetic() {
-		p.cursor.NextSkippable()
+	for _, run := range slots[i].runs {
+		p.emitTriviaRun(run)
 	}
 }
 
-// printSkippableUntil emits whitespace/comments from the cursor up to target.
-// Pass token.Zero to flush all remaining tokens.
-func (p *printer) printSkippableUntil(target token.Token, gap gapStyle) {
-	if target.IsSynthetic() {
-		switch gap {
-		case gapNewline:
-			p.emit("\n")
-		case gapSpace:
-			p.emit(" ")
-		case gapSoftline:
-			p.push(dom.TextIf(dom.Flat, " "))
-			p.push(dom.TextIf(dom.Broken, "\n"))
-		}
-		return
+// emitTriviaRun emits a run of trivia tokens as a single text node.
+//
+// Concatenating into one string is necessary because the dom merges
+// adjacent whitespace-only tags of the same kind, which would collapse
+// separate "\n" tokens into a single newline, losing blank lines.
+func (p *printer) emitTriviaRun(run triviaRun) {
+	var buf strings.Builder
+	for _, tok := range run.tokens {
+		buf.WriteString(tok.Text())
 	}
-	if p.cursor == nil {
-		return
-	}
-
-	stopAt := -1
-	if !target.IsZero() {
-		stopAt = target.Span().Start
-	}
-
-	spanStart, spanEnd := -1, -1
-	afterDeleted := false
-
-	for tok := range p.cursor.RestSkippable() {
-		if stopAt >= 0 && !tok.IsSynthetic() && tok.Span().Start >= stopAt {
-			break
-		}
-
-		if !tok.Kind().IsSkippable() {
-			if spanStart >= 0 {
-				text := p.spanText(spanStart, spanEnd)
-				if blankIdx := strings.LastIndex(text, "\n\n"); blankIdx >= 0 {
-					p.emit(text[:blankIdx])
-				}
-			}
-			spanStart, spanEnd = -1, -1
-			afterDeleted = true
-			continue
-		}
-
-		span := tok.Span()
-		if afterDeleted {
-			if idx := strings.IndexByte(span.Text(), '\n'); idx >= 0 {
-				afterDeleted = false
-				spanStart = span.Start + idx
-				spanEnd = span.End
-			}
-			continue
-		}
-
-		if spanStart < 0 {
-			spanStart = span.Start
-		}
-		spanEnd = span.End
-	}
-
-	if spanStart >= 0 {
-		p.emit(p.spanText(spanStart, spanEnd))
-	}
+	p.emit(buf.String())
 }
 
-// printRemaining emits any remaining skippable tokens from the cursor.
-func (p *printer) printRemaining() {
-	p.printSkippableUntil(token.Zero, gapNone)
-}
-
-// spanText returns the source text for the given byte range.
-func (p *printer) spanText(start, end int) string {
-	return source.Span{File: p.cursor.Context().File, Start: start, End: end}.Text()
+// emitGap emits a gap based on the style.
+func (p *printer) emitGap(gap gapStyle) {
+	switch gap {
+	case gapNewline:
+		p.emit("\n")
+	case gapSpace:
+		p.emit(" ")
+	case gapSoftline:
+		p.push(dom.TextIf(dom.Flat, " "))
+		p.push(dom.TextIf(dom.Broken, "\n"))
+	}
 }
 
 // emit writes text to the output.
@@ -223,7 +171,7 @@ func (p *printer) withIndent(fn func(p *printer)) {
 	p.push = originalPush
 }
 
-// withGroup runs fn with an grouped printer, swapping the sink temporarily.
+// withGroup runs fn with a grouped printer, swapping the sink temporarily.
 func (p *printer) withGroup(fn func(p *printer)) {
 	originalPush := p.push
 	p.push(dom.Group(p.opts.MaxWidth, func(groupSink dom.Sink) {
@@ -233,8 +181,10 @@ func (p *printer) withGroup(fn func(p *printer)) {
 	p.push = originalPush
 }
 
-// isBrace returns true if tok is a brace (not paren, bracket, or angle).
-func isBrace(tok token.Token) bool {
-	kw := tok.Keyword()
-	return kw == keyword.LBrace || kw == keyword.RBrace || kw == keyword.Braces
+// emitScopeEnd emits any trailing trivia at the end of a scope.
+func (p *printer) emitScopeEnd(scopeID token.ID) {
+	run := p.trivia.getScopeEnd(scopeID)
+	if len(run.tokens) > 0 {
+		p.emitTriviaRun(run)
+	}
 }

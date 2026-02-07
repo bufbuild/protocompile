@@ -38,10 +38,17 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 			}
 
 			if extn := pc.AsExtension(); !extn.IsZero() {
-				// Extension path component like (foo.bar)
-				p.printFusedBrackets(pc.Name(), componentGap, func(child *printer) {
-					child.printPath(extn, gapNone)
-				})
+				// Extension path component like (foo.bar).
+				// The parens are a scope.
+				parens := pc.Name()
+				openTok, closeTok := parens.StartEnd()
+				slots := p.trivia.scopeSlots(parens.ID())
+
+				p.printToken(openTok, componentGap)
+				p.emitSlot(slots, 0)
+				p.printPath(extn, gapNone)
+				p.emitSlot(slots, 1)
+				p.printToken(closeTok, gapNone)
 			} else {
 				// Simple identifier
 				p.printToken(pc.Name(), componentGap)

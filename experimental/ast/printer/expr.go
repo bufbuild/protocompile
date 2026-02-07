@@ -63,17 +63,27 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	p.printFusedBrackets(expr.Brackets(), gap, func(child *printer) {
-		elements := expr.Elements()
-		for i := range elements.Len() {
-			elemGap := gapNone
-			if i > 0 {
-				child.printToken(elements.Comma(i-1), gapNone)
-				elemGap = gapSpace
-			}
-			child.printExpr(elements.At(i), elemGap)
+	brackets := expr.Brackets()
+	if brackets.IsZero() {
+		return
+	}
+
+	openTok, closeTok := brackets.StartEnd()
+	slots := p.trivia.scopeSlots(brackets.ID())
+
+	p.printToken(openTok, gap)
+	elements := expr.Elements()
+	for i := range elements.Len() {
+		p.emitSlot(slots, i)
+		elemGap := gapNone
+		if i > 0 {
+			p.printToken(elements.Comma(i-1), gapNone)
+			elemGap = gapSpace
 		}
-	})
+		p.printExpr(elements.At(i), elemGap)
+	}
+	p.emitSlot(slots, elements.Len())
+	p.printToken(closeTok, gapNone)
 }
 
 func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
@@ -81,16 +91,27 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
-	p.printFusedBrackets(expr.Braces(), gap, func(child *printer) {
-		elements := expr.Elements()
-		if elements.Len() > 0 {
-			child.withIndent(func(indented *printer) {
-				for i := range elements.Len() {
-					indented.printExprField(elements.At(i), gapNewline)
-				}
-			})
-		}
-	})
+	braces := expr.Braces()
+	if braces.IsZero() {
+		return
+	}
+
+	openTok, closeTok := braces.StartEnd()
+	slots := p.trivia.scopeSlots(braces.ID())
+
+	p.printToken(openTok, gap)
+	elements := expr.Elements()
+	if elements.Len() > 0 || len(slots) > 0 {
+		p.withIndent(func(indented *printer) {
+			for i := range elements.Len() {
+				indented.emitSlot(slots, i)
+				indented.printExprField(elements.At(i), gapNewline)
+			}
+			indented.emitSlot(slots, elements.Len())
+		})
+	}
+
+	p.printToken(closeTok, gapSoftline)
 }
 
 func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
