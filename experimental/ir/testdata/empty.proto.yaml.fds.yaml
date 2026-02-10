@@ -1,8 +1,6 @@
 file:
 - name: "empty.proto"
-  package: ""
   source_code_info:
     location: [{ span: [0, 0, 0] }]
     (buf.descriptor.v1.buf_source_code_info_extension):
       is_syntax_unspecified: true
-  syntax: "proto2"

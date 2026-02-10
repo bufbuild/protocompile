@@ -81,7 +81,9 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 		proto.SetExtension(g.sourceCodeInfo, descriptorv1.E_BufSourceCodeInfoExtension, g.sourceCodeInfoExtn)
 	}
 
-	fdp.Package = addr(string(file.Package()))
+	if file.Package() != "" {
+		fdp.Package = addr(string(file.Package()))
+	}
 	g.addSourceLocationWithSourcePathElements(
 		file.AST().Package().Span(),
 		[]int32{internal.FilePackageTag},
@@ -89,11 +91,16 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 		file.AST().Package().Semicolon().ID(),
 	)
 
-	if file.Syntax().IsEdition() {
-		fdp.Syntax = addr("editions")
-		fdp.Edition = descriptorpb.Edition(file.Syntax()).Enum()
-	} else {
-		fdp.Syntax = addr(file.Syntax().String())
+	// A syntax descriptor is only populated if the syntax is not proto2. Proto2 is considered
+	// the default and is left empty, in conformance with protoc.
+	// https://protobuf.com/docs/descriptors#file-descriptors
+	if file.Syntax() != syntax.Proto2 {
+		if file.Syntax().IsEdition() {
+			fdp.Syntax = addr("editions")
+			fdp.Edition = descriptorpb.Edition(file.Syntax()).Enum()
+		} else {
+			fdp.Syntax = addr(file.Syntax().String())
+		}
 	}
 	g.addSourceLocationWithSourcePathElements(
 		file.AST().Syntax().Span(),
@@ -145,6 +152,7 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 					weak.Span(),
 					[]int32{internal.FileWeakDependencyTag, weakDepIndex},
 				)
+				weakDepIndex++
 			}
 		} else if imp.Option {
 			fdp.OptionDependency = append(fdp.OptionDependency, imp.Path())
@@ -402,7 +410,15 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	defer reset()
 
 	fieldAST := f.AST().AsField()
-	g.addSourceLocation(fieldAST.Span(), token.ID(fieldAST.Type.ID()), fieldAST.Semicolon.ID())
+	checkTypeToken := token.ID(fieldAST.Type.ID())
+	if prefixed := fieldAST.Type.AsPrefixed(); !prefixed.IsZero() {
+		checkTypeToken = prefixed.PrefixToken().ID()
+	}
+	g.addSourceLocation(
+		fieldAST.Span(),
+		checkTypeToken,
+		fieldAST.Semicolon.ID(),
+	)
 
 	fdp.Name = addr(f.Name())
 	g.addSourceLocationWithSourcePathElements(fieldAST.Name.Span(), []int32{internal.FieldNameTag})
@@ -479,6 +495,8 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	if !d.IsZero() {
 		if v, ok := d.AsBool(); ok {
 			fdp.DefaultValue = addr(strconv.FormatBool(v))
+		} else if v := d.AsEnum(); !v.IsZero() {
+			fdp.DefaultValue = addr(v.Name())
 		} else if v, ok := d.AsInt(); ok {
 			fdp.DefaultValue = addr(strconv.FormatInt(v, 10))
 		} else if v, ok := d.AsUInt(); ok {
@@ -703,8 +721,10 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto,
 	reset()
 
 	in, inStream := m.Input()
-	mdp.InputType = addr(string(in.FullName()))
-	mdp.ClientStreaming = addr(inStream)
+	mdp.InputType = addr(string(in.FullName().ToAbsolute()))
+	if inStream {
+		mdp.ClientStreaming = addr(inStream)
+	}
 
 	// Methods only have a single input, see [descriptorpb.MethodDescriptorProto].
 	inputAST := methodAST.Signature.Inputs().At(0)
@@ -718,8 +738,10 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto,
 	reset()
 
 	out, outStream := m.Output()
-	mdp.OutputType = addr(string(out.FullName()))
-	mdp.ServerStreaming = addr(outStream)
+	mdp.OutputType = addr(string(out.FullName().ToAbsolute()))
+	if outStream {
+		mdp.ServerStreaming = addr(outStream)
+	}
 
 	// Methods only have a single output, see [descriptorpb.MethodDescriptorProto].
 	outputAST := methodAST.Signature.Outputs().At(0)
@@ -732,12 +754,12 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto,
 	g.addSourceLocation(outputAST.RemovePrefixes().Span())
 	reset()
 
-	if options := m.Options(); !iterx.Empty(options.Fields()) {
+	// protoc populates options as long as the body is non-zero, even if options are empty.
+	if options := m.Options(); !methodAST.Body.IsZero() {
+		// if options := m.Options(); !iterx.Empty(options.Fields()) {
 		mdp.Options = new(descriptorpb.MethodOptions)
 		for option := range methodAST.Body.Options() {
-			reset := g.path.with(internal.MethodOptionsTag)
-			g.addSourceLocation(option.Span())
-			reset()
+			g.addSourceLocationWithSourcePathElements(option.Span(), []int32{internal.MethodOptionsTag})
 		}
 		g.options(options, mdp.Options, internal.MethodOptionsTag)
 	}

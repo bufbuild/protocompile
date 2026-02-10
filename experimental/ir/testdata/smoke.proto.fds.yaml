@@ -25,4 +25,3 @@ file:
     - { name: "BAR_ZERO", number: 0 }
     - { name: "BAR_A", number: 1 }
     - { name: "BAR_B", number: 2 }
-  syntax: "proto2"

@@ -95,14 +95,10 @@ file:
   - name: "MyService"
     method:
     - name: "GetMessage"
-      input_type: "buf.test.MyMessage"
-      output_type: "buf.test.MyMessage"
-      client_streaming: false
-      server_streaming: false
+      input_type: ".buf.test.MyMessage"
+      output_type: ".buf.test.MyMessage"
     - name: "ListMessages"
-      input_type: "buf.test.MyMessage"
-      output_type: "buf.test.MyMessage"
-      client_streaming: false
-      server_streaming: false
+      input_type: ".buf.test.MyMessage"
+      output_type: ".buf.test.MyMessage"
   syntax: "editions"
   edition: EDITION_2024
