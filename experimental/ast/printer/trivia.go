@@ -135,7 +135,20 @@ func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
 // walkDecl processes a declaration.
 func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 	endToken := startToken
+	var pending []token.Token
 	for tok := startToken; !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok != startToken && tok.Kind().IsSkippable() {
+			pending = append(pending, tok)
+			continue
+		}
+
+		// Register leading trivia for every non-skippable token after the
+		// first (the first token's trivia is already set by walkScope).
+		if tok != startToken {
+			idx.attached[tok.ID()] = attachedTrivia{leading: pending}
+			pending = nil
+		}
+
 		endToken = tok
 		if !tok.IsLeaf() {
 			// Recurse into fused tokens (non-leaf tokens).

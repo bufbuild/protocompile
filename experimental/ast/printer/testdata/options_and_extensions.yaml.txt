@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package opts;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MessageOptions {
+  optional string my_option = 51234;
+}
+
+message MyMessage {
+  option deprecated = true;
+  option (my_option) = "hello";
+
+  string name = 1 [json_name = "Name", deprecated = true];
+  int32 id = 2 [deprecated = true];
+
+  reserved 10 to 20;
+}
+
+enum MyEnum {
+  MY_ENUM_UNSPECIFIED = 0;
+  MY_ENUM_VALUE = 1 [(custom_opt) = true];
+}
