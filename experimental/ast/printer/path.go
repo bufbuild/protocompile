@@ -42,12 +42,12 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 				// The parens are a scope.
 				parens := pc.Name()
 				openTok, closeTok := parens.StartEnd()
-				slots := p.trivia.scopeSlots(parens.ID())
+				trivia := p.trivia.scopeTrivia(parens.ID())
 
 				p.printToken(openTok, componentGap)
-				p.emitSlot(slots, 0)
+				p.emitTriviaSlot(trivia, 0)
 				p.printPath(extn, gapNone)
-				p.emitSlot(slots, 1)
+				p.emitTriviaSlot(trivia, 1)
 				p.printToken(closeTok, gapNone)
 			} else {
 				// Simple identifier

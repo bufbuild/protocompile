@@ -182,11 +182,11 @@ func (p *printer) printSignature(sig ast.Signature) {
 	if !inputs.Brackets().IsZero() {
 		p.withGroup(func(p *printer) {
 			openTok, closeTok := inputs.Brackets().StartEnd()
-			slots := p.trivia.scopeSlots(inputs.Brackets().ID())
+			trivia := p.trivia.scopeTrivia(inputs.Brackets().ID())
 			p.printToken(openTok, gapNone)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
-				indented.printTypeListContents(inputs, slots)
+				indented.printTypeListContents(inputs, trivia)
 				p.push(dom.TextIf(dom.Broken, "\n"))
 			})
 			p.printToken(closeTok, gapNone)
@@ -199,7 +199,7 @@ func (p *printer) printSignature(sig ast.Signature) {
 		if !outputs.Brackets().IsZero() {
 			p.withGroup(func(p *printer) {
 				openTok, closeTok := outputs.Brackets().StartEnd()
-				slots := p.trivia.scopeSlots(outputs.Brackets().ID())
+				slots := p.trivia.scopeTrivia(outputs.Brackets().ID())
 				p.printToken(openTok, gapSpace)
 				p.withIndent(func(indented *printer) {
 					indented.push(dom.TextIf(dom.Broken, "\n"))
@@ -212,17 +212,17 @@ func (p *printer) printSignature(sig ast.Signature) {
 	}
 }
 
-func (p *printer) printTypeListContents(list ast.TypeList, slots []slot) {
+func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia) {
 	gap := gapNone
 	for i := range list.Len() {
-		p.emitSlot(slots, i)
+		p.emitTriviaSlot(trivia, i)
 		if i > 0 {
 			p.printToken(list.Comma(i-1), gapNone)
 			gap = gapSoftline
 		}
 		p.printType(list.At(i), gap)
 	}
-	p.emitSlot(slots, list.Len())
+	p.emitRemainingTrivia(trivia, list.Len())
 }
 
 func (p *printer) printBody(body ast.DeclBody) {
@@ -236,16 +236,16 @@ func (p *printer) printBody(body ast.DeclBody) {
 	}
 
 	openTok, closeTok := braces.StartEnd()
-	slots := p.trivia.scopeSlots(braces.ID())
+	trivia := p.trivia.scopeTrivia(braces.ID())
 
 	p.printToken(openTok, gapSpace)
 
 	closeGap := gapNone
-	if body.Decls().Len() > 0 || len(slots) > 0 {
-		closeGap = gapNewline
+	if body.Decls().Len() > 0 || !trivia.isEmpty() {
 		p.withIndent(func(indented *printer) {
-			indented.printScopeDecls(slots, body.Decls())
+			indented.printScopeDecls(trivia, body.Decls())
 		})
+		closeGap = gapNewline
 	}
 	p.printToken(closeTok, closeGap)
 }
@@ -277,14 +277,14 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	}
 
 	openTok, closeTok := brackets.StartEnd()
-	slots := p.trivia.scopeSlots(brackets.ID())
+	slots := p.trivia.scopeTrivia(brackets.ID())
 
 	p.withGroup(func(p *printer) {
 		p.printToken(openTok, gapSpace)
 		entries := co.Entries()
 		p.withIndent(func(indented *printer) {
 			for i := range entries.Len() {
-				indented.emitSlot(slots, i)
+				indented.emitTriviaSlot(slots, i)
 				if i > 0 {
 					indented.printToken(entries.Comma(i-1), gapNone)
 					indented.printPath(entries.At(i).Path, gapSoftline)
@@ -298,8 +298,10 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					indented.printExpr(opt.Value, gapSpace)
 				}
 			}
-			p.emitSlot(slots, entries.Len())
+			p.emitTriviaSlot(slots, entries.Len())
 		})
+		p.flushPending()
+		p.push(dom.TextIf(dom.Broken, "\n"))
 		p.printToken(closeTok, gapNone)
 	})
 }

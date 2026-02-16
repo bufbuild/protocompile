@@ -3,7 +3,7 @@ syntax = "proto3";
 package test;
 
 message Foo {
-  message Bar {}
+   message Bar { }
 
   string field = 1;
 }

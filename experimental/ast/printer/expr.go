@@ -69,12 +69,12 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	}
 
 	openTok, closeTok := brackets.StartEnd()
-	slots := p.trivia.scopeSlots(brackets.ID())
+	slots := p.trivia.scopeTrivia(brackets.ID())
 
 	p.printToken(openTok, gap)
 	elements := expr.Elements()
 	for i := range elements.Len() {
-		p.emitSlot(slots, i)
+		p.emitTriviaSlot(slots, i)
 		elemGap := gapNone
 		if i > 0 {
 			p.printToken(elements.Comma(i-1), gapNone)
@@ -82,7 +82,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		}
 		p.printExpr(elements.At(i), elemGap)
 	}
-	p.emitSlot(slots, elements.Len())
+	p.emitTriviaSlot(slots, elements.Len())
 	p.printToken(closeTok, gapNone)
 }
 
@@ -97,17 +97,17 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 
 	openTok, closeTok := braces.StartEnd()
-	slots := p.trivia.scopeSlots(braces.ID())
+	trivia := p.trivia.scopeTrivia(braces.ID())
 
 	p.printToken(openTok, gap)
 	elements := expr.Elements()
-	if elements.Len() > 0 || len(slots) > 0 {
+	if elements.Len() > 0 || !trivia.isEmpty() {
 		p.withIndent(func(indented *printer) {
 			for i := range elements.Len() {
-				indented.emitSlot(slots, i)
+				indented.emitTriviaSlot(trivia, i)
 				indented.printExprField(elements.At(i), gapNewline)
 			}
-			indented.emitSlot(slots, elements.Len())
+			indented.emitTriviaSlot(trivia, elements.Len())
 		})
 	}
 

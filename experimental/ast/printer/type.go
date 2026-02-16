@@ -53,11 +53,11 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 	}
 
 	openTok, closeTok := brackets.StartEnd()
-	slots := p.trivia.scopeSlots(brackets.ID())
+	trivia := p.trivia.scopeTrivia(brackets.ID())
 
 	p.printToken(openTok, gapNone)
 	for i := range args.Len() {
-		p.emitSlot(slots, i)
+		p.emitTriviaSlot(trivia, i)
 		argGap := gapNone
 		if i > 0 {
 			p.printToken(args.Comma(i-1), gapNone)
@@ -65,6 +65,6 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 		}
 		p.printType(args.At(i), argGap)
 	}
-	p.emitSlot(slots, args.Len())
+	p.emitRemainingTrivia(trivia, args.Len())
 	p.printToken(closeTok, gapNone)
 }

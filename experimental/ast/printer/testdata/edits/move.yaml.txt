@@ -6,14 +6,14 @@ package test; // d
 
 // e
 
-// f
-
 // Attached to Beta
 message Beta {
   // g
 
   int32 id = 1;
 }
+
+// f
 
 // Attached to Alpha
 message Alpha {

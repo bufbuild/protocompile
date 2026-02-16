@@ -58,22 +58,23 @@ func Print(decl ast.DeclAny, opts Options) string {
 			opts: opts,
 		}
 		p.printDecl(decl)
+		p.flushPending()
 	})
 }
 
 // printer tracks state for printing AST nodes with fidelity.
 type printer struct {
-	trivia *triviaIndex
-	push   dom.Sink
-	opts   Options
+	trivia  *triviaIndex
+	pending strings.Builder
+	push    dom.Sink
+	opts    Options
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
 func (p *printer) printFile(file *ast.File) {
-	slots := p.trivia.scopeSlots(0)
-	p.printScopeDecls(slots, file.Decls())
-	// Emit any remaining trivia at the end of the file (e.g., EOF comments).
-	p.emitScopeEnd(0)
+	trivia := p.trivia.scopeTrivia(0)
+	p.printScopeDecls(trivia, file.Decls())
+	p.flushPending()
 }
 
 // printToken is the standard entry point for printing a semantic token.
@@ -85,11 +86,6 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	}
 
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
-
-	// Emit leading attached trivia. When the token was seen during building
-	// (natural token), its leading trivia contains the original whitespace
-	// (possibly empty for the very first token). For synthetic tokens
-	// (hasTrivia=false), fall back to the gap style.
 	if hasTrivia {
 		p.emitTriviaRun(att.leading)
 	} else {
@@ -100,7 +96,7 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	p.emit(tok.Text())
 
 	// Emit trailing attached trivia.
-	if hasTrivia && len(att.trailing.tokens) > 0 {
+	if hasTrivia && len(att.trailing) > 0 {
 		p.emitTriviaRun(att.trailing)
 	}
 }
@@ -108,40 +104,46 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 // printScopeDecls zips trivia slots with declarations.
 // If there are more slots than children+1 (due to AST mutations),
 // remaining slots are flushed after the last child.
-func (p *printer) printScopeDecls(slots []slot, decls seq.Indexer[ast.DeclAny]) {
-	limit := max(len(slots), decls.Len()+1)
-	for i := range limit {
-		p.emitSlot(slots, i)
+func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny]) {
+	for i := range decls.Len() {
+		p.emitTriviaSlot(trivia, i)
 		if i < decls.Len() {
 			p.printDecl(decls.At(i))
 		}
 	}
+	p.emitRemainingTrivia(trivia, decls.Len())
 }
 
-// emitSlot emits the detached trivia for slot[i], if it exists.
-func (p *printer) emitSlot(slots []slot, i int) {
-	if i >= len(slots) {
+// emitTriviaSlot emits the detached trivia for slot[i], if it exists.
+func (p *printer) emitTriviaSlot(trivia detachedTrivia, i int) {
+	if i >= len(trivia.slots) {
 		return
 	}
-	for _, run := range slots[i].runs {
-		p.emitTriviaRun(run)
+	p.emitTriviaRun(trivia.slots[i])
+}
+
+// emitRemainingTrivia emits the remaining detached trivia for slot >= i, if it exists.
+func (p *printer) emitRemainingTrivia(trivia detachedTrivia, i int) {
+	for ; i < len(trivia.slots); i++ {
+		p.emitTriviaSlot(trivia, i)
 	}
 }
 
-// emitTriviaRun emits a run of trivia tokens as a single text node.
+// emitTriviaRun appends trivia tokens to the pending buffer.
 //
-// Concatenating into one string is necessary because the dom merges
-// adjacent whitespace-only tags of the same kind, which would collapse
-// separate "\n" tokens into a single newline, losing blank lines.
-func (p *printer) emitTriviaRun(run triviaRun) {
-	var buf strings.Builder
-	for _, tok := range run.tokens {
-		buf.WriteString(tok.Text())
+// Used for trailing trivia and slot (detached) trivia. These accumulate in
+// the pending buffer so that adjacent pure-newline runs are combined into a
+// single kindBreak dom tag, preventing the dom from merging them and
+// collapsing blank lines.
+func (p *printer) emitTriviaRun(tokens []token.Token) {
+	for _, tok := range tokens {
+		p.pending.WriteString(tok.Text())
 	}
-	p.emit(buf.String())
 }
 
-// emitGap emits a gap based on the style.
+// emitGap writes a gap to the output. If pending already has content
+// (from preceding natural trivia), the existing whitespace takes precedence
+// and the gap is skipped.
 func (p *printer) emitGap(gap gapStyle) {
 	switch gap {
 	case gapNewline:
@@ -154,10 +156,20 @@ func (p *printer) emitGap(gap gapStyle) {
 	}
 }
 
-// emit writes text to the output.
+// emit writes non-whitespace text to the output, flushing pending whitespace first.
 func (p *printer) emit(s string) {
 	if len(s) > 0 {
+		p.flushPending()
 		p.push(dom.Text(s))
+	}
+}
+
+// flushPending flushes accumulated whitespace from the pending buffer as a
+// single dom.Text node.
+func (p *printer) flushPending() {
+	if p.pending.Len() > 0 {
+		p.push(dom.Text(p.pending.String()))
+		p.pending.Reset()
 	}
 }
 
@@ -179,12 +191,4 @@ func (p *printer) withGroup(fn func(p *printer)) {
 		fn(p)
 	}))
 	p.push = originalPush
-}
-
-// emitScopeEnd emits any trailing trivia at the end of a scope.
-func (p *printer) emitScopeEnd(scopeID token.ID) {
-	run := p.trivia.getScopeEnd(scopeID)
-	if len(run.tokens) > 0 {
-		p.emitTriviaRun(run)
-	}
 }
