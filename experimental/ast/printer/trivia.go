@@ -178,7 +178,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 			trailing = detached
 
 			cursor.PrevSkippable()
-			for range len(attached) {
+			for range attached {
 				cursor.PrevSkippable()
 			}
 			atEndOfScope = false
