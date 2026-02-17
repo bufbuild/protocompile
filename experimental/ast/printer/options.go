@@ -18,23 +18,18 @@ import "github.com/bufbuild/protocompile/experimental/dom"
 
 // Options controls the formatting behavior of the printer.
 type Options struct {
-	// Indent is the string used for each level of indentation.
-	// Defaults to two spaces if empty.
-	Indent string
-
-	// MaxWidth is the maximum line width before the printer attempts
-	// to break lines. A value of 0 means no limit.
+	// The maximum number of columns to render before triggering
+	// a break. A value of zero implies an infinite width.
 	MaxWidth int
 
-	// Format, when true, normalizes whitespace according to formatting rules.
-	// When false (default), preserves original whitespace.
-	Format bool
+	// The number of columns a tab character counts as. Defaults to 2.
+	TabstopWidth int
 }
 
 // withDefaults returns a copy of opts with default values applied.
 func (opts Options) withDefaults() Options {
-	if opts.Indent == "" {
-		opts.Indent = "  "
+	if opts.TabstopWidth == 0 {
+		opts.TabstopWidth = 2
 	}
 	return opts
 }
@@ -43,6 +38,6 @@ func (opts Options) withDefaults() Options {
 func (opts Options) domOptions() dom.Options {
 	return dom.Options{
 		MaxWidth:     opts.MaxWidth,
-		TabstopWidth: len(opts.Indent),
+		TabstopWidth: opts.TabstopWidth,
 	}
 }

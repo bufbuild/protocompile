@@ -176,7 +176,7 @@ func (p *printer) flushPending() {
 // withIndent runs fn with an indented printer, swapping the sink temporarily.
 func (p *printer) withIndent(fn func(p *printer)) {
 	originalPush := p.push
-	p.push(dom.Indent(p.opts.Indent, func(indentSink dom.Sink) {
+	p.push(dom.Indent(strings.Repeat(" ", p.opts.TabstopWidth), func(indentSink dom.Sink) {
 		p.push = indentSink
 		fn(p)
 	}))

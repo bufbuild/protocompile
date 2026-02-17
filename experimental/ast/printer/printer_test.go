@@ -45,9 +45,9 @@ func TestPrinter(t *testing.T) {
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		var testCase struct {
-			Source string `yaml:"source"`
-			Indent string `yaml:"indent"`
-			Edits  []Edit `yaml:"edits"`
+			Source       string `yaml:"source"`
+			TabstopWidth int    `yaml:"indent"`
+			Edits        []Edit `yaml:"edits"`
 		}
 
 		if err := yaml.Unmarshal([]byte(text), &testCase); err != nil {
@@ -73,7 +73,7 @@ func TestPrinter(t *testing.T) {
 		}
 
 		opts := printer.Options{
-			Indent: testCase.Indent,
+			TabstopWidth: testCase.TabstopWidth,
 		}
 		outputs[0] = printer.PrintFile(file, opts)
 	})
