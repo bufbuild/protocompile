@@ -34,14 +34,14 @@ const (
 )
 
 // PrintFile renders an AST file to protobuf source text.
-func PrintFile(file *ast.File, opts Options) string {
-	opts = opts.withDefaults()
-	return dom.Render(opts.domOptions(), func(push dom.Sink) {
+func PrintFile(options Options, file *ast.File) string {
+	options = options.withDefaults()
+	return dom.Render(options.domOptions(), func(push dom.Sink) {
 		trivia := buildTriviaIndex(file.Stream())
 		p := &printer{
-			trivia: trivia,
-			push:   push,
-			opts:   opts,
+			trivia:  trivia,
+			push:    push,
+			options: options,
 		}
 		p.printFile(file)
 	})
@@ -50,12 +50,12 @@ func PrintFile(file *ast.File, opts Options) string {
 // Print renders a single declaration to protobuf source text.
 //
 // For printing entire files, use [PrintFile] instead.
-func Print(decl ast.DeclAny, opts Options) string {
-	opts = opts.withDefaults()
-	return dom.Render(opts.domOptions(), func(push dom.Sink) {
+func Print(options Options, decl ast.DeclAny) string {
+	options = options.withDefaults()
+	return dom.Render(options.domOptions(), func(push dom.Sink) {
 		p := &printer{
-			push: push,
-			opts: opts,
+			push:    push,
+			options: options,
 		}
 		p.printDecl(decl)
 		p.flushPending()
@@ -64,10 +64,10 @@ func Print(decl ast.DeclAny, opts Options) string {
 
 // printer tracks state for printing AST nodes with fidelity.
 type printer struct {
+	options Options
 	trivia  *triviaIndex
 	pending strings.Builder
 	push    dom.Sink
-	opts    Options
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -176,7 +176,7 @@ func (p *printer) flushPending() {
 // withIndent runs fn with an indented printer, swapping the sink temporarily.
 func (p *printer) withIndent(fn func(p *printer)) {
 	originalPush := p.push
-	p.push(dom.Indent(strings.Repeat(" ", p.opts.TabstopWidth), func(indentSink dom.Sink) {
+	p.push(dom.Indent(strings.Repeat(" ", p.options.TabstopWidth), func(indentSink dom.Sink) {
 		p.push = indentSink
 		fn(p)
 	}))
@@ -186,7 +186,7 @@ func (p *printer) withIndent(fn func(p *printer)) {
 // withGroup runs fn with a grouped printer, swapping the sink temporarily.
 func (p *printer) withGroup(fn func(p *printer)) {
 	originalPush := p.push
-	p.push(dom.Group(p.opts.MaxWidth, func(groupSink dom.Sink) {
+	p.push(dom.Group(p.options.MaxWidth, func(groupSink dom.Sink) {
 		p.push = groupSink
 		fn(p)
 	}))

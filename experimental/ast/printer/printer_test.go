@@ -72,10 +72,10 @@ func TestPrinter(t *testing.T) {
 			}
 		}
 
-		opts := printer.Options{
+		options := printer.Options{
 			TabstopWidth: testCase.TabstopWidth,
 		}
-		outputs[0] = printer.PrintFile(file, opts)
+		outputs[0] = printer.PrintFile(options, file)
 	})
 }
 

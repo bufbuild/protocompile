@@ -44,6 +44,21 @@ func (t detachedTrivia) isEmpty() bool {
 
 // triviaIndex is the complete trivia decomposition for one file.
 //
+// Trivia refers to tokens that carry no syntactic meaning but preserve
+// the original source formatting: whitespace (spaces, newlines) and comments
+// (both line comments like "// ..." and block comments like "/* ... */").
+// For example, in this source:
+//
+//	// A detached comment about Foo.
+//
+//	message Foo {
+//		int32 x = 1; // field comment
+//	}
+//
+// The trivia includes: the detached comment and blank line before "message",
+// the spaces and newlines between tokens inside the body, and the trailing
+// line comment "// field comment" after the semicolon.
+//
 // Every natural non-skippable token gets an entry in attached, even if
 // both leading and trailing are empty. This distinguishes natural tokens
 // (use leading trivia) from synthetic tokens (use gap fallback).
