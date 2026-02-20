@@ -300,7 +300,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			}
 			p.emitTriviaSlot(slots, entries.Len())
 		})
-		p.flushPending()
+		p.flushPending(gapNone)
 		p.push(dom.TextIf(dom.Broken, "\n"))
 		p.printToken(closeTok, gapNone)
 	})
