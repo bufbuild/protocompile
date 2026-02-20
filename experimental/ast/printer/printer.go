@@ -73,7 +73,15 @@ type printer struct {
 // printFile prints all declarations in a file, zipping with trivia slots.
 func (p *printer) printFile(file *ast.File) {
 	trivia := p.trivia.scopeTrivia(0)
-	p.printScopeDecls(trivia, file.Decls())
+	decls := seq.Indexer[ast.DeclAny](file.Decls())
+	if p.options.Format {
+		sorted := seq.ToSlice(decls)
+		sortFileDeclsForFormat(sorted)
+		decls = seq.NewFunc(len(sorted), func(i int) ast.DeclAny {
+			return sorted[i]
+		})
+	}
+	p.printScopeDecls(trivia, decls)
 	p.flushPending()
 }
 

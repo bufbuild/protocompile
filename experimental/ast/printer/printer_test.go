@@ -46,6 +46,7 @@ func TestPrinter(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		var testCase struct {
 			Source       string `yaml:"source"`
+			Format       bool   `yaml:"format"`
 			TabstopWidth int    `yaml:"indent"`
 			Edits        []Edit `yaml:"edits"`
 		}
@@ -73,6 +74,7 @@ func TestPrinter(t *testing.T) {
 		}
 
 		options := printer.Options{
+			Format:       testCase.Format,
 			TabstopWidth: testCase.TabstopWidth,
 		}
 		outputs[0] = printer.PrintFile(options, file)

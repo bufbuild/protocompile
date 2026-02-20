@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package acme.v1.weather;
+
+import "acme/payment/v1/payment.proto";
+import "google/type/datetime.proto";
+
+option cc_enable_arenas = true;
+option optimize_for = SPEED;
+
+message Foo {
+  string name = 1;
+}
