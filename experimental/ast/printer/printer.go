@@ -58,7 +58,7 @@ func Print(options Options, decl ast.DeclAny) string {
 			options: options,
 		}
 		p.printDecl(decl)
-		p.flushPending()
+		p.flushPending(gapNone)
 	})
 }
 
@@ -66,7 +66,7 @@ func Print(options Options, decl ast.DeclAny) string {
 type printer struct {
 	options Options
 	trivia  *triviaIndex
-	pending strings.Builder
+	pending []token.Token
 	push    dom.Sink
 }
 
@@ -82,7 +82,7 @@ func (p *printer) printFile(file *ast.File) {
 		})
 	}
 	p.printScopeDecls(trivia, decls)
-	p.flushPending()
+	p.flushPending(gapNone)
 }
 
 // printToken is the standard entry point for printing a semantic token.
@@ -95,13 +95,23 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
-		p.emitTriviaRun(att.leading)
-	} else {
-		p.emitGap(gap)
+		p.pending = append(p.pending, att.leading...)
 	}
 
-	// Emit the token text.
-	p.emit(tok.Text())
+	// Flush pending trivia and emit the gap, then the token text.
+	//
+	// In non-format mode, the gap is only a fallback for synthetic tokens
+	// (those with no trivia entry). When trivia exists (even if the leading
+	// slice is empty), the trivia replaces the gap entirely.
+	//
+	// In format mode, the gap is always used: whitespace tokens are discarded
+	// and the gap provides canonical spacing.
+	if hasTrivia && !p.options.Format {
+		p.flushPending(gapNone)
+	} else {
+		p.flushPending(gap)
+	}
+	p.push(dom.Text(tok.Text()))
 
 	// Emit trailing attached trivia.
 	if hasTrivia && len(att.trailing) > 0 {
@@ -144,40 +154,87 @@ func (p *printer) emitRemainingTrivia(trivia detachedTrivia, i int) {
 // single kindBreak dom tag, preventing the dom from merging them and
 // collapsing blank lines.
 func (p *printer) emitTriviaRun(tokens []token.Token) {
-	for _, tok := range tokens {
-		p.pending.WriteString(tok.Text())
+	p.pending = append(p.pending, tokens...)
+}
+
+// emit writes non-whitespace text to the output, flushing pending whitespace first.
+func (p *printer) emit(s string) {
+	if len(s) > 0 {
+		p.flushPending(gapNone)
+		p.push(dom.Text(s))
 	}
 }
 
-// emitGap writes a gap to the output. If pending already has content
-// (from preceding natural trivia), the existing whitespace takes precedence
-// and the gap is skipped.
-func (p *printer) emitGap(gap gapStyle) {
+// flushPending flushes accumulated trivia from the pending buffer and emits
+// the gap. This is the format-aware flush point.
+//
+// Non-format mode: concatenate all token text into one string, push as a
+// single dom.Text. If pending is empty and gap != gapNone, emit the gap
+// (synthetic token fallback). Same behavior as before.
+//
+// Format mode: walk pending tokens, emit comment tokens verbatim (with a
+// newline before each if needed), discard whitespace (Space) tokens. Then
+// emit the gap. This replaces original whitespace with gap-based spacing
+// while preserving comments.
+func (p *printer) flushPending(gap gapStyle) {
+	if p.options.Format {
+		p.flushPendingFormat(gap)
+		return
+	}
+	p.flushPendingNonFormat(gap)
+}
+
+// flushPendingNonFormat handles the non-format flush path.
+func (p *printer) flushPendingNonFormat(gap gapStyle) {
+	if len(p.pending) > 0 {
+		var buf strings.Builder
+		for _, tok := range p.pending {
+			buf.WriteString(tok.Text())
+		}
+		p.push(dom.Text(buf.String()))
+		p.pending = p.pending[:0]
+		return
+	}
+
+	// No pending trivia: this is a synthetic token, emit the gap directly.
 	switch gap {
 	case gapNewline:
-		p.emit("\n")
+		p.push(dom.Text("\n"))
 	case gapSpace:
-		p.emit(" ")
+		p.push(dom.Text(" "))
 	case gapSoftline:
 		p.push(dom.TextIf(dom.Flat, " "))
 		p.push(dom.TextIf(dom.Broken, "\n"))
 	}
 }
 
-// emit writes non-whitespace text to the output, flushing pending whitespace first.
-func (p *printer) emit(s string) {
-	if len(s) > 0 {
-		p.flushPending()
-		p.push(dom.Text(s))
+// flushPendingFormat handles the format flush path.
+func (p *printer) flushPendingFormat(gap gapStyle) {
+	// Walk pending tokens: emit comments verbatim, discard whitespace.
+	emittedAny := false
+	for _, tok := range p.pending {
+		if tok.Kind() == token.Comment {
+			// Emit a newline before the comment if we have already emitted
+			// something (i.e. this is not the very first item in the flush).
+			if emittedAny {
+				p.push(dom.Text("\n"))
+			}
+			p.push(dom.Text(tok.Text()))
+			emittedAny = true
+		}
+		// Whitespace (Space) tokens are discarded in format mode.
 	}
-}
+	p.pending = p.pending[:0]
 
-// flushPending flushes accumulated whitespace from the pending buffer as a
-// single dom.Text node.
-func (p *printer) flushPending() {
-	if p.pending.Len() > 0 {
-		p.push(dom.Text(p.pending.String()))
-		p.pending.Reset()
+	// Emit the gap.
+	switch gap {
+	case gapNewline:
+		p.push(dom.Text("\n"))
+	case gapSpace:
+		p.push(dom.Text(" "))
+	case gapSoftline:
+		p.push(dom.TextIf(dom.Flat, " "))
+		p.push(dom.TextIf(dom.Broken, "\n"))
 	}
 }
 
