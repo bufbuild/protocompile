@@ -18,6 +18,13 @@ import "github.com/bufbuild/protocompile/experimental/dom"
 
 // Options controls the formatting behavior of the printer.
 type Options struct {
+	// Format enables canonical formatting mode. When true, the printer
+	// reorders file-level declarations into canonical order (syntax,
+	// package, imports, options, defs), sorts imports alphabetically,
+	// sorts options (plain before extensions), and normalizes whitespace
+	// while preserving comments.
+	Format bool
+
 	// The maximum number of columns to render before triggering
 	// a break. A value of zero implies an infinite width.
 	MaxWidth int
