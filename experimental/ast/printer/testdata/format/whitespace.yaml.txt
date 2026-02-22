@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+message Foo {
+  extensions 43 to 100;
+  extensions 101 to max;
+}
+
+message Bar {
+  optional string name = 1;
+
+  optional string value = 2;
+}

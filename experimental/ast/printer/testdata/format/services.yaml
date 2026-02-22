@@ -1,0 +1,41 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test service and RPC formatting (rule 16): basic service structure,
+# empty RPC bodies, RPC with options.
+
+format: true
+
+source: |
+  syntax = "proto3";
+
+  message Message   {}
+  service    Ping     {
+
+        // This service is deprecated.
+        option deprecated = true; // In-line comment on deprecated option.
+
+  rpc  Ping(Message)    returns   (Message)  ;
+    rpc Echo(Message) returns (Message)   {
+
+      option deprecated = true; // In-line on deprecated option.
+
+    // This method has no side effects.
+    option idempotency_level = NO_SIDE_EFFECTS ;
+
+  }
+
+      // The Streamer method is bidirectional.
+    rpc Streamer(stream  Message) returns (stream  Message);
+  }

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+message Message {}
+
+service Foo {
+  rpc One(Message) returns (Message) {
+    /* C-style comment in the middle */
+  }
+  rpc Two(Message) returns (Message);
+  rpc Three(Message) returns (Message) {
+    // Body comment.
+  }
+
+  // Leading comment on '}'.
+}
+
+service Bar {
+  /* inline body comment */
+}
+
+service Baz {
+  // Normal comment in the middle
+}
+
+service Qux {
+  // Body comment after blank line.
+}
+
+message Outer {
+  // Outer comment.
+  message Inner {
+    // Inner comment.
+    string value = 1;
+  }
+}
+
+enum Status {
+  // Unspecified.
+  STATUS_UNSPECIFIED = 0;
+  /* Block
+       comment. */
+  STATUS_ACTIVE = 1;
+}
+
+message /* A */ B /* C */ {}

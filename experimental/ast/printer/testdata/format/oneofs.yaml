@@ -12,33 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test formatting: reorder header declarations, sort imports and options,
-# preserve attached comments and header comments.
+# Test oneof formatting (rule 15): spacing, indentation, trailing semicolons
+# removed, comments preserved.
 
 format: true
 
 source: |
-  // File header.
+  syntax = "proto3";
 
+  message Foo {
+          oneof    bar    {
 
-  option optimize_for = SPEED;
+      // This is a trailing comment on the oneof's '{'.
+            // This is another trailing comment.
 
-    // Datetime import.
-  import "google/type/datetime.proto";
+      // This is a leading comment on name.
+      string name = 1;
+    float value = 2;
 
-  import option "custom_option.proto";
-  package acme.v1.weather;
-
-  option cc_enable_arenas =   true;  // trailing comment
-
-  /* Multi line comment
-    * invalid indent
-   */   
-  import "acme/payment/v1/payment.proto";        /* trailing */
-
-    edition = "2024";
-
-    // A message.
-  message  Foo { /* Foo */
-    string name = 1;
+    } ;
   }

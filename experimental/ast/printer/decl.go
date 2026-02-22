@@ -17,45 +17,53 @@ package printer
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // printDecl dispatches to the appropriate printer based on declaration kind.
-func (p *printer) printDecl(decl ast.DeclAny) {
+//
+// gap controls the whitespace before the declaration's first token. The caller
+// determines this based on the declaration's position within its scope (e.g.
+// gapNone for the first declaration in a file, gapBlankline between sections).
+func (p *printer) printDecl(decl ast.DeclAny, gap gapStyle) {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
-		p.printToken(decl.AsEmpty().Semicolon(), gapNone)
+		if p.options.Format {
+			return
+		}
+		p.printToken(decl.AsEmpty().Semicolon(), gap)
 	case ast.DeclKindSyntax:
-		p.printSyntax(decl.AsSyntax())
+		p.printSyntax(decl.AsSyntax(), gap)
 	case ast.DeclKindPackage:
-		p.printPackage(decl.AsPackage())
+		p.printPackage(decl.AsPackage(), gap)
 	case ast.DeclKindImport:
-		p.printImport(decl.AsImport())
+		p.printImport(decl.AsImport(), gap)
 	case ast.DeclKindDef:
-		p.printDef(decl.AsDef())
+		p.printDef(decl.AsDef(), gap)
 	case ast.DeclKindBody:
 		p.printBody(decl.AsBody())
 	case ast.DeclKindRange:
-		p.printRange(decl.AsRange())
+		p.printRange(decl.AsRange(), gap)
 	}
 }
 
-func (p *printer) printSyntax(decl ast.DeclSyntax) {
-	p.printToken(decl.KeywordToken(), gapNewline)
+func (p *printer) printSyntax(decl ast.DeclSyntax, gap gapStyle) {
+	p.printToken(decl.KeywordToken(), gap)
 	p.printToken(decl.Equals(), gapSpace)
 	p.printExpr(decl.Value(), gapSpace)
 	p.printCompactOptions(decl.Options())
 	p.printToken(decl.Semicolon(), gapNone)
 }
 
-func (p *printer) printPackage(decl ast.DeclPackage) {
-	p.printToken(decl.KeywordToken(), gapNewline)
+func (p *printer) printPackage(decl ast.DeclPackage, gap gapStyle) {
+	p.printToken(decl.KeywordToken(), gap)
 	p.printPath(decl.Path(), gapSpace)
 	p.printCompactOptions(decl.Options())
 	p.printToken(decl.Semicolon(), gapNone)
 }
 
-func (p *printer) printImport(decl ast.DeclImport) {
-	p.printToken(decl.KeywordToken(), gapNewline)
+func (p *printer) printImport(decl ast.DeclImport, gap gapStyle) {
+	p.printToken(decl.KeywordToken(), gap)
 	modifiers := decl.ModifierTokens()
 	for i := range modifiers.Len() {
 		p.printToken(modifiers.At(i), gapSpace)
@@ -65,33 +73,33 @@ func (p *printer) printImport(decl ast.DeclImport) {
 	p.printToken(decl.Semicolon(), gapNone)
 }
 
-func (p *printer) printDef(decl ast.DeclDef) {
+func (p *printer) printDef(decl ast.DeclDef, gap gapStyle) {
 	switch decl.Classify() {
 	case ast.DefKindOption:
-		p.printOption(decl.AsOption())
+		p.printOption(decl.AsOption(), gap)
 	case ast.DefKindMessage:
-		p.printMessage(decl.AsMessage())
+		p.printMessage(decl.AsMessage(), gap)
 	case ast.DefKindEnum:
-		p.printEnum(decl.AsEnum())
+		p.printEnum(decl.AsEnum(), gap)
 	case ast.DefKindService:
-		p.printService(decl.AsService())
+		p.printService(decl.AsService(), gap)
 	case ast.DefKindField:
-		p.printField(decl.AsField())
+		p.printField(decl.AsField(), gap)
 	case ast.DefKindEnumValue:
-		p.printEnumValue(decl.AsEnumValue())
+		p.printEnumValue(decl.AsEnumValue(), gap)
 	case ast.DefKindOneof:
-		p.printOneof(decl.AsOneof())
+		p.printOneof(decl.AsOneof(), gap)
 	case ast.DefKindMethod:
-		p.printMethod(decl.AsMethod())
+		p.printMethod(decl.AsMethod(), gap)
 	case ast.DefKindExtend:
-		p.printExtend(decl.AsExtend())
+		p.printExtend(decl.AsExtend(), gap)
 	case ast.DefKindGroup:
-		p.printGroup(decl.AsGroup())
+		p.printGroup(decl.AsGroup(), gap)
 	}
 }
 
-func (p *printer) printOption(opt ast.DefOption) {
-	p.printToken(opt.Keyword, gapNewline)
+func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
+	p.printToken(opt.Keyword, gap)
 	p.printPath(opt.Path, gapSpace)
 	if !opt.Equals.IsZero() {
 		p.printToken(opt.Equals, gapSpace)
@@ -100,49 +108,58 @@ func (p *printer) printOption(opt ast.DefOption) {
 	p.printToken(opt.Semicolon, gapNone)
 }
 
-func (p *printer) printMessage(msg ast.DefMessage) {
-	p.printToken(msg.Keyword, gapNewline)
+func (p *printer) printMessage(msg ast.DefMessage, gap gapStyle) {
+	p.printToken(msg.Keyword, gap)
 	p.printToken(msg.Name, gapSpace)
 	p.printBody(msg.Body)
 }
 
-func (p *printer) printEnum(e ast.DefEnum) {
-	p.printToken(e.Keyword, gapNewline)
+func (p *printer) printEnum(e ast.DefEnum, gap gapStyle) {
+	p.printToken(e.Keyword, gap)
 	p.printToken(e.Name, gapSpace)
 	p.printBody(e.Body)
 }
 
-func (p *printer) printService(svc ast.DefService) {
-	p.printToken(svc.Keyword, gapNewline)
+func (p *printer) printService(svc ast.DefService, gap gapStyle) {
+	p.printToken(svc.Keyword, gap)
 	p.printToken(svc.Name, gapSpace)
 	p.printBody(svc.Body)
 }
 
-func (p *printer) printExtend(ext ast.DefExtend) {
-	p.printToken(ext.Keyword, gapNewline)
+func (p *printer) printExtend(ext ast.DefExtend, gap gapStyle) {
+	p.printToken(ext.Keyword, gap)
 	p.printPath(ext.Extendee, gapSpace)
 	p.printBody(ext.Body)
 }
 
-func (p *printer) printOneof(o ast.DefOneof) {
-	p.printToken(o.Keyword, gapNewline)
+func (p *printer) printOneof(o ast.DefOneof, gap gapStyle) {
+	p.printToken(o.Keyword, gap)
 	p.printToken(o.Name, gapSpace)
 	p.printBody(o.Body)
 }
 
-func (p *printer) printGroup(g ast.DefGroup) {
-	p.printToken(g.Keyword, gapNewline)
+func (p *printer) printGroup(g ast.DefGroup, gap gapStyle) {
+	// Print type prefixes (optional/required/repeated) from the underlying
+	// DeclDef, since DefGroup.Keyword is the "group" keyword itself.
+	for prefix := range g.Decl.Prefixes() {
+		p.printToken(prefix.PrefixToken(), gap)
+		gap = gapSpace
+	}
+
+	p.printToken(g.Keyword, gap)
 	p.printToken(g.Name, gapSpace)
 	if !g.Equals.IsZero() {
 		p.printToken(g.Equals, gapSpace)
 		p.printExpr(g.Tag, gapSpace)
 	}
 	p.printCompactOptions(g.Options)
-	p.printBody(g.Body)
+
+	// Use Decl.Body() because DefGroup.Body is not populated by AsGroup().
+	p.printBody(g.Decl.Body())
 }
 
-func (p *printer) printField(f ast.DefField) {
-	p.printType(f.Type, gapNewline)
+func (p *printer) printField(f ast.DefField, gap gapStyle) {
+	p.printType(f.Type, gap)
 	p.printToken(f.Name, gapSpace)
 	if !f.Equals.IsZero() {
 		p.printToken(f.Equals, gapSpace)
@@ -152,8 +169,8 @@ func (p *printer) printField(f ast.DefField) {
 	p.printToken(f.Semicolon, gapNone)
 }
 
-func (p *printer) printEnumValue(ev ast.DefEnumValue) {
-	p.printToken(ev.Name, gapNewline)
+func (p *printer) printEnumValue(ev ast.DefEnumValue, gap gapStyle) {
+	p.printToken(ev.Name, gap)
 	if !ev.Equals.IsZero() {
 		p.printToken(ev.Equals, gapSpace)
 		p.printExpr(ev.Tag, gapSpace)
@@ -162,8 +179,8 @@ func (p *printer) printEnumValue(ev ast.DefEnumValue) {
 	p.printToken(ev.Semicolon, gapNone)
 }
 
-func (p *printer) printMethod(m ast.DefMethod) {
-	p.printToken(m.Keyword, gapNewline)
+func (p *printer) printMethod(m ast.DefMethod, gap gapStyle) {
+	p.printToken(m.Keyword, gap)
 	p.printToken(m.Name, gapSpace)
 	p.printSignature(m.Signature)
 	if !m.Body.IsZero() {
@@ -226,33 +243,110 @@ func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia
 }
 
 func (p *printer) printBody(body ast.DeclBody) {
-	if body.IsZero() {
+	if body.IsZero() || body.Braces().IsZero() {
 		return
 	}
 
-	braces := body.Braces()
-	if braces.IsZero() {
-		return
-	}
-
-	openTok, closeTok := braces.StartEnd()
-	trivia := p.trivia.scopeTrivia(braces.ID())
+	openTok, closeTok := body.Braces().StartEnd()
+	trivia := p.trivia.scopeTrivia(body.Braces().ID())
 
 	p.printToken(openTok, gapSpace)
 
-	closeGap := gapNone
-	if body.Decls().Len() > 0 || !trivia.isEmpty() {
-		p.withIndent(func(indented *printer) {
-			indented.printScopeDecls(trivia, body.Decls())
-		})
-		closeGap = gapNewline
+	// In format mode, check if the close brace has leading comments
+	// that need to be emitted inside the indent context for proper
+	// indentation. This handles both empty and non-empty bodies.
+	var closeComments []token.Token
+	if p.options.Format {
+		att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
+		if hasTrivia {
+			for _, t := range att.leading {
+				if t.Kind() == token.Comment {
+					closeComments = att.leading
+					break
+				}
+			}
+		}
 	}
-	p.printToken(closeTok, closeGap)
+
+	hasContent := body.Decls().Len() > 0 || !trivia.isEmpty() || len(closeComments) > 0
+	if !hasContent {
+		p.printToken(closeTok, gapNone)
+		return
+	}
+
+	p.withIndent(func(indented *printer) {
+		indented.printScopeDecls(trivia, body.Decls(), gapNewline)
+
+		if len(closeComments) > 0 {
+			gap := gapNewline
+			if trivia.blankBeforeClose {
+				gap = gapBlankline
+			}
+
+			// Flush any remaining scope trivia before close comments.
+			for _, t := range indented.pending {
+				if t.Kind() != token.Comment {
+					continue
+				}
+				indented.emitGap(gap)
+				indented.push(dom.Text(t.Text()))
+				gap = gapNewline
+			}
+			indented.pending = indented.pending[:0]
+
+			// Emit close brace leading comments inside indent.
+			// Track consecutive newlines to detect blank lines
+			// between comment groups.
+			newlineRun := 0
+			for _, t := range closeComments {
+				if t.Kind() == token.Space {
+					if t.Text() == "\n" {
+						newlineRun++
+					}
+					continue
+				}
+				if t.Kind() != token.Comment {
+					continue
+				}
+				if newlineRun >= 2 {
+					gap = gapBlankline
+				}
+				newlineRun = 0
+				indented.emitGap(gap)
+				indented.push(dom.Text(t.Text()))
+				gap = gapNewline
+			}
+		}
+	})
+
+	if len(closeComments) > 0 {
+		// Close brace comments were already emitted inside withIndent.
+		// Emit close brace directly to avoid re-emitting its trivia.
+		p.emitGap(gapNewline)
+		p.push(dom.Text(closeTok.Text()))
+
+		// Handle trailing trivia on close brace.
+		att, _ := p.trivia.tokenTrivia(closeTok.ID())
+		if len(att.trailing) > 0 {
+			if p.options.Format {
+				for _, t := range att.trailing {
+					if t.Kind() == token.Comment {
+						p.push(dom.Text(" "))
+						p.push(dom.Text(t.Text()))
+					}
+				}
+			} else {
+				p.pending = append(p.pending, att.trailing...)
+			}
+		}
+	} else {
+		p.printToken(closeTok, gapNewline)
+	}
 }
 
-func (p *printer) printRange(r ast.DeclRange) {
+func (p *printer) printRange(r ast.DeclRange, gap gapStyle) {
 	if !r.KeywordToken().IsZero() {
-		p.printToken(r.KeywordToken(), gapNone)
+		p.printToken(r.KeywordToken(), gap)
 	}
 
 	ranges := r.Ranges()
@@ -278,10 +372,53 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
+	entries := co.Entries()
+
+	if p.options.Format {
+		// In format mode, compact options layout is deterministic:
+		// - 1 option: inline [key = value]
+		// - 2+ options: expanded one-per-line
+		if entries.Len() == 1 {
+			// Single option: stays inline. No group wrapping, so
+			// message literal values expand naturally while keeping
+			// [ and ] on the field line.
+			p.printToken(openTok, gapSpace)
+			opt := entries.At(0)
+			p.emitTriviaSlot(slots, 0)
+			p.printPath(opt.Path, gapNone)
+			if !opt.Equals.IsZero() {
+				p.printToken(opt.Equals, gapSpace)
+				p.printExpr(opt.Value, gapSpace)
+			}
+			p.emitTriviaSlot(slots, 1)
+			p.emitTrivia(gapNone)
+			p.printToken(closeTok, gapNone)
+		} else {
+			// Multiple options: always expand one-per-line.
+			p.printToken(openTok, gapSpace)
+			p.withIndent(func(indented *printer) {
+				for i := range entries.Len() {
+					indented.emitTriviaSlot(slots, i)
+					if i > 0 {
+						indented.printToken(entries.Comma(i-1), gapNone)
+					}
+					opt := entries.At(i)
+					indented.printPath(opt.Path, gapNewline)
+					if !opt.Equals.IsZero() {
+						indented.printToken(opt.Equals, gapSpace)
+						indented.printExpr(opt.Value, gapSpace)
+					}
+				}
+				indented.emitTriviaSlot(slots, entries.Len())
+			})
+			p.emitTrivia(gapNone)
+			p.printToken(closeTok, gapNewline)
+		}
+		return
+	}
 
 	p.withGroup(func(p *printer) {
 		p.printToken(openTok, gapSpace)
-		entries := co.Entries()
 		p.withIndent(func(indented *printer) {
 			for i := range entries.Len() {
 				indented.emitTriviaSlot(slots, i)
@@ -300,7 +437,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			}
 			p.emitTriviaSlot(slots, entries.Len())
 		})
-		p.flushPending(gapNone)
+		p.emitTrivia(gapNone)
 		p.push(dom.TextIf(dom.Broken, "\n"))
 		p.printToken(closeTok, gapNone)
 	})

@@ -1,0 +1,61 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test blank line rules (rule 6): blank line suppression after {,
+# blank line preservation with trailing comments, multiple blank
+# line collapse.
+
+format: true
+
+source: |
+  syntax = "proto2";
+
+  message Foo {
+
+
+
+    // The newline is not preserved between the message
+    // and the first element if there aren't any trailing
+    // comments on the '{'.
+    option deprecated = false;
+
+    // This is attached to the optional label.
+    optional string name = 1 [
+      deprecated = true
+    ];
+
+    repeated int64 values = 2;
+
+  // Leading comment on '}'.
+  }
+
+  enum One {
+
+    // This value should be formatted to the top
+    // because the newline is meaningless.
+    ONE_UNSPECIFIED = 0;
+  }
+
+  // FOUR_UNSPECIFIED should be compact because it has
+  // no trailing or leading comments.
+  enum Four {
+
+    FOUR_UNSPECIFIED = 0;
+  }
+
+  enum Two {
+    // The trailing comments should remain separated.
+
+    TWO_UNSPECIFIED = 0;
+  }

@@ -1,0 +1,10 @@
+edition = "2023";
+
+package a.b.c;
+
+option features.field_presence = IMPLICIT;
+option features.message_encoding = DELIMITED;
+
+message Foo {
+  string name = 1;
+}

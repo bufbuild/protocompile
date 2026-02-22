@@ -12,33 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test formatting: reorder header declarations, sort imports and options,
-# preserve attached comments and header comments.
+# Test comment formatting (rule 21): line comments, inline block comments,
+# trailing comments, detached comments, comments after closing braces.
 
 format: true
 
 source: |
-  // File header.
+  // License header comment.
+  // Second line of license.
 
+  syntax = "proto3";
 
-  option optimize_for = SPEED;
+  // Comment about Foo.
+  message Foo {
+    // Comment about name.
+    string name = 1; // Trailing comment on field.
 
-    // Datetime import.
-  import "google/type/datetime.proto";
+    // Detached comment.
 
-  import option "custom_option.proto";
-  package acme.v1.weather;
-
-  option cc_enable_arenas =   true;  // trailing comment
-
-  /* Multi line comment
-    * invalid indent
-   */   
-  import "acme/payment/v1/payment.proto";        /* trailing */
-
-    edition = "2024";
-
-    // A message.
-  message  Foo { /* Foo */
-    string name = 1;
+    // Comment about id.
+    int32 id = 2;
   }
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+  }
+  // This is a trailing comment on '}', but
+  // it should remain here.
+
+  // These comments are attached to the EOF.

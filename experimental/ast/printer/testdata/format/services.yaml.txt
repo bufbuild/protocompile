@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Message {}
+
+service Ping {
+  // This service is deprecated.
+  option deprecated = true; // In-line comment on deprecated option.
+
+  rpc Ping(Message) returns (Message);
+  rpc Echo(Message) returns (Message) {
+    option deprecated = true; // In-line on deprecated option.
+
+    // This method has no side effects.
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // The Streamer method is bidirectional.
+  rpc Streamer(stream Message) returns (stream Message);
+}

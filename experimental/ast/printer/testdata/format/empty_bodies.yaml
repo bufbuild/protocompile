@@ -12,33 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test formatting: reorder header declarations, sort imports and options,
-# preserve attached comments and header comments.
+# Test empty body formatting (rule 8): empty bodies collapse to {},
+# bodies with comments expand.
 
 format: true
 
 source: |
-  // File header.
+  syntax = "proto3";
 
+  message Message   {}
 
-  option optimize_for = SPEED;
+  message Empty {
+  }
 
-    // Datetime import.
-  import "google/type/datetime.proto";
+  message Foo { /* C-style comment in the middle */ }
 
-  import option "custom_option.proto";
-  package acme.v1.weather;
+  message Bar {
+    // Normal comment in the middle
+  }
 
-  option cc_enable_arenas =   true;  // trailing comment
+  message Baz {
 
-  /* Multi line comment
-    * invalid indent
-   */   
-  import "acme/payment/v1/payment.proto";        /* trailing */
-
-    edition = "2024";
-
-    // A message.
-  message  Foo { /* Foo */
-    string name = 1;
+  // Body comment.
   }

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option (custom.enum_value_thing_option) = {
+  recursive: {
+    // Leading comment on foo.
+    foo: 1
+    // Leading comment on bar.
+    bar: 2
+  }
+};

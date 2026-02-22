@@ -12,33 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test formatting: reorder header declarations, sort imports and options,
-# preserve attached comments and header comments.
+# Test enum formatting (rule 14): inline enum bodies expand,
+# indentation normalization.
 
 format: true
 
 source: |
-  // File header.
+  syntax = "proto3";
 
+  enum Bar {BAR_UNKNOWN=1;}
 
-  option optimize_for = SPEED;
+  enum Baz {
+    BAZ_UNKNOWN = 0;
 
-    // Datetime import.
-  import "google/type/datetime.proto";
-
-  import option "custom_option.proto";
-  package acme.v1.weather;
-
-  option cc_enable_arenas =   true;  // trailing comment
-
-  /* Multi line comment
-    * invalid indent
-   */   
-  import "acme/payment/v1/payment.proto";        /* trailing */
-
-    edition = "2024";
-
-    // A message.
-  message  Foo { /* Foo */
-    string name = 1;
+    BAZ_ONE = 1;
   }

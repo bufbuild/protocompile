@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+enum Bar {
+  BAR_UNKNOWN = 1;
+}
+
+enum Baz {
+  BAZ_UNKNOWN = 0;
+
+  BAZ_ONE = 1;
+}
