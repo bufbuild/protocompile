@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option (custom.file_thing_option) = {
+  foo: 1
+  bar: 2
+  truth: false
+  recursive: {
+    foo: 3
+    bar: 4
+    truth: true
+  }
+};
+option (custom.message_thing_option) = {foo: 5};
+option (custom.service_thing_option) = {
+  foo: 1
+  bar: 2
+};

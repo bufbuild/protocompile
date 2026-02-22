@@ -12,33 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test formatting: reorder header declarations, sort imports and options,
-# preserve attached comments and header comments.
+# Test compact options formatting (rule 11): single option inline,
+# multiple options expanded.
 
 format: true
 
 source: |
-  // File header.
+  syntax = "proto3";
 
+  message Foo {
+    optional string name = 1 [  deprecated = true  ];
 
-  option optimize_for = SPEED;
-
-    // Datetime import.
-  import "google/type/datetime.proto";
-
-  import option "custom_option.proto";
-  package acme.v1.weather;
-
-  option cc_enable_arenas =   true;  // trailing comment
-
-  /* Multi line comment
-    * invalid indent
-   */   
-  import "acme/payment/v1/payment.proto";        /* trailing */
-
-    edition = "2024";
-
-    // A message.
-  message  Foo { /* Foo */
-    string name = 1;
+    optional string name_with_options = 2 [
+    (custom.float_field_option) = "nan",
+       (custom.double_field_option) = "inf",
+     (custom.int32_field_option) = -3,
+           (custom.int64_field_option) = -4,
+     (custom.uint32_field_option) = 5,
+  (custom.uint64_field_option) = 6
+    ]   ;
   }

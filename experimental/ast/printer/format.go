@@ -32,54 +32,68 @@ import (
 //     each group)
 //  5. everything else (original order preserved)
 func sortFileDeclsForFormat(decls []ast.DeclAny) {
-	slices.SortStableFunc(decls, func(a, b ast.DeclAny) int {
-		aKey := declSortKey(a)
-		bKey := declSortKey(b)
+	slices.SortStableFunc(decls, compareDecl)
+}
 
-		if c := cmp.Compare(aKey.section, bKey.section); c != 0 {
+// compareDecl compares two declarations for sorting. Declarations are
+// first ordered by rank (syntax < package < import < option < body),
+// then by name within the same rank.
+func compareDecl(a, b ast.DeclAny) int {
+	aRank, bRank := rankDecl(a), rankDecl(b)
+	if c := cmp.Compare(aRank, bRank); c != 0 {
+		return c
+	}
+	switch a.Kind() {
+	case ast.DeclKindImport:
+		aImp := a.AsImport()
+		bImp := b.AsImport()
+		aImpOpt := 0
+		if aImp.IsOption() {
+			aImpOpt = 1
+		}
+		bImpOpt := 0
+		if bImp.IsOption() {
+			bImpOpt = 1
+		}
+		if c := cmp.Compare(aImpOpt, bImpOpt); c != 0 {
 			return c
 		}
-		return cmp.Compare(aKey.name, bKey.name)
-	})
+		return cmp.Compare(importSortName(aImp), importSortName(bImp))
+	case ast.DeclKindDef:
+		if a.AsDef().Classify() == ast.DefKindOption {
+			return cmp.Compare(optionSortName(a), optionSortName(b))
+		}
+		return 0
+	default:
+		return 0
+	}
 }
 
-// section is the canonical ordering of file-level declaration sections.
-type section int
+type declSortRank int
 
 const (
-	sectionSyntax       section = iota // syntax/edition
-	sectionPackage                     // package
-	sectionImport                      // import, import public, import weak
-	sectionImportOption                // import option (editions)
-	sectionOption                      // file-level option
-	sectionBody                        // everything else
+	rankSyntax  declSortRank = iota // syntax/edition
+	rankPackage                     // package
+	rankImport                      // import
+	rankOption                      // option
+	rankBody                        // body
 )
 
-type sortKey struct {
-	section section
-	name    string
-}
-
-// declSortKey returns the sort key for a file-level declaration.
-func declSortKey(decl ast.DeclAny) sortKey {
+// rankDecl returns the sort rank for a declaration.
+func rankDecl(decl ast.DeclAny) declSortRank {
 	switch decl.Kind() {
 	case ast.DeclKindSyntax:
-		return sortKey{section: sectionSyntax}
+		return rankSyntax
 	case ast.DeclKindPackage:
-		return sortKey{section: sectionPackage}
+		return rankPackage
 	case ast.DeclKindImport:
-		imp := decl.AsImport()
-		s := sectionImport
-		if imp.IsOption() {
-			s = sectionImportOption
-		}
-		return sortKey{section: s, name: importSortName(imp)}
+		return rankImport
 	case ast.DeclKindDef:
 		if decl.AsDef().Classify() == ast.DefKindOption {
-			return sortKey{section: sectionOption, name: optionSortName(decl)}
+			return rankOption
 		}
 	}
-	return sortKey{section: sectionBody}
+	return rankBody
 }
 
 // importSortName returns the sort name for an import declaration.
@@ -111,3 +125,4 @@ func isExtensionOption(opt ast.DefOption) bool {
 	}
 	return false
 }
+

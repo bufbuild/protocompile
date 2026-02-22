@@ -1,0 +1,23 @@
+// License header comment.
+// Second line of license.
+
+syntax = "proto3";
+
+// Comment about Foo.
+message Foo {
+  // Comment about name.
+  string name = 1; // Trailing comment on field.
+
+  // Detached comment.
+
+  // Comment about id.
+  int32 id = 2;
+}
+
+enum Type {
+  TYPE_UNSPECIFIED = 0;
+}
+// This is a trailing comment on '}', but
+// it should remain here.
+
+// These comments are attached to the EOF.

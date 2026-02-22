@@ -14,7 +14,11 @@
 
 package printer
 
-import "github.com/bufbuild/protocompile/experimental/ast"
+import (
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+)
 
 // printExpr prints an expression with the specified leading gap.
 func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
@@ -70,20 +74,63 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
-
-	p.printToken(openTok, gap)
 	elements := expr.Elements()
-	for i := range elements.Len() {
-		p.emitTriviaSlot(slots, i)
-		elemGap := gapNone
-		if i > 0 {
-			p.printToken(elements.Comma(i-1), gapNone)
-			elemGap = gapSpace
+
+	if !p.options.Format {
+		// Non-format mode: existing behavior.
+		p.printToken(openTok, gap)
+		for i := range elements.Len() {
+			p.emitTriviaSlot(slots, i)
+			elemGap := gapNone
+			if i > 0 {
+				p.printToken(elements.Comma(i-1), gapNone)
+				elemGap = gapSpace
+			}
+			p.printExpr(elements.At(i), elemGap)
 		}
-		p.printExpr(elements.At(i), elemGap)
+		p.emitTriviaSlot(slots, elements.Len())
+		p.printToken(closeTok, gapNone)
+		return
 	}
-	p.emitTriviaSlot(slots, elements.Len())
-	p.printToken(closeTok, gapNone)
+
+	// Format mode: layout depends on element count and comments.
+	hasComments := triviaHasComments(slots)
+
+	switch {
+	case elements.Len() == 0 && !hasComments:
+		// Empty array: [].
+		p.printToken(openTok, gap)
+		p.printToken(closeTok, gapNone)
+
+	case elements.Len() == 1 && !hasComments:
+		// Single element: try inline [value], expand if it doesn't fit.
+		p.withGroup(func(p *printer) {
+			p.printToken(openTok, gap)
+			p.withIndent(func(indented *printer) {
+				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.emitTriviaSlot(slots, 0)
+				indented.printExpr(elements.At(0), gapNone)
+				indented.emitTriviaSlot(slots, 1)
+			})
+			p.push(dom.TextIf(dom.Broken, "\n"))
+			p.printToken(closeTok, gapNone)
+		})
+
+	default:
+		// Multiple elements or has comments: expand one-per-line.
+		p.printToken(openTok, gap)
+		p.withIndent(func(indented *printer) {
+			for i := range elements.Len() {
+				indented.emitTriviaSlot(slots, i)
+				if i > 0 {
+					indented.printToken(elements.Comma(i-1), gapNone)
+				}
+				indented.printExpr(elements.At(i), gapNewline)
+			}
+			indented.emitTriviaSlot(slots, elements.Len())
+		})
+		p.printToken(closeTok, gapNewline)
+	}
 }
 
 func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
@@ -98,10 +145,52 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	openTok, closeTok := braces.StartEnd()
 	trivia := p.trivia.scopeTrivia(braces.ID())
-
-	p.printToken(openTok, gap)
 	elements := expr.Elements()
-	if elements.Len() > 0 || !trivia.isEmpty() {
+
+	if !p.options.Format {
+		// Non-format mode: existing behavior.
+		p.printToken(openTok, gap)
+		if elements.Len() > 0 || !trivia.isEmpty() {
+			p.withIndent(func(indented *printer) {
+				for i := range elements.Len() {
+					indented.emitTriviaSlot(trivia, i)
+					indented.printExprField(elements.At(i), gapNewline)
+				}
+				indented.emitTriviaSlot(trivia, elements.Len())
+			})
+		}
+		p.printToken(closeTok, gapSoftline)
+		return
+	}
+
+	// Format mode: normalize angle brackets to curly braces.
+	openText, closeText := openTok.Text(), closeTok.Text()
+	if braces.Keyword() == keyword.Angles {
+		openText = "{"
+		closeText = "}"
+	}
+
+	hasComments := triviaHasComments(trivia)
+
+	switch {
+	case elements.Len() == 1 && !hasComments:
+		// Single field, no comments: try inline {field: value}.
+		// Uses a group so it expands if the content is multi-line.
+		p.withGroup(func(p *printer) {
+			p.printTokenAs(openTok, gap, openText)
+			p.withIndent(func(indented *printer) {
+				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.emitTriviaSlot(trivia, 0)
+				indented.printExprField(elements.At(0), gapNone)
+				indented.emitTriviaSlot(trivia, 1)
+			})
+			p.push(dom.TextIf(dom.Broken, "\n"))
+			p.printTokenAs(closeTok, gapNone, closeText)
+		})
+
+	case elements.Len() > 0 || hasComments:
+		// Multi-field or has comments: expand one-per-line.
+		p.printTokenAs(openTok, gap, openText)
 		p.withIndent(func(indented *printer) {
 			for i := range elements.Len() {
 				indented.emitTriviaSlot(trivia, i)
@@ -109,9 +198,13 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 			}
 			indented.emitTriviaSlot(trivia, elements.Len())
 		})
-	}
+		p.printTokenAs(closeTok, gapNewline, closeText)
 
-	p.printToken(closeTok, gapSoftline)
+	default:
+		// Empty dict: {}.
+		p.printTokenAs(openTok, gap, openText)
+		p.printTokenAs(closeTok, gapNone, closeText)
+	}
 }
 
 func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
@@ -126,6 +219,9 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 	}
 	if !expr.Colon().IsZero() {
 		p.printToken(expr.Colon(), gapNone)
+	} else if p.options.Format && !expr.Key().IsZero() && !expr.Value().IsZero() {
+		// Insert colon in format mode when missing (e.g. "e []" -> "e: []").
+		p.push(dom.Text(":"))
 	}
 	if !expr.Value().IsZero() {
 		valueGap := gapSpace

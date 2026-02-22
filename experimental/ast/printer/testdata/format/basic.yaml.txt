@@ -1,13 +1,22 @@
-syntax = "proto3";
+// File header.
+
+edition = "2024";
 
 package acme.v1.weather;
 
-import "acme/payment/v1/payment.proto";
+/* Multi line comment
+  * invalid indent
+ */
+import "acme/payment/v1/payment.proto"; /* trailing */
+// Datetime import.
 import "google/type/datetime.proto";
+import option "custom_option.proto";
 
-option cc_enable_arenas = true;
+option cc_enable_arenas = true; // trailing comment
 option optimize_for = SPEED;
 
+// A message.
 message Foo {
+  /* Foo */
   string name = 1;
 }

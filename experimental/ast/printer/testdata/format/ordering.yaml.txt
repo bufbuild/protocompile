@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package all.v1;
+
+import "custom.proto";
+// between-imports comment
+import "google/protobuf/duration.proto"; // import-inline comment  2
+// import comment
+import "google/protobuf/timestamp.proto"; // import-inline comment
+
+option cc_enable_arenas = true;
+option java_multiple_files = true;
+option (file_option) = true;

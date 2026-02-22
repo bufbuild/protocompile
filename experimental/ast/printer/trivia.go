@@ -36,10 +36,30 @@ type attachedTrivia struct {
 // detachedTrivia holds a set of trivia runs as slots within a scope.
 type detachedTrivia struct {
 	slots [][]token.Token
+
+	// blankBefore[i] is true when there was a blank line between
+	// declaration i-1 and declaration i. Always false for i==0.
+	blankBefore []bool
+
+	// blankBeforeClose is true when there was a blank line between
+	// the last declaration and the close brace of the scope.
+	blankBeforeClose bool
 }
 
 func (t detachedTrivia) isEmpty() bool {
 	return len(t.slots) == 0 || len(t.slots) == 1 && len(t.slots[0]) == 0
+}
+
+// triviaHasComments reports whether any slot contains comment tokens.
+func triviaHasComments(trivia detachedTrivia) bool {
+	for _, slot := range trivia.slots {
+		for _, tok := range slot {
+			if tok.Kind() == token.Comment {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // triviaIndex is the complete trivia decomposition for one file.
@@ -115,6 +135,7 @@ func buildTriviaIndex(stream *token.Stream) *triviaIndex {
 func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 	var pending []token.Token
 	var trivia detachedTrivia
+	hadBlank := false
 	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
 		if tok.Kind().IsSkippable() {
 			pending = append(pending, tok)
@@ -122,13 +143,30 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 		}
 		detached, attached := splitDetached(pending)
 		trivia.slots = append(trivia.slots, detached)
+
+		// For the first declaration in a scope, detect if detached
+		// trivia contains comments separated by a blank line from the
+		// first declaration. This captures "trailing comments on open
+		// brace" patterns where the blank line between the comments
+		// and the first declaration should be preserved.
+		blank := hadBlank
+		if len(trivia.blankBefore) == 0 && !blank && len(detached) > 0 {
+			for _, t := range detached {
+				if t.Kind() == token.Comment {
+					blank = true
+					break
+				}
+			}
+		}
+		trivia.blankBefore = append(trivia.blankBefore, blank)
 		idx.attached[tok.ID()] = attachedTrivia{leading: attached}
 		pending = nil
 
-		idx.walkDecl(cursor, tok)
+		hadBlank = idx.walkDecl(cursor, tok)
 	}
 	// Append any remaining tokens at the end of scope.
 	trivia.slots = append(trivia.slots, pending)
+	trivia.blankBeforeClose = hadBlank
 	idx.detached[scopeID] = trivia
 }
 
@@ -147,8 +185,9 @@ func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
 	return closeToken
 }
 
-// walkDecl processes a declaration.
-func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
+// walkDecl processes a declaration. Returns true if the trailing trivia
+// contained a blank line separating this declaration from the next.
+func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) bool {
 	endToken := startToken
 	var pending []token.Token
 	for tok := startToken; !tok.IsZero(); tok = cursor.NextSkippable() {
@@ -169,7 +208,13 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 			// Recurse into fused tokens (non-leaf tokens).
 			endToken = idx.walkFused(tok)
 		}
-		atDeclBoundary := tok.Keyword() == keyword.Semi || tok.Keyword().IsBrackets()
+
+		// Only `;` and `{...}` mark declaration boundaries. Other fused
+		// brackets (parens, square brackets, angles) appear mid-declaration
+		// and must not split it. Splitting at parens would cause the cursor
+		// to land on an interior close bracket after PrevSkippable, making
+		// walkScope register trivia under the wrong token ID.
+		atDeclBoundary := tok.Keyword() == keyword.Semi || tok.Keyword() == keyword.Braces
 		if atDeclBoundary {
 			break
 		}
@@ -178,6 +223,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 	// the last line and all blank lines beneath it, up until the last newline.
 	afterNewline := false
 	atEndOfScope := true
+	hasBlankLine := false
 	var trailing []token.Token
 	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
 		isNewline := tok.Kind() == token.Space && strings.Count(tok.Text(), "\n") > 0
@@ -190,6 +236,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 		}
 		if afterNewline && !isNewline && !isSpace {
 			detached, attached := splitDetached(trailing)
+			hasBlankLine = len(detached) > 0
 			trailing = detached
 
 			cursor.PrevSkippable()
@@ -223,6 +270,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) {
 		att.trailing = trailing
 		idx.attached[endToken.ID()] = att
 	}
+	return hasBlankLine
 }
 
 // splitDetached splits a trivia token slice at the last blank line boundary.
