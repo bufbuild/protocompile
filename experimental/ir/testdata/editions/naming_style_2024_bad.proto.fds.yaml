@@ -82,9 +82,7 @@ file:
   - name: "My_Service"
     method:
     - name: "test_method"
-      input_type: "Buf.Test.my_message"
-      output_type: "Buf.Test.my_message"
-      client_streaming: false
-      server_streaming: false
+      input_type: ".Buf.Test.my_message"
+      output_type: ".Buf.Test.my_message"
   syntax: "editions"
   edition: EDITION_2024

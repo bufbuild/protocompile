@@ -48,4 +48,3 @@ file:
           json_name: "baz"
         nested_type: [{ name: "Baz" }]
       options.deprecated: true
-  syntax: "proto2"

@@ -31,15 +31,12 @@ file:
   - name: "FooService"
     method:
     - name: "FooForBar"
-      input_type: "buf.test.Bar"
-      output_type: "buf.test.Foo"
-      client_streaming: false
-      server_streaming: false
+      input_type: ".buf.test.Bar"
+      output_type: ".buf.test.Foo"
     - name: "BarForBar"
-      input_type: "buf.test.Bar"
-      output_type: "buf.test.Bar"
-      client_streaming: false
-      server_streaming: false
+      input_type: ".buf.test.Bar"
+      output_type: ".buf.test.Bar"
+      options: {}
   extension:
   - name: "c"
     number: 1000

@@ -121,21 +121,21 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".buf.test.M.E"
-      default_value: "1"
+      default_value: "E1"
       json_name: "e1"
     - name: "e2"
       number: 42
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".buf.test.M.E"
-      default_value: "1"
+      default_value: "E1"
       json_name: "e2"
     - name: "e3"
       number: 43
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".buf.test.M.E"
-      default_value: "0"
+      default_value: "E0"
       json_name: "e3"
     - name: "w1"
       number: 101

@@ -23,4 +23,3 @@ file:
     value: [{ name: "BAR_ZERO", number: 0, options.deprecated: true }]
     options.deprecated: true
   options: { java_package: "build.buf.protocompile", java_multiple_files: true }
-  syntax: "proto2"
