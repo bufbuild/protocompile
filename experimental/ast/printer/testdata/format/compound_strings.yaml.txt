@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option (custom.description) = "One"
+  "Two"
+  "Three";
+option (custom.long_description) = "First line of a long description. " // A
+  "Second line continues here. " /*B*/
+  "Third and final line."; // C
+option (custom.single) = "Just one string";
+
+message Foo {
+  optional string name = 1;
+}

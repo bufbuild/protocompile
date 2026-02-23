@@ -292,6 +292,39 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		afterNewline = afterNewline || isNewline
 		trailing = append(trailing, tok)
 	}
+	// At end of scope with leftover pending from the main loop (no `;` or `}`
+	// was found), extract inline comments as trailing on the end token.
+	// Comments after a newline are pushed back so they flow to the close
+	// token's leading via walkFused. Pure whitespace is discarded since the
+	// printer provides appropriate gaps.
+	if atEndOfScope && len(pending) > 0 && len(trailing) == 0 {
+		firstNewline := len(pending)
+		for i, t := range pending {
+			if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
+				firstNewline = i
+				break
+			}
+		}
+		for _, t := range pending[:firstNewline] {
+			if t.Kind() == token.Comment {
+				trailing = pending[:firstNewline]
+				break
+			}
+		}
+		rest := pending[firstNewline:]
+		hasRestComment := false
+		for _, t := range rest {
+			if t.Kind() == token.Comment {
+				hasRestComment = true
+				break
+			}
+		}
+		if hasRestComment {
+			for range len(rest) {
+				cursor.PrevSkippable()
+			}
+		}
+	}
 	// At end of scope, keep only inline content (before the first newline) as
 	// trailing. Put back newlines and beyond so they flow to the scope's last
 	// slot and become the close token's leading trivia via walkFused.
