@@ -17,6 +17,7 @@ package printer
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
@@ -28,7 +29,12 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
 
 	switch expr.Kind() {
 	case ast.ExprKindLiteral:
-		p.printToken(expr.AsLiteral().Token, gap)
+		tok := expr.AsLiteral().Token
+		if !tok.IsLeaf() {
+			p.printCompoundString(tok, gap)
+		} else {
+			p.printToken(tok, gap)
+		}
 	case ast.ExprKindPath:
 		p.printPath(expr.AsPath().Path, gap)
 	case ast.ExprKindPrefixed:
@@ -42,6 +48,45 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
 	case ast.ExprKindField:
 		p.printExprField(expr.AsField(), gap)
 	}
+}
+
+// printCompoundString prints a fused compound string token (e.g. "a" "b" "c").
+// Each string part is printed on its own line in format mode.
+func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
+	openTok, closeTok := tok.StartEnd()
+	trivia := p.trivia.scopeTrivia(tok.ID())
+
+	// Print the first string part using the fused token's outer trivia.
+	p.printTokenAs(tok, gap, openTok.Text())
+
+	// Collect interior string parts from the children cursor.
+	var parts []token.Token
+	cursor := tok.Children()
+	for child := cursor.NextSkippable(); !child.IsZero(); child = cursor.NextSkippable() {
+		if !child.Kind().IsSkippable() {
+			parts = append(parts, child)
+		}
+	}
+
+	if !p.options.Format {
+		for i, part := range parts {
+			p.emitTriviaSlot(trivia, i)
+			p.printToken(part, gapNone)
+		}
+		p.emitRemainingTrivia(trivia, len(parts))
+		p.printToken(closeTok, gapNone)
+		return
+	}
+
+	// In format mode, indent continuation parts.
+	p.withIndent(func(indented *printer) {
+		for i, part := range parts {
+			indented.emitTriviaSlot(trivia, i)
+			indented.printToken(part, gapNewline)
+		}
+		indented.emitRemainingTrivia(trivia, len(parts))
+		indented.printToken(closeTok, gapNewline)
+	})
 }
 
 func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {

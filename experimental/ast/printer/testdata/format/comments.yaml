@@ -75,6 +75,7 @@ source: |
     } // Trailing on rpc body close.
     rpc WithComments(/* input comment */ Foo) returns (/* output comment */ Foo);
     rpc WithBodyComments(/* in */ Foo) returns (/* out */ Foo) {}
+    rpc TrailingInParens(Foo /* after input */) returns (Foo /* after output */);
   } // Trailing on service close.
 
   extend Foo { // Trailing on extend open.
