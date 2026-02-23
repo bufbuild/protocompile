@@ -252,9 +252,6 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	p.printToken(openTok, gapSpace)
 
-	// In format mode, check if the close brace has leading comments
-	// that need to be emitted inside the indent context for proper
-	// indentation. This handles both empty and non-empty bodies.
 	var closeComments []token.Token
 	if p.options.Format {
 		att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
@@ -276,71 +273,56 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	p.withIndent(func(indented *printer) {
 		indented.printScopeDecls(trivia, body.Decls(), gapNewline)
-
 		if len(closeComments) > 0 {
-			gap := gapNewline
-			if trivia.blankBeforeClose {
-				gap = gapBlankline
-			}
-
-			// Flush any remaining scope trivia before close comments.
-			for _, t := range indented.pending {
-				if t.Kind() != token.Comment {
-					continue
-				}
-				indented.emitGap(gap)
-				indented.push(dom.Text(t.Text()))
-				gap = gapNewline
-			}
-			indented.pending = indented.pending[:0]
-
-			// Emit close brace leading comments inside indent.
-			// Track consecutive newlines to detect blank lines
-			// between comment groups.
-			newlineRun := 0
-			for _, t := range closeComments {
-				if t.Kind() == token.Space {
-					if t.Text() == "\n" {
-						newlineRun++
-					}
-					continue
-				}
-				if t.Kind() != token.Comment {
-					continue
-				}
-				if newlineRun >= 2 {
-					gap = gapBlankline
-				}
-				newlineRun = 0
-				indented.emitGap(gap)
-				indented.push(dom.Text(t.Text()))
-				gap = gapNewline
-			}
+			indented.emitCloseComments(closeComments, trivia.blankBeforeClose)
 		}
 	})
 
 	if len(closeComments) > 0 {
-		// Close brace comments were already emitted inside withIndent.
-		// Emit close brace directly to avoid re-emitting its trivia.
 		p.emitGap(gapNewline)
 		p.push(dom.Text(closeTok.Text()))
-
-		// Handle trailing trivia on close brace.
 		att, _ := p.trivia.tokenTrivia(closeTok.ID())
-		if len(att.trailing) > 0 {
-			if p.options.Format {
-				for _, t := range att.trailing {
-					if t.Kind() == token.Comment {
-						p.push(dom.Text(" "))
-						p.push(dom.Text(t.Text()))
-					}
-				}
-			} else {
-				p.pending = append(p.pending, att.trailing...)
-			}
-		}
+		p.emitTrailing(att.trailing)
 	} else {
 		p.printToken(closeTok, gapNewline)
+	}
+}
+
+// emitCloseComments emits close-brace leading comments inside an
+// indented context, flushing any pending scope trivia first.
+func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose bool) {
+	gap := gapNewline
+	if blankBeforeClose {
+		gap = gapBlankline
+	}
+	for _, t := range p.pending {
+		if t.Kind() != token.Comment {
+			continue
+		}
+		p.emitGap(gap)
+		p.push(dom.Text(t.Text()))
+		gap = gapNewline
+	}
+	p.pending = p.pending[:0]
+
+	newlineRun := 0
+	for _, t := range comments {
+		if t.Kind() == token.Space {
+			if t.Text() == "\n" {
+				newlineRun++
+			}
+			continue
+		}
+		if t.Kind() != token.Comment {
+			continue
+		}
+		if newlineRun >= 2 {
+			gap = gapBlankline
+		}
+		newlineRun = 0
+		p.emitGap(gap)
+		p.push(dom.Text(t.Text()))
+		gap = gapNewline
 	}
 }
 
