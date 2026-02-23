@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test comment formatting (rule 21): line comments, inline block comments,
-# trailing comments, detached comments, comments after closing braces.
+# Test comment formatting (rule 21): trailing comments on every declaration
+# kind, trailing comments on open and close braces, detached comments,
+# and license headers.
 
 format: true
 
@@ -21,23 +22,63 @@ source: |
   // License header comment.
   // Second line of license.
 
-  syntax = "proto3";
+  syntax = "proto2"; // Trailing on syntax.
 
-  // Comment about Foo.
-  message Foo {
-    // Comment about name.
-    string name = 1; // Trailing comment on field.
+  package comments; // Trailing on package.
+
+  import "other.proto"; // Trailing on import.
+
+  option java_package = "com.example"; // Trailing on file option.
+
+  // Leading on Foo.
+  message Foo { // Trailing on message open.
+    // Leading on name.
+    optional string name = 1; // Trailing on field.
 
     // Detached comment.
 
-    // Comment about id.
-    int32 id = 2;
-  }
+    // Leading on id.
+    optional int32 id = 2;
+
+    extensions 100 to 200; // Trailing on extensions.
+
+    reserved 50; // Trailing on reserved.
+
+    enum Status { // Trailing on enum open.
+      STATUS_UNSPECIFIED = 0; // Trailing on enum value.
+    } // Trailing on enum close.
+
+    oneof choice { // Trailing on oneof open.
+      string a = 3;
+      string b = 4; // Trailing on oneof field.
+    } // Trailing on oneof close.
+
+    message Inner { // Trailing on nested message open.
+      optional bool flag = 1;
+    } // Trailing on nested message close.
+
+    optional group MyGroup = 5 { // Trailing on group open.
+      optional int32 val = 1; // Trailing on group field.
+    } // Trailing on group close.
+  } // Trailing on message close.
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-  }
-  // This is a trailing comment on '}', but
-  // it should remain here.
+  } // Trailing on top-level enum close.
+  // This is a detached comment after '}'.
+  // It should remain here.
+
+  service Svc { // Trailing on service open.
+    rpc Ping(Foo) returns (Foo); // Trailing on rpc.
+    rpc Echo(Foo) returns (Foo) { // Trailing on rpc body open.
+      option deprecated = true; // Trailing on method option.
+    } // Trailing on rpc body close.
+    rpc WithComments(/* input comment */ Foo) returns (/* output comment */ Foo);
+    rpc WithBodyComments(/* in */ Foo) returns (/* out */ Foo) {}
+  } // Trailing on service close.
+
+  extend Foo { // Trailing on extend open.
+    optional int32 ext_field = 100; // Trailing on extend field.
+  } // Trailing on extend close.
 
   // These comments are attached to the EOF.

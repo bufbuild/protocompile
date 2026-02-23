@@ -92,8 +92,7 @@ func (p *printer) printFile(file *ast.File) {
 	p.emitTrivia(endGap)
 }
 
-// pendingHasComments reports whether the pending trivia buffer contains
-// any comment tokens.
+// pendingHasComments reports whether pending contains comments.
 func (p *printer) pendingHasComments() bool {
 	for _, tok := range p.pending {
 		if tok.Kind() == token.Comment {
@@ -103,9 +102,7 @@ func (p *printer) pendingHasComments() bool {
 	return false
 }
 
-// printToken is the standard entry point for printing a semantic token.
-// It emits leading attached trivia, the gap, the token text, and trailing
-// attached trivia.
+// printToken emits a token with its trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
@@ -122,14 +119,6 @@ func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 		p.appendPending(att.leading)
 	}
 
-	// Flush pending trivia and emit the gap, then the token text.
-	//
-	// In non-format mode, the gap is only a fallback for synthetic tokens
-	// (those with no trivia entry). When trivia exists (even if the leading
-	// slice is empty), the trivia replaces the gap entirely.
-	//
-	// In format mode, the gap is always used: whitespace tokens are discarded
-	// and the gap provides canonical spacing.
 	if len(text) > 0 {
 		if hasTrivia {
 			if !p.options.Format {
@@ -143,27 +132,30 @@ func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 		p.push(dom.Text(text))
 	}
 
-	// Emit trailing attached trivia.
-	if hasTrivia && len(att.trailing) > 0 {
-		if p.options.Format {
-			// In format mode, emit trailing comments immediately with a
-			// canonical space, keeping them on the same line as the token.
-			for _, t := range att.trailing {
-				if t.Kind() == token.Comment {
-					p.push(dom.Text(" "))
-					p.push(dom.Text(t.Text()))
-				}
-			}
-		} else {
-			p.pending = append(p.pending, att.trailing...)
-		}
+	if hasTrivia {
+		p.emitTrailing(att.trailing)
 	}
 }
 
-// appendPending appends trivia tokens to the pending buffer.
-// In format mode, non-newline whitespace tokens (spaces) are filtered
-// out. Newline tokens are kept so that emitTrivia can detect blank lines
-// (consecutive newlines) between comment groups.
+// emitTrailing emits trailing attached trivia for a token.
+func (p *printer) emitTrailing(trailing []token.Token) {
+	if len(trailing) == 0 {
+		return
+	}
+	if p.options.Format {
+		for _, t := range trailing {
+			if t.Kind() == token.Comment {
+				p.push(dom.Text(" "))
+				p.push(dom.Text(t.Text()))
+			}
+		}
+	} else {
+		p.pending = append(p.pending, trailing...)
+	}
+}
+
+// appendPending buffers trivia tokens, filtering non-newline whitespace
+// in format mode.
 func (p *printer) appendPending(tokens []token.Token) {
 	if p.options.Format {
 		for _, tok := range tokens {
@@ -177,16 +169,8 @@ func (p *printer) appendPending(tokens []token.Token) {
 	p.pending = append(p.pending, tokens...)
 }
 
-// printScopeDecls zips trivia slots with declarations, computing
-// inter-declaration gaps.
-//
-// In format mode, a blank line is inserted between declarations that
-// belong to different spacing groups (e.g. between imports and options).
-// At the file level (firstGap == gapNone), header comments in slot 0
-// are flushed with a blank line before the first declaration.
-//
-// In non-format mode, all gaps are gapNewline (trivia provides the
-// actual whitespace; the gap is only a fallback for synthetic tokens).
+// printScopeDecls prints declarations in a scope, computing
+// inter-declaration gaps and emitting trivia slots between them.
 func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], firstGap gapStyle) {
 	isFileLevel := firstGap == gapNone
 	for i := range decls.Len() {
@@ -194,21 +178,12 @@ func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.D
 
 		var gap gapStyle
 		switch {
-		case i == 0 && isFileLevel && p.options.Format && p.pendingHasComments():
-			// File-level header comments: flush them with no leading
-			// gap, then add a newline that combines with emitTrivia's
-			// trailing newline to produce one blank line of separation.
-			p.emitTrivia(gapNone)
-			p.emitGap(gapNewline)
-			gap = gapNone
-		case i == 0 && !isFileLevel && p.options.Format &&
-			i < len(trivia.blankBefore) && trivia.blankBefore[i]:
-			// Body-level first declaration with trailing comments on
-			// the open brace followed by a blank line. Flush the
-			// comments first, then insert a newline gap. Combined
-			// with emitTrivia's trailing newline after the comment,
-			// this produces a blank line of separation.
-			p.emitTrivia(gapNewline)
+		case i == 0 && p.options.Format && p.shouldFlushLeadingComments(isFileLevel, trivia, i):
+			flushGap := gapNone
+			if !isFileLevel {
+				flushGap = gapNewline
+			}
+			p.emitTrivia(flushGap)
 			p.emitGap(gapNewline)
 			gap = gapNone
 		case i == 0:
@@ -229,6 +204,13 @@ func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.D
 		p.printDecl(decls.At(i), gap)
 	}
 	p.emitRemainingTrivia(trivia, decls.Len())
+}
+
+func (p *printer) shouldFlushLeadingComments(isFileLevel bool, trivia detachedTrivia, i int) bool {
+	if isFileLevel {
+		return p.pendingHasComments()
+	}
+	return i < len(trivia.blankBefore) && trivia.blankBefore[i]
 }
 
 // emitTriviaSlot appends the detached trivia for slot[i] to pending.
@@ -263,18 +245,20 @@ func (p *printer) emitGap(gap gapStyle) {
 	}
 }
 
-// emitTrivia flushes the pending trivia buffer.
-//
-// In non-format mode, all pending tokens are concatenated and emitted as
-// a single text tag, preserving original formatting.
-//
-// In format mode, pending contains comment and newline tokens (non-newline
-// whitespace was filtered by appendPending). The gap is emitted before the
-// first comment. Between comments, a blank line (gapBlankline) is emitted
-// when 2+ consecutive newlines separate them; otherwise a newline is used.
-// For inline contexts (gap == gapSpace), block comments use spaces to stay
-// on the same line; line comments (//) always force a newline after them.
-// When there are no comments, the gap is emitted directly.
+// commentGap returns the appropriate gap for comment separation.
+func commentGap(contextGap gapStyle, isLineComment bool, blankRun int) gapStyle {
+	if blankRun >= 2 {
+		return gapBlankline
+	}
+	if isLineComment {
+		return gapNewline
+	}
+	return contextGap
+}
+
+// emitTrivia flushes pending trivia. In format mode, only comments
+// are emitted with canonical spacing; in non-format mode, all tokens
+// are concatenated verbatim.
 func (p *printer) emitTrivia(gap gapStyle) {
 	if !p.options.Format {
 		var buf strings.Builder
@@ -286,9 +270,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		return
 	}
 
-	// For inline comment contexts (gap == gapSpace), keep block comments
-	// on the same line. Line comments (//) always require a newline after.
-	afterGap := gapNewline
+	afterGap := gapSoftline
 	if gap == gapSpace {
 		afterGap = gapSpace
 	}
@@ -298,7 +280,6 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	newlineRun := 0
 	for _, tok := range p.pending {
 		if tok.Kind() == token.Space {
-			// Count consecutive newline tokens.
 			if tok.Text() == "\n" {
 				newlineRun++
 			}
@@ -310,14 +291,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		if !hasComment {
 			p.emitGap(gap)
 		} else {
-			betweenGap := afterGap
-			if prevIsLine {
-				betweenGap = gapNewline
-			}
-			if newlineRun >= 2 {
-				betweenGap = gapBlankline
-			}
-			p.emitGap(betweenGap)
+			p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
 		}
 		newlineRun = 0
 		p.push(dom.Text(tok.Text()))
@@ -327,11 +301,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	p.pending = p.pending[:0]
 
 	if hasComment {
-		endGap := afterGap
-		if prevIsLine {
-			endGap = gapNewline
-		}
-		p.emitGap(endGap)
+		p.emitGap(commentGap(afterGap, prevIsLine, 0))
 		return
 	}
 	p.emitGap(gap)

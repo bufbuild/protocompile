@@ -141,14 +141,44 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 			pending = append(pending, tok)
 			continue
 		}
+		// For the first non-skippable token in a brace scope, extract
+		// inline trailing comments on the open brace. Tokens on the
+		// same line as "{" (before the first newline) that contain a
+		// comment become trailing trivia on the open brace token,
+		// keeping "{ // comment" on one line.
+		if len(trivia.slots) == 0 && scopeID != 0 {
+			firstNewline := len(pending)
+			for i, t := range pending {
+				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
+					firstNewline = i
+					break
+				}
+			}
+			if firstNewline < len(pending) {
+				hasComment := false
+				for _, t := range pending[:firstNewline] {
+					if t.Kind() == token.Comment {
+						hasComment = true
+						break
+					}
+				}
+				if hasComment {
+					att := idx.attached[scopeID]
+					att.trailing = pending[:firstNewline]
+					idx.attached[scopeID] = att
+					pending = pending[firstNewline:]
+				}
+			}
+		}
+
 		detached, attached := splitDetached(pending)
 		trivia.slots = append(trivia.slots, detached)
 
-		// For the first declaration in a scope, detect if detached
-		// trivia contains comments separated by a blank line from the
-		// first declaration. This captures "trailing comments on open
-		// brace" patterns where the blank line between the comments
-		// and the first declaration should be preserved.
+		// When the first slot has comments but no preceding blank line,
+		// this means comments appeared between the open brace and the
+		// first declaration (e.g. trailing comments on "{"). Mark
+		// blankBefore[0] true so printScopeDecls can insert a blank
+		// line between those comments and the first declaration.
 		blank := hadBlank
 		if len(trivia.blankBefore) == 0 && !blank && len(detached) > 0 {
 			for _, t := range detached {
@@ -235,14 +265,27 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			break
 		}
 		if afterNewline && !isNewline && !isSpace {
-			detached, attached := splitDetached(trailing)
+			// Keep only the inline portion (before first newline) as
+			// trailing. This ensures trailing comments like "} // foo"
+			// stay attached to their token even when there's no blank
+			// line before the next declaration.
+			firstNewline := len(trailing)
+			for i, t := range trailing {
+				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
+					firstNewline = i
+					break
+				}
+			}
+
+			rest := trailing[firstNewline:]
+			detached, attached := splitDetached(rest)
 			hasBlankLine = len(detached) > 0
-			trailing = detached
 
 			cursor.PrevSkippable()
-			for range attached {
+			for range len(attached) {
 				cursor.PrevSkippable()
 			}
+			trailing = trailing[:firstNewline+len(detached)]
 			atEndOfScope = false
 			break
 		}

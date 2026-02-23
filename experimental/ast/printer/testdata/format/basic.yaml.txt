@@ -16,7 +16,6 @@ option cc_enable_arenas = true; // trailing comment
 option optimize_for = SPEED;
 
 // A message.
-message Foo {
-  /* Foo */
+message Foo { /* Foo */
   string name = 1;
 }

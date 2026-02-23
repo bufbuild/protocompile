@@ -103,8 +103,10 @@ type Cond byte
 //   - Space tags adjacent to a newline will be deleted, so that lines do not
 //     have trailing whitespace.
 //
-//   - If two space or newline tags of the same rune are adjacent, the shorter
-//     one is deleted.
+//   - If two space tags are adjacent, the shorter one is deleted.
+//
+//   - Consecutive newline tags accumulate, but are capped at two newlines
+//     (one blank line) in the output.
 func Text(text string) Tag {
 	return TextIf(Always, text)
 }

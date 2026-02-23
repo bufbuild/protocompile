@@ -108,12 +108,18 @@ func shouldMerge(a, b *tag) (keepA, keepB bool) {
 		return false, true
 	case a.kind == kindBreak && b.kind == kindSpace:
 		return true, false
-
-	case a.kind == kindSpace && b.kind == kindSpace,
-		a.kind == kindBreak && b.kind == kindBreak:
+	case a.kind == kindSpace && b.kind == kindSpace:
+		bIsWider := len(a.text) < len(b.text)
+		return !bIsWider, bIsWider
+	case a.kind == kindBreak && b.kind == kindBreak:
+		// Single-newline breaks are kept so the printer can accumulate
+		// them (up to two, i.e. one blank line). Multi-newline breaks
+		// use the wider-wins rule, preserving explicit blank lines.
+		if len(a.text) == 1 && len(b.text) == 1 {
+			return true, true
+		}
 		bIsWider := len(a.text) < len(b.text)
 		return !bIsWider, bIsWider
 	}
-
 	return true, true
 }
