@@ -41,6 +41,22 @@ files:
       int32 y = 2;
     }
 
+- path: "main3.proto"
+  text: |
+    edition = "2024";
+    package buf.test;
+
+    import option "option.proto";
+
+    // Using the option-imported type inside an Any literal is valid.
+    message Baz {
+      option (any_opt) = {
+        [type.googleapis.com/buf.test.Foo]: {
+          x: 1
+        }
+      };
+    }
+
 - path: "public.proto"
   import: true
   text: |
@@ -55,6 +71,7 @@ files:
     edition = "2024";
     package buf.test;
 
+    import "google/protobuf/any.proto";
     import "google/protobuf/descriptor.proto";
 
     message Foo {
@@ -63,5 +80,6 @@ files:
 
     extend google.protobuf.MessageOptions {
       Foo e = 10001;
+      google.protobuf.Any any_opt = 10002;
     }
   

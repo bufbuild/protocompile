@@ -1,7 +1,30 @@
 file:
+- name: "google/protobuf/any.proto"
+  package: "google.protobuf"
+  message_type:
+  - name: "Any"
+    field:
+    - name: "type_url"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "typeUrl"
+    - name: "value"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BYTES
+      json_name: "value"
+  options:
+    java_package: "com.google.protobuf"
+    java_outer_classname: "AnyProto"
+    java_multiple_files: true
+    go_package: "google.golang.org/protobuf/types/known/anypb"
+    objc_class_prefix: "GPB"
+    csharp_namespace: "Google.Protobuf.WellKnownTypes"
+  syntax: "proto3"
 - name: "option.proto"
   package: "buf.test"
-  dependency: ["google/protobuf/descriptor.proto"]
+  dependency: ["google/protobuf/any.proto", "google/protobuf/descriptor.proto"]
   message_type:
   - name: "Foo"
     field:
@@ -18,6 +41,13 @@ file:
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.MessageOptions"
     json_name: "e"
+  - name: "any_opt"
+    number: 10002
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".google.protobuf.Any"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "anyOpt"
   syntax: "editions"
   edition: EDITION_2024
 - name: "main.proto"
@@ -54,5 +84,17 @@ file:
       type: TYPE_INT32
       json_name: "y"
     options.$unknown: "10001: {1: 1}"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main3.proto"
+  package: "buf.test"
+  option_dependency: ["option.proto"]
+  message_type:
+  - name: "Baz"
+    options.$unknown: |
+      10002: {
+        1: {"type.googleapis.com/buf.test.Foo"}
+        2: {1: 1}
+      }
   syntax: "editions"
   edition: EDITION_2024
