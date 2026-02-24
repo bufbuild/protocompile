@@ -222,7 +222,7 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 	}
 
 	if g.sourceCodeInfo != nil {
-		slices.SortFunc(g.sourceCodeInfo.Location, func(a, b *descriptorpb.SourceCodeInfo_Location) int {
+		slices.SortStableFunc(g.sourceCodeInfo.Location, func(a, b *descriptorpb.SourceCodeInfo_Location) int {
 			return slices.Compare(a.Span, b.Span)
 		})
 		g.sourceCodeInfo.Location = append(
