@@ -213,7 +213,7 @@ func (n *RangeNode) EndValueAsInt32(minVal, maxVal int32) (int32, bool) {
 // ReservedNode represents reserved declaration, which can be used to reserve
 // either names or numbers. Examples:
 //
-//	reserved 1, 10-12, 15;
+//	reserved 1, 10 to 12, 15;
 //	reserved "foo", "bar", "baz";
 //	reserved foo, bar, baz;
 type ReservedNode struct {
