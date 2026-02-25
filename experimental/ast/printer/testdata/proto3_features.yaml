@@ -1,0 +1,33 @@
+source: |
+  syntax = "proto3";
+
+  package example.v2;
+
+  import "google/protobuf/timestamp.proto";
+  import public "google/protobuf/duration.proto";
+  import weak "google/protobuf/any.proto";
+
+  message SearchRequest {
+    string query = 1;
+    int32 page_number = 2;
+    int32 result_per_page = 3;
+
+    enum Corpus {
+      CORPUS_UNSPECIFIED = 0;
+      CORPUS_UNIVERSAL = 1;
+      CORPUS_WEB = 2;
+      CORPUS_IMAGES = 3;
+    }
+
+    Corpus corpus = 4;
+    optional string filter = 5;
+    map<string, string> metadata = 6;
+
+    oneof test_oneof {
+      string name = 7;
+      int32 sub_message = 8;
+    }
+
+    reserved 15, 9 to 11, 40 to max;
+    reserved "foo", "bar";
+  }
