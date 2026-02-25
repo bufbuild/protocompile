@@ -79,14 +79,14 @@ file:
     leading_comments: " This, as expected, is a leading comment for Foo.\n"
     trailing_comments: " This is the TRAILING comment for Foo. (It is NOT\n a detached comment for baz.)\n"
   - { path: [4, 0, 1], span: [32, 32, 35] }
+  - { path: [4, 0, 7], span: [37, 2, 18] }
   - path: [4, 0, 7, 1000, 0]
     span: [37, 2, 18]
     leading_comments: " Leading comment for message option\n"
-  - { path: [4, 0, 7], span: [37, 2, 18] }
+  - { path: [4, 0, 7], span: [38, 2, 18] }
   - path: [4, 0, 7, 1000, 1]
     span: [38, 2, 18]
     trailing_comments: " Trailing comment for the second message option"
-  - { path: [4, 0, 7], span: [38, 2, 18] }
   - { path: [4, 0, 2, 0, 5], span: [41, 2, 8] }
   - path: [4, 0, 2, 0]
     span: [41, 2, 46]
