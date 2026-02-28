@@ -110,6 +110,19 @@ func (d *Diagnostic) Primary() source.Span {
 	return source.Span{}
 }
 
+// RelatedSpans returns any spans related to this diagnostic that are not the primary span, if it has any.
+// If it doesn't have any, it returns nil.
+// (To get the primary span, use [Diagnostic.Primary].)
+func (d *Diagnostic) RelatedSpans() []source.Span {
+	var relatedSpans []source.Span
+	for _, annotation := range d.snippets {
+		if !annotation.primary {
+			relatedSpans = append(relatedSpans, annotation.Span)
+		}
+	}
+	return relatedSpans
+}
+
 // Level returns this diagnostic's level.
 func (d *Diagnostic) Level() Level {
 	return d.level
