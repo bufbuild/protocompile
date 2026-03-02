@@ -243,7 +243,10 @@ func validateFileOptions(f *File, r *report.Report) {
 }
 
 func validateReservedNames(ty Type, r *report.Report) {
+	seen := map[string][]source.Spanner{}
 	for name := range seq.Values(ty.ReservedNames()) {
+		seen[name.Name()] = append(seen[name.Name()], name.AST())
+
 		member := ty.MemberByInternedName(name.InternedName())
 		if member.IsZero() {
 			continue
@@ -253,6 +256,20 @@ func validateReservedNames(ty Type, r *report.Report) {
 			report.Snippet(member.AST().Name()),
 			report.Snippetf(name.AST(), "`%s` reserved here", member.Name()),
 		)
+	}
+
+	for name, spans := range seen {
+		if len(spans) == 1 {
+			continue
+		}
+		options := []report.DiagnosticOption{report.Snippet(spans[0])}
+		options = append(
+			options,
+			slices.Collect(slicesx.Map(spans[1:], func(spanner source.Spanner) report.DiagnosticOption {
+				return report.Snippetf(spanner, "`%s` also reserved here", name)
+			}))...,
+		)
+		r.Errorf("duplicated reserved name %s", name).Apply(options...)
 	}
 }
 
