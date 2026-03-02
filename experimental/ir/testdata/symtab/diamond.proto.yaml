@@ -13,7 +13,7 @@
 # limitations under the License.
 
 symtab: true
-exclude: "unused imports"
+exclude: "unused import"
 files:
 - path: "main.proto"
   text: |

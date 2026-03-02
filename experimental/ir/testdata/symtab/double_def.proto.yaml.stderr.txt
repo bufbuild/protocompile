@@ -1,14 +1,3 @@
-warning: unused import "dep/priv.proto"
-  --> dep/foo.proto:4:8
-   |
- 4 | import "dep/priv.proto";
-   |        ^^^^^^^^^^^^^^^^
-  help: delete it
-   |
- 4 | - import "dep/priv.proto";
-   |
-   = help: no symbols from this file are referenced
-
 error: `Foo` declared multiple times
   --> dep/foo.proto:6:9
    |
@@ -20,16 +9,16 @@ error: `Foo` declared multiple times
 11 | message Foo {
    |         --- ...also declared here
 
-warning: unused import "dep/foo.proto"
-  --> main.proto:4:8
+error: `Main` declared multiple times
+  --> dep/priv.proto:4:9
    |
- 4 | import "dep/foo.proto";
-   |        ^^^^^^^^^^^^^^^
-  help: delete it
+ 4 | message Main {}
+   |         ^^^^ first here, as a message type
    |
- 4 | - import "dep/foo.proto";
+  ::: main.proto:6:9
    |
-   = help: no symbols from this file are referenced
+ 6 | message Main {}
+   |         ---- ...also declared here
 
 error: `Main` declared multiple times
   --> main.proto:6:9
@@ -74,15 +63,4 @@ error: `dep.foo.Foo` declared multiple times
  6 | message Foo {}
    |         --- ...also declared here, now as a message type
 
-warning: unused import "dep/foo.proto"
-  --> main2.proto:4:8
-   |
- 4 | import "dep/foo.proto";
-   |        ^^^^^^^^^^^^^^^
-  help: delete it
-   |
- 4 | - import "dep/foo.proto";
-   |
-   = help: no symbols from this file are referenced
-
-encountered 5 errors and 3 warnings
+encountered 6 errors

@@ -23,4 +23,5 @@ const (
 	stageFile int = iota * 10
 	stageAST
 	stageIR
+	stageWorkspace
 )
