@@ -16,6 +16,7 @@ package ir
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -48,6 +49,10 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 			return sym
 		},
 	)
+
+	slices.SortStableFunc(all, func(a, b Symbol) int {
+		return strings.Compare(string(a.FullName()), string(b.FullName()))
+	})
 
 	slicesx.DedupKey(
 		all,

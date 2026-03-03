@@ -9,6 +9,17 @@ error: `Foo` declared multiple times
 11 | message Foo {
    |         --- ...also declared here
 
+error: `Foo` declared multiple times
+  --> dep/foo.proto:6:9
+   |
+ 6 | message Foo {}
+   |         ^^^ first here, as a message type
+   |
+  ::: main.proto:11:9
+   |
+11 | message Foo {
+   |         --- ...also declared here
+
 error: `Main` declared multiple times
   --> dep/priv.proto:4:9
    |
@@ -63,4 +74,4 @@ error: `dep.foo.Foo` declared multiple times
  6 | message Foo {}
    |         --- ...also declared here, now as a message type
 
-encountered 6 errors
+encountered 7 errors
