@@ -73,7 +73,7 @@ func (id ID) GoString() string {
 // The zero value of Table is empty and ready to use.
 type Table struct {
 	index sync.Map
-	table atomic.Pointer[[]string]
+	table atomic.Pointer[[]string] // Spinlock; locked when it equals &pending.
 }
 
 var pending []string
@@ -117,6 +117,7 @@ func (t *Table) Query(s string) (ID, bool) {
 	return id.(ID), true
 }
 
+//go:nosplit // Avoid preemption while holding the spinlock.
 func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
 	// buffer that s is an internal pointer to by cloning it.
@@ -125,16 +126,19 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	// Take ownership of the table.
-cas:
+	// Take ownership of the table. We need to take this before we check the
+	// index for a race, because we can otherwise get a TOCTOU bug:
+	// 1. Ee check the index, it's missing s.
+	// 2. Another goroutine inserts s.
+	// 3. We lock the table to insert, resulting in a duplicate.
 	table := t.table.Load()
-	if table == &pending || !t.table.CompareAndSwap(table, &pending) {
-		goto cas
+	for table == &pending || !t.table.CompareAndSwap(table, &pending) {
+		table = t.table.Load()
 	}
 	if table == nil {
 		table = new([]string)
 	}
-	defer t.table.Store(table)
+	defer t.table.Store(table) // This is the "unlock".
 
 	// Check to see if someone beat us to the punch.
 	if id, ok := t.index.Load(s); ok {
@@ -153,7 +157,6 @@ cas:
 	}
 
 	t.index.Store(s, id)
-
 	return id
 }
 
@@ -224,12 +227,14 @@ func (t *Table) Preload(ids any) {
 }
 
 func (t *Table) getSlow(id ID) string {
-again:
-	table := t.table.Load()
-	if table == &pending {
-		goto again
+	for {
+		table := t.table.Load()
+		if table != &pending {
+			// If table is nil, that means no intern calls have occurred yet,
+			// so panicking is fine here (equivalent to an out-of-bounds access).
+			return (*table)[int(id)-1]
+		}
 	}
-	return (*table)[int(id)-1]
 }
 
 // Set is a set of intern IDs.
