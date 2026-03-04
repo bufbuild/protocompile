@@ -16,11 +16,16 @@ package intern_test
 
 import (
 	"fmt"
+	"runtime"
+	"slices"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -74,4 +79,103 @@ func shouldInline(s string) bool {
 	}
 
 	return true
+}
+
+func TestHammer(t *testing.T) {
+	t.Parallel()
+
+	start := new(sync.WaitGroup)
+	end := new(sync.WaitGroup)
+
+	n := new(atomic.Int64)
+	it := new(intern.Table)
+
+	// We collect the results of every query to the table, and then ensure
+	// each gets a unique answer.
+	mu := new(sync.Mutex)
+	query := make(map[string][]intern.ID)
+	value := make(map[intern.ID][]string)
+
+	for range runtime.GOMAXPROCS(0) {
+		start.Add(1)
+		end.Add(1)
+		go func() {
+			defer end.Done()
+
+			data := makeData(int(n.Add(1)))
+			m1 := make(map[string][]intern.ID)
+			m2 := make(map[intern.ID][]string)
+
+			// This ensures that we have a thundering herd situation: all of
+			// these goroutines wake up and hammer the intern table at the
+			// same time.
+			start.Done()
+			start.Wait()
+
+			for _, s := range data {
+				id := it.Intern(s)
+				m1[s] = append(m1[s], id)
+
+				v := it.Value(id)
+				m2[id] = append(m2[id], v)
+
+				assert.Equal(t, s, v)
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			for k, v := range m1 {
+				query[k] = append(query[k], v...)
+			}
+			for k, v := range m2 {
+				value[k] = append(value[k], v...)
+			}
+		}()
+	}
+
+	end.Wait()
+
+	for k, v := range query {
+		slices.Sort(v)
+		v = slicesx.Dedup(v)
+		assert.Equal(t, 1, len(v), "query[%v]: %v", k, v)
+	}
+
+	for k, v := range value {
+		slices.Sort(v)
+		v = slicesx.Dedup(v)
+		assert.Equal(t, 1, len(v), "value[%v]: %v", k, v)
+	}
+}
+
+func BenchmarkIntern(b *testing.B) {
+	n := new(atomic.Int64)
+	it := new(intern.Table)
+	b.RunParallel(func(p *testing.PB) {
+		data := makeData(int(n.Add(1)))
+		for p.Next() {
+			for _, s := range data {
+				_ = it.Value(it.Intern(s))
+			}
+		}
+	})
+}
+
+// makeData generates deterministic pseudo-random data of poor quality, meaning
+// that strings are likely to repeat in different orders across different
+// seeds.
+func makeData(seed int) []string {
+	var data []string
+	n := seed
+	for i := range 10000 {
+		n += 5
+		n %= 99
+
+		buf := new(strings.Builder)
+		for j := range n {
+			buf.WriteRune(rune('a' + (i+j)%26))
+		}
+		data = append(data, buf.String())
+	}
+	return data
 }

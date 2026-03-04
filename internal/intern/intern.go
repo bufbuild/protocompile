@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -71,10 +72,11 @@ func (id ID) GoString() string {
 //
 // The zero value of Table is empty and ready to use.
 type Table struct {
-	mu    sync.RWMutex
-	index map[string]ID
-	table []string
+	index sync.Map
+	table atomic.Pointer[[]string]
 }
+
+var pending []string
 
 // Intern interns the given string into this table.
 //
@@ -107,11 +109,12 @@ func (t *Table) Query(s string) (ID, bool) {
 		return char6, true
 	}
 
-	t.mu.RLock()
-	id, ok := t.index[s]
-	t.mu.RUnlock()
+	id, ok := t.index.Load(s)
+	if !ok {
+		return 0, false
+	}
 
-	return id, ok
+	return id.(ID), true
 }
 
 func (t *Table) internSlow(s string) ID {
@@ -122,34 +125,34 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	// Take ownership of the table.
+cas:
+	table := t.table.Load()
+	if table == &pending || !t.table.CompareAndSwap(table, &pending) {
+		goto cas
+	}
+	if table == nil {
+		table = new([]string)
+	}
+	defer t.table.Store(table)
 
-	// Check if someone raced us to intern this string. We have to check again
-	// because in the unsynchronized section between RUnlock and Lock, another
-	// goroutine might have successfully interned s.
-	//
-	// TODO: We can reduce the number of map hits if we switch to a different
-	// Map implementation that provides an upsert primitive.
-	if id, ok := t.index[s]; ok {
-		return id
+	// Check to see if someone beat us to the punch.
+	if id, ok := t.index.Load(s); ok {
+		return id.(ID)
 	}
 
 	// As of here, we have unique ownership of the table, and s has not been
 	// inserted yet.
 
-	t.table = append(t.table, s)
+	*table = append(*table, s)
 
 	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(len(t.table))
+	id := ID(len(*table))
 	if id < 0 {
-		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(t.table)))
+		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(*table)))
 	}
 
-	if t.index == nil {
-		t.index = make(map[string]ID)
-	}
-	t.index[s] = id
+	t.index.Store(s, id)
 
 	return id
 }
@@ -221,9 +224,12 @@ func (t *Table) Preload(ids any) {
 }
 
 func (t *Table) getSlow(id ID) string {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.table[int(id)-1]
+again:
+	table := t.table.Load()
+	if table == &pending {
+		goto again
+	}
+	return (*table)[int(id)-1]
 }
 
 // Set is a set of intern IDs.
