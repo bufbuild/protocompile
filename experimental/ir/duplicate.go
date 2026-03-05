@@ -15,12 +15,9 @@
 package ir
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // DedupExportedSymbols takes a report and the given *[File]s and checks for duplicate
@@ -131,19 +128,12 @@ func (e errExtensionTagDuplicates) Diagnose(d *report.Diagnostic) {
 		what = taxa.EnumValue
 	}
 
-	options := []report.DiagnosticOption{
+	d.Apply(
 		report.Message("%v `%v` used in more than one extension for `%v`", what, e.tag, e.extendee),
 		report.Snippet(e.extns[0].AST()),
+	)
+
+	for _, extn := range e.extns[1:] {
+		d.Apply(report.Snippetf(extn.AST(), "`%d` also used here", e.tag))
 	}
-
-	options = append(
-		options,
-		slices.Collect(slicesx.Map(e.extns[1:], func(extn Member) report.DiagnosticOption {
-			return report.Snippetf(extn.AST(), "`%d` also used here", e.tag)
-		}))...,
-	)
-
-	d.Apply(
-		options...,
-	)
 }
