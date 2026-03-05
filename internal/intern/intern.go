@@ -75,6 +75,9 @@ func (id ID) GoString() string {
 type Table struct {
 	index sync.Map
 	table atomic.Pointer[[]string] // Spinlock; locked when it equals &pending.
+
+	keys   anyArena[string]
+	values anyArena[ID]
 }
 
 var pending []string
@@ -126,7 +129,7 @@ func (t *Table) internSlow(s string) ID {
 
 	// Take ownership of the table. We need to take this before we check the
 	// index for a race, because we can otherwise get a TOCTOU bug:
-	// 1. Ee check the index, it's missing s.
+	// 1. We check the index, it's missing s.
 	// 2. Another goroutine inserts s.
 	// 3. We lock the table to insert, resulting in a duplicate.
 	table := t.table.Load()
@@ -147,7 +150,7 @@ func (t *Table) internSlow(s string) ID {
 	}
 
 	// Check to see if someone beat us to the punch.
-	if id, ok := t.index.LoadOrStore(s, id); ok {
+	if id, ok := t.index.LoadOrStore(t.keys.alloc(s), t.values.alloc(id)); ok {
 		return id.(ID) //nolint:errcheck
 	}
 
