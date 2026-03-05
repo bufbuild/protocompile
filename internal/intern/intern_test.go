@@ -138,13 +138,13 @@ func TestHammer(t *testing.T) {
 	for k, v := range query {
 		slices.Sort(v)
 		v = slicesx.Dedup(v)
-		assert.Equal(t, 1, len(v), "query[%v]: %v", k, v)
+		assert.Len(t, v, 1, "query[%v]: %v", k, v)
 	}
 
 	for k, v := range value {
 		slices.Sort(v)
 		v = slicesx.Dedup(v)
-		assert.Equal(t, 1, len(v), "value[%v]: %v", k, v)
+		assert.Len(t, v, 1, "value[%v]: %v", k, v)
 	}
 }
 
@@ -165,9 +165,9 @@ func BenchmarkIntern(b *testing.B) {
 // that strings are likely to repeat in different orders across different
 // seeds.
 func makeData(seed int) []string {
-	var data []string
+	data := make([]string, 10000)
 	n := seed
-	for i := range 10000 {
+	for i := range data {
 		n += 5
 		n %= 99
 
@@ -175,7 +175,7 @@ func makeData(seed int) []string {
 		for j := range n {
 			buf.WriteRune(rune('a' + (i+j)%26))
 		}
-		data = append(data, buf.String())
+		data[i] = buf.String()
 	}
 	return data
 }

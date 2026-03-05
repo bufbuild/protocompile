@@ -19,6 +19,7 @@ package intern
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -114,7 +115,7 @@ func (t *Table) Query(s string) (ID, bool) {
 		return 0, false
 	}
 
-	return id.(ID), true
+	return id.(ID), true //nolint:errcheck
 }
 
 //go:nosplit // Avoid preemption while holding the spinlock.
@@ -133,6 +134,7 @@ func (t *Table) internSlow(s string) ID {
 	// 3. We lock the table to insert, resulting in a duplicate.
 	table := t.table.Load()
 	for table == &pending || !t.table.CompareAndSwap(table, &pending) {
+		runtime.Gosched()
 		table = t.table.Load()
 	}
 	if table == nil {
@@ -142,7 +144,7 @@ func (t *Table) internSlow(s string) ID {
 
 	// Check to see if someone beat us to the punch.
 	if id, ok := t.index.Load(s); ok {
-		return id.(ID)
+		return id.(ID) //nolint:errcheck
 	}
 
 	// As of here, we have unique ownership of the table, and s has not been
@@ -204,6 +206,18 @@ func (t *Table) Value(id ID) string {
 	return t.getSlow(id)
 }
 
+func (t *Table) getSlow(id ID) string {
+	for {
+		table := t.table.Load()
+		if table != &pending {
+			// If table is nil, that means no intern calls have occurred yet,
+			// so panicking is fine here (equivalent to an out-of-bounds access).
+			return (*table)[int(id)-1]
+		}
+		runtime.Gosched()
+	}
+}
+
 // Preload takes a pointer to a struct type and initializes [ID]-typed fields
 // with statically-specified strings.
 //
@@ -222,17 +236,6 @@ func (t *Table) Preload(ids any) {
 		text, ok := f.Tag.Lookup("intern")
 		if ok {
 			r.Field(i).Set(reflect.ValueOf(t.Intern(text)))
-		}
-	}
-}
-
-func (t *Table) getSlow(id ID) string {
-	for {
-		table := t.table.Load()
-		if table != &pending {
-			// If table is nil, that means no intern calls have occurred yet,
-			// so panicking is fine here (equivalent to an out-of-bounds access).
-			return (*table)[int(id)-1]
 		}
 	}
 }
