@@ -139,23 +139,20 @@ func (t *Table) internSlow(s string) ID {
 	}
 	defer t.table.Store(table) // This is the "unlock".
 
+	// Figure out the next interning ID.
+	// The first ID will have value 1. ID 0 is reserved for "".
+	id := ID(len(*table)) + 1
+	if id < 0 {
+		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(*table)+1))
+	}
+
 	// Check to see if someone beat us to the punch.
-	if id, ok := t.index.Load(s); ok {
+	if id, ok := t.index.LoadOrStore(s, id); ok {
 		return id.(ID) //nolint:errcheck
 	}
 
-	// As of here, we have unique ownership of the table, and s has not been
-	// inserted yet.
-
+	// Commit the ID we chose.
 	*table = append(*table, s)
-
-	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(len(*table))
-	if id < 0 {
-		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(*table)))
-	}
-
-	t.index.Store(s, id)
 	return id
 }
 

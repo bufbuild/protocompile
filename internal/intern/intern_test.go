@@ -16,6 +16,7 @@ package intern_test
 
 import (
 	"fmt"
+	"math/rand"
 	"runtime"
 	"slices"
 	"strings"
@@ -113,6 +114,7 @@ func TestHammer(t *testing.T) {
 			start.Wait()
 
 			for _, s := range data {
+				s := string(s)
 				id := it.Intern(s)
 				m1[s] = append(m1[s], id)
 
@@ -149,33 +151,51 @@ func TestHammer(t *testing.T) {
 }
 
 func BenchmarkIntern(b *testing.B) {
-	n := new(atomic.Int64)
-	it := new(intern.Table)
-	b.RunParallel(func(p *testing.PB) {
-		data := makeData(int(n.Add(1)))
-		for p.Next() {
-			for _, s := range data {
-				_ = it.Value(it.Intern(s))
+	b.Run("Collisions", func(b *testing.B) {
+		n := new(atomic.Int64)
+		it := new(intern.Table)
+		b.RunParallel(func(p *testing.PB) {
+			data := makeData(int(n.Add(1)))
+			for p.Next() {
+				for _, s := range data {
+					_ = it.Value(it.InternBytes(s))
+				}
 			}
-		}
+		})
+	})
+
+	b.Run("Unique", func(b *testing.B) {
+		n := new(atomic.Int64)
+		it := new(intern.Table)
+		b.RunParallel(func(p *testing.PB) {
+			data := makeData(int(n.Add(1)))
+			for p.Next() {
+				for i, s := range data {
+					s = append(s, '0')
+					data[i] = s
+					_ = it.Value(it.InternBytes(s))
+				}
+			}
+		})
 	})
 }
 
 // makeData generates deterministic pseudo-random data of poor quality, meaning
 // that strings are likely to repeat in different orders across different
 // seeds.
-func makeData(seed int) []string {
-	data := make([]string, 10000)
+func makeData(seed int) [][]byte {
+	data := make([][]byte, 10000)
 	n := seed
+	r := rand.New(rand.NewSource(int64(seed)))
 	for i := range data {
 		n += 5
 		n %= 99
 
-		buf := new(strings.Builder)
-		for j := range n {
-			buf.WriteRune(rune('a' + (i+j)%26))
+		buf := make([]byte, n)
+		for i := range buf {
+			buf[i] = byte('a' + r.Intn(26))
 		}
-		data[i] = buf.String()
+		data[i] = buf
 	}
 	return data
 }
