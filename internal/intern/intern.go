@@ -57,7 +57,7 @@ func (id ID) String() string {
 		return `intern.ID("")`
 	}
 	if id < 0 {
-		return fmt.Sprintf("intern.ID(%q)", decodeChar6(id))
+		return fmt.Sprintf("intern.ID(%q)", decodeChar6(id, new(inlined)))
 	}
 	return fmt.Sprintf("intern.ID(%d)", int(id))
 }
@@ -90,9 +90,6 @@ func (t *Table) Intern(s string) ID {
 	if id, ok := t.Query(s); ok {
 		return id
 	}
-
-	// Outline the fallback for when we haven't interned, to promote inlining
-	// of Intern().
 	return t.internSlow(s)
 }
 
@@ -192,21 +189,16 @@ func (t *Table) QueryBytes(bytes []byte) (ID, bool) {
 //
 // This function may be called by multiple goroutines concurrently.
 func (t *Table) Value(id ID) string {
-	if id == 0 {
-		return ""
-	}
-
-	if id < 0 {
-		return decodeChar6(id)
-	}
-
-	// The locking part of Get is outlined to promote inlining of the two
-	// fast paths above. This in turn allows decodeChar6 to be inlined, which
-	// allows the returned string to be stack-promoted.
-	return t.getSlow(id)
+	// NOTE: this function is carefully written such that Go inlines it into
+	// the caller, allowing the result to be promoted to the stack.
+	return t.value(id, new(inlined))
 }
 
-func (t *Table) getSlow(id ID) string {
+func (t *Table) value(id ID, buf *inlined) string {
+	if id <= 0 {
+		return decodeChar6(id, buf)
+	}
+
 	for {
 		table := t.table.Load()
 		if table != &pending {
