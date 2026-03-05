@@ -45,7 +45,7 @@ func (w Workspace) Key() any {
 func (w Workspace) Execute(t *incremental.Task) ([]*ir.File, error) {
 	t.Report().Options.Stage += stageWorkspace
 
-	queries := make([]incremental.Query[*ir.File], iterx.Count(w.Workspace.Paths()))
+	queries := make([]incremental.Query[*ir.File], w.Workspace.Len())
 	for i, path := range iterx.Enumerate(w.Workspace.Paths()) {
 		queries[i] = IR{
 			Opener:  w.Opener,
