@@ -36,15 +36,4 @@ warning: unused import "public.proto"
    |
    = help: no symbols from this file are referenced
 
-error: `y` declared multiple times
-  --> main2.proto:9:9
-   |
- 9 |   int32 y = 2;
-   |         ^ first here, as a message field
-   |
-  ::: main.proto:8:7
-   |
- 8 |   Foo y = 2;
-   |       - ...also declared here
-
-encountered 3 errors and 1 warning
+encountered 2 errors and 1 warning

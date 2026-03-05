@@ -16,61 +16,80 @@ package ir
 
 import (
 	"slices"
-	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // DedupExportedSymbols takes a report and the given *[File]s and checks for duplicate
 // exported symbols based on [FullName] across the files.
+//
+// Diagnostics are provided only for the highest level of duplication. For example, given
+// the following files and content:
+//
+// -- a1.proto --
+// syntax = "proto3";
+// package a;
+//
+//	message Foo {
+//	 optional string bar = 1;
+//	}
+//
+// -- a2.proto --
+// syntax = "proto3";
+// package a;
+//
+//	message Foo {
+//	 optional string bar = 1;
+//	}
+//
+// A diagnostic for the duplication of `a.Foo` would be surfaced, but it would be redundant
+// to surface diagnostics for `a.Foo.bar`..
 func DedupExportedSymbols(r *report.Report, files ...*File) {
-	all := slicesx.MergeKeySeq(
-		iterx.Chain(slicesx.Map(files, func(file *File) symtab {
-			return file.exported
-		})),
+	nameToSymbols := map[FullName][]Symbol{}
 
-		func(which int, elem Ref[Symbol]) FullName {
-			file := files[which]
-			return GetRef(file, elem).FullName()
-		},
-
-		func(which int, elem Ref[Symbol]) Symbol {
-			src := files[which]
-			sym := GetRef(src, elem)
+	for _, file := range files {
+		for _, ref := range file.exported {
+			sym := GetRef(file, ref)
 			// We ignore package declarations, since the same package declaration could be made
 			// multiple times.
 			if sym.Kind() == SymbolKindPackage {
-				return Symbol{}
+				continue
 			}
-			return sym
-		},
-	)
-
-	slices.SortStableFunc(all, func(a, b Symbol) int {
-		return strings.Compare(string(a.FullName()), string(b.FullName()))
-	})
-
-	slicesx.DedupKey(
-		all,
-		func(s Symbol) FullName { return s.FullName() },
-		func(symbols []Symbol) Symbol {
-			if len(symbols) > 1 && !symbols[0].IsZero() {
-				r.Error(errDuplicates{symbols: symbols})
+			// To avoid unnecessary diagnostics, we recursively check that the parent of the
+			// current symbol is not already duplicated. As the docs for [symtab] indicate, the
+			// symbol tables are sorted by the [intern.ID] of their FQN during the lowering step,
+			// so any duplication for a parent symbol will already have been found.
+			parent := sym.FullName().Parent()
+			found := false
+			for parent != "" {
+				if len(nameToSymbols[parent]) > 1 {
+					found = true
+					break
+				}
+				parent = parent.Parent()
 			}
-			return symbols[0]
-		},
-	)
+			if found {
+				break
+			}
+			nameToSymbols[sym.FullName()] = append(nameToSymbols[sym.FullName()], sym)
+		}
+	}
+
+	for _, symbols := range nameToSymbols {
+		if len(symbols) > 1 {
+			r.Error(errDuplicates{symbols: symbols})
+		}
+	}
 }
 
 // DedupExtensionTags takes a report and the given *[File]s and checks for duplicate
 // tags for the same extendee. This ensures that a single tag is only used in a single
 // extension across the given files.
 func DedupExtensions(r *report.Report, files ...*File) {
-	extendeeToTagToMembers := map[FullName]map[int32][]Member{}
+	extendeeToTagToMembers := make(map[FullName]map[int32][]Member)
 
 	for _, file := range files {
 		for extn := range seq.Values(file.AllExtensions()) {

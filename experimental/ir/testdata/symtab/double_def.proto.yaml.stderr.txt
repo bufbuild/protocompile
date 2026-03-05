@@ -9,28 +9,6 @@ error: `Foo` declared multiple times
 11 | message Foo {
    |         --- ...also declared here
 
-error: `Foo` declared multiple times
-  --> dep/foo.proto:6:9
-   |
- 6 | message Foo {}
-   |         ^^^ first here, as a message type
-   |
-  ::: main.proto:11:9
-   |
-11 | message Foo {
-   |         --- ...also declared here
-
-error: `Main` declared multiple times
-  --> dep/priv.proto:4:9
-   |
- 4 | message Main {}
-   |         ^^^^ first here, as a message type
-   |
-  ::: main.proto:6:9
-   |
- 6 | message Main {}
-   |         ---- ...also declared here
-
 error: `Main` declared multiple times
   --> main.proto:6:9
    |
@@ -62,6 +40,28 @@ error: `BAR` declared multiple times
    = help: the fully-qualified names of enum values do not include the name of
            the enum; `BAR` defined inside of enum `Foo.BAR` has the name
            `Foo.BAR`, not `Foo.BAR.BAR`
+
+error: `Main` declared multiple times
+  --> main.proto:6:9
+   |
+ 6 | message Main {}
+   |         ^^^^ first here, as a message type
+   |
+  ::: dep/priv.proto:4:9
+   |
+ 4 | message Main {}
+   |         ---- ...also declared here
+
+error: `Foo` declared multiple times
+  --> main.proto:11:9
+   |
+11 | message Foo {
+   |         ^^^ first here, as a message type
+   |
+  ::: dep/foo.proto:6:9
+   |
+ 6 | message Foo {}
+   |         --- ...also declared here
 
 error: `dep.foo.Foo` declared multiple times
   --> main2.proto:2:1
