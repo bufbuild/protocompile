@@ -20,9 +20,13 @@ package test;
 message M {
   reserved "valid", "foo", "foo", "bar";
   reserved "bar";
+  reserved "baz", "baz";
+  reserved "baz";
 }
 
 enum E {
   reserved "valid", "foo", "foo", "bar";
   reserved "bar";
+  reserved "baz", "also_valid", "baz";
+  reserved "baz";
 }
