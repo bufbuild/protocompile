@@ -19,11 +19,10 @@ package intern
 import (
 	"fmt"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
 
+	"github.com/bufbuild/protocompile/internal/ext/atomicx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
@@ -74,13 +73,11 @@ func (id ID) GoString() string {
 // The zero value of Table is empty and ready to use.
 type Table struct {
 	index sync.Map
-	table atomic.Pointer[[]string] // Spinlock; locked when it equals &pending.
 
-	keys   anyArena[string]
-	values anyArena[ID]
+	// Ensures writers to table are exclusive, as required by Log.Append.
+	writer sync.Mutex
+	table  atomicx.Log[string]
 }
-
-var pending []string
 
 // Intern interns the given string into this table.
 //
@@ -118,7 +115,6 @@ func (t *Table) Query(s string) (ID, bool) {
 	return id.(ID), true //nolint:errcheck
 }
 
-//go:nosplit // Avoid preemption while holding the spinlock.
 func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
 	// buffer that s is an internal pointer to by cloning it.
@@ -127,35 +123,21 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	// Take ownership of the table. We need to take this before we check the
-	// index for a race, because we can otherwise get a TOCTOU bug:
-	// 1. We check the index, it's missing s.
-	// 2. Another goroutine inserts s.
-	// 3. We lock the table to insert, resulting in a duplicate.
-	table := t.table.Load()
-	for table == &pending || !t.table.CompareAndSwap(table, &pending) {
-		runtime.Gosched()
-		table = t.table.Load()
+	t.writer.Lock()
+	defer t.writer.Unlock()
+
+	// Check if we've been beaten. This must happen while holding the writer
+	// lock to prevent a write happening between this check and calling Append
+	// below.
+	if id, ok := t.index.Load(s); ok {
+		return id.(ID)
 	}
-	if table == nil {
-		table = new([]string)
-	}
-	defer t.table.Store(table) // This is the "unlock".
 
 	// Figure out the next interning ID.
 	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(len(*table)) + 1
-	if id < 0 {
-		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(*table)+1))
-	}
+	id := ID(t.table.Append(s))
+	t.index.Store(s, id) // Commit the ID.
 
-	// Check to see if someone beat us to the punch.
-	if id, ok := t.index.LoadOrStore(t.keys.alloc(s), t.values.alloc(id)); ok {
-		return id.(ID) //nolint:errcheck
-	}
-
-	// Commit the ID we chose.
-	*table = append(*table, s)
 	return id
 }
 
@@ -199,15 +181,7 @@ func (t *Table) value(id ID, buf *inlined) string {
 		return decodeChar6(id, buf)
 	}
 
-	for {
-		table := t.table.Load()
-		if table != &pending {
-			// If table is nil, that means no intern calls have occurred yet,
-			// so panicking is fine here (equivalent to an out-of-bounds access).
-			return (*table)[int(id)-1]
-		}
-		runtime.Gosched()
-	}
+	return t.table.Load(int(id) - 1)
 }
 
 // Preload takes a pointer to a struct type and initializes [ID]-typed fields
