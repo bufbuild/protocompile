@@ -185,6 +185,7 @@ func TestUnchanged(t *testing.T) {
 }
 
 func TestTimings(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		timings := make(map[any]time.Duration)
 		ctx := incremental.WithTimings(t.Context(), timings)
@@ -206,7 +207,7 @@ func TestTimings(t *testing.T) {
 		assert.Equal(t, 2*time.Millisecond, results[1].Elapsed)
 
 		for k, v := range timings {
-			id := k.(int)
+			id := k.(int) //nolint:errcheck
 			assert.Equal(t, time.Duration(id)*time.Millisecond, v)
 		}
 	})
