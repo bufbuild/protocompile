@@ -21,7 +21,9 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 
+	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
@@ -74,6 +76,77 @@ type Table struct {
 	mu    sync.RWMutex
 	index map[string]ID
 	table []string
+
+	stats atomic.Pointer[stats]
+}
+
+// Stats are cache behavior statistics for a [Table].
+//
+// See [Table.Stats].
+type Stats struct {
+	Hits    int64 // Times [Table.Intern] returns a previously interned string.
+	Misses  int64 // Times [Table.Intern] interns a new string.
+	Queries int64 // Times [Table.Query] or [Table.Intern] is called.
+	Inlined int64 // Times [Table.Query] or [Table.Intern] processes an inlined string.
+
+	AvgQuery  float64 // Average length of queried strings.
+	AvgIntern float64 // Average length of interned strings (excludes inlined strings).
+}
+
+// stats contains performance counters for a [Table].
+//
+// The fields here are carefully designed to minimize the amount of work
+// needed to record performance information in Query and Intern.
+type stats struct {
+	hits    atomic.Int64 // Hits
+	total   atomic.Int64 // Hits + Misses
+	queries atomic.Int64 // Queries - Inlined
+	inlined atomic.Int64 // Inlined
+
+	queryBytes  atomic.Int64 // Total bytes queried.
+	internBytes atomic.Int64 // Total bytes interned.
+}
+
+// RecordStats sets whether this table records statistics on cache behavior.
+//
+// Calling RecordStats(true) will reset any records set so far.
+func (t *Table) RecordStats(b bool) {
+	if b {
+		t.stats.Store(new(stats))
+	} else {
+		t.stats.Store(nil)
+	}
+}
+
+// Stats returns recorded statistics.
+//
+// Panics if [Table.RecordStats](true) has not been called.
+func (t *Table) Stats() Stats {
+	stats := t.stats.Load()
+	if stats == nil {
+		panic("intern.Table.Stats: must call RecordStats(true)")
+	}
+
+	var out Stats
+
+	hits := stats.hits.Load()
+	total := stats.total.Load()
+
+	out.Hits = hits
+	out.Misses = total - hits
+
+	queries := stats.queries.Load()
+	inlined := stats.inlined.Load()
+	out.Queries = queries + inlined
+	out.Inlined = inlined
+
+	bytes := stats.queryBytes.Load()
+	out.AvgQuery = float64(bytes) / float64(out.Queries)
+
+	bytes = stats.internBytes.Load()
+	out.AvgIntern = float64(bytes) / float64(total)
+
+	return out
 }
 
 // Intern interns the given string into this table.
@@ -84,13 +157,18 @@ func (t *Table) Intern(s string) ID {
 	// all strings are interned, so we can take a read lock to avoid needing
 	// to trap to the scheduler on concurrent access (all calls to Intern() will
 	// still contend mu.readCount, because RLock atomically increments it).
-	if id, ok := t.Query(s); ok {
-		return id
+	id, ok := t.Query(s)
+
+	if stats := t.stats.Load(); stats != nil {
+		stats.hits.Add(int64(bitsx.Bit(ok)))
+		stats.total.Add(1)
+		stats.internBytes.Add(int64(len(s) & bitsx.Mask(ok)))
 	}
 
-	// Outline the fallback for when we haven't interned, to promote inlining
-	// of Intern().
-	return t.internSlow(s)
+	if !ok {
+		id = t.internSlow(s)
+	}
+	return id
 }
 
 // Query will query whether s has already been interned.
@@ -102,7 +180,14 @@ func (t *Table) Intern(s string) ID {
 // If s is small enough to be inlined in an ID, it is treated as always being
 // interned.
 func (t *Table) Query(s string) (ID, bool) {
+	stats := t.stats.Load()
+
 	if char6, ok := encodeChar6(s); ok {
+		if stats != nil {
+			stats.inlined.Add(1)
+			stats.queryBytes.Add(int64(len(s)))
+		}
+
 		// This also handles s == "".
 		return char6, true
 	}
@@ -110,6 +195,11 @@ func (t *Table) Query(s string) (ID, bool) {
 	t.mu.RLock()
 	id, ok := t.index[s]
 	t.mu.RUnlock()
+
+	if stats != nil {
+		stats.queries.Add(1)
+		stats.queryBytes.Add(int64(len(s)))
+	}
 
 	return id, ok
 }
