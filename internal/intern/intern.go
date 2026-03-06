@@ -91,7 +91,7 @@ func Misses() float64 {
 	hits := float64(hits.Load())
 	misses := float64(misses.Load())
 
-	return misses / (hits + Misses())
+	return misses / (hits + misses)
 }
 
 // Intern interns the given string into this table.
@@ -102,9 +102,21 @@ func (t *Table) Intern(s string) ID {
 	// all strings are interned, so we can take a read lock to avoid needing
 	// to trap to the scheduler on concurrent access (all calls to Intern() will
 	// still contend mu.readCount, because RLock atomically increments it).
-	if id, ok := t.Query(s); ok {
+	id, ok := t.Query(s)
+
+	// Instrument whether this is a hit or a miss.
+	if Instrument {
+		if ok {
+			hits.Add(1)
+		} else {
+			misses.Add(1)
+		}
+	}
+
+	if ok {
 		return id
 	}
+
 	return t.internSlow(s)
 }
 
@@ -123,14 +135,6 @@ func (t *Table) Query(s string) (ID, bool) {
 	}
 
 	id, ok := t.index.Load(s)
-	if Instrument {
-		if ok {
-			hits.Add(1)
-		} else {
-			misses.Add(1)
-		}
-	}
-
 	if !ok {
 		return 0, false
 	}
