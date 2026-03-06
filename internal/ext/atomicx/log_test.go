@@ -29,7 +29,6 @@ func TestLog(t *testing.T) {
 
 	const trials = 1000
 
-	mu := new(sync.Mutex)
 	log := new(atomicx.Log[int])
 
 	start := new(sync.WaitGroup)
@@ -49,9 +48,7 @@ func TestLog(t *testing.T) {
 
 			for j := range trials {
 				n := i*trials + j
-				mu.Lock()
-				i := log.Append(n) - 1
-				mu.Unlock()
+				i := log.Append(n)
 				assert.Equal(t, n, log.Load(i))
 			}
 		}()

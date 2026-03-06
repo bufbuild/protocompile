@@ -74,10 +74,7 @@ func (id ID) GoString() string {
 // The zero value of Table is empty and ready to use.
 type Table struct {
 	index sync.Map
-
-	// Ensures writers to table are exclusive, as required by Log.Append.
-	writer sync.Mutex
-	table  atomicx.Log[string]
+	table atomicx.Log[string]
 }
 
 var (
@@ -150,10 +147,6 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	// This lock accounts for almost all of the time spend in this function.
-	t.writer.Lock()
-	defer t.writer.Unlock()
-
 	// Check if we've been beaten. This must happen while holding the writer
 	// lock to prevent a write happening between this check and calling Append
 	// below.
@@ -163,7 +156,7 @@ func (t *Table) internSlow(s string) ID {
 
 	// Figure out the next interning ID.
 	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(t.table.Append(s))
+	id := ID(t.table.Append(s) + 1)
 	t.index.Store(s, id) // Commit the ID.
 
 	return id
