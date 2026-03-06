@@ -1,17 +1,26 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//nolint:revive,predeclared
 package atomicx
 
 import (
 	"errors"
-	"fmt"
 	"math"
-	"sync"
 	"sync/atomic"
 	"unsafe"
 )
-
-const debugLog = false
-
-var capacities sync.Map
 
 // Log is an append-only log. Loading operations may happen concurrently with
 // append operations, but append operations may not be concurrent with each
@@ -26,18 +35,11 @@ type Log[T any] struct {
 //
 // This function may be called concurrently with [Log.Append].
 func (s *Log[T]) Load(idx int) T {
-	// Order doesn't matter here. Len is always updated after ptr, so ptr will
-	// always be valid for len elements.
+	// Read len first. This ensures ordering such that after we load ptr, we
+	// don't load a len value incremented by a different call to Append that
+	// triggered a reallocation.
 	len := s.len.Load()
 	ptr := s.ptr.Load()
-
-	if debugLog {
-		v, _ := capacities.Load(unsafe.Pointer(ptr))
-		cap := v.(int)
-		if cap < int(len) {
-			panic(fmt.Errorf("atomicx.Log: loaded %p with cap=%d < len=%d", ptr, cap, len))
-		}
-	}
 
 	return unsafe.Slice(ptr, len)[idx]
 }
@@ -69,10 +71,6 @@ func (s *Log[T]) Append(v T) int {
 
 	// Grow a new slice.
 	slice = append(slice, v)
-
-	if debugLog {
-		capacities.Store(unsafe.Pointer(unsafe.SliceData(slice)), cap(slice))
-	}
 
 	// Update the pointer, length, and capacity as appropriate.
 	// Note that we update the length *after* the pointer, so an interleaved

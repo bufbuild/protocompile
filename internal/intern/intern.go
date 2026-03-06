@@ -131,7 +131,7 @@ func (t *Table) internSlow(s string) ID {
 	// lock to prevent a write happening between this check and calling Append
 	// below.
 	if id, ok := t.index.Load(s); ok {
-		return id.(ID)
+		return id.(ID) //nolint:errcheck
 	}
 
 	// Figure out the next interning ID.
