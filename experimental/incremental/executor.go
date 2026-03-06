@@ -21,6 +21,7 @@ import (
 	"slices"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/sync/semaphore"
 
@@ -92,7 +93,7 @@ func (e *Executor) Keys() (keys []string) {
 	return
 }
 
-var runExecutorKey byte
+var runExecutorKey, timingsKey byte
 
 // Run executes a set of queries on this executor in parallel.
 //
@@ -178,6 +179,16 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	report.Canonicalize()
 
 	return results, report, nil
+}
+
+// WithTimings enhances a Context to pass into [Run] which it will record timing
+// information for each query.
+//
+// Each referenced query's Key() will be included in timings, mapped to how long
+// it took to calculate. If that query was a cache hit, the duration will be
+// zero.
+func WithTimings(ctx context.Context, timings map[any]time.Duration) context.Context {
+	return context.WithValue(ctx, &timingsKey, timings)
 }
 
 // Evict marks query keys as invalid, requiring those queries, and their

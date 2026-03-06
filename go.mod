@@ -1,6 +1,6 @@
 module github.com/bufbuild/protocompile
 
-go 1.24.0
+go 1.25.6
 
 require (
 	buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.9-20250109164928-1da0de137947.1
