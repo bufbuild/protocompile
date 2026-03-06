@@ -5,24 +5,17 @@ file:
   service:
   - name: "S"
     method:
-    - name: "M1"
-      input_type: "buf.test.M"
-      output_type: "buf.test.N"
-      client_streaming: false
-      server_streaming: false
+    - { name: "M1", input_type: ".buf.test.M", output_type: ".buf.test.N" }
     - name: "M2"
-      input_type: "buf.test.M"
-      output_type: "buf.test.N"
+      input_type: ".buf.test.M"
+      output_type: ".buf.test.N"
       client_streaming: true
-      server_streaming: false
     - name: "M3"
-      input_type: "buf.test.M"
-      output_type: "buf.test.N"
-      client_streaming: false
+      input_type: ".buf.test.M"
+      output_type: ".buf.test.N"
       server_streaming: true
     - name: "M4"
-      input_type: "buf.test.M"
-      output_type: "buf.test.N"
+      input_type: ".buf.test.M"
+      output_type: ".buf.test.N"
       client_streaming: true
       server_streaming: true
-  syntax: "proto2"

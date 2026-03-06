@@ -32,6 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -202,9 +203,9 @@ func TestIR(t *testing.T) {
 		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		if test.Descriptor {
-			bytes, err := ir.DescriptorSetBytes(irs,
-				ir.IncludeSourceCodeInfo(test.SourceCodeInfo),
-				ir.ExcludeFiles((*ir.File).IsDescriptorProto),
+			bytes, err := fdp.DescriptorSetBytes(irs,
+				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
 			)
 			require.NoError(t, err)
 
@@ -352,13 +353,14 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 			}
 
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
-				Fqn:      string(sym.FullName()),
-				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
-				File:     sym.Context().Path(),
-				Index:    uint32(sym.RawData()),
-				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(file),
-				Options:  new(optionWalker).message(options),
-				Features: dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
+				Fqn:        string(sym.FullName()),
+				Kind:       compilerpb.Symbol_Kind(sym.Kind()),
+				File:       sym.Context().Path(),
+				Index:      uint32(sym.RawData()),
+				Visible:    sym.Kind() != ir.SymbolKindPackage && sym.Visible(file, false),
+				OptionOnly: sym.Kind() != ir.SymbolKindPackage && !sym.Visible(file, true) && sym.Visible(file, true),
+				Options:    new(optionWalker).message(options),
+				Features:   dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,

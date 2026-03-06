@@ -72,4 +72,3 @@ file:
     extendee: ".google.protobuf.ExtensionRangeOptions"
     json_name: "g"
   options.$unknown: "1000: 42"
-  syntax: "proto2"

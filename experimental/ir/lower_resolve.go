@@ -24,8 +24,10 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -36,8 +38,20 @@ func resolveNames(file *File, r *report.Report) {
 
 	for ty := range seq.Values(file.AllTypes()) {
 		if ty.IsMessage() {
+			var names syntheticNames
 			for field := range seq.Values(ty.Members()) {
 				resolveFieldType(field, r)
+
+				// For proto3 sources, we need to resolve the synthetic oneof names for fields with
+				// explicit optional presence. See the docs for [Member.SyntheticOneofName] for details.
+				if file.syntax == syntax.Proto3 && field.Presence() == presence.Explicit {
+					if !field.Oneof().IsZero() {
+						continue
+					}
+					field.Raw().syntheticOneofName = file.session.intern.Intern(
+						names.generate(field.Name(), field.Parent()),
+					)
+				}
 			}
 		}
 	}
@@ -243,8 +257,11 @@ type symbolRef struct {
 	// If true, the names of scalars will be resolved as potential symbols.
 	allowScalars bool
 
-	// If true, diagnostics will not suggest adding an import.
+	// If true, diagnostics will suggest adding an import.
 	suggestImport bool
+
+	// Allow pulling in symbols via import option.
+	allowOption bool
 }
 
 // resolve performs symbol resolution.
@@ -303,6 +320,7 @@ func (r symbolRef) resolve() Symbol {
 func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Diagnostic {
 	if sym.IsZero() {
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+			report.Tag(tags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Helpf("the full name of this scope is `%s`", r.scope),
 		)
@@ -319,6 +337,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 	case expectedName != "":
 		// Complain if we found the "wrong" type.
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+			report.Tag(tags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Snippetf(sym.Definition(),
 				"found possibly related symbol `%s`", sym.FullName()),
@@ -327,7 +346,65 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					"rather than the one we found",
 				expectedName),
 		)
-	case !sym.Visible(r.File):
+	case !sym.Visible(r.File, r.allowOption):
+		if !r.allowOption && sym.Visible(r.File, true) {
+			decl := sym.Import(r.File).Decl
+			var option token.Token
+			for m := range seq.Values(decl.ModifierTokens()) {
+				if m.Keyword() == keyword.Option {
+					option = m
+				}
+			}
+			span := source.Join(decl.KeywordToken(), option)
+
+			// This symbol is only visible in option position.
+			return r.Errorf("`%s` is only imported for use in options", r.name).Apply(
+				report.Snippetf(r.span, "requires non-`option` import"),
+				report.Snippetf(decl, "imported as `option` here"),
+				report.SuggestEdits(span, "delete `option`", report.Edit{
+					Start: 0, End: span.Len(),
+					Replace: "import",
+				}),
+			)
+		}
+
+		// Check to see if the corresponding import is visible. If it is, that
+		// means that this is an unexported type.
+		if imp := sym.Import(r.File); imp.Visible {
+			if ty := sym.AsType(); !ty.IsZero() {
+				d := r.Errorf("found unexported %s `%s`", ty.noun(), ty.FullName()).Apply(
+					report.Snippetf(r.span, "unexported type"),
+				)
+
+				// First, see if local was set explicitly.
+				var local token.Token
+				for prefix := range ty.AST().Type().Prefixes() {
+					if prefix.Prefix() == keyword.Local {
+						local = prefix.PrefixToken()
+						break
+					}
+				}
+
+				if !local.IsZero() {
+					d.Apply(report.Snippetf(local, "marked as local here"))
+				} else {
+					var span source.Span
+					// Otherwise, see if this was set due to a feature.
+					if key := ty.Context().builtins().FeatureVisibility; !key.IsZero() {
+						feature := ty.FeatureSet().Lookup(key)
+						if !feature.IsDefault() {
+							span = feature.Value().ValueAST().Span()
+						} else {
+							span = ty.Context().AST().Syntax().Value().Span()
+						}
+					}
+
+					d.Apply(report.Snippetf(span, "this implies `local`"))
+				}
+				return d
+			}
+		}
+
 		// Complain that we need to import a symbol.
 		d := r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not visible in this scope"),

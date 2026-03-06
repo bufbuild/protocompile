@@ -81,6 +81,49 @@ func (m *Intersect[K, V]) Entries() iter.Seq[Entry[K, []V]] {
 	}
 }
 
+// Ranges returns an iterator over the contiguous ranges in this map.
+//
+// If values is true, the yielded entries will include all of the values that
+// fall within those contiguous ranges.
+func (m *Intersect[K, V]) Contiguous(values bool) iter.Seq[Entry[K, []V]] {
+	return func(yield func(Entry[K, []V]) bool) {
+		iter := m.tree.Iter()
+		var current Entry[K, []V]
+		first := true
+		for more := iter.First(); more; more = iter.Next() {
+			entry := iter.Value()
+			switch {
+			case first:
+				current = *entry
+				if !values {
+					current.Value = nil
+				}
+
+				first = false
+
+			case current.End+1 == entry.Start:
+				current.End = entry.End
+				if values {
+					current.Value = append(current.Value, entry.Value...)
+				}
+
+			default:
+				if !yield(current) {
+					return
+				}
+				current = *entry
+				if !values {
+					current.Value = nil
+				}
+			}
+		}
+
+		if !first {
+			yield(current)
+		}
+	}
+}
+
 // Insert inserts a new interval into this map, with the given associated value.
 // Both endpoints are inclusive.
 //

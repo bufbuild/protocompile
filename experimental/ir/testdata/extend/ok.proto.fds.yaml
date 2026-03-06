@@ -61,4 +61,3 @@ file:
     type_name: ".test.Foo"
     extendee: ".test.Foo.Foo"
     json_name: "x8"
-  syntax: "proto2"

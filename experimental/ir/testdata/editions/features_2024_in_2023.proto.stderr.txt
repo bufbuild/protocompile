@@ -1,0 +1,192 @@
+error: `enum_name_uses_string_view` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:24:8
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+23 | // File-level Edition 2024 features
+24 | option features.(pb.cpp).enum_name_uses_string_view = true;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enum_name_uses_string_view` requires at least Edition 2024
+
+error: `strip_enum_prefix` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:25:8
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+24 | option features.(pb.cpp).enum_name_uses_string_view = true;
+25 | option features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `strip_enum_prefix` requires at least Edition 2024
+
+error: `large_enum` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:26:8
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+25 | option features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP;
+26 | option features.(pb.java).large_enum = true;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `large_enum` requires at least Edition 2024
+
+error: `default_symbol_visibility` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:27:8
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+26 | option features.(pb.java).large_enum = true;
+27 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `default_symbol_visibility` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:28:8
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+27 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+28 | option features.enforce_naming_style = STYLE2024;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `nest_in_file_class` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:31:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+31 |   option features.(pb.java).nest_in_file_class = YES;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `nest_in_file_class` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:32:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+31 |   option features.(pb.java).nest_in_file_class = YES;
+32 |   option features.enforce_naming_style = STYLE2024;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:34:26
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+34 |   string test_field = 1 [features.enforce_naming_style = STYLE2024];
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:37:12
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+37 |     option features.enforce_naming_style = STYLE2024;
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:41:26
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+41 |   extensions 100 to 200 [features.enforce_naming_style = STYLE2024];
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `large_enum` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:45:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+45 |   option features.(pb.java).large_enum = true;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `large_enum` requires at least Edition 2024
+
+error: `nest_in_file_class` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:46:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+45 |   option features.(pb.java).large_enum = true;
+46 |   option features.(pb.java).nest_in_file_class = YES;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `nest_in_file_class` requires at least Edition 2024
+
+error: `enum_name_uses_string_view` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:47:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+46 |   option features.(pb.java).nest_in_file_class = YES;
+47 |   option features.(pb.cpp).enum_name_uses_string_view = true;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enum_name_uses_string_view` requires at least Edition 2024
+
+error: `strip_enum_prefix` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:48:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+47 |   option features.(pb.cpp).enum_name_uses_string_view = true;
+48 |   option features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `strip_enum_prefix` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:49:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+48 |   option features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP;
+49 |   option features.enforce_naming_style = STYLE2024;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `nest_in_file_class` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:59:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+59 |   option features.(pb.java).nest_in_file_class = YES;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `nest_in_file_class` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:60:10
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+59 |   option features.(pb.java).nest_in_file_class = YES;
+60 |   option features.enforce_naming_style = STYLE2024;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:63:12
+   |
+15 | edition = "2023";
+   |           ------ edition specified here
+...
+63 |     option features.enforce_naming_style = STYLE2024;
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
+encountered 18 errors

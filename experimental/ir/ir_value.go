@@ -143,13 +143,13 @@ func (v Value) OptionSpans() seq.Indexer[source.Spanner] {
 		slice = v.Raw().exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) source.Spanner {
+	return seq.NewFixedSlice(slice, func(i int, p id.Dyn[ast.ExprAny, ast.ExprKind]) source.Spanner {
 		c := v.Context().AST()
 		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
-		return source.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
+		return source.Join(ast.ExprPath{Path: v.Raw().optionPaths[i].In(c)}, expr)
 	})
 }
 
@@ -571,7 +571,13 @@ func (e Element) AST() ast.ExprAny {
 // this element, e.g.
 //
 //	key := e.Value().MessageKeys().At(e.ValueNodeIndex())
+//
+// If the element is empty, this returns -1.
 func (e Element) ValueNodeIndex() int {
+	if e.IsZero() {
+		return -1
+	}
+
 	// We do O(log n) work here, because this function doesn't get called except
 	// for diagnostics.
 

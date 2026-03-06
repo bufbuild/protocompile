@@ -17,6 +17,7 @@ package token
 import (
 	"fmt"
 	"iter"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -111,7 +112,7 @@ func (c *Cursor) Mark() CursorMark {
 // Panics if mark was not created using this cursor's Mark method.
 func (c *Cursor) Rewind(mark CursorMark) {
 	if c != mark.owner {
-		panic("protocompile/ast: rewound cursor using the wrong cursor's mark")
+		panic("protocompile/token: rewound cursor using the wrong cursor's mark")
 	}
 	c.idx = mark.idx
 	c.isBackwards = mark.isBackwards
@@ -311,4 +312,30 @@ func (c *Cursor) SeekToEnd() (Token, source.Span) {
 	// Otherwise, return end.
 	tok := id.Wrap(c.Context(), ID(c.idx+1))
 	return tok, stream.Span(tok.offsets())
+}
+
+// NewLinesBetween counts the number of \n characters between the end of [token.Token] a
+// and the start of b, up to the limit.
+//
+// The final rune of a is included in this count, since comments may end in a \n rune.
+func (c *Cursor) NewLinesBetween(a, b Token, limit int) int {
+	end := a.LeafSpan().End
+	if end != 0 {
+		// Account for the final rune of a
+		end--
+	}
+
+	start := b.LeafSpan().Start
+	between := c.Context().Text()[end:start]
+
+	var total int
+	for total < limit {
+		var found bool
+		_, between, found = strings.Cut(between, "\n")
+		if !found {
+			break
+		}
+		total++
+	}
+	return total
 }

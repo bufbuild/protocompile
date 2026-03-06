@@ -1,18 +1,3 @@
-error: sorry, Edition 2024 is not fully implemented
-  --> testdata/parser/def/2024.proto:15:11
-   |
-15 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
-error: sorry, `export` is not implemented yet
-  --> testdata/parser/def/2024.proto:19:1
-   |
-19 | export message Foo1 {
-   | ^^^^^^
-   = help: `export` is part of Edition 2024, which will be implemented in a
-           future release
-
 error: unexpected `export` modifier on message field
   --> testdata/parser/def/2024.proto:22:5
    |
@@ -36,30 +21,6 @@ error: unexpected `local` modifier on message field
 23 | +     int32 y = 1;
    |
    = help: `local` only applies to a type definition
-
-error: sorry, `local` is not implemented yet
-  --> testdata/parser/def/2024.proto:25:1
-   |
-25 | local message Foo2 {}
-   | ^^^^^
-   = help: `local` is part of Edition 2024, which will be implemented in a
-           future release
-
-error: sorry, `export` is not implemented yet
-  --> testdata/parser/def/2024.proto:27:1
-   |
-27 | export enum Foo3 {}
-   | ^^^^^^
-   = help: `export` is part of Edition 2024, which will be implemented in a
-           future release
-
-error: sorry, `local` is not implemented yet
-  --> testdata/parser/def/2024.proto:28:1
-   |
-28 | local enum Foo4 {}
-   | ^^^^^
-   = help: `local` is part of Edition 2024, which will be implemented in a
-           future release
 
 error: unexpected `export` modifier on service definition
   --> testdata/parser/def/2024.proto:30:1
@@ -85,4 +46,4 @@ error: unexpected `local` modifier on service definition
    |
    = help: `local` only applies to a type definition
 
-encountered 9 errors
+encountered 4 errors

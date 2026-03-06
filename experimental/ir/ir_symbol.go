@@ -150,20 +150,31 @@ func (s Symbol) Deprecated() Value {
 }
 
 // Visible returns whether or not this symbol is visible according to Protobuf's
-// import semantics, within s.Context().File().
-func (s Symbol) Visible(in *File) bool {
+// import semantics, within the given file.
+//
+// If allowOptions is true, symbols that were pulled in via import option are
+// accepted.
+func (s Symbol) Visible(in *File, allowOptions bool) bool {
 	if s.Context() == in || s.Context() == primitiveCtx || s.Kind() == SymbolKindPackage {
 		// Packages don't get visibility checks.
 		return true
 	}
 
-	// fmt.Println(s.Context().File().Path)
 	idx, imported := in.imports.byPath[s.Context().InternedPath()]
 	if !imported {
 		return false
 	}
 
 	imp := in.imports.files[idx]
+	if !imp.visible || !(allowOptions || !imp.option) {
+		return false
+	}
+
+	if ty := s.AsType(); !ty.IsZero() {
+		exported, _ := ty.IsExported()
+		return exported
+	}
+
 	return imp.visible
 }
 
@@ -191,6 +202,24 @@ func (s Symbol) Definition() source.Span {
 	}
 
 	return source.Span{}
+}
+
+// Import returns the import declaration that brought this symbol into scope
+// in the given file.
+//
+// Returns zero if s is defined in the current file or if s is not imported
+// by in.
+func (s Symbol) Import(in *File) Import {
+	if s.Context() == in || s.Context() == primitiveCtx {
+		return Import{}
+	}
+
+	idx, imported := in.imports.byPath[s.Context().InternedPath()]
+	if !imported {
+		return Import{}
+	}
+
+	return in.imports.Transitive().At(int(idx))
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.
@@ -469,7 +498,7 @@ again:
 		if !r.IsZero() {
 			found = r
 			sym := GetRef(file, r)
-			if sym.Visible(file) && accept(sym.Kind()) {
+			if sym.Visible(file, true) && accept(sym.Kind()) {
 				// If the symbol is not visible, keep looking; we may find
 				// another match that is actually visible.
 				break

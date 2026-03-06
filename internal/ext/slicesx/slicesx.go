@@ -19,11 +19,12 @@ import (
 	"slices"
 	"unsafe"
 
+	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // SliceIndex is a type that can be used to index into a slice.
-type SliceIndex = unsafex.Int
+type SliceIndex = bitsx.Int
 
 // One returns a slice with a single element pointing to p.
 //

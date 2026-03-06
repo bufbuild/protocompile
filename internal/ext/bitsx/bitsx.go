@@ -20,6 +20,13 @@ import (
 	"math/bits"
 )
 
+// Int is a constraint for any integer type.
+type Int interface {
+	~int8 | ~int16 | ~int32 | ~int64 | ~int |
+		~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint |
+		~uintptr
+}
+
 // IsPowerOfTwo returns whether n is a power of 2.
 func IsPowerOfTwo(n uint) bool {
 	// See https://github.com/mcy/best/blob/2d94f6b23aecddc46f792edb4c45800aa58074ca/best/math/bit.h#L147
@@ -45,4 +52,23 @@ func MakePowerOfTwo(n uint) uint {
 		return n
 	}
 	return NextPowerOfTwo(n)
+}
+
+// Bit maps false -> 0 and true -> 1.
+func Bit(b bool) int {
+	var n int
+	if b {
+		n = 1
+	}
+	return n
+}
+
+// Mask maps false -> 0 and true -> -1 (all ones).
+func Mask(b bool) int {
+	return -Bit(b)
+}
+
+// Sign maps false -> -1 and true -> +1.
+func Sign(b bool) int {
+	return Bit(b)*2 - 1
 }

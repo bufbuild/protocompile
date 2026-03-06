@@ -1,0 +1,38 @@
+tables:
+  "testdata/editions/naming_style_legacy.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/naming_style_legacy.proto"
+    - fqn: "buf.test.my_message"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.my_enum"
+      kind: KIND_ENUM
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.my_message.myField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.my_message.AnotherField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.unspecified"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.valueOne"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_legacy.proto"
+      index: 4
+      visible: true
+    options.message.fields:
+      "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }

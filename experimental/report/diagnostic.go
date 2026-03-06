@@ -125,10 +125,19 @@ func (d *Diagnostic) Tag() string {
 	return d.tag
 }
 
-// InFile returns the path of the file set using [InFile]. This path can be used if this
-// diagnostic does not have a primary span to mention the given file and/or no annotations.
-func (d *Diagnostic) InFile() string {
-	return d.inFile
+// File returns the path of the file this diagnostic is associated with.
+//
+// It returns the value set by [InFile] if present, otherwise it returns
+// the path from the primary span. Returns empty string if neither is available.
+func (d *Diagnostic) File() string {
+	if d.inFile != "" {
+		return d.inFile
+	}
+	span := d.Primary()
+	if span.File != nil {
+		return span.File.Path()
+	}
+	return ""
 }
 
 // Notes returns this diagnostic's notes, set using [Notef].

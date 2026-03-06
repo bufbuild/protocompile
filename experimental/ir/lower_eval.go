@@ -616,6 +616,8 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 
 			// Now try to resolve a concrete type. We do it exactly like
 			// we would for a field type, but *not* including scalar types.
+			//
+			// This is within an option value, so we allow option imports.
 			ty := symbolRef{
 				File:   e.File,
 				Report: e.Report,
@@ -629,6 +631,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 				want:      taxa.MessageType,
 
 				allowScalars:  false,
+				allowOption:   true,
 				suggestImport: true,
 			}.resolve().AsType()
 

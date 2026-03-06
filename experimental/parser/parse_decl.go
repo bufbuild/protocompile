@@ -104,7 +104,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	// This is used here to disambiguated between a generic DeclDef and one of
 	// the other decl nodes.
 	var kw token.Token
-	if path := ty.AsPath(); !path.IsZero() {
+	if path := ty.RemovePrefixes().AsPath(); !path.IsZero() {
 		kw = path.AsIdent()
 	}
 
