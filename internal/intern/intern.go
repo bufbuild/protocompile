@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/bufbuild/protocompile/internal/ext/atomicx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -79,6 +80,20 @@ type Table struct {
 	table  atomicx.Log[string]
 }
 
+var (
+	// Set to true to enable instrumentation of intern tables.
+	Instrument   bool
+	hits, misses atomic.Int64
+)
+
+// Returns the ratio of interning operations that miss the cache.
+func Misses() float64 {
+	hits := float64(hits.Load())
+	misses := float64(misses.Load())
+
+	return misses / (hits + Misses())
+}
+
 // Intern interns the given string into this table.
 //
 // This function may be called by multiple goroutines concurrently.
@@ -108,6 +123,14 @@ func (t *Table) Query(s string) (ID, bool) {
 	}
 
 	id, ok := t.index.Load(s)
+	if Instrument {
+		if ok {
+			hits.Add(1)
+		} else {
+			misses.Add(1)
+		}
+	}
+
 	if !ok {
 		return 0, false
 	}
