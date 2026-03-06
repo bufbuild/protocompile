@@ -157,4 +157,13 @@ error: literal out of range for message set extension number
    |                      ^^^^^^^^^^
    = note: the range for message set extension number is `0x0 to 0x7ffffffe`
 
-encountered 9 errors and 3 warnings
+error: field number `2147483646` used in more than one extension for
+       `google.protobuf.test.M3`
+  --> testdata/extend/message_set.proto:44:5
+   |
+44 |     optional M3 m5 = 0x7fffffff;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+45 |     optional M3 m6 = 0xffffffff;
+   |     ---------------------------- `2147483646` also used here
+
+encountered 10 errors and 3 warnings

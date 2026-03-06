@@ -1,23 +1,8 @@
-warning: unused import "dep/not_public.proto"
-  --> dep/foo.proto:5:8
+error: `X` declared multiple times
+  --> dep/public.proto:4:9
    |
- 5 | import "dep/not_public.proto";
-   |        ^^^^^^^^^^^^^^^^^^^^^^
-  help: delete it
-   |
- 5 | - import "dep/not_public.proto";
-   |
-   = help: no symbols from this file are referenced
+ 4 | message X {}
+   |         ^ first here, as a message type
+   |         - ...also declared here
 
-warning: unused import "dep/foo.proto"
-  --> main.proto:4:8
-   |
- 4 | import "dep/foo.proto";
-   |        ^^^^^^^^^^^^^^^
-  help: delete it
-   |
- 4 | - import "dep/foo.proto";
-   |
-   = help: no symbols from this file are referenced
-
-encountered 2 warnings
+encountered 1 error
