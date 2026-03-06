@@ -151,33 +151,47 @@ func TestHammer(t *testing.T) {
 }
 
 func BenchmarkIntern(b *testing.B) {
-	b.Run("Collisions", func(b *testing.B) {
-		n := new(atomic.Int64)
-		it := new(intern.Table)
-		b.RunParallel(func(p *testing.PB) {
-			data := makeData(int(n.Add(1)))
-			for p.Next() {
-				for _, s := range data {
-					_ = it.Value(it.InternBytes(s))
-				}
-			}
-		})
-	})
+	// Helper to ensure that it.Value is actually inlined, which is relevant
+	// for benchmarks. Calls within the body of a benchmark are never inlined.
+	//
+	// Returns the length of the string to ensure that this function is not
+	// DCE'd.
+	value := func(it *intern.Table, id intern.ID) int {
+		return len(it.Value(id))
+	}
 
-	b.Run("Unique", func(b *testing.B) {
-		n := new(atomic.Int64)
-		it := new(intern.Table)
-		b.RunParallel(func(p *testing.PB) {
-			data := makeData(int(n.Add(1)))
-			for p.Next() {
-				for i, s := range data {
-					s = append(s, '0')
-					data[i] = s
-					_ = it.Value(it.InternBytes(s))
-				}
+	run := func(name string, unique float64) {
+		b.Run(name, func(b *testing.B) {
+			// Pre-allocate data samples for each goroutine.
+			data := make([][][]byte, runtime.GOMAXPROCS(0))
+			for i := range data {
+				data[i] = makeData(i)
 			}
+
+			n := new(atomic.Int64)
+			it := new(intern.Table)
+			b.RunParallel(func(p *testing.PB) {
+				n := n.Add(1) - 1
+				data := data[n]
+				r := rand.New(rand.NewSource(n))
+
+				for p.Next() {
+					for i, s := range data {
+						if r.Float64() < unique {
+							s = append(s, '0')
+							data[i] = s
+						}
+
+						_ = value(it, it.InternBytes(s))
+					}
+				}
+			})
 		})
-	})
+	}
+
+	run("hits", 0.0)
+	run("mixed", 0.1)
+	run("misses", 1.0)
 }
 
 // makeData generates deterministic pseudo-random data of poor quality, meaning
@@ -191,7 +205,7 @@ func makeData(seed int) [][]byte {
 		n += 5
 		n %= 99
 
-		buf := make([]byte, n)
+		buf := make([]byte, n, 10000)
 		for i := range buf {
 			buf[i] = byte('a' + r.Intn(26))
 		}
