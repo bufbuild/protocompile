@@ -123,6 +123,7 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
+	// This lock accounts for almost all of the time spend in this function.
 	t.writer.Lock()
 	defer t.writer.Unlock()
 
@@ -176,6 +177,7 @@ func (t *Table) Value(id ID) string {
 	return t.value(id, new(inlined))
 }
 
+//go:noinline
 func (t *Table) value(id ID, buf *inlined) string {
 	if id <= 0 {
 		return decodeChar6(id, buf)
