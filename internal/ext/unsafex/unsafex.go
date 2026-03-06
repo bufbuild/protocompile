@@ -21,18 +21,13 @@ import (
 	"fmt"
 	"sync"
 	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 )
 
 // NoCopy can be embedded in a type to trigger go vet's no copy lint.
 type NoCopy struct {
 	_ [0]sync.Mutex
-}
-
-// Int is a constraint for any integer type.
-type Int interface {
-	~int8 | ~int16 | ~int32 | ~int64 | ~int |
-		~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint |
-		~uintptr
 }
 
 // Size is like [unsafe.Sizeof], but it is a generic function and it returns
@@ -49,7 +44,7 @@ func Size[T any]() int {
 // This function has the same safety caveats as [unsafe.Add].
 //
 //go:nosplit
-func Add[P ~*E, E any, I Int](p P, idx I) P {
+func Add[P ~*E, E any, I bitsx.Int](p P, idx I) P {
 	raw := unsafe.Pointer(p)
 	raw = unsafe.Add(raw, int(idx)*Size[E]())
 	return P(raw)
