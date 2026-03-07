@@ -114,9 +114,10 @@ again:
 	slice = append(slice, make([]T, i+1-c)...)
 	slice[i] = v
 
-	// Drop the lock on the slice.
-	s.ptr = unsafe.SliceData(slice)
-	s.cap.Store(int32(cap(slice)))
+	// Race detector does not understand that this write is protected by
+	// the store that immediately follows it.
+	storeNoRace(&s.ptr, unsafe.SliceData(slice))
+	s.cap.Store(int32(cap(slice))) // Drop the lock.
 
 	return int(i)
 }
