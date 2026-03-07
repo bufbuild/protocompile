@@ -19,6 +19,7 @@ package intern
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -75,11 +76,7 @@ func (id ID) GoString() string {
 // The zero value of Table is empty and ready to use.
 type Table struct {
 	index sync.Map
-
-	// Ensures writers to table are exclusive, as required by Log.Append.
-	writer sync.Mutex
-	table  atomicx.Log[string]
-
+	table atomicx.Log[string]
 	stats atomic.Pointer[stats]
 }
 
@@ -195,7 +192,7 @@ func (t *Table) Query(s string) (ID, bool) {
 		return char6, true
 	}
 
-	id, ok := t.index.Load(s)
+	v, ok := t.index.Load(s)
 	if stats != nil {
 		stats.queries.Add(1)
 		stats.queryBytes.Add(int64(len(s)))
@@ -205,8 +202,20 @@ func (t *Table) Query(s string) (ID, bool) {
 		return 0, false
 	}
 
-	return id.(ID), true //nolint:errcheck
+	id := v.(ID) //nolint:errcheck
+	if id == 0 {
+		// Handle the case where this is a mid-insertion.
+		return 0, false
+	}
+
+	return id, true
 }
+
+// Used as a sentinel in internSlow. 0 always represents "" and is never
+// present as a value in the index.
+//
+// This is here to avoid a call to runtime.convT32 in internSlow.
+var inserting any = ID(0)
 
 func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
@@ -216,21 +225,28 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	// This lock accounts for almost all of the time spend in this function.
-	t.writer.Lock()
-	defer t.writer.Unlock()
+	// Pre-convert to `any`, since this triggers an allocation via
+	// `runtime.convTstring`.
+	key := any(s)
 
-	// Check if we've been beaten. This must happen while holding the writer
-	// lock to prevent a write happening between this check and calling Append
-	// below.
-	if id, ok := t.index.Load(s); ok {
-		return id.(ID) //nolint:errcheck
+again:
+	// Try to become the "leader" which is interning s.
+	if v, ok := t.index.LoadOrStore(key, inserting); ok {
+		id := v.(ID) //nolint:errcheck
+		if id == 0 {
+			// Someone *else* is doing the inserting, apparently.
+			runtime.Gosched()
+			goto again
+		}
+
+		// Someone else already inserted, we'de done.
+		return id
 	}
 
 	// Figure out the next interning ID.
 	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(t.table.Append(s))
-	t.index.Store(s, id) // Commit the ID.
+	id := ID(t.table.Append(s) + 1)
+	t.index.Store(key, id) // Commit the ID.
 
 	return id
 }

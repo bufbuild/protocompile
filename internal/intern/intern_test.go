@@ -15,7 +15,6 @@
 package intern_test
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/rand"
 	"runtime"
@@ -200,19 +199,6 @@ func BenchmarkIntern(b *testing.B) {
 	run("10pct", 0.1)
 	run("50pct", 0.5)
 	run("100pct", 1.0)
-
-	// Compare with computing a cryptographic hash, to show that's not
-	// worthwhile as an interning strategy.
-	b.Run("sha256", func(b *testing.B) {
-		data := makeData(0)
-		b.ResetTimer()
-
-		for b.Loop() {
-			for _, s := range data {
-				_ = sha256.Sum256(s)
-			}
-		}
-	})
 }
 
 // makeData generates deterministic pseudo-random data of poor quality, meaning

@@ -18,66 +18,110 @@ package atomicx
 import (
 	"errors"
 	"math"
+	"runtime"
 	"sync/atomic"
 	"unsafe"
 )
 
-// Log is an append-only log. Loading operations may happen concurrently with
-// append operations, but append operations may not be concurrent with each
-// other.
+// Log is an append-only log.
+//
+// Loading and append operations may happen concurrently with each other,
+// with the caveat that loading indices not yet appended may produce garbage
+// values.
 type Log[T any] struct {
-	ptr atomic.Pointer[T]
-	len atomic.Int32
-	cap int32 // Only modified by Append, does not need synchronization.
+	// Protected by the lock bit in cap. This means that cap must be loaded
+	// before loading this value, to ensure that prior writes to it are seen,
+	// and cap must be stored after storing this value, to ensure the write is
+	// published.
+	ptr *T
+
+	next atomic.Int32 // The next index to fill.
+	cap  atomic.Int32 // Top bit is used as a spinlock.
 }
 
-// Load returns the value at the given index.
-//
-// This function may be called concurrently with [Log.Append].
-func (s *Log[T]) Load(idx int) T {
-	// Read len first. This ensures ordering such that after we load ptr, we
-	// don't load a len value incremented by a different call to Append that
-	// triggered a reallocation.
-	len := s.len.Load()
-	ptr := s.ptr.Load()
+const lockbit = math.MinInt32
 
-	return unsafe.Slice(ptr, len)[idx]
+// Load returns the value at the given index. This index must have been
+// previously returned by [Log.Append].
+func (s *Log[T]) Load(idx int) T {
+	// Read cap first, which is required before we can read s.ptr.
+	cap := s.cap.Load()
+
+	return unsafe.Slice(s.ptr, cap&^lockbit)[idx]
 }
 
 // Append adds a new value to this slice.
 //
-// Append may be called concurrently with [Log.Load], but must *not* be called
-// concurrently with itself. An external mutex should be used to protect calls
-// to Append.
-//
-// Returns the new length of the log.
+// Returns the index of the appended element, which can be looked up with
+// [Log.Load].
 func (s *Log[T]) Append(v T) int {
-	p := s.ptr.Load()
-	l := s.len.Load()
-	c := s.cap
-
-	if l == math.MaxInt32 {
+	i := s.next.Add(1)
+	if i == 0 {
 		panic(errors.New("internal/atomicx: cannot allocate more than 2^32 elements"))
 	}
+	i--
 
-	slice := unsafe.Slice(p, c)
-
-	if l < c { // Don't need to grow the slice.
-		// Write the value first, and *then* make it visible to Load by
-		// incrementing the length.
-		slice[l] = v
-		return int(s.len.Add(1))
+again:
+	// Load cap first. See comment in [Load].
+	c := s.cap.Load()
+	if c&lockbit != 0 {
+		runtime.Gosched()
+		goto again
 	}
 
-	// Grow a new slice.
-	slice = append(slice, v)
+	slice := unsafe.Slice(s.ptr, c)
+	if uint32(i) < uint32(c) { // Don't need to grow the slice.
+		// This is a data race. However, it's fine, because this slot is not
+		// valid yet, so tearing it is fine.
+		//
+		// This is, in fact, a benign race. So long as this value is not read
+		// at before this function returns i, no memory corruption is possible.
+		// In particular, Go promises to never tear pointers, so we can't make
+		// the GC freak out about broken pointers.
+		//
+		// See https://go.dev/ref/mem#restrictions
+		//
+		// This store is also the slowest part of this function, due to
+		// significant cache thrashing if the slice is resized from under us.
+		storeNoRace(&slice[i], v)
 
-	// Update the pointer, length, and capacity as appropriate.
-	// Note that we update the length *after* the pointer, so an interleaved
-	// call to Load will not see a longer length with an old pointer.
-	s.ptr.Store(unsafe.SliceData(slice))
-	s.len.Store(int32(len(slice)))
-	s.cap = int32(cap(slice))
+		if s.cap.Load() != c {
+			// If the value was potentially torn, it would have resulted in c
+			// changing, meaning we need to try again.
+			runtime.Gosched()
+			goto again
+		}
 
-	return len(slice)
+		return int(i)
+	}
+
+	// Need to grow a slice. Lock the slice by setting the sign bit of the
+	// capacity.
+	//
+	// This lock is necessary so that updating ptr always happens together with
+	// cap.
+	if !s.cap.CompareAndSwap(c, c|lockbit) {
+		goto again
+	}
+
+	// Grow the slice enough to insert our value.
+	// Getting preempted by the call into the allocator would be... non-ideal,
+	// but there isn't really a way to prevent that.
+	//
+	// To try to tame down the number of times we need to grow the slice, since
+	// that cause significant cache thrash due to racing reads and writes, we
+	// grow the underlying buffer a little faster than O(2^n).
+	slice = append(slice, make([]T, i+1-c)...)
+	slice[i] = v
+
+	// Drop the lock on the slice.
+	s.ptr = unsafe.SliceData(slice)
+	s.cap.Store(int32(cap(slice)))
+
+	return int(i)
+}
+
+//go:norace
+func storeNoRace[T any](p *T, v T) {
+	*p = v
 }
