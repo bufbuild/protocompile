@@ -133,29 +133,6 @@ func Bytes(s string) iter.Seq[byte] {
 	}
 }
 
-// Split polyfills [strings.SplitSeq].
-//
-// Remove in go 1.24.
-func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
-	r := string(sep)
-	return func(yield func(string) bool) {
-		for {
-			chunk, rest, found := strings.Cut(s, r)
-			s = rest
-			if !yield(chunk) || !found {
-				return
-			}
-		}
-	}
-}
-
-// Split polyfills [strings.Lines].
-//
-// Remove in go 1.24.
-func Lines(s string) iter.Seq[string] {
-	return Split(s, '\n')
-}
-
 // CutLast is like [strings.Cut], but searches for the last occurrence of sep.
 // If sep is not present in s, returns "", s, false.
 func CutLast(s, sep string) (before, after string, found bool) {

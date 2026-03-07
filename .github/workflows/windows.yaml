@@ -21,9 +21,9 @@ jobs:
       matrix:
         go-version:
           - name: latest
-            version: 1.25.x
+            version: 1.26.x
           - name: previous
-            version: 1.24.x
+            version: 1.25.x
     steps:
       - name: Set git to use LF
         run: |
