@@ -35,6 +35,21 @@ type Session struct {
 	builtins builtinIDs
 }
 
+// RecordInternStats enables instrumentation of the session's intern table.
+//
+// See [Session.InternStats].
+func (s *Session) RecordInternStats() {
+	s.intern.RecordStats(true)
+}
+
+// InternStats returns interning statistics, assuming [Session.RecordInternStats]
+// was called first.
+//
+// This function is intended for performance monitoring only.
+func (s *Session) InternStats() intern.Stats {
+	return s.intern.Stats()
+}
+
 // Lower lowers an AST into an IR module.
 //
 // The ir package does not provide a mechanism for resolving imports; instead,
