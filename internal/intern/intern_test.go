@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/inlinetest"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -81,6 +82,11 @@ func shouldInline(s string) bool {
 	}
 
 	return true
+}
+
+func TestInline(t *testing.T) {
+	t.Parallel()
+	inlinetest.AssertInlined(t, "Table.Value")
 }
 
 func TestHammer(t *testing.T) {
