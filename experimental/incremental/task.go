@@ -222,12 +222,12 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		deps[i] = dep
 
 		// Update dependency graph.
-		parent := caller.task
-		if parent == nil {
+		callerTask := caller.task
+		if callerTask == nil {
 			continue // Root.
 		}
-		parent.deps.Store(dep, struct{}{})
-		dep.parents.Store(parent, struct{}{})
+		callerTask.deps.Store(dep, struct{}{})
+		dep.callers.Store(callerTask, struct{}{})
 	}
 
 	// Schedule all but the first query to run asynchronously.
@@ -294,7 +294,7 @@ type task struct {
 	// Inverse of deps. Contains all tasks that directly depend on this task.
 	// Written by multiple tasks concurrently.
 	// TODO: See the comment on Executor.tasks.
-	parents sync.Map // [*task]struct{}
+	callers sync.Map // [*task]struct{}
 
 	// If this task has not been started yet, this is nil.
 	// Otherwise, if it is complete, result.done will be closed.

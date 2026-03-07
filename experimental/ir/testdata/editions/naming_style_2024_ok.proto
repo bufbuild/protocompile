@@ -1,0 +1,78 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//% descriptor: true
+//% symtab: true
+edition = "2024";
+
+package buf.test;
+
+// Messages must be PascalCase
+message MyMessage { 
+  string a_field = 1; // Fields must be snake_case
+  int32 Another_Field = 2;
+  string field_v1 = 3; // Underscore must be followed by a letter
+  string field_version2 = 4;
+
+  oneof my_choice { // Oneofs must be lower snake case
+    string option_a = 5;
+    int32 option_b = 6;
+  }
+}
+
+// Enum must be PascalCase
+enum MyEnum { 
+  MY_ENUM_UNSPECIFIED = 0; // EnumValue must be SCREAMING_SNAKE_CASE
+  MY_ENUM_VALUE_ONE = 1;
+  MY_ENUM_VALUE_TWO = 2;
+  MY_ENUM_V1 = 3;
+}
+
+// Services must be PascalCase
+service MyService { 
+  rpc GetMessage(MyMessage) returns (MyMessage);
+  rpc ListMessages(MyMessage) returns (MyMessage);
+}
+
+// Feature settings on different schema elements have different scopes.
+message bad_message_but_ok {
+  option features.enforce_naming_style = STYLE_LEGACY;
+
+  string BadField = 1; // Allowed due to STYLE_LEGACY.
+  int32 field_1 = 2;
+  string _underscore = 3;
+
+  oneof BadChoice {
+    string opt_a = 4;
+  }
+
+  // Nested message inherits STYLE_LEGACY from parent
+  message nested_message {
+    string AnyName = 1;
+  }
+
+  message GoodNested {
+    option features.enforce_naming_style = STYLE2024;
+    string good_field = 1; // Must follow STYLE2024 rules
+  }
+}
+
+enum bad_enum {
+  option features.enforce_naming_style = STYLE_LEGACY;
+
+  // Bad names allowed
+  unspecified = 0;
+  valueOne = 1;
+  _VALUE = 2;
+}

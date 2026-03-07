@@ -42,6 +42,9 @@ type Commas[T any] interface {
 
 	// InsertComma is like [seq.Inserter.Insert], but includes an explicit comma.
 	InsertComma(n int, value T, comma token.Token)
+
+	// SetComma sets the comma that follows the nth element.
+	SetComma(n int, comma token.Token)
 }
 
 type withComma[T any] struct {
@@ -68,4 +71,9 @@ func (c commas[T, _]) InsertComma(n int, value T, comma token.Token) {
 	v.Comma = comma.ID()
 
 	*c.Slice = slices.Insert(*c.Slice, n, v)
+}
+
+func (c commas[T, _]) SetComma(n int, comma token.Token) {
+	c.file.Nodes().panicIfNotOurs(comma)
+	(*c.SliceInserter.Slice)[n].Comma = comma.ID()
 }

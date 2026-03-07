@@ -70,4 +70,3 @@ file:
     type_name: ".google.protobuf.test.M3"
     extendee: ".google.protobuf.test.M3"
     json_name: "m6"
-  syntax: "proto2"

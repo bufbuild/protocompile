@@ -2,26 +2,50 @@ file:
 - name: "d.proto"
   package: "buf.test"
   message_type: [{ name: "D" }]
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 3, 12]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [4, 0], span: [3, 0, 12] }
+  - { path: [4, 0, 1], span: [3, 8, 9] }
   syntax: "proto3"
 - name: "p.proto"
   package: "buf.test"
   message_type: [{ name: "P" }]
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 3, 12]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [4, 0], span: [3, 0, 12] }
+  - { path: [4, 0, 1], span: [3, 8, 9] }
   syntax: "proto3"
 - name: "c.proto"
   package: "buf.test"
   dependency: ["p.proto"]
   public_dependency: [0]
   message_type: [{ name: "C" }]
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 5, 24]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [4, 0], span: [3, 0, 12] }
+  - { path: [4, 0, 1], span: [3, 8, 9] }
+  - { path: [3, 0], span: [5, 0, 24] }
+  - { path: [10, 0], span: [5, 7, 13] }
   syntax: "proto3"
 - name: "b.proto"
   package: "buf.test"
   dependency: ["p.proto"]
   public_dependency: [0]
   message_type: [{ name: "B" }]
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 5, 24]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [4, 0], span: [3, 0, 12] }
+  - { path: [4, 0, 1], span: [3, 8, 9] }
+  - { path: [3, 0], span: [5, 0, 24] }
+  - { path: [10, 0], span: [5, 7, 13] }
   syntax: "proto3"
 - name: "a1.proto"
   package: "buf.test"
@@ -47,13 +71,42 @@ file:
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
       json_name: "d"
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 11, 1]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [3, 0], span: [3, 0, 17] }
+  - { path: [3, 1], span: [4, 0, 17] }
+  - { path: [3, 2], span: [5, 0, 17] }
+  - { path: [4, 0], span: [7, 0, 11, 1] }
+  - { path: [4, 0, 1], span: [7, 8, 10] }
+  - { path: [4, 0, 2, 0, 6], span: [8, 2, 3] }
+  - { path: [4, 0, 2, 0], span: [8, 2, 10] }
+  - { path: [4, 0, 2, 0, 1], span: [8, 4, 5] }
+  - { path: [4, 0, 2, 0, 3], span: [8, 8, 9] }
+  - { path: [4, 0, 2, 1, 6], span: [9, 2, 3] }
+  - { path: [4, 0, 2, 1], span: [9, 2, 10] }
+  - { path: [4, 0, 2, 1, 1], span: [9, 4, 5] }
+  - { path: [4, 0, 2, 1, 3], span: [9, 8, 9] }
+  - { path: [4, 0, 2, 2, 6], span: [10, 2, 3] }
+  - { path: [4, 0, 2, 2], span: [10, 2, 10] }
+  - { path: [4, 0, 2, 2, 1], span: [10, 4, 5] }
+  - { path: [4, 0, 2, 2, 3], span: [10, 8, 9] }
   syntax: "proto3"
 - name: "a2.proto"
   package: "buf.test"
   dependency: ["b.proto", "c.proto", "d.proto"]
   message_type: [{ name: "A2" }]
   source_code_info:
+    location:
+    - span: [0, 0, 8, 1]
+    - { path: [12], span: [0, 0, 18] }
+    - { path: [2], span: [1, 0, 17] }
+    - { path: [3, 0], span: [3, 0, 17] }
+    - { path: [3, 1], span: [4, 0, 17] }
+    - { path: [3, 2], span: [5, 0, 17] }
+    - { path: [4, 0], span: [7, 0, 8, 1] }
+    - { path: [4, 0, 1], span: [7, 8, 10] }
     (buf.descriptor.v1.buf_source_code_info_extension):
       unused_dependency: [0, 1, 2]
   syntax: "proto3"
@@ -76,6 +129,23 @@ file:
       type_name: ".buf.test.D"
       json_name: "d"
   source_code_info:
+    location:
+    - span: [0, 0, 10, 1]
+    - { path: [12], span: [0, 0, 18] }
+    - { path: [2], span: [1, 0, 17] }
+    - { path: [3, 0], span: [3, 0, 17] }
+    - { path: [3, 1], span: [4, 0, 17] }
+    - { path: [3, 2], span: [5, 0, 17] }
+    - { path: [4, 0], span: [7, 0, 10, 1] }
+    - { path: [4, 0, 1], span: [7, 8, 10] }
+    - { path: [4, 0, 2, 0, 6], span: [8, 2, 3] }
+    - { path: [4, 0, 2, 0], span: [8, 2, 10] }
+    - { path: [4, 0, 2, 0, 1], span: [8, 4, 5] }
+    - { path: [4, 0, 2, 0, 3], span: [8, 8, 9] }
+    - { path: [4, 0, 2, 1, 6], span: [9, 2, 3] }
+    - { path: [4, 0, 2, 1], span: [9, 2, 10] }
+    - { path: [4, 0, 2, 1, 1], span: [9, 4, 5] }
+    - { path: [4, 0, 2, 1, 3], span: [9, 8, 9] }
     (buf.descriptor.v1.buf_source_code_info_extension):
       unused_dependency: [1]
   syntax: "proto3"
@@ -104,6 +174,27 @@ file:
       type_name: ".buf.test.D"
       json_name: "d"
   source_code_info:
+    location:
+    - span: [0, 0, 11, 1]
+    - { path: [12], span: [0, 0, 18] }
+    - { path: [2], span: [1, 0, 17] }
+    - { path: [3, 0], span: [3, 0, 17] }
+    - { path: [3, 1], span: [4, 0, 17] }
+    - { path: [3, 2], span: [5, 0, 17] }
+    - { path: [4, 0], span: [7, 0, 11, 1] }
+    - { path: [4, 0, 1], span: [7, 8, 10] }
+    - { path: [4, 0, 2, 0, 6], span: [8, 2, 3] }
+    - { path: [4, 0, 2, 0], span: [8, 2, 10] }
+    - { path: [4, 0, 2, 0, 1], span: [8, 4, 5] }
+    - { path: [4, 0, 2, 0, 3], span: [8, 8, 9] }
+    - { path: [4, 0, 2, 1, 6], span: [9, 2, 3] }
+    - { path: [4, 0, 2, 1], span: [9, 2, 10] }
+    - { path: [4, 0, 2, 1, 1], span: [9, 4, 5] }
+    - { path: [4, 0, 2, 1, 3], span: [9, 8, 9] }
+    - { path: [4, 0, 2, 2, 6], span: [10, 2, 3] }
+    - { path: [4, 0, 2, 2], span: [10, 2, 10] }
+    - { path: [4, 0, 2, 2, 1], span: [10, 4, 5] }
+    - { path: [4, 0, 2, 2, 3], span: [10, 8, 9] }
     (buf.descriptor.v1.buf_source_code_info_extension):
       unused_dependency: [1]
   syntax: "proto3"
@@ -131,7 +222,27 @@ file:
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
       json_name: "d"
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 11, 1]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [3, 0], span: [3, 0, 17] }
+  - { path: [3, 1], span: [4, 0, 17] }
+  - { path: [3, 2], span: [5, 0, 17] }
+  - { path: [4, 0], span: [7, 0, 11, 1] }
+  - { path: [4, 0, 1], span: [7, 8, 10] }
+  - { path: [4, 0, 2, 0, 6], span: [8, 2, 3] }
+  - { path: [4, 0, 2, 0], span: [8, 2, 10] }
+  - { path: [4, 0, 2, 0, 1], span: [8, 4, 5] }
+  - { path: [4, 0, 2, 0, 3], span: [8, 8, 9] }
+  - { path: [4, 0, 2, 1, 6], span: [9, 2, 3] }
+  - { path: [4, 0, 2, 1], span: [9, 2, 10] }
+  - { path: [4, 0, 2, 1, 1], span: [9, 4, 5] }
+  - { path: [4, 0, 2, 1, 3], span: [9, 8, 9] }
+  - { path: [4, 0, 2, 2, 6], span: [10, 2, 3] }
+  - { path: [4, 0, 2, 2], span: [10, 2, 10] }
+  - { path: [4, 0, 2, 2, 1], span: [10, 4, 5] }
+  - { path: [4, 0, 2, 2, 3], span: [10, 8, 9] }
   syntax: "proto3"
 - name: "e.proto"
   package: "buf.test"
@@ -145,7 +256,17 @@ file:
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
       json_name: "d"
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 7, 1]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [3, 0], span: [3, 0, 17] }
+  - { path: [4, 0], span: [5, 0, 7, 1] }
+  - { path: [4, 0, 1], span: [5, 8, 9] }
+  - { path: [4, 0, 2, 0, 6], span: [6, 2, 3] }
+  - { path: [4, 0, 2, 0], span: [6, 2, 10] }
+  - { path: [4, 0, 2, 0, 1], span: [6, 4, 5] }
+  - { path: [4, 0, 2, 0, 3], span: [6, 8, 9] }
   syntax: "proto3"
 - name: "a6.proto"
   package: "buf.test"
@@ -165,5 +286,20 @@ file:
       type: TYPE_MESSAGE
       type_name: ".buf.test.E"
       json_name: "e"
-  source_code_info: {}
+  source_code_info.location:
+  - span: [0, 0, 9, 1]
+  - { path: [12], span: [0, 0, 18] }
+  - { path: [2], span: [1, 0, 17] }
+  - { path: [3, 0], span: [3, 0, 17] }
+  - { path: [3, 1], span: [4, 0, 17] }
+  - { path: [4, 0], span: [6, 0, 9, 1] }
+  - { path: [4, 0, 1], span: [6, 8, 10] }
+  - { path: [4, 0, 2, 0, 6], span: [7, 2, 3] }
+  - { path: [4, 0, 2, 0], span: [7, 2, 10] }
+  - { path: [4, 0, 2, 0, 1], span: [7, 4, 5] }
+  - { path: [4, 0, 2, 0, 3], span: [7, 8, 9] }
+  - { path: [4, 0, 2, 1, 6], span: [8, 2, 3] }
+  - { path: [4, 0, 2, 1], span: [8, 2, 10] }
+  - { path: [4, 0, 2, 1, 1], span: [8, 4, 5] }
+  - { path: [4, 0, 2, 1, 3], span: [8, 8, 9] }
   syntax: "proto3"

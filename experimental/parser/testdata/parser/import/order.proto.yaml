@@ -1,0 +1,18 @@
+decls:
+- syntax: { kind: KIND_EDITION, value.literal.string_value: "2024" }
+- package.path.components: [{ ident: "test" }]
+- import.import_path.literal.string_value: "foo.proto"
+- import.import_path.literal.string_value: "bar.proto"
+- import:
+    modifier: [MODIFIER_WEAK]
+    import_path.literal.string_value: "weak.proto"
+    modifier_span: [{}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "baz.proto"
+    modifier_span: [{}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "bang.proto"
+    modifier_span: [{}]
+- import.import_path.literal.string_value: "wrong.proto"

@@ -75,7 +75,7 @@ func (sn *syntheticNames) generate(candidate string, message Type) string {
 	return sn.generateIn(candidate, &message.Context().session.intern)
 }
 
-// generateIn is the part of [syntheticNames.generate] that actually constructs
+// generateIn is the part of [SyntheticNames.generate] that actually constructs
 // the string.
 //
 // it is outlined so that it can be tested separately.

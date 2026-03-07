@@ -1,0 +1,167 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+exclude: ["missing `package`", "missing `syntax`"]
+descriptor: true
+source_code_info: true
+files:
+- path: "main.proto"
+  text: |
+    edition = "2024";
+    package test;
+
+    import "export.proto";
+    import "local.proto";
+    import "top_level.proto";
+    import "strict.proto";
+
+    message Export {
+      export.D d = 1;
+      export.E e = 2;
+      export.L l = 3;
+      export.N.D nd = 4;
+      export.N.E ne = 5;
+      export.N.L nl = 6;
+    }
+
+    message Local {
+      local.D d = 1;
+      local.E e = 2;
+      local.L l = 3;
+      local.N.D nd = 4;
+      local.N.E ne = 5;
+      local.N.L nl = 6;
+    }
+
+    message TopLevel {
+      top_level.D d = 1;
+      top_level.E e = 2;
+      top_level.L l = 3;
+      top_level.N.D nd = 4;
+      top_level.N.E ne = 5;
+      top_level.N.L nl = 6;
+    }
+
+    message Strict {
+      strict.D d = 1;
+      strict.E e = 2;
+      strict.L l = 3;
+      strict.N.D nd = 4;
+      strict.N.E ne = 5;
+      strict.N.L nl = 6;
+    }
+
+- path: "export.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package test.export;
+
+    option features.default_symbol_visibility = EXPORT_ALL;
+
+    message N {
+      message D {}
+      export message E {}
+      local message L {}
+    }
+    message D {}
+    export message E {}
+    local message L {}
+
+    message U {
+      D d = 1;
+      E e = 2;
+      L l = 3;
+      N.D nd = 4;
+      N.E ne = 5;
+      N.L nl = 6;
+    }
+
+- path: "local.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package test.local;
+
+    option features.default_symbol_visibility = LOCAL_ALL;
+
+    message N {
+      message D {}
+      export message E {}
+      local message L {}
+    }
+    message D {}
+    export message E {}
+    local message L {}
+
+    message U {
+      D d = 1;
+      E e = 2;
+      L l = 3;
+      N.D nd = 4;
+      N.E ne = 5;
+      N.L nl = 6;
+    }
+
+- path: "top_level.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package test.top_level;
+
+    option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
+
+    message N {
+      message D {}
+      export message E {}
+      local message L {}
+    }
+    message D {}
+    export message E {}
+    local message L {}
+
+    message U {
+      D d = 1;
+      E e = 2;
+      L l = 3;
+      N.D nd = 4;
+      N.E ne = 5;
+      N.L nl = 6;
+    }
+
+- path: "strict.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package test.strict;
+
+    option features.default_symbol_visibility = STRICT;
+
+    message N {
+      message D {}
+      export message E {}
+      local message L {}
+    }
+    message D {}
+    export message E {}
+    local message L {}
+
+    message U {
+      D d = 1;
+      E e = 2;
+      L l = 3;
+      N.D nd = 4;
+      N.E ne = 5;
+      N.L nl = 6;
+    }

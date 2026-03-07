@@ -7,7 +7,6 @@ file:
   package: "foo"
   dependency: ["a.proto"]
   message_type: [{ name: "M", extension_range: [{ start: 1, end: 2 }] }]
-  syntax: "proto2"
 - name: "c.proto"
   package: "foo.bar.baz"
   dependency: ["b.proto"]
@@ -18,4 +17,3 @@ file:
     type: TYPE_INT32
     extendee: ".foo.M"
     json_name: "m"
-  syntax: "proto2"

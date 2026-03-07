@@ -190,6 +190,12 @@ func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
 	d.raw.args = slices.Insert(d.raw.args, n, withComma[id.Dyn[TypeAny, TypeKind]]{ty.ID(), comma.ID()})
 }
 
+// SetComma implements [Commas].
+func (d TypeList) SetComma(n int, comma token.Token) {
+	d.Context().Nodes().panicIfNotOurs(comma)
+	d.raw.args[n].Comma = comma.ID()
+}
+
 // Span implements [source.Spanner].
 func (d TypeList) Span() source.Span {
 	switch {

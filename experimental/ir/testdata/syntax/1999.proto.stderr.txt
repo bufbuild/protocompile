@@ -4,6 +4,6 @@ error: unrecognized `edition` declaration value
 16 | edition = "1999";
    |           ^^^^^^
    = note: treating the file as Edition 2023 instead
-   = help: permitted values: "2023"
+   = help: permitted values: "2023", "2024"
 
 encountered 1 error

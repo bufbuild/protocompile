@@ -1,0 +1,92 @@
+tables:
+  "testdata/editions/ok_2024.proto":
+    imports:
+    - { path: "google/protobuf/cpp_features.proto", visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "google/protobuf/go_features.proto", visible: true }
+    - { path: "google/protobuf/java_features.proto", visible: true }
+    features:
+    - extn: "pb.cpp"
+      name: "enum_name_uses_string_view"
+      value: "false"
+      explicit: true
+    - { extn: "pb.cpp", name: "string_type", value: "STRING", explicit: true }
+    - { extn: "pb.go", name: "api_level", value: "API_OPEN", explicit: true }
+    - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+    - { extn: "pb.go", name: "legacy_unmarshal_json_enum", value: "false" }
+    - extn: "pb.go"
+      name: "strip_enum_prefix"
+      value: "STRIP_ENUM_PREFIX_KEEP"
+    - { extn: "pb.java", name: "large_enum", value: "false" }
+    - { extn: "pb.java", name: "legacy_closed_enum", value: "false" }
+    - extn: "pb.java"
+      name: "use_old_outer_classname_default"
+      value: "false"
+    - { extn: "pb.java", name: "utf8_validation", value: "DEFAULT" }
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/ok_2024.proto"
+    - fqn: "buf.test.MyMessage"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/ok_2024.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features":
+          message.extns:
+            "pb.java": { message.fields: { "nest_in_file_class": { i32: 2 } } }
+      features:
+      - extn: "pb.java"
+        name: "nest_in_file_class"
+        value: "YES"
+        explicit: true
+      - { extn: "pb.go", name: "api_level", value: "API_OPEN" }
+    - fqn: "buf.test.MyEnum"
+      kind: KIND_ENUM
+      file: "testdata/editions/ok_2024.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features":
+          message.extns:
+            "pb.java": { message.fields: { "large_enum": { bool: true } } }
+      features:
+      - { extn: "pb.java", name: "large_enum", value: "true", explicit: true }
+      - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+      - { extn: "pb.go", name: "legacy_unmarshal_json_enum", value: "false" }
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
+      - { extn: "pb.java", name: "nest_in_file_class", value: "NO" }
+    - fqn: "buf.test.MY_ENUM_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/ok_2024.proto"
+      index: 1
+      visible: true
+      features:
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
+    - fqn: "buf.test.MY_ENUM_VALUE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/ok_2024.proto"
+      index: 2
+      visible: true
+      features:
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
+    options.message.fields:
+      "features":
+        message:
+          fields:
+            "default_symbol_visibility": { i32: 1 }
+            "enforce_naming_style": { i32: 2 }
+          extns:
+            "pb.cpp":
+              message.fields:
+                "enum_name_uses_string_view": { bool: false }
+                "string_type": { i32: 3 }
+            "pb.go": { message.fields: { "api_level": { i32: 1 } } }
+      "java_outer_classname": { string: "BarBaz" }

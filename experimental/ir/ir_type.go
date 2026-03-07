@@ -17,12 +17,15 @@ package ir
 import (
 	"fmt"
 	"iter"
+	"math"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -79,6 +82,7 @@ type rawType struct {
 	isEnum, isMessageSet bool
 	allowsAlias          bool
 	missingRanges        bool // See lower_numbers.go.
+	visibility           token.ID
 }
 
 type rawTagRange struct {
@@ -196,7 +200,40 @@ func (t Type) AllowsAlias() bool {
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
 // treatment in the language.
 func (t Type) IsAny() bool {
-	return t.InternedFullName() == t.Context().session.builtins.AnyPath
+	return !t.IsZero() && t.InternedFullName() == t.Context().session.builtins.AnyPath
+}
+
+// IsExported returns whether this type is exported for the purposes of
+// visibility in other files.
+//
+// Returns whether this was set explicitly via the export or local keywords.
+func (t Type) IsExported() (exported, explicit bool) {
+	if t.IsZero() {
+		return false, false
+	}
+
+	// This is explicitly set via keyword.
+	if !t.Raw().visibility.IsZero() {
+		tok := id.Wrap(t.AST().Context().Stream(), t.Raw().visibility)
+		return tok.Keyword() == keyword.Export, true
+	}
+
+	// Look up the feature.
+	if key := t.Context().builtins().FeatureVisibility; !key.IsZero() {
+		feature := t.FeatureSet().Lookup(key)
+		switch v, _ := feature.Value().AsInt(); v {
+		case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+			return true, false
+		case 2: // EXPORT_TOP_LEVEL
+			return t.Parent().IsZero(), false
+		case 3, 4: // LOCAL_ALL, STRICT
+			return false, false
+		}
+	}
+
+	// If descriptor.proto is too old to have this feature, assume this
+	// type is exported.
+	return true, false
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -417,7 +454,10 @@ func (t Type) Extensions() seq.Indexer[Member] {
 //
 // This does not include reserved field names; see [Type.ReservedNames].
 func (t Type) AllRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -427,7 +467,10 @@ func (t Type) AllRanges() seq.Indexer[ReservedRange] {
 //
 // This does not include reserved field names; see [Type.ReservedNames].
 func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges[:t.Raw().rangesExtnStart]
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges[:t.Raw().rangesExtnStart]
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -435,7 +478,10 @@ func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
 
 // ExtensionRanges returns the extension ranges declared in this type.
 func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges[t.Raw().rangesExtnStart:]
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges[t.Raw().rangesExtnStart:]
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -443,18 +489,63 @@ func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
 
 // ReservedNames returns the reserved named declared in this type.
 func (t Type) ReservedNames() seq.Indexer[ReservedName] {
+	var slice []rawReservedName
+	if !t.IsZero() {
+		slice = t.Raw().reservedNames
+	}
 	return seq.NewFixedSlice(
-		t.Raw().reservedNames,
+		slice,
 		func(i int, _ rawReservedName) ReservedName {
 			return ReservedName{id.WrapContext(t.Context()), &t.Raw().reservedNames[i]}
 		},
 	)
 }
 
+// AbsoluteRange returns the smallest and largest number a member of this type
+// can have.
+//
+// This range is inclusive.
+func (t Type) AbsoluteRange() (start, end int32) {
+	if t.IsZero() {
+		return 0, 0
+	}
+	switch {
+	case t.IsEnum():
+		return math.MinInt32, math.MaxInt32
+	case t.IsMessageSet():
+		return 1, messageSetNumberMax
+	default:
+		return 1, fieldNumberMax
+	}
+}
+
+// OccupiedRanges returns ranges of member numbers currently in use in this
+// type. The pairs of numbers are inclusive ranges.
+func (t Type) OccupiedRanges() iter.Seq2[[2]int32, seq.Indexer[TagRange]] {
+	return func(yield func([2]int32, seq.Indexer[TagRange]) bool) {
+		if t.IsZero() {
+			return
+		}
+
+		for e := range t.Raw().rangesByNumber.Contiguous(true) {
+			ranges := seq.NewFixedSlice(e.Value, func(_ int, v rawTagRange) TagRange {
+				return TagRange{id.WrapContext(t.Context()), v}
+			})
+			if !yield([2]int32{e.Start, e.End}, ranges) {
+				return
+			}
+		}
+	}
+}
+
 // Oneofs returns the options applied to this type.
 func (t Type) Oneofs() seq.Indexer[Oneof] {
+	var oneofs []id.ID[Oneof]
+	if !t.IsZero() {
+		oneofs = t.Raw().oneofs
+	}
 	return seq.NewFixedSlice(
-		t.Raw().oneofs,
+		oneofs,
 		func(_ int, p id.ID[Oneof]) Oneof {
 			return id.Wrap(t.Context(), p)
 		},
@@ -463,8 +554,12 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 
 // Extends returns the options applied to this type.
 func (t Type) Extends() seq.Indexer[Extend] {
+	var extends []id.ID[Extend]
+	if !t.IsZero() {
+		extends = t.Raw().extends
+	}
 	return seq.NewFixedSlice(
-		t.Raw().extends,
+		extends,
 		func(_ int, p id.ID[Extend]) Extend {
 			return id.Wrap(t.Context(), p)
 		},
@@ -473,6 +568,9 @@ func (t Type) Extends() seq.Indexer[Extend] {
 
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
+	if t.IsZero() {
+		return MessageValue{}
+	}
 	return id.Wrap(t.Context(), t.Raw().options).AsMessage()
 }
 
