@@ -18,9 +18,10 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/internal/ext/synctestx"
 	"github.com/bufbuild/protocompile/internal/ext/syncx"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLog(t *testing.T) {
