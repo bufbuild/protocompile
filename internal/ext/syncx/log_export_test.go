@@ -17,5 +17,5 @@ package syncx
 import "math"
 
 func (s *Log[T]) SetFull() {
-	s.cap.Store(math.MaxInt32)
+	s.next.Store(math.MaxInt32)
 }
