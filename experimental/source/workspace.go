@@ -14,18 +14,13 @@
 
 package source
 
-import "iter"
-
 // Workspace is a set of Protobuf source paths.
 //
 // Workspace implementations are assumed by Protocompile to be comparable. It is
 // sufficient to always ensure that the implementation uses a pointer receiver.
 type Workspace interface {
 	// Paths returns an iterator for the paths of the Workspace.
-	Paths() iter.Seq[string]
-
-	// Len returns the number of paths in the Workspace.
-	Len() int
+	Paths() []string
 }
 
 // NewWorkspace returns a [Workspace] implementation for the given paths that is comparable.
@@ -41,23 +36,9 @@ type workspace struct {
 }
 
 // Path implements [Workspace].
-func (w *workspace) Paths() iter.Seq[string] {
-	return func(yield func(string) bool) {
-		if w == nil {
-			return
-		}
-
-		for i := range w.paths {
-			if !yield(w.paths[i]) {
-				return
-			}
-		}
-	}
-}
-
-func (w *workspace) Len() int {
+func (w *workspace) Paths() []string {
 	if w == nil {
-		return 0
+		return []string{}
 	}
-	return len(w.paths)
+	return w.paths
 }

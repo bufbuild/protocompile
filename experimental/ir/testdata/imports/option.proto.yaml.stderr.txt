@@ -14,26 +14,4 @@ error: `Foo` is only imported for use in options
  4 | + import "option.proto";
    |
 
-error: `Bar` declared multiple times
-  --> main.proto:6:9
-   |
- 6 | message Bar {
-   |         ^^^ first here, as a message type
-   |
-  ::: main2.proto:7:9
-   |
- 7 | message Bar {
-   |         --- ...also declared here
-
-warning: unused import "public.proto"
-  --> main2.proto:4:8
-   |
- 4 | import "public.proto";
-   |        ^^^^^^^^^^^^^^
-  help: delete it
-   |
- 4 | - import "public.proto";
-   |
-   = help: no symbols from this file are referenced
-
-encountered 2 errors and 1 warning
+encountered 1 error

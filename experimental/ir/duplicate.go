@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -26,17 +28,17 @@ import (
 // Diagnostics are provided only for the highest level of duplication. For example, given
 // the following files and content:
 //
-// -- a1.proto --
-// syntax = "proto3";
-// package a;
+//	-- a1.proto --
+//	syntax = "proto3";
+//	package a;
 //
 //	message Foo {
 //	 optional string bar = 1;
 //	}
 //
-// -- a2.proto --
-// syntax = "proto3";
-// package a;
+//	-- a2.proto --
+//	syntax = "proto3";
+//	package a;
 //
 //	message Foo {
 //	 optional string bar = 1;
@@ -48,34 +50,54 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 	nameToSymbols := map[FullName][]Symbol{}
 
 	for _, file := range files {
-		for _, ref := range file.exported {
-			sym := GetRef(file, ref)
+	symCheck:
+		for sym := range seq.Values(file.ExportedSymbols()) {
 			// We ignore package declarations, since the same package declaration could be made
 			// multiple times.
 			if sym.Kind() == SymbolKindPackage {
 				continue
 			}
+
+			// We also ignore exported symbols from public imports.
+			if sym.Context() != file {
+				continue
+			}
+
 			// To avoid unnecessary diagnostics, we recursively check that the parent of the
 			// current symbol is not already duplicated. As the docs for [symtab] indicate, the
 			// symbol tables are sorted by the [intern.ID] of their FQN during the lowering step,
 			// so any duplication for a parent symbol will already have been found.
 			parent := sym.FullName().Parent()
-			found := false
 			for parent != "" {
 				if len(nameToSymbols[parent]) > 1 {
-					found = true
-					break
+					break symCheck
 				}
 				parent = parent.Parent()
-			}
-			if found {
-				break
 			}
 			nameToSymbols[sym.FullName()] = append(nameToSymbols[sym.FullName()], sym)
 		}
 	}
 
 	for _, symbols := range nameToSymbols {
+		if len(symbols) == 1 {
+			continue
+		}
+
+	outer:
+		for i, sym := range symbols {
+			for j, prev := range symbols[:i] {
+				if sym.Context() == prev.Context() || !sym.Context().ImportFor(prev.Context()).Decl.IsZero() {
+					// Need to zero out everything between here and i
+					for x := j + 1; x < i+1; x++ {
+						symbols[x] = Symbol{}
+					}
+					break outer
+				}
+			}
+		}
+
+		symbols = slices.DeleteFunc(symbols, Symbol.IsZero)
+
 		if len(symbols) > 1 {
 			r.Error(errDuplicates{symbols: symbols})
 		}
@@ -86,33 +108,28 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 // tags for the same extendee. This ensures that a single tag is only used in a single
 // extension across the given files.
 func DedupExtensions(r *report.Report, files ...*File) {
-	extendeeToTagToMembers := make(map[FullName]map[int32][]Member)
+	type key struct {
+		typ    Type
+		number int32
+	}
+	keyToMembers := make(map[key][]Member)
 
 	for _, file := range files {
 		for extn := range seq.Values(file.AllExtensions()) {
-			extendee := extn.Container().FullName()
-			tagsToMembers := extendeeToTagToMembers[extendee]
-
-			if tagsToMembers == nil {
-				extendeeToTagToMembers[extendee] = map[int32][]Member{
-					extn.Number(): {extn},
-				}
-				continue
+			k := key{
+				typ:    extn.Container(),
+				number: extn.Number(),
 			}
-
-			members := tagsToMembers[extn.Number()]
-			tagsToMembers[extn.Number()] = append(members, extn)
+			keyToMembers[k] = append(keyToMembers[k], extn)
 		}
 	}
 
 	// Walk the index and handle the extension duplicates here
-	for extendee, tagToMembers := range extendeeToTagToMembers {
-		for tag, members := range tagToMembers {
-			if len(members) == 1 {
-				continue
-			}
-			r.Error(errExtensionTagDuplicates{extns: members, extendee: extendee, tag: tag})
+	for k, members := range keyToMembers {
+		if len(members) == 1 {
+			continue
 		}
+		r.Error(errExtensionTagDuplicates{extns: members, extendee: k.typ.FullName(), tag: k.number})
 	}
 }
 

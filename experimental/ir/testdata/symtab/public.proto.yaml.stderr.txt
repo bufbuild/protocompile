@@ -1,8 +1,0 @@
-error: `X` declared multiple times
-  --> dep/public.proto:4:9
-   |
- 4 | message X {}
-   |         ^ first here, as a message type
-   |         - ...also declared here
-
-encountered 1 error

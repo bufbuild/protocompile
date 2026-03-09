@@ -18,7 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/source"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Workspace is an [incremental.Query] for the lowered IR files [ir.File] of the given
@@ -45,14 +45,16 @@ func (w Workspace) Key() any {
 func (w Workspace) Execute(t *incremental.Task) ([]*ir.File, error) {
 	t.Report().Options.Stage += stageWorkspace
 
-	queries := make([]incremental.Query[*ir.File], w.Workspace.Len())
-	for i, path := range iterx.Enumerate(w.Workspace.Paths()) {
-		queries[i] = IR{
-			Opener:  w.Opener,
-			Session: w.Session,
-			Path:    path,
-		}
-	}
+	queries := slicesx.Transform(
+		w.Workspace.Paths(),
+		func(path string) incremental.Query[*ir.File] {
+			return IR{
+				Opener:  w.Opener,
+				Session: w.Session,
+				Path:    path,
+			}
+		},
+	)
 
 	results, err := incremental.Resolve(t, queries...)
 	if err != nil {

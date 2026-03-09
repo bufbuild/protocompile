@@ -1,9 +1,0 @@
-error: `X` declared multiple times
-  --> a.proto:4:9
-   |
- 4 | message X {}
-   |         ^ first here, as a message type
-   |         - ...also declared here
-   |         - ...and here
-
-encountered 1 error
