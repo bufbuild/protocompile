@@ -157,7 +157,7 @@ func stringWidth(options Options, column int, text string) int {
 
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
-	for i, next := range iterx.Enumerate(stringsx.Split(text, '\t')) {
+	for i, next := range iterx.Enumerate(strings.SplitSeq(text, "\t")) {
 		if i > 0 {
 			tab := options.TabstopWidth
 			if !maxWidth {

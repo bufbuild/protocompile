@@ -19,10 +19,10 @@ import (
 	"io"
 	"regexp"
 	"slices"
+	"strings"
 	"unicode"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
@@ -54,7 +54,7 @@ func (w *writer) WriteSpaces(n int) {
 func (w *writer) WriteString(data string) (int, error) {
 	// Break the input along newlines; each time we're about to append a
 	// newline, discard all trailing whitespace that isn't a newline.
-	for i, line := range iterx.Enumerate(stringsx.Lines(data)) {
+	for i, line := range iterx.Enumerate(strings.SplitSeq(data, "\n")) {
 		if i > 0 {
 			w.flush(true)
 		}
