@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/synctestx"
 	"github.com/bufbuild/protocompile/internal/inlinetest"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -91,9 +92,6 @@ func TestInline(t *testing.T) {
 func TestHammer(t *testing.T) {
 	t.Parallel()
 
-	start := new(sync.WaitGroup)
-	end := new(sync.WaitGroup)
-
 	n := new(atomic.Int64)
 	it := new(intern.Table)
 
@@ -103,45 +101,31 @@ func TestHammer(t *testing.T) {
 	query := make(map[string][]intern.ID)
 	value := make(map[intern.ID][]string)
 
-	for range runtime.GOMAXPROCS(0) {
-		start.Add(1)
-		end.Add(1)
-		go func() {
-			defer end.Done()
+	synctestx.Hammer(0, func() {
+		data := makeData(int(n.Add(1)))
+		m1 := make(map[string][]intern.ID)
+		m2 := make(map[intern.ID][]string)
 
-			data := makeData(int(n.Add(1)))
-			m1 := make(map[string][]intern.ID)
-			m2 := make(map[intern.ID][]string)
+		for _, s := range data {
+			s := string(s)
+			id := it.Intern(s)
+			m1[s] = append(m1[s], id)
 
-			// This ensures that we have a thundering herd situation: all of
-			// these goroutines wake up and hammer the intern table at the
-			// same time.
-			start.Done()
-			start.Wait()
+			v := it.Value(id)
+			m2[id] = append(m2[id], v)
 
-			for _, s := range data {
-				s := string(s)
-				id := it.Intern(s)
-				m1[s] = append(m1[s], id)
+			assert.Equal(t, s, v)
+		}
 
-				v := it.Value(id)
-				m2[id] = append(m2[id], v)
-
-				assert.Equal(t, s, v)
-			}
-
-			mu.Lock()
-			defer mu.Unlock()
-			for k, v := range m1 {
-				query[k] = append(query[k], v...)
-			}
-			for k, v := range m2 {
-				value[k] = append(value[k], v...)
-			}
-		}()
-	}
-
-	end.Wait()
+		mu.Lock()
+		defer mu.Unlock()
+		for k, v := range m1 {
+			query[k] = append(query[k], v...)
+		}
+		for k, v := range m2 {
+			value[k] = append(value[k], v...)
+		}
+	})
 
 	for k, v := range query {
 		slices.Sort(v)

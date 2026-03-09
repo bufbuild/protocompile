@@ -13,7 +13,7 @@
 // limitations under the License.
 
 //nolint:revive,predeclared
-package atomicx
+package syncx
 
 import (
 	"errors"
@@ -33,7 +33,12 @@ type Log[T any] struct {
 	// before loading this value, to ensure that prior writes to it are seen,
 	// and cap must be stored after storing this value, to ensure the write is
 	// published.
-	ptr *T
+	//
+	// This value is atomic because otherwise a data race occurs. Go guarantees
+	// this is not actually a data race, because in Go all pointer loads/stores
+	// are relaxed atomic, but this is essentially free, because we're already
+	// loading cap.
+	ptr atomic.Pointer[T]
 
 	next atomic.Int32 // The next index to fill.
 	cap  atomic.Int32 // Top bit is used as a spinlock.
@@ -46,8 +51,9 @@ const lockbit = math.MinInt32
 func (s *Log[T]) Load(idx int) T {
 	// Read cap first, which is required before we can read s.ptr.
 	cap := s.cap.Load()
+	ptr := s.ptr.Load()
 
-	return unsafe.Slice(s.ptr, cap&^lockbit)[idx]
+	return unsafe.Slice(ptr, cap&^lockbit)[idx]
 }
 
 // Append adds a new value to this slice.
@@ -69,7 +75,8 @@ again:
 		goto again
 	}
 
-	slice := unsafe.Slice(s.ptr, c)
+	p := s.ptr.Load()
+	slice := unsafe.Slice(p, c)
 	if uint32(i) < uint32(c) { // Don't need to grow the slice.
 		// This is a data race. However, it's fine, because this slot is not
 		// valid yet, so tearing it is fine.
@@ -85,9 +92,19 @@ again:
 		// significant cache thrashing if the slice is resized from under us.
 		storeNoRace(&slice[i], v)
 
-		if s.cap.Load() != c {
-			// If the value was potentially torn, it would have resulted in c
-			// changing, meaning we need to try again.
+		// If the value was potentially torn, it would have resulted in c
+		// changing, meaning we need to try again.
+		//
+		// A very important property is that this value never returns to the
+		// same value after a resize begins, preventing an ABA problem. If the
+		// capacity does not change across a store, it means that store
+		// succeeded
+		//
+		// To ensure that the value we just wrote above is visible to other
+		// goroutines, in particular a goroutine that wants to perform a resize,
+		// We need to store to the capacity. The easiest way to achieve both
+		// things at once is with the following CAS.
+		if !s.cap.CompareAndSwap(c, c) {
 			runtime.Gosched()
 			goto again
 		}
@@ -105,18 +122,15 @@ again:
 	}
 
 	// Grow the slice enough to insert our value.
+	//
 	// Getting preempted by the call into the allocator would be... non-ideal,
 	// but there isn't really a way to prevent that.
-	//
-	// To try to tame down the number of times we need to grow the slice, since
-	// that cause significant cache thrash due to racing reads and writes, we
-	// grow the underlying buffer a little faster than O(2^n).
 	slice = append(slice, make([]T, i+1-c)...)
 	slice[i] = v
 
 	// Race detector does not understand that this write is protected by
 	// the store that immediately follows it.
-	storeNoRace(&s.ptr, unsafe.SliceData(slice))
+	s.ptr.Store(unsafe.SliceData(slice))
 	s.cap.Store(int32(cap(slice))) // Drop the lock.
 
 	return int(i)
