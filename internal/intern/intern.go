@@ -74,7 +74,7 @@ func (id ID) GoString() string {
 //
 // The zero value of Table is empty and ready to use.
 type Table struct {
-	index sync.Map
+	index sync.Map // [string, atomic.Int32]
 	table syncx.Log[string]
 	stats atomic.Pointer[stats]
 }
@@ -201,7 +201,7 @@ func (t *Table) Query(s string) (ID, bool) {
 		return 0, false
 	}
 
-	id := v.(ID) //nolint:errcheck
+	id := ID(v.(*atomic.Int32).Load()) //nolint:errcheck
 	if id == 0 {
 		// Handle the case where this is a mid-insertion.
 		return 0, false
@@ -209,12 +209,6 @@ func (t *Table) Query(s string) (ID, bool) {
 
 	return id, true
 }
-
-// Used as a sentinel in internSlow. 0 always represents "" and is never
-// present as a value in the index.
-//
-// This is here to avoid a call to runtime.convT32 in internSlow.
-var inserting any = ID(0)
 
 func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
@@ -229,9 +223,12 @@ func (t *Table) internSlow(s string) ID {
 	key := any(s)
 
 again:
-	// Try to become the "leader" which is interning s.
-	if v, ok := t.index.LoadOrStore(key, inserting); ok {
-		id := v.(ID) //nolint:errcheck
+	// Try to become the "leader" which is interning s. Insert a 0, which is
+	// "" (never interned), to mark this slot as taken.
+	v, ok := t.index.LoadOrStore(key, new(atomic.Int32))
+	p := v.(*atomic.Int32) //nolint:errcheck
+	if ok {
+		id := ID(p.Load())
 		if id == 0 {
 			// Someone *else* is doing the inserting, apparently.
 			runtime.Gosched()
@@ -245,7 +242,7 @@ again:
 	// Figure out the next interning ID.
 	// The first ID will have value 1. ID 0 is reserved for "".
 	id := ID(t.table.Append(s) + 1)
-	t.index.Store(key, id) // Commit the ID.
+	p.Store(int32(id))
 
 	return id
 }
