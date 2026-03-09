@@ -135,7 +135,7 @@ func (f *File) Nodes() *Nodes {
 	return (*Nodes)(f)
 }
 
-// Stream returns the underlying token stream.
+// Span returns the span for this file.
 func (f *File) Span() source.Span {
 	return id.Wrap(f, id.ID[DeclBody](1)).Span()
 }
