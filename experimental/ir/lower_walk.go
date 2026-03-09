@@ -117,7 +117,8 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			ty := w.newType(def, parent)
 
 			if kind == ast.DefKindGroup {
-				w.newField(def, parent, true)
+				member := w.newField(def, parent, true)
+				ty.Raw().syntheticTypeOf = member.ID()
 			}
 
 			w.recurse(def.Body().AsAny(), ty)

@@ -237,7 +237,13 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	defer reset()
 
 	messageAST := ty.AST().AsMessage()
-	g.addSourceLocation(messageAST.Span(), messageAST.Keyword.ID(), messageAST.Body.Braces().ID())
+	checkToken := messageAST.Keyword.ID()
+	// For synthetic messages of group fields, the leading comment is attributed to the
+	// leading token of the field, which includes the field's prefix.
+	if group := ty.GroupField(); !group.IsZero() {
+		checkToken = checkTokenIDForField(group.AST().AsField())
+	}
+	g.addSourceLocation(messageAST.Span(), checkToken, messageAST.Body.Braces().ID())
 
 	mdp.Name = addr(ty.Name())
 	g.addSourceLocationWithSourcePathElements(messageAST.Name.Span(), []int32{internal.MessageNameTag})
@@ -409,16 +415,19 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	reset := g.path.with(sourcePath...)
 	defer reset()
 
+	// If a field is a proto2 group field, the leading comments of the field are instead
+	// attributed to the synthetic message for the group field, rather than the field itself,
+	// so no tokens are checked for comments.
 	fieldAST := f.AST().AsField()
-	checkTypeToken := token.ID(fieldAST.Type.ID())
-	if prefixed := fieldAST.Type.AsPrefixed(); !prefixed.IsZero() {
-		checkTypeToken = prefixed.PrefixToken().ID()
+	if f.IsGroup() {
+		g.addSourceLocation(fieldAST.Span())
+	} else {
+		g.addSourceLocation(
+			fieldAST.Span(),
+			checkTokenIDForField(fieldAST),
+			fieldAST.Semicolon.ID(),
+		)
 	}
-	g.addSourceLocation(
-		fieldAST.Span(),
-		checkTypeToken,
-		fieldAST.Semicolon.ID(),
-	)
 
 	fdp.Name = addr(f.Name())
 	g.addSourceLocationWithSourcePathElements(fieldAST.Name.Span(), []int32{internal.FieldNameTag})
@@ -949,4 +958,13 @@ func locationSpan(span source.Span) []int32 {
 		int32(end.Line) - 1,
 		int32(end.Column) - 1,
 	}
+}
+
+// checkTokenIDForField is a helper function for returning the [token.ID] of the token
+// to check for leading comments for the given field AST.
+func checkTokenIDForField(fieldAST ast.DefField) token.ID {
+	if prefixed := fieldAST.Type.AsPrefixed(); !prefixed.IsZero() {
+		return prefixed.PrefixToken().ID()
+	}
+	return token.ID(fieldAST.Type.ID())
 }
