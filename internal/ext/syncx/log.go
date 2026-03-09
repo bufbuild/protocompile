@@ -17,6 +17,7 @@ package syncx
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"sync/atomic"
@@ -25,9 +26,7 @@ import (
 
 // Log is an append-only log.
 //
-// Loading and append operations may happen concurrently with each other,
-// with the caveat that loading indices not yet appended may produce garbage
-// values.
+// Loading and append operations may happen concurrently with each other.
 type Log[T any] struct {
 	// Protected by the lock bit in cap. This means that cap must be loaded
 	// before loading this value, to ensure that prior writes to it are seen,
@@ -40,20 +39,33 @@ type Log[T any] struct {
 	// loading cap.
 	ptr atomic.Pointer[T]
 
+	// Array of bits with length equal to cap divided by the bit size of uintptr,
+	// rounded up.
+	bits atomic.Pointer[atomic.Uintptr]
+
 	next atomic.Int32 // The next index to fill.
 	cap  atomic.Int32 // Top bit is used as a spinlock.
 }
 
-const lockbit = math.MinInt32
+const (
+	lockbit  = math.MinInt32
+	wordBits = int(unsafe.Sizeof(uintptr(0)) * 8)
+)
 
-// Load returns the value at the given index. This index must have been
-// previously returned by [Log.Append].
+// Load returns the value at the given index.
+//
+// Panics if no value is at that index.
 func (s *Log[T]) Load(idx int) T {
 	// Read cap first, which is required before we can read s.ptr.
-	cap := s.cap.Load()
+	cap := s.cap.Load() &^ lockbit
 	ptr := s.ptr.Load()
 
-	return unsafe.Slice(ptr, cap&^lockbit)[idx]
+	bits := unsafe.Slice(s.bits.Load(), logBits(int(cap)))
+	if n := idx / wordBits; n >= len(bits) || bits[n].Load()&(1<<(idx%wordBits)) == 0 {
+		panic(fmt.Errorf("internal/syncx: index out of bounds [%v]", idx))
+	}
+
+	return unsafe.Slice(ptr, cap)[idx]
 }
 
 // Append adds a new value to this slice.
@@ -62,8 +74,8 @@ func (s *Log[T]) Load(idx int) T {
 // [Log.Load].
 func (s *Log[T]) Append(v T) int {
 	i := s.next.Add(1)
-	if i == 0 {
-		panic(errors.New("internal/atomicx: cannot allocate more than 2^32 elements"))
+	if i < 0 {
+		panic(errors.New("internal/syncx: cannot allocate more than 2^32 elements"))
 	}
 	i--
 
@@ -76,8 +88,12 @@ again:
 	}
 
 	p := s.ptr.Load()
+	b := s.bits.Load()
 	slice := unsafe.Slice(p, c)
+	bits := unsafe.Slice(b, logBits(int(c)))
 	if uint32(i) < uint32(c) { // Don't need to grow the slice.
+		i := int(i)
+
 		// This is a data race. However, it's fine, because this slot is not
 		// valid yet, so tearing it is fine.
 		//
@@ -91,6 +107,9 @@ again:
 		// This store is also the slowest part of this function, due to
 		// significant cache thrashing if the slice is resized from under us.
 		storeNoRace(&slice[i], v)
+
+		// Mark this index as claimed.
+		bits[i/wordBits].Or(1 << (i % wordBits))
 
 		// If the value was potentially torn, it would have resulted in c
 		// changing, meaning we need to try again.
@@ -109,7 +128,7 @@ again:
 			goto again
 		}
 
-		return int(i)
+		return i
 	}
 
 	// Need to grow a slice. Lock the slice by setting the sign bit of the
@@ -125,13 +144,22 @@ again:
 	//
 	// Getting preempted by the call into the allocator would be... non-ideal,
 	// but there isn't really a way to prevent that.
-	slice = append(slice, make([]T, i+1-c)...)
+	slice = append(slice, make([]T, max(i+1, 16)-c)...)
 	slice[i] = v
 
-	// Race detector does not understand that this write is protected by
-	// the store that immediately follows it.
+	// Now, grow the bit array.
+	bits2 := make([]atomic.Uintptr, logBits(cap(slice)))
+	for i := range bits {
+		bits2[i].Store(bits[i].Load())
+	}
+	bits = bits2
+
 	s.ptr.Store(unsafe.SliceData(slice))
+	s.bits.Store(unsafe.SliceData(bits))
 	s.cap.Store(int32(cap(slice))) // Drop the lock.
+
+	// Mark this index as claimed.
+	bits[int(i)/wordBits].Or(1 << (int(i) % wordBits))
 
 	return int(i)
 }
@@ -139,4 +167,8 @@ again:
 //go:norace
 func storeNoRace[T any](p *T, v T) {
 	*p = v
+}
+
+func logBits(cap int) int {
+	return (cap + wordBits - 1) / wordBits
 }

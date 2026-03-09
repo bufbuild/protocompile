@@ -37,4 +37,16 @@ func TestLog(t *testing.T) {
 			assert.Equal(t, n, log.Load(i))
 		}
 	})
+
+	// Verify that mis-using an index panics.
+	i := log.Append(0)
+	assert.Panics(t, func() { log.Load(i + 1) })
+}
+
+func TestExhaust(t *testing.T) {
+	t.Parallel()
+
+	log := new(syncx.Log[int])
+	log.SetFull()
+	assert.Panics(t, func() { log.Append(0) })
 }
