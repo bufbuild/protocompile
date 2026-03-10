@@ -216,7 +216,7 @@ func (t *Task) aborted() error {
 //
 // Note: this function really wants to be a method of [Task], but it isn't
 // because it's generic.
-func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], expired error) {
+func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expired error) {
 	caller.checkDone()
 	if len(queries) == 0 {
 		return nil, nil
@@ -331,6 +331,23 @@ type task struct {
 	// task is pending.
 	result atomic.Pointer[result]
 	report report.Report
+}
+
+// Results wraps a sequence of [Result]s and provides some convenience methods for
+// processing results.
+type Results[T any] []Result[T]
+
+// Slice is a convenience method for checking the results and returning a slice of the
+// result type T if there are no errors, or returning the first [Result.Fatal] as an error.
+func (r Results[T]) Slice() ([]T, error) {
+	results := make([]T, len(r))
+	for i, result := range r {
+		if result.Fatal != nil {
+			return nil, result.Fatal
+		}
+		results[i] = result.Value
+	}
+	return results, nil
 }
 
 // Result is the Result of executing a query on an [Executor], either via

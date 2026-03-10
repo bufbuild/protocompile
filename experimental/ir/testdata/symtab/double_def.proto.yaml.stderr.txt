@@ -8,6 +8,9 @@ error: `Foo` declared multiple times
    |
 11 | message Foo {
    |         --- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example,
+           "main.proto" declares `dep.foo.Foo` but it is not directly imported
 
 error: `Main` declared multiple times
   --> main.proto:6:9
@@ -51,6 +54,10 @@ error: `Main` declared multiple times
    |
  4 | message Main {}
    |         ---- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example,
+           "dep/priv.proto" declares `dep.foo.Main` but it is not directly
+           imported
 
 error: `Foo` declared multiple times
   --> main.proto:11:9
@@ -62,6 +69,9 @@ error: `Foo` declared multiple times
    |
  6 | message Foo {}
    |         --- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example,
+           "main.proto" declares `dep.foo.Foo` but it is not directly imported
 
 error: `dep.foo.Foo` declared multiple times
   --> main2.proto:2:1

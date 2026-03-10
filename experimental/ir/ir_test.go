@@ -160,7 +160,7 @@ func TestIR(t *testing.T) {
 		)
 
 		session := new(ir.Session)
-		results, r, err := incremental.Run(t.Context(), exec, queries.Workspace{
+		results, r, err := incremental.Run(t.Context(), exec, queries.Link{
 			Opener:  files,
 			Session: session,
 			Workspace: source.NewWorkspace(slices.Collect(iterx.FilterMap(

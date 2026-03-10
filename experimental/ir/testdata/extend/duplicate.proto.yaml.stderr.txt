@@ -1,11 +1,12 @@
-error: field number `1` used in more than one extension for `test.M`
-  --> b.proto:7:3
-   |
- 7 |   optional int32 a = 1;
-   |   ^^^^^^^^^^^^^^^^^^^^^
-  ::: c.proto:7:3
+error: field number `1` used more than once
+  --> c.proto:7:22
    |
  7 |   optional int32 b = 1;
-   |   --------------------- `1` also used here
+   |                      ^ used here
+   |
+  ::: b.proto:7:22
+   |
+ 7 |   optional int32 a = 1;
+   |                      - previously used here
 
 encountered 1 error

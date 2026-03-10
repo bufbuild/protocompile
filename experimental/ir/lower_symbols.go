@@ -266,7 +266,6 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 
 // errDuplicates diagnoses duplicate symbols.
 type errDuplicates struct {
-	*File
 	symbols []Symbol
 }
 
@@ -338,21 +337,35 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 		}
 	}
 
-	// If at least one duplicated symbol is non-visible, explain
-	// that symbol names are global!
-	if e.File != nil {
+	// For each duplicated symbol, we collect up all the unique files, and then check the
+	// visibility of each symbol against each file. If at least one non-visibile symbol is
+	// found, explain that symbol names are global.
+	seen := make(map[*File]bool)
+	files := iterx.FilterMap(
+		slices.Values(e.symbols),
+		func(s Symbol) (*File, bool) {
+			if seen[s.Context()] {
+				return nil, false
+			}
+			seen[s.Context()] = true
+			return s.Context(), true
+		},
+	)
+
+outer:
+	for file := range files {
 		for _, s := range e.symbols {
-			if s.Visible(e.File, true) {
+			if s.Visible(file, true) {
 				continue
 			}
 
 			d.Apply(report.Helpf(
-				"symbol names must be unique across all transitive imports; "+
-					"for example, %q declares `%s` but is not directly imported",
+				"symbol names must be unique across all files; "+
+					"for example, %q declares `%s` but it is not directly imported",
 				s.Context().Path(),
 				first.FullName(),
 			))
-			break
+			break outer
 		}
 	}
 

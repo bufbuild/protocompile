@@ -21,36 +21,36 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
-// Workspace is an [incremental.Query] for the lowered IR files [ir.File] of the given
-// Protobuf source workspace [source.Workspace].
+// Link is an [incremental.Query] for the lowered IR files [*ir.File] of the given
+// Protobuf source workspace [source.Workspace]. This query links the compilation of the
+// given sources together and allows us to additional checks across the sources,
+// e.g. duplicate symbols and extensions across the given [source.Workspace].
 //
-// This allows us to check for duplicate symbols and extensions across the [source.Workspace],
-// even if the [source.File]s may not import each other.
-//
-// Workspace queries with different Openers are considered distinct.
-type Workspace struct {
+// Link queries with different [source.Opener]s and/or [source.Workspace]s are
+// considered distinct.
+type Link struct {
 	source.Opener // Must be comparable.
 	*ir.Session
 	source.Workspace // Must be comparable.
 }
 
-var _ incremental.Query[[]*ir.File] = Workspace{}
+var _ incremental.Query[[]*ir.File] = Link{}
 
 // Key implements [incremental.Query].
-func (w Workspace) Key() any {
-	return w
+func (l Link) Key() any {
+	return l
 }
 
 // Execute implements [incremental.Query].
-func (w Workspace) Execute(t *incremental.Task) ([]*ir.File, error) {
-	t.Report().Options.Stage += stageWorkspace
+func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
+	t.Report().Options.Stage += stageLink
 
 	queries := slicesx.Transform(
-		w.Workspace.Paths(),
+		l.Workspace.Paths(),
 		func(path string) incremental.Query[*ir.File] {
 			return IR{
-				Opener:  w.Opener,
-				Session: w.Session,
+				Opener:  l.Opener,
+				Session: l.Session,
 				Path:    path,
 			}
 		},
@@ -61,12 +61,9 @@ func (w Workspace) Execute(t *incremental.Task) ([]*ir.File, error) {
 		return nil, err
 	}
 
-	files := make([]*ir.File, len(queries))
-	for i, result := range results {
-		if result.Fatal != nil {
-			return nil, result.Fatal
-		}
-		files[i] = result.Value
+	files, err := results.Slice()
+	if err != nil {
+		return nil, err
 	}
 
 	ir.DedupExportedSymbols(t.Report(), files...)

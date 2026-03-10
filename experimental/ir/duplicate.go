@@ -15,9 +15,6 @@
 package ir
 
 import (
-	"slices"
-
-	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
@@ -83,21 +80,6 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 			continue
 		}
 
-	outer:
-		for i, sym := range symbols {
-			for j, prev := range symbols[:i] {
-				if sym.Context() == prev.Context() || !sym.Context().ImportFor(prev.Context()).Decl.IsZero() {
-					// Need to zero out everything between here and i
-					for x := j + 1; x < i+1; x++ {
-						symbols[x] = Symbol{}
-					}
-					break outer
-				}
-			}
-		}
-
-		symbols = slices.DeleteFunc(symbols, Symbol.IsZero)
-
 		if len(symbols) > 1 {
 			r.Error(errDuplicates{symbols: symbols})
 		}
@@ -116,6 +98,14 @@ func DedupExtensions(r *report.Report, files ...*File) {
 
 	for _, file := range files {
 		for extn := range seq.Values(file.AllExtensions()) {
+			// First check if this extension number is already the number of a non-extension
+			// member of the container type. If so, then there is already a diagnostic for that
+			// overlap and we don't need to surface an additional diagnostic here.
+			existing := extn.Container().MemberByNumber(extn.Number())
+			if !existing.IsZero() && !existing.IsExtension() {
+				continue
+			}
+
 			k := key{
 				typ:    extn.Container(),
 				number: extn.Number(),
@@ -129,28 +119,14 @@ func DedupExtensions(r *report.Report, files ...*File) {
 		if len(members) == 1 {
 			continue
 		}
-		r.Error(errExtensionTagDuplicates{extns: members, extendee: k.typ.FullName(), tag: k.number})
-	}
-}
 
-type errExtensionTagDuplicates struct {
-	extns    []Member
-	extendee FullName
-	tag      int32
-}
-
-func (e errExtensionTagDuplicates) Diagnose(d *report.Diagnostic) {
-	what := taxa.FieldNumber
-	if e.extns[0].Container().IsEnum() {
-		what = taxa.EnumValue
-	}
-
-	d.Apply(
-		report.Message("%v `%v` used in more than one extension for `%v`", what, e.tag, e.extendee),
-		report.Snippet(e.extns[0].AST()),
-	)
-
-	for _, extn := range e.extns[1:] {
-		d.Apply(report.Snippetf(extn.AST(), "`%d` also used here", e.tag))
+		first := members[0]
+		for _, dupe := range members[1:] {
+			r.Error(errOverlap{
+				ty:     k.typ,
+				first:  first.AsTagRange(),
+				second: dupe.AsTagRange(),
+			})
+		}
 	}
 }
