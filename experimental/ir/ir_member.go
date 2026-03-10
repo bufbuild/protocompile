@@ -104,7 +104,7 @@ func (m Member) IsRepeated() bool {
 
 // IsMap returns whether this is a map field.
 func (m Member) IsMap() bool {
-	return !m.IsZero() && m == m.Element().MapField()
+	return !m.IsZero() && !m.IsGroup() && m == m.Element().MapField()
 }
 
 // IsPacked returns whether this is a packed message field.
