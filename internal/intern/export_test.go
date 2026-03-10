@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package syncx
+package intern
 
-import "math"
+import "github.com/bufbuild/protocompile/internal/ext/syncx"
 
-func (s *Log[T]) SetFull() {
-	s.next.Store(math.MaxInt32)
+func (t *Table) Table() *syncx.Log[string] {
+	return &t.table
 }

@@ -33,13 +33,13 @@ func TestLog(t *testing.T) {
 	synctestx.Hammer(0, func() {
 		for range trials {
 			n := rand.Int()
-			i := log.Append(n)
+			i, _ := log.Append(n)
 			assert.Equal(t, n, log.Load(i))
 		}
 	})
 
 	// Verify that mis-using an index panics.
-	i := log.Append(0)
+	i, _ := log.Append(0)
 	assert.Panics(t, func() { log.Load(i + 1) })
 }
 
@@ -47,6 +47,8 @@ func TestExhaust(t *testing.T) {
 	t.Parallel()
 
 	log := new(syncx.Log[int])
-	log.SetFull()
-	assert.Panics(t, func() { log.Append(0) })
+	log.SetFullForTesting()
+
+	_, err := log.Append(0)
+	assert.Error(t, err)
 }

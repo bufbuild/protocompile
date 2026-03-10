@@ -28,6 +28,7 @@ import (
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/synctestx"
+	"github.com/bufbuild/protocompile/internal/ext/syncx"
 	"github.com/bufbuild/protocompile/internal/inlinetest"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -138,6 +139,19 @@ func TestHammer(t *testing.T) {
 		v = slicesx.Dedup(v)
 		assert.Len(t, v, 1, "value[%v]: %v", k, v)
 	}
+}
+
+func TestExhaust(t *testing.T) {
+	t.Parallel()
+
+	// Validate that if IDs are exhausted, every thread potentially waiting on
+	// that panics and does not hang.
+	it := new(intern.Table)
+	it.Table().SetFullForTesting()
+	synctestx.Hammer(0, func() {
+		defer func() { assert.Equal(t, syncx.ErrLogExhausted, recover()) }()
+		it.Intern("uh oh")
+	})
 }
 
 func BenchmarkIntern(b *testing.B) {

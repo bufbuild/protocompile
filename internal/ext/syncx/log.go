@@ -17,10 +17,14 @@ package syncx
 
 import (
 	"errors"
+	"math"
 	"runtime"
 	"sync/atomic"
+	"testing"
 	"unsafe"
 )
+
+var ErrLogExhausted = errors.New("internal/syncx: cannot allocate more than 2^31 elements")
 
 // Log is an append-only log.
 //
@@ -48,10 +52,12 @@ func (s *Log[T]) Load(idx int) T {
 //
 // Returns the index of the appended element, which can be looked up with
 // [Log.Load].
-func (s *Log[T]) Append(v T) int {
+//
+// Returns an error if indices are exhausted.
+func (s *Log[T]) Append(v T) (int, error) {
 	i := s.next.Add(1)
 	if i < 0 {
-		panic(errors.New("internal/syncx: cannot allocate more than 2^31 elements"))
+		return 0, ErrLogExhausted
 	}
 	i--
 
@@ -75,7 +81,7 @@ func (s *Log[T]) Append(v T) int {
 			runtime.Gosched()
 		}
 
-		return int(i)
+		return int(i), nil
 	}
 
 	// Slow path (i == c): we are responsible for growing the slice. Need to
@@ -96,5 +102,16 @@ func (s *Log[T]) Append(v T) int {
 	s.cap.Store(int32(cap(slice)))
 
 	s.len.Add(1)
-	return int(i)
+	return int(i), nil
+}
+
+// SetFullForTesting sets this log to full, so that future calls to [Log.Append]
+// panic.
+//
+// Must not be called concurrently. Can only be called from a unit test.
+func (s *Log[T]) SetFullForTesting() {
+	if !testing.Testing() {
+		panic("called SetFull outside of a test")
+	}
+	s.next.Store(math.MaxInt32)
 }

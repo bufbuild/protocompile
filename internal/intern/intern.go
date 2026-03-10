@@ -201,7 +201,12 @@ func (t *Table) Query(s string) (ID, bool) {
 		return 0, false
 	}
 
-	id := ID(v.(*atomic.Int32).Load()) //nolint:errcheck
+	p := v.(*atomic.Int32) //nolint:errcheck
+	if p == nil {
+		// This key has been poisoned because we ran out of entries.
+		return 0, false
+	}
+	id := ID(p.Load())
 	if id == 0 {
 		// Handle the case where this is a mid-insertion.
 		return 0, false
@@ -225,9 +230,14 @@ func (t *Table) internSlow(s string) ID {
 again:
 	// Try to become the "leader" which is interning s. Insert a 0, which is
 	// "" (never interned), to mark this slot as taken.
-	v, ok := t.index.LoadOrStore(key, new(atomic.Int32))
+	v, loaded := t.index.LoadOrStore(key, new(atomic.Int32))
 	p := v.(*atomic.Int32) //nolint:errcheck
-	if ok {
+	if loaded {
+		if p == nil {
+			// We ran out of IDs for this key.
+			panic(syncx.ErrLogExhausted)
+		}
+
 		id := ID(p.Load())
 		if id == 0 {
 			// Someone *else* is doing the inserting, apparently.
@@ -240,8 +250,16 @@ again:
 	}
 
 	// Figure out the next interning ID.
-	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(t.table.Append(s) + 1)
+	i, err := t.table.Append(s)
+	if err != nil {
+		// Poison this key. This will cause any goroutines waiting for interning
+		// to complete to also panic.
+		t.index.Store(key, (*atomic.Int32)(nil))
+		panic(err)
+	}
+
+	// Commit the new ID.
+	id := ID(i + 1)
 	p.Store(int32(id))
 
 	return id
