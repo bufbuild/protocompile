@@ -73,7 +73,7 @@ func generateMapEntries(file *File, r *report.Report) {
 				bits:  rawValueBits(file.arenas.messages.Compress(options.Raw())),
 			})),
 
-			mapEntryOf: field.ID(),
+			syntheticTypeOf: field.ID(),
 		})))
 		ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 		if parent.IsZero() {

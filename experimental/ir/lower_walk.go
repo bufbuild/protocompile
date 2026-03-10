@@ -117,7 +117,8 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			ty := w.newType(def, parent)
 
 			if kind == ast.DefKindGroup {
-				w.newField(def, parent, true)
+				member := w.newField(def, parent, true)
+				ty.Raw().syntheticTypeOf = member.ID()
 			}
 
 			w.recurse(def.Body().AsAny(), ty)
@@ -237,7 +238,6 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
-//nolint:unparam // Complains about the return value for some reason.
 func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
