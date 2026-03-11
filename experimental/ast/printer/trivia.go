@@ -50,6 +50,12 @@ func (t detachedTrivia) isEmpty() bool {
 	return len(t.slots) == 0 || len(t.slots) == 1 && len(t.slots[0]) == 0
 }
 
+// hasBlankBefore reports whether there was a blank line before
+// declaration i in the original source.
+func (t detachedTrivia) hasBlankBefore(i int) bool {
+	return i < len(t.blankBefore) && t.blankBefore[i]
+}
+
 // triviaHasComments reports whether any slot contains comment tokens.
 func triviaHasComments(trivia detachedTrivia) bool {
 	for _, slot := range trivia.slots {

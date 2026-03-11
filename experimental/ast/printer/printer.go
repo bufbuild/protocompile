@@ -34,6 +34,15 @@ const (
 	gapBlankline // gapBlankline inserts two newline characters
 )
 
+// scopeKind distinguishes file-level scopes from body-level scopes,
+// which have different gap rules.
+type scopeKind int
+
+const (
+	scopeFile scopeKind = iota
+	scopeBody
+)
+
 // PrintFile renders an AST file to protobuf source text.
 func PrintFile(options Options, file *ast.File) string {
 	options = options.withDefaults()
@@ -82,7 +91,7 @@ func (p *printer) printFile(file *ast.File) {
 			return sorted[i]
 		})
 	}
-	p.printScopeDecls(trivia, decls, gapNone)
+	p.printScopeDecls(trivia, decls, scopeFile)
 	// In format mode, trailing file comments need a newline gap so they
 	// don't run into the last declaration's closing token.
 	endGap := gapNone
@@ -171,46 +180,87 @@ func (p *printer) appendPending(tokens []token.Token) {
 
 // printScopeDecls prints declarations in a scope, computing
 // inter-declaration gaps and emitting trivia slots between them.
-func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], firstGap gapStyle) {
-	isFileLevel := firstGap == gapNone
+func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind) {
 	for i := range decls.Len() {
 		p.emitTriviaSlot(trivia, i)
-
-		var gap gapStyle
-		switch {
-		case i == 0 && p.options.Format && p.shouldFlushLeadingComments(isFileLevel, trivia, i):
-			flushGap := gapNone
-			if !isFileLevel {
-				flushGap = gapNewline
-			}
-			p.emitTrivia(flushGap)
-			p.emitGap(gapNewline)
-			gap = gapNone
-		case i == 0:
-			gap = firstGap
-		case p.options.Format && isFileLevel &&
-			rankDecl(decls.At(i-1)) != rankDecl(decls.At(i)):
-			gap = gapBlankline
-		case p.options.Format && isFileLevel &&
-			rankDecl(decls.At(i)) == rankBody:
-			gap = gapBlankline
-		case p.options.Format && !isFileLevel &&
-			i < len(trivia.blankBefore) && trivia.blankBefore[i]:
-			gap = gapBlankline
-		default:
-			gap = gapNewline
-		}
-
+		gap := p.declGap(decls, trivia, i, scope)
 		p.printDecl(decls.At(i), gap)
 	}
 	p.emitRemainingTrivia(trivia, decls.Len())
 }
 
-func (p *printer) shouldFlushLeadingComments(isFileLevel bool, trivia detachedTrivia, i int) bool {
-	if isFileLevel {
-		return p.pendingHasComments()
+// declGap computes the gap before declaration i in a scope.
+//
+// For the first declaration (i==0), it handles flushing detached leading
+// comments (copyright headers at file level, or comments between '{'
+// and the first member at body level). For subsequent declarations, it
+// determines whether a blank line or regular newline separates them.
+func (p *printer) declGap(
+	decls seq.Indexer[ast.DeclAny],
+	trivia detachedTrivia,
+	i int,
+	scope scopeKind,
+) gapStyle {
+	if i == 0 {
+		return p.firstDeclGap(trivia, scope)
 	}
-	return i < len(trivia.blankBefore) && trivia.blankBefore[i]
+
+	if !p.options.Format {
+		return gapNewline
+	}
+
+	// File level: blank line between different sections (syntax ->
+	// package, imports -> options, etc.) and between body declarations.
+	if scope == scopeFile {
+		prev, curr := rankDecl(decls.At(i-1)), rankDecl(decls.At(i))
+		if prev != curr || curr == rankBody {
+			return gapBlankline
+		}
+		return gapNewline
+	}
+
+	// Body level: preserve blank lines from the original source.
+	if trivia.hasBlankBefore(i) {
+		return gapBlankline
+	}
+	return gapNewline
+}
+
+// firstDeclGap computes the gap before the first declaration in a scope,
+// flushing any detached leading comments when necessary.
+func (p *printer) firstDeclGap(trivia detachedTrivia, scope scopeKind) gapStyle {
+	if !p.options.Format {
+		if scope == scopeFile {
+			return gapNone
+		}
+		return gapNewline
+	}
+
+	// Detect leading comments that need to be flushed separately from
+	// the first declaration. At file level, these are copyright headers
+	// or other file-leading comments. At body level, these are comments
+	// between '{' and the first member that were separated by a blank
+	// line in the source.
+	flush := false
+	if scope == scopeFile {
+		flush = p.pendingHasComments()
+	} else {
+		flush = trivia.hasBlankBefore(0)
+	}
+
+	if flush {
+		beforeComments := gapNone
+		if scope == scopeBody {
+			beforeComments = gapNewline
+		}
+		p.emitTrivia(beforeComments)
+		return gapNewline
+	}
+
+	if scope == scopeFile {
+		return gapNone
+	}
+	return gapNewline
 }
 
 // emitTriviaSlot appends the detached trivia for slot[i] to pending.
@@ -261,12 +311,14 @@ func commentGap(contextGap gapStyle, isLineComment bool, blankRun int) gapStyle 
 // are concatenated verbatim.
 func (p *printer) emitTrivia(gap gapStyle) {
 	if !p.options.Format {
-		var buf strings.Builder
-		for _, tok := range p.pending {
-			buf.WriteString(tok.Text())
+		if len(p.pending) > 0 {
+			var buf strings.Builder
+			for _, tok := range p.pending {
+				buf.WriteString(tok.Text())
+			}
+			p.push(dom.Text(buf.String()))
+			p.pending = p.pending[:0]
 		}
-		p.push(dom.Text(buf.String()))
-		p.pending = p.pending[:0]
 		return
 	}
 

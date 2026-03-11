@@ -252,10 +252,12 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	p.printToken(openTok, gapSpace)
 
+	var closeAtt attachedTrivia
 	var closeComments []token.Token
 	if p.options.Format {
 		att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
 		if hasTrivia {
+			closeAtt = att
 			for _, t := range att.leading {
 				if t.Kind() == token.Comment {
 					closeComments = att.leading
@@ -272,7 +274,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 	}
 
 	p.withIndent(func(indented *printer) {
-		indented.printScopeDecls(trivia, body.Decls(), gapNewline)
+		indented.printScopeDecls(trivia, body.Decls(), scopeBody)
 		if len(closeComments) > 0 {
 			indented.emitCloseComments(closeComments, trivia.blankBeforeClose)
 		}
@@ -281,8 +283,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 	if len(closeComments) > 0 {
 		p.emitGap(gapNewline)
 		p.push(dom.Text(closeTok.Text()))
-		att, _ := p.trivia.tokenTrivia(closeTok.ID())
-		p.emitTrailing(att.trailing)
+		p.emitTrailing(closeAtt.trailing)
 	} else {
 		p.printToken(closeTok, gapNewline)
 	}
