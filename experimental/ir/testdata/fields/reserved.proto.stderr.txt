@@ -1,0 +1,45 @@
+error: message field name `foo` reserved more than once
+  --> testdata/fields/reserved.proto:21:21
+   |
+21 |   reserved "valid", "foo", "foo", "bar";
+   |                     ^^^^^  ----- `foo` also reserved here
+
+error: message field name `bar` reserved more than once
+  --> testdata/fields/reserved.proto:21:35
+   |
+21 |   reserved "valid", "foo", "foo", "bar";
+   |                                   ^^^^^
+22 |   reserved "bar";
+   |            ----- `bar` also reserved here
+
+error: message field name `baz` reserved more than once
+  --> testdata/fields/reserved.proto:23:12
+   |
+23 |   reserved "baz", "baz";
+   |            ^^^^^  ----- `baz` also reserved here
+24 |   reserved "baz";
+   |            ----- `baz` also reserved here
+
+error: enum value `foo` reserved more than once
+  --> testdata/fields/reserved.proto:28:21
+   |
+28 |   reserved "valid", "foo", "foo", "bar";
+   |                     ^^^^^  ----- `foo` also reserved here
+
+error: enum value `bar` reserved more than once
+  --> testdata/fields/reserved.proto:28:35
+   |
+28 |   reserved "valid", "foo", "foo", "bar";
+   |                                   ^^^^^
+29 |   reserved "bar";
+   |            ----- `bar` also reserved here
+
+error: enum value `baz` reserved more than once
+  --> testdata/fields/reserved.proto:30:12
+   |
+30 |   reserved "baz", "also_valid", "baz";
+   |            ^^^^^                ----- `baz` also reserved here
+31 |   reserved "baz";
+   |            ----- `baz` also reserved here
+
+encountered 6 errors

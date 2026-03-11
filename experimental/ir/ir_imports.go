@@ -132,6 +132,7 @@ func (i *imports) AddDirect(imp Import) {
 //
 // Must only be called once, after all direct imports are added.
 func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
+	seenPublicImport := make(map[intern.ID]struct{})
 	for k, file := range seq.All(i.Directs()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
 			if !mapsx.AddZero(dedup, imp.InternedPath()) {
@@ -139,8 +140,10 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 				// treat this import as non-option, because this overrides it.
 				if imp.Public {
 					i.files[k].option = false
+					// For public transitive imports that we have already seen, we need to override
+					// the visibility after all imports have been added and indexed by path.
+					seenPublicImport[imp.InternedPath()] = struct{}{}
 				}
-
 				continue
 			}
 
@@ -163,7 +166,11 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 
 	for n, imp := range i.files {
 		i.byPath[imp.file.InternedPath()] = uint32(n)
+		if _, ok := seenPublicImport[imp.file.InternedPath()]; ok {
+			i.files[n].visible = true
+		}
 	}
+
 	for k, file := range seq.All(i.Directs()) {
 		// Direct imports take precedence over transitive imports.
 		i.causes[file.InternedPath()] = uint32(k)
@@ -173,7 +180,7 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 	}
 }
 
-// Insert inserts a new import at the given position.
+// Insert inserts a new import at the given position. It also builds up the path map for lookups.
 //
 // If pos is < 0, appends at the end.
 func (i *imports) Insert(imp Import, pos int, visible bool) {

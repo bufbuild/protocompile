@@ -257,7 +257,7 @@ type symbolRef struct {
 	// If true, the names of scalars will be resolved as potential symbols.
 	allowScalars bool
 
-	// If true, diagnostics will not suggest adding an import.
+	// If true, diagnostics will suggest adding an import.
 	suggestImport bool
 
 	// Allow pulling in symbols via import option.

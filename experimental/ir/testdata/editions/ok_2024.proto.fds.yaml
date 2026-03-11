@@ -67,7 +67,6 @@ file:
     extendee: ".google.protobuf.FeatureSet"
     json_name: "go"
   options.go_package: "google.golang.org/protobuf/types/gofeaturespb"
-  syntax: "proto2"
 - name: "google/protobuf/java_features.proto"
   package: "pb"
   dependency: ["google/protobuf/descriptor.proto"]
@@ -172,7 +171,6 @@ file:
   options:
     java_package: "com.google.protobuf"
     java_outer_classname: "JavaFeaturesProto"
-  syntax: "proto2"
 - name: "google/protobuf/cpp_features.proto"
   package: "pb"
   dependency: ["google/protobuf/descriptor.proto"]
@@ -234,7 +232,6 @@ file:
     type_name: ".pb.CppFeatures"
     extendee: ".google.protobuf.FeatureSet"
     json_name: "cpp"
-  syntax: "proto2"
 - name: "testdata/editions/ok_2024.proto"
   package: "buf.test"
   option_dependency:

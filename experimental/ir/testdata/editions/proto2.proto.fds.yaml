@@ -25,4 +25,3 @@ file:
     value: [{ name: "X", number: 1, options.features: {} }]
     options.features: {}
   options.features: {}
-  syntax: "proto2"

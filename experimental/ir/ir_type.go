@@ -76,7 +76,7 @@ type rawType struct {
 	parent          id.ID[Type]
 	extnsStart      uint32
 	rangesExtnStart uint32
-	mapEntryOf      id.ID[Member]
+	syntheticTypeOf id.ID[Member]
 	features        id.ID[FeatureSet]
 
 	isEnum, isMessageSet bool
@@ -345,7 +345,13 @@ func (t Type) MapField() Member {
 	if t.IsZero() {
 		return Member{}
 	}
-	return id.Wrap(t.Context(), t.Raw().mapEntryOf)
+	member := id.Wrap(t.Context(), t.Raw().syntheticTypeOf)
+	// We ensure that the member is not a group field. We cannot check [Member.IsMap] because
+	// that would recursively check [Type.MapField] here.
+	if !member.IsGroup() {
+		return member
+	}
+	return Member{}
 }
 
 // EntryFields returns the key and value fields for this map entry type.
@@ -355,6 +361,18 @@ func (t Type) EntryFields() (key, value Member) {
 	}
 
 	return id.Wrap(t.Context(), t.Raw().members[0]), id.Wrap(t.Context(), t.Raw().members[1])
+}
+
+// GroupField returns the group field that generated this type, if any.
+func (t Type) GroupField() Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	member := id.Wrap(t.Context(), t.Raw().syntheticTypeOf)
+	if member.IsGroup() {
+		return member
+	}
+	return Member{}
 }
 
 // Members returns the members of this type.

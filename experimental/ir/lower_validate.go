@@ -40,6 +40,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
@@ -243,7 +244,11 @@ func validateFileOptions(f *File, r *report.Report) {
 }
 
 func validateReservedNames(ty Type, r *report.Report) {
+	seen := intern.Map[[]source.Spanner]{}
+
 	for name := range seq.Values(ty.ReservedNames()) {
+		seen[name.InternedName()] = append(seen[name.InternedName()], name.AST())
+
 		member := ty.MemberByInternedName(name.InternedName())
 		if member.IsZero() {
 			continue
@@ -253,6 +258,23 @@ func validateReservedNames(ty Type, r *report.Report) {
 			report.Snippet(member.AST().Name()),
 			report.Snippetf(name.AST(), "`%s` reserved here", member.Name()),
 		)
+	}
+
+	for id, spans := range seen {
+		if len(spans) == 1 {
+			continue
+		}
+
+		name := ty.Context().session.intern.Value(id)
+		what := taxa.FieldName
+		if ty.IsEnum() {
+			what = taxa.EnumValue
+		}
+
+		d := r.Errorf("%s `%s` reserved more than once", what, name).Apply(report.Snippet(spans[0]))
+		for _, span := range spans[1:] {
+			d.Apply(report.Snippetf(span, "`%s` also reserved here", name))
+		}
 	}
 }
 

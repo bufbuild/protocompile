@@ -1,6 +1,7 @@
 tables:
   "main.proto":
     imports:
+    - { path: "google/protobuf/any.proto", transitive: true }
     - { path: "google/protobuf/descriptor.proto", transitive: true }
     - { path: "option.proto", visible: true }
     symbols:
@@ -29,8 +30,13 @@ tables:
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 2
+    - fqn: "buf.test.any_opt"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 3
   "main2.proto":
     imports:
+    - { path: "google/protobuf/any.proto", transitive: true }
     - { path: "google/protobuf/descriptor.proto", transitive: true }
     - { path: "option.proto", visible: true }
     - { path: "public.proto", visible: true }
@@ -60,3 +66,40 @@ tables:
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 2
+    - fqn: "buf.test.any_opt"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 3
+  "main3.proto":
+    imports:
+    - { path: "google/protobuf/any.proto", transitive: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "option.proto", visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main3.proto" }
+    - fqn: "buf.test.Baz"
+      kind: KIND_MESSAGE
+      file: "main3.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.any_opt":
+          any:
+            url: "type.googleapis.com/buf.test.Foo"
+            value.message.fields: { "x": { i32: 1 } }
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_FIELD
+      file: "option.proto"
+      index: 1
+    - fqn: "buf.test.e"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 2
+    - fqn: "buf.test.any_opt"
+      kind: KIND_EXTENSION
+      file: "option.proto"
+      index: 3
