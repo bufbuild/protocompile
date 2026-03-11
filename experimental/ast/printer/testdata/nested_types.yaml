@@ -1,0 +1,30 @@
+source: |
+  syntax = "proto3";
+
+  package nested;
+
+  message Outer {
+    message Middle {
+      message Inner {
+        string value = 1;
+      }
+
+      Inner inner = 1;
+
+      enum Status {
+        STATUS_UNSPECIFIED = 0;
+        STATUS_ACTIVE = 1;
+      }
+    }
+
+    Middle middle = 1;
+    Middle.Inner direct = 2;
+
+    oneof choice {
+      string a = 3;
+      int32 b = 4;
+      Middle c = 5;
+    }
+
+    map<string, Middle> lookup = 6;
+  }

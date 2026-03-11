@@ -1,0 +1,23 @@
+source: |
+  // File-level comment.
+  syntax = "proto3";
+
+  // Package comment.
+  package comments;
+
+  // Message with various comment styles.
+  message Foo {
+    // Field comment.
+    string name = 1; // trailing comment
+
+    // Detached comment block
+    // spanning multiple lines.
+
+    // Attached comment.
+    int32 value = 2;
+  }
+
+  // Another message.
+  message Bar {}
+
+  // EOF comment.
