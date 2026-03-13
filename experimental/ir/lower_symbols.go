@@ -252,7 +252,11 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 			// Deduplicate references to the same element.
 			refs = slicesx.Dedup(refs)
 			if len(refs) > 1 && r != nil {
-				r.Error(errDuplicates{file, refs})
+				r.Error(errDuplicates{
+					symbols: slices.Collect(slicesx.Map(refs, func(r Ref[Symbol]) Symbol {
+						return GetRef(file, r)
+					})),
+				})
 			}
 
 			return refs[0]
@@ -262,24 +266,19 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 
 // errDuplicates diagnoses duplicate symbols.
 type errDuplicates struct {
-	*File
-	refs []Ref[Symbol]
-}
-
-func (e errDuplicates) symbol(n int) Symbol {
-	return GetRef(e.File, e.refs[n])
+	symbols []Symbol
 }
 
 func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	var havePkg bool
-	for i := range e.refs {
-		if e.symbol(i).Kind() == SymbolKindPackage {
+	for _, s := range e.symbols {
+		if s.Kind() == SymbolKindPackage {
 			havePkg = true
 			break
 		}
 	}
 
-	first, second := e.symbol(0), e.symbol(1)
+	first, second := e.symbols[0], e.symbols[1]
 
 	name := first.FullName()
 	if !havePkg {
@@ -320,8 +319,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	}
 
 	spans := make(map[source.Span]struct{})
-	for i := range e.refs[2:] {
-		s := e.symbol(i + 2)
+	for i, s := range e.symbols[2:] {
 		next := s.Kind().noun()
 
 		span := s.Definition()
@@ -339,27 +337,36 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 		}
 	}
 
-	// If at least one duplicated symbol is non-visible, explain
-	// that symbol names are global!
-	for i := range e.refs {
-		s := e.symbol(i)
-		if s.Visible(e.File, true) {
+	// For each duplicated symbol, we collect up all the unique files, and then check the
+	// visibility of each symbol against each file. If at least one non-visibile symbol is
+	// found, explain that symbol names are global.
+	seen := make(map[*File]bool)
+
+outer:
+	for _, s := range e.symbols {
+		file := s.Context()
+		if seen[file] {
 			continue
 		}
+		seen[file] = true
+		for _, s := range e.symbols {
+			if s.Visible(file, true) {
+				continue
+			}
 
-		d.Apply(report.Helpf(
-			"symbol names must be unique across all transitive imports; "+
-				"for example, %q declares `%s` but is not directly imported",
-			s.Context().Path(),
-			first.FullName(),
-		))
-		break
+			d.Apply(report.Helpf(
+				"symbol names must be unique across all files; "+
+					"for example, %q declares `%s` but it is not directly imported",
+				s.Context().Path(),
+				first.FullName(),
+			))
+			break outer
+		}
 	}
 
 	// If at least one of them was an enum value, we note the weird language
 	// bug with enum scoping.
-	for i := range e.refs {
-		s := e.symbol(i)
+	for _, s := range e.symbols {
 		v := s.AsMember()
 		if !v.Container().IsEnum() {
 			continue
@@ -383,8 +390,8 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 		))
 	}
 
-	for i := range e.refs {
-		ty := e.symbol(i).AsType()
+	for _, s := range e.symbols {
+		ty := s.AsType()
 		if mf := ty.MapField(); !mf.IsZero() {
 			d.Apply(
 				report.Snippetf(mf.AST().Name(), "implies `repeated %s`", ty.Name()),

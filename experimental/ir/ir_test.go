@@ -42,7 +42,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -161,22 +160,22 @@ func TestIR(t *testing.T) {
 		)
 
 		session := new(ir.Session)
-		queries := slices.Collect(iterx.FilterMap(
-			slices.Values(test.Files),
-			func(f File) (incremental.Query[*ir.File], bool) {
-				if f.Import {
-					return nil, false
-				}
-				return queries.IR{
-					Opener:  files,
-					Session: session,
-					Path:    f.Path,
-				}, true
-			},
-		))
-
-		results, r, err := incremental.Run(t.Context(), exec, queries...)
+		results, r, err := incremental.Run(t.Context(), exec, queries.Link{
+			Opener:  files,
+			Session: session,
+			Workspace: source.NewWorkspace(slices.Collect(iterx.FilterMap(
+				slices.Values(test.Files),
+				func(f File) (string, bool) {
+					if f.Import {
+						return "", false
+					}
+					return f.Path, true
+				},
+			))...),
+		})
 		require.NoError(t, err)
+		require.NotNil(t, r)
+		require.Len(t, results, 1)
 
 		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
 			matches := func(r *regexp.Regexp) bool {
@@ -199,7 +198,7 @@ func TestIR(t *testing.T) {
 			return
 		}
 
-		irs := slicesx.Transform(results, func(r incremental.Result[*ir.File]) *ir.File { return r.Value })
+		irs := results[0].Value
 		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		if test.Descriptor {
