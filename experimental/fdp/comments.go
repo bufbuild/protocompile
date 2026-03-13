@@ -58,17 +58,16 @@ func (p paragraph) stringify() string {
 			fmt.Fprint(&str, strings.TrimPrefix(text, "//"))
 		case strings.HasPrefix(text, "/*"):
 			// For block comments, we iterate through each line and trim the leading "/*",
-			// "*", and "*/".
+			// "*", and trailing "*/".
 			for _, line := range strings.SplitAfter(text, "\n") {
-				switch {
-				case strings.HasPrefix(line, "/*"):
-					fmt.Fprint(&str, strings.TrimPrefix(line, "/*"))
-				case strings.HasSuffix(line, "*/"):
-					fmt.Fprint(&str, strings.TrimSuffix(line, "*/"))
-				case strings.HasPrefix(strings.TrimSpace(line), "*"):
+				if strings.HasPrefix(line, "/*") {
+					line = strings.TrimPrefix(line, "/*")
+				} else if strings.HasPrefix(strings.TrimSpace(line), "*") {
 					// We check the line with all spaces trimmed because of leading whitespace.
-					fmt.Fprint(&str, strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*"))
+					line = strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
 				}
+				line = strings.TrimSuffix(line, "*/")
+				fmt.Fprint(&str, line)
 			}
 		}
 	}
