@@ -14,15 +14,4 @@ error: `Foo` is only imported for use in options
  4 | + import "option.proto";
    |
 
-warning: unused import "public.proto"
-  --> main2.proto:4:8
-   |
- 4 | import "public.proto";
-   |        ^^^^^^^^^^^^^^
-  help: delete it
-   |
- 4 | - import "public.proto";
-   |
-   = help: no symbols from this file are referenced
-
-encountered 1 error and 1 warning
+encountered 1 error

@@ -15,12 +15,13 @@
 
 descriptor: true
 symtab: true
+exclude: ["declared multiple times", "unused import"]
 files:
 - path: "main.proto"
   text: |
     edition = "2024";
     package buf.test;
-    
+
     import option "option.proto";
 
     message Bar {
@@ -32,7 +33,7 @@ files:
   text: |
     edition = "2024";
     package buf.test;
-    
+
     import "public.proto";
     import option "option.proto";
 
@@ -62,7 +63,7 @@ files:
   text: |
     edition = "2024";
     package buf.test;
-    
+
     import public "option.proto";
 
 - path: "option.proto"
@@ -82,4 +83,4 @@ files:
       Foo e = 10001;
       google.protobuf.Any any_opt = 10002;
     }
-  
+

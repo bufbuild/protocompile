@@ -362,12 +362,7 @@ func (f *File) Symbols() seq.Indexer[Symbol] {
 	if f != nil {
 		symbols = f.imported
 	}
-	return seq.NewFixedSlice(
-		symbols,
-		func(_ int, r Ref[Symbol]) Symbol {
-			return GetRef(f, r)
-		},
-	)
+	return f.symbols(symbols)
 }
 
 // FindSymbol finds a symbol among [File.Symbols] with the given fully-qualified
@@ -376,6 +371,24 @@ func (f *File) FindSymbol(fqn FullName) Symbol {
 	return GetRef(f,
 		f.imported.lookupBytes(f,
 			unsafex.BytesAlias[[]byte](string(fqn))))
+}
+
+// ExportedSymbols returns this file's exported symbols.
+func (f *File) ExportedSymbols() seq.Indexer[Symbol] {
+	var symbols []Ref[Symbol]
+	if f != nil {
+		symbols = f.exported
+	}
+	return f.symbols(symbols)
+}
+
+func (f *File) symbols(symtab symtab) seq.Indexer[Symbol] {
+	return seq.NewFixedSlice(
+		symtab,
+		func(_ int, r Ref[Symbol]) Symbol {
+			return GetRef(f, r)
+		},
+	)
 }
 
 // TopoSort sorts a graph of [File]s according to their dependency graph,
