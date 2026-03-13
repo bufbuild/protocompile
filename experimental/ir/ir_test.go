@@ -171,7 +171,7 @@ func TestIR(t *testing.T) {
 					}
 					return f.Path, true
 				},
-			))),
+			))...),
 		})
 		require.NoError(t, err)
 		require.NotNil(t, r)

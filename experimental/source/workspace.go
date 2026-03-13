@@ -27,7 +27,7 @@ type Workspace interface {
 //
 // No validations/transformations are performed on the given paths, it is the responsibility
 // of the caller to enforce path order and validity.
-func NewWorkspace(paths []string) Workspace {
+func NewWorkspace(paths ...string) Workspace {
 	return &workspace{paths: paths}
 }
 
@@ -38,7 +38,7 @@ type workspace struct {
 // Path implements [Workspace].
 func (w *workspace) Paths() []string {
 	if w == nil {
-		return []string{}
+		return nil
 	}
 	return w.paths
 }
