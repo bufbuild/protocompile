@@ -341,19 +341,14 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	// visibility of each symbol against each file. If at least one non-visibile symbol is
 	// found, explain that symbol names are global.
 	seen := make(map[*File]bool)
-	files := iterx.FilterMap(
-		slices.Values(e.symbols),
-		func(s Symbol) (*File, bool) {
-			if seen[s.Context()] {
-				return nil, false
-			}
-			seen[s.Context()] = true
-			return s.Context(), true
-		},
-	)
 
 outer:
-	for file := range files {
+	for _, s := range e.symbols {
+		file := s.Context()
+		if seen[file] {
+			continue
+		}
+		seen[file] = true
 		for _, s := range e.symbols {
 			if s.Visible(file, true) {
 				continue
