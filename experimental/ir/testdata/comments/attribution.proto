@@ -70,7 +70,14 @@ message /*this is thrown away*/ Foo {
 /*
  * A leading block comment for Bar.
  */
-message Bar {}
+message Bar {
+  /*
+   *
+   * handle edge-cases for block comments*/
+  string bar = 1;
+  /* start and end block comment on the same line */
+  string barbar = 2;
+}
 
 // This is the leading comment for enum Baz.
 enum Baz { // This is a trailing comment for enum Baz.
