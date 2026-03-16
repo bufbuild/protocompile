@@ -117,7 +117,7 @@ func testZeroAny[T any](t *testing.T) {
 			case "Context":
 				assert.Len(t, returns, 1)
 				assert.True(t, returns[0].Type().Comparable())
-				assert.True(t, returns[0].Type().AssignableTo(reflect.TypeOf(&ir.File{})))
+				assert.True(t, returns[0].Type().AssignableTo(reflect.TypeFor[*ir.File]()))
 			default:
 				for i, r := range returns {
 					if r.Type().Kind() == reflect.Func {

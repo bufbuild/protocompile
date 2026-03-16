@@ -861,10 +861,7 @@ func findOptionSpan(
 	var repeatedIndices []int
 	root.RangeOptions(func(n *ast.OptionNode) bool {
 		desc := md
-		limit := len(n.Name.Parts)
-		if limit > len(path) {
-			limit = len(path)
-		}
+		limit := min(len(n.Name.Parts), len(path))
 		var nextIsIndex bool
 		for i := range limit {
 			if desc == nil || nextIsIndex {
