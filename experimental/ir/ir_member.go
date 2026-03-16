@@ -458,6 +458,14 @@ func (m Member) noun() taxa.Noun {
 	}
 }
 
+// numberOk returns true if the member number did not have errors during evaluation.
+func (m Member) numberOK() bool {
+	if m.IsZero() {
+		return false
+	}
+	return m.Raw().numberOk
+}
+
 // toRef returns a ref to this member relative to the given context.
 func (m Member) toRef(f *File) Ref[Member] {
 	return Ref[Member]{id: m.ID()}.ChangeContext(m.Context(), f)

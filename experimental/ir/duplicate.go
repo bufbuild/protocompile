@@ -98,8 +98,13 @@ func DedupExtensions(r *report.Report, files ...*File) {
 
 	for _, file := range files {
 		for extn := range seq.Values(file.AllExtensions()) {
-			// First check if this extension number is already the number of a non-extension
-			// member of the container type. If so, then there is already a diagnostic for that
+			// Skip numbers that had errors during evaluation.
+			if !extn.numberOK() {
+				continue
+			}
+
+			// Check if this extension number is already the number of a non-extension member
+			// of the container type. If so, then there is already a diagnostic for that
 			// overlap and we don't need to surface an additional diagnostic here.
 			existing := extn.Container().MemberByNumber(extn.Number())
 			if !existing.IsZero() && !existing.IsExtension() {
