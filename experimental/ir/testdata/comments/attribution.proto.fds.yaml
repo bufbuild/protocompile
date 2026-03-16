@@ -135,7 +135,7 @@ file:
   - { path: [4, 0, 2, 1, 8, 1000, 1], span: [54, 4, 12] }
   - path: [4, 1]
     span: [72, 0, 79, 1]
-    leading_comments: "\n A leading block comment for Bar.\n/"
+    leading_comments: "\n A leading block comment for Bar.\n"
     leading_detached_comments:
     - " This IS a detached comment for Bar.\n"
     - " This is also a detached comment for Bar.\n"

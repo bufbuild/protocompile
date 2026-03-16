@@ -72,6 +72,16 @@ func TestBlockComments(t *testing.T) {
 		"\n Line 1\n Line 2\n",
 		26,
 	)
+	testBlockComments(
+		t,
+		"multi-line block",
+		`/*
+		* Line 1
+		* Line 2
+		*/`,
+		"\n Line 1\n Line 2\n",
+		29,
+	)
 }
 
 func testBlockComments(t *testing.T, test, text, expectedComments string, blockLen int) {

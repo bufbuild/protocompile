@@ -63,28 +63,24 @@ func (p paragraph) stringify() string {
 			// For block comments, we iterate through each line and trim the leading "/*",
 			// "*", and trailing "*/".
 			for line := range strings.SplitAfterSeq(text, "\n") {
-				var hasPrefix bool
+				var hasOpener bool
 				if strings.HasPrefix(line, "/*") {
 					line = strings.TrimPrefix(line, "/*")
-					hasPrefix = true
+					hasOpener = true
 				}
 
-				if !hasPrefix && strings.HasPrefix(line, "*") && !strings.HasPrefix(line, "*/") {
-					// If the line does not have an opening "/*", we check for a leading "*", but
-					// need to make sure that it is not a single line with "*/".
-					line = strings.TrimPrefix(line, "*")
-					hasPrefix = true
-				}
-
-				if strings.HasSuffix(line, "*/") {
-					if !hasPrefix {
-						// If the line was not on the same line as an opening prefix, the leading
-						// whitepsace is trimmed from the line with the closing "*/".
-						line = strings.TrimLeftFunc(line, unicode.IsSpace)
+				if !hasOpener {
+					// Check for a "*" prefix for the line. We need to trim the leading whitespace
+					// up to the token.
+					line = strings.TrimLeftFunc(line, unicode.IsSpace)
+					// Ensure that the line has a leading "*" but is not a single line with "*/"
+					// after the whitespace has been trimmed.
+					if strings.HasPrefix(line, "*") && !strings.HasPrefix(line, "*/") {
+						line = strings.TrimPrefix(line, "*")
 					}
-					line = strings.TrimSuffix(line, "*/")
 				}
 
+				line = strings.TrimSuffix(line, "*/")
 				str.WriteString(line)
 			}
 		}
