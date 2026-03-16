@@ -22,6 +22,7 @@ import (
 	"io"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync"
 
@@ -436,11 +437,8 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 		// we only consider implicitly including descriptor.proto if it's overridden
 		if name != descriptorProtoPath {
 			var includesDescriptorProto bool
-			for _, dep := range fileDescriptorProto.Dependency {
-				if dep == descriptorProtoPath {
-					includesDescriptorProto = true
-					break
-				}
+			if slices.Contains(fileDescriptorProto.Dependency, descriptorProtoPath) {
+				includesDescriptorProto = true
 			}
 			if !includesDescriptorProto {
 				wantsDescriptorProto = true
@@ -536,11 +534,9 @@ func (e *executor) checkForDependencyCycle(res *result, sequence []string, span 
 	deps := res.getBlockedOn()
 	for _, dep := range deps {
 		// is this a cycle?
-		for _, file := range sequence {
-			if file == dep {
-				handleImportCycle(e.h, span, sequence, dep)
-				return e.h.Error()
-			}
+		if slices.Contains(sequence, dep) {
+			handleImportCycle(e.h, span, sequence, dep)
+			return e.h.Error()
 		}
 
 		e.mu.Lock()

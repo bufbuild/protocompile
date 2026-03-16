@@ -30,6 +30,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/encoding/prototext"
@@ -748,10 +749,8 @@ func (interp *interpreter) checkFieldUsage(
 	if len(targetTypes) == 0 {
 		return nil
 	}
-	for _, allowedType := range targetTypes {
-		if allowedType == targetType {
-			return nil
-		}
+	if slices.Contains(targetTypes, targetType) {
+		return nil
 	}
 	allowedTypes := make([]string, len(targetTypes))
 	for i, t := range targetTypes {
@@ -1079,10 +1078,7 @@ func (r fieldRanger) Range(f func(*ast.MessageFieldNode, ast.ValueNode) bool) {
 }
 
 func isPathMatch(a, b []int32) bool {
-	length := len(a)
-	if len(b) < length {
-		length = len(b)
-	}
+	length := min(len(b), len(a))
 	for i := range length {
 		if a[i] != b[i] {
 			return false

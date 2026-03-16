@@ -190,7 +190,7 @@ func makeDocs(data, indent string) string {
 	}
 
 	var out strings.Builder
-	for _, line := range strings.Split(strings.TrimSpace(data), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(data), "\n") {
 		out.WriteString(indent)
 		if line == "" {
 			out.WriteString("//\n")
