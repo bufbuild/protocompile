@@ -15,7 +15,6 @@
 package fdp
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"unicode"
@@ -46,29 +45,33 @@ type paragraph []token.Token
 // for line comments, and enclosing "/* */" for block comments.
 func (p paragraph) stringify() string {
 	var str strings.Builder
+
 	for _, t := range p {
 		text := t.Text()
+
 		if t.Kind() != token.Comment {
-			fmt.Fprint(&str, text)
+			str.WriteString(text)
 			continue
 		}
+
 		switch {
 		case strings.HasPrefix(text, "//"):
 			// For line comments, the leading "//" needs to be trimmed off.
-			fmt.Fprint(&str, strings.TrimPrefix(text, "//"))
+			str.WriteString(strings.TrimPrefix(text, "//"))
+
 		case strings.HasPrefix(text, "/*"):
-			// For block comments, we iterate through each line and trim the leading "/*",
-			// "*", and "*/".
-			for _, line := range strings.SplitAfter(text, "\n") {
-				switch {
-				case strings.HasPrefix(line, "/*"):
-					fmt.Fprint(&str, strings.TrimPrefix(line, "/*"))
-				case strings.HasSuffix(line, "*/"):
-					fmt.Fprint(&str, strings.TrimSuffix(line, "*/"))
-				case strings.HasPrefix(strings.TrimSpace(line), "*"):
-					// We check the line with all spaces trimmed because of leading whitespace.
-					fmt.Fprint(&str, strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*"))
+			text = strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/")
+
+			// For each line of the block comment, other than the first line, we trim the
+			// leading whitespace and leading "*" for each line, if there is one.
+			for i, line := range strings.SplitAfter(text, "\n") {
+				// The block opening prefix has already been trimmed for the first line.
+				if i != 0 {
+					// Trim the leading whitespace and then check for a leading "*" prefix.
+					line = strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
 				}
+
+				str.WriteString(line)
 			}
 		}
 	}

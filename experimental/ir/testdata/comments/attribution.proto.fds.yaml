@@ -26,6 +26,17 @@ file:
     - { start: 5, end: 11 }
     reserved_name: ["foo", "bar"]
   - name: "Bar"
+    field:
+    - name: "bar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "bar"
+    - name: "barbar"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "barbar"
   enum_type: [{ name: "Baz", value: [{ name: "BAZ_ONE", number: 0 }] }]
   service:
   - name: "FooService"
@@ -52,7 +63,7 @@ file:
     json_name: "a"
   options: { java_package: "build.buf.protocompile", java_multiple_files: true }
   source_code_info.location:
-  - span: [16, 0, 95, 1]
+  - span: [16, 0, 102, 1]
   - path: [12]
     span: [16, 0, 17]
     leading_comments: "% descriptor: true\n% source_code_info: true\n"
@@ -123,52 +134,64 @@ file:
   - { path: [4, 0, 2, 1, 8, 1000, 0], span: [53, 4, 12] }
   - { path: [4, 0, 2, 1, 8, 1000, 1], span: [54, 4, 12] }
   - path: [4, 1]
-    span: [72, 0, 14]
-    leading_comments: "\n A leading block comment for Bar.\n "
+    span: [72, 0, 79, 1]
+    leading_comments: "\n A leading block comment for Bar.\n"
     leading_detached_comments:
     - " This IS a detached comment for Bar.\n"
     - " This is also a detached comment for Bar.\n"
   - { path: [4, 1, 1], span: [72, 8, 11] }
+  - { path: [4, 1, 2, 0, 5], span: [76, 2, 8] }
+  - path: [4, 1, 2, 0]
+    span: [76, 2, 17]
+    leading_comments: "\n\n handle edge-cases for block comments"
+  - { path: [4, 1, 2, 0, 1], span: [76, 9, 12] }
+  - { path: [4, 1, 2, 0, 3], span: [76, 15, 16] }
+  - { path: [4, 1, 2, 1, 5], span: [78, 2, 8] }
+  - path: [4, 1, 2, 1]
+    span: [78, 2, 20]
+    leading_comments: " start and end block comment on the same line "
+  - { path: [4, 1, 2, 1, 1], span: [78, 9, 15] }
+  - { path: [4, 1, 2, 1, 3], span: [78, 18, 19] }
   - path: [5, 0]
-    span: [75, 0, 77, 1]
+    span: [82, 0, 84, 1]
     leading_comments: " This is the leading comment for enum Baz.\n"
     trailing_comments: " This is a trailing comment for enum Baz."
-  - { path: [5, 0, 1], span: [75, 5, 8] }
-  - { path: [5, 0, 2, 0, 1], span: [76, 2, 9] }
-  - { path: [5, 0, 2, 0], span: [76, 2, 14] }
-  - { path: [5, 0, 2, 0, 2], span: [76, 12, 13] }
+  - { path: [5, 0, 1], span: [82, 5, 8] }
+  - { path: [5, 0, 2, 0, 1], span: [83, 2, 9] }
+  - { path: [5, 0, 2, 0], span: [83, 2, 14] }
+  - { path: [5, 0, 2, 0, 2], span: [83, 12, 13] }
   - path: [6, 0]
-    span: [80, 0, 87, 1]
+    span: [87, 0, 94, 1]
     leading_comments: " This is the leading comment for service FooService.\n"
     trailing_comments: " This is a trailing comment for service FooService."
-  - { path: [6, 0, 1], span: [80, 8, 18] }
+  - { path: [6, 0, 1], span: [87, 8, 18] }
   - path: [6, 0, 2, 0]
-    span: [82, 2, 35]
+    span: [89, 2, 35]
     leading_comments: " Leading comment for method FooForBar.\n"
     trailing_comments: " Trailing comment for FooForBar."
-  - { path: [6, 0, 2, 0, 1], span: [82, 6, 15] }
-  - { path: [6, 0, 2, 0, 2], span: [82, 16, 19] }
-  - { path: [6, 0, 2, 0, 3], span: [82, 30, 33] }
+  - { path: [6, 0, 2, 0, 1], span: [89, 6, 15] }
+  - { path: [6, 0, 2, 0, 2], span: [89, 16, 19] }
+  - { path: [6, 0, 2, 0, 3], span: [89, 30, 33] }
   - path: [6, 0, 2, 1]
-    span: [85, 2, 86, 3]
+    span: [92, 2, 93, 3]
     leading_comments: " Leading comment for method BarForBar.\n"
     trailing_comments: " Trailing comment for BarForBar."
-  - { path: [6, 0, 2, 1, 1], span: [85, 6, 15] }
-  - { path: [6, 0, 2, 1, 2], span: [85, 16, 19] }
-  - { path: [6, 0, 2, 1, 3], span: [85, 30, 33] }
-  - { path: [7], span: [89, 0, 91, 1] }
-  - { path: [7, 0, 2], span: [89, 7, 35] }
-  - { path: [7, 0, 4], span: [90, 2, 10] }
-  - { path: [7, 0], span: [90, 2, 26] }
-  - { path: [7, 0, 5], span: [90, 11, 16] }
-  - { path: [7, 0, 1], span: [90, 17, 18] }
-  - { path: [7, 0, 3], span: [90, 21, 25] }
-  - { path: [7], span: [93, 0, 95, 1] }
-  - { path: [7, 1, 2], span: [93, 7, 37] }
-  - { path: [7, 1, 4], span: [94, 2, 10] }
-  - { path: [7, 1], span: [94, 2, 26] }
-  - { path: [7, 1, 5], span: [94, 11, 16] }
-  - { path: [7, 1, 1], span: [94, 17, 18] }
-  - { path: [7, 1, 3], span: [94, 21, 25] }
+  - { path: [6, 0, 2, 1, 1], span: [92, 6, 15] }
+  - { path: [6, 0, 2, 1, 2], span: [92, 16, 19] }
+  - { path: [6, 0, 2, 1, 3], span: [92, 30, 33] }
+  - { path: [7], span: [96, 0, 98, 1] }
+  - { path: [7, 0, 2], span: [96, 7, 35] }
+  - { path: [7, 0, 4], span: [97, 2, 10] }
+  - { path: [7, 0], span: [97, 2, 26] }
+  - { path: [7, 0, 5], span: [97, 11, 16] }
+  - { path: [7, 0, 1], span: [97, 17, 18] }
+  - { path: [7, 0, 3], span: [97, 21, 25] }
+  - { path: [7], span: [100, 0, 102, 1] }
+  - { path: [7, 1, 2], span: [100, 7, 37] }
+  - { path: [7, 1, 4], span: [101, 2, 10] }
+  - { path: [7, 1], span: [101, 2, 26] }
+  - { path: [7, 1, 5], span: [101, 11, 16] }
+  - { path: [7, 1, 1], span: [101, 17, 18] }
+  - { path: [7, 1, 3], span: [101, 21, 25] }
   syntax: "editions"
   edition: EDITION_2023
