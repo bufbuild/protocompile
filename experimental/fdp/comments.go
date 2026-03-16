@@ -44,7 +44,6 @@ type paragraph []token.Token
 // stringify returns the paragraph is a single string. It also trims off the leading "//"
 // for line comments, and enclosing "/* */" for block comments.
 func (p paragraph) stringify() string {
-	// str := new(strings.Builder)
 	var str strings.Builder
 
 	for _, t := range p {
