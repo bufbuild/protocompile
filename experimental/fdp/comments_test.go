@@ -42,15 +42,46 @@ func TestLineComments(t *testing.T) {
 func TestBlockComments(t *testing.T) {
 	t.Parallel()
 
-	s := &token.Stream{
-		File: source.NewFile("test",
-			`/*
+	testBlockComments(t, "single-line block", "/* Line 1 */", " Line 1 ", 12)
+	testBlockComments(
+		t,
+		"multi-line block",
+		`/*
 * Line 1
 * Line 2
-*/`),
-	}
-	block := s.Push(21, token.Comment)
+*/`,
+		"\n Line 1\n Line 2\n",
+		23,
+	)
+	testBlockComments(
+		t,
+		"multi-line block",
+		`/*
+* Line 1
+* Line 2 */`,
+		"\n Line 1\n Line 2 ",
+		23,
+	)
+	testBlockComments(
+		t,
+		"multi-line block",
+		`/*
+* Line 1
+* Line 2
+   */`,
+		"\n Line 1\n Line 2\n",
+		26,
+	)
+}
 
-	tokens := paragraph([]token.Token{block})
-	assert.Equal(t, "\n Line 1\n Line 2\n", tokens.stringify())
+func testBlockComments(t *testing.T, test, text, expectedComments string, blockLen int) {
+	t.Helper()
+
+	t.Run(test, func(t *testing.T) {
+		t.Parallel()
+
+		s := &token.Stream{File: source.NewFile(test, text)}
+		block := s.Push(blockLen, token.Comment)
+		assert.Equal(t, expectedComments, paragraph([]token.Token{block}).stringify())
+	})
 }

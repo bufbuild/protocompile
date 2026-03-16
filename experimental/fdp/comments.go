@@ -15,7 +15,6 @@
 package fdp
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"unicode"
@@ -45,29 +44,48 @@ type paragraph []token.Token
 // stringify returns the paragraph is a single string. It also trims off the leading "//"
 // for line comments, and enclosing "/* */" for block comments.
 func (p paragraph) stringify() string {
-	var str strings.Builder
+	str := new(strings.Builder)
+
 	for _, t := range p {
 		text := t.Text()
+
 		if t.Kind() != token.Comment {
-			fmt.Fprint(&str, text)
+			str.WriteString(text)
 			continue
 		}
+
 		switch {
 		case strings.HasPrefix(text, "//"):
 			// For line comments, the leading "//" needs to be trimmed off.
-			fmt.Fprint(&str, strings.TrimPrefix(text, "//"))
+			str.WriteString(strings.TrimPrefix(text, "//"))
+
 		case strings.HasPrefix(text, "/*"):
 			// For block comments, we iterate through each line and trim the leading "/*",
 			// "*", and trailing "*/".
-			for _, line := range strings.SplitAfter(text, "\n") {
+			for line := range strings.SplitAfterSeq(text, "\n") {
+				var hasPrefix bool
 				if strings.HasPrefix(line, "/*") {
 					line = strings.TrimPrefix(line, "/*")
-				} else if strings.HasPrefix(strings.TrimSpace(line), "*") {
-					// We check the line with all spaces trimmed because of leading whitespace.
-					line = strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
+					hasPrefix = true
 				}
-				line = strings.TrimSuffix(line, "*/")
-				fmt.Fprint(&str, line)
+
+				if !hasPrefix && strings.HasPrefix(line, "*") && !strings.HasPrefix(line, "*/") {
+					// If the line does not have an opening "/*", we check for a leading "*", but
+					// need to make sure that it is not a single line with "*/".
+					line = strings.TrimPrefix(line, "*")
+					hasPrefix = true
+				}
+
+				if strings.HasSuffix(line, "*/") {
+					if !hasPrefix {
+						// If the line was not on the same line as an opening prefix, the leading
+						// whitepsace is trimmed from the line with the closing "*/".
+						line = strings.TrimLeftFunc(line, unicode.IsSpace)
+					}
+					line = strings.TrimSuffix(line, "*/")
+				}
+
+				str.WriteString(line)
 			}
 		}
 	}
