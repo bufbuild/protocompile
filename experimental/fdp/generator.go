@@ -488,6 +488,13 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	}
 
 	fdp.JsonName = addr(f.JSONName())
+	if jsonName := f.PseudoOptions().JSONName; !jsonName.IsZero() {
+		g.addSourceLocationWithSourcePathElements(
+			jsonName.OptionSpan().Span(),
+			[]int32{internal.FieldJSONNameTag},
+			false,
+		)
+	}
 
 	d := f.PseudoOptions().Default
 	if !d.IsZero() {
@@ -513,6 +520,12 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 		} else if v, ok := d.AsString(); ok {
 			fdp.DefaultValue = addr(v)
 		}
+
+		g.addSourceLocationWithSourcePathElements(
+			d.OptionSpan().Span(),
+			[]int32{internal.FieldDefaultTag},
+			false,
+		)
 	}
 }
 
