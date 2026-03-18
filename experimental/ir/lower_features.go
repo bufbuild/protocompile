@@ -256,8 +256,12 @@ func validateAllFeatures(file *File, r *report.Report) {
 	}))
 
 	for ty := range seq.Values(file.AllTypes()) {
-		if !ty.MapField().IsZero() {
-			// Map entries never have features.
+		if mapField := ty.MapField(); !mapField.IsZero() {
+			// The fields of map entry types inherit any valid explicit features set on the
+			// map field.
+			key, value := ty.EntryFields()
+			featureOptionsForMapEntryField(file, r, key, mapField)
+			featureOptionsForMapEntryField(file, r, value, mapField)
 			continue
 		}
 
@@ -397,4 +401,50 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			})
 		}
 	}
+}
+
+// featureOptionsForMapEntryField is a helper function for setting valid feature options
+// from the map field to the given map entry field.
+func featureOptionsForMapEntryField(file *File, r *report.Report, mapEntryField, mapField Member) {
+	if mapField.Options().IsZero() {
+		return
+	}
+
+	builtins := file.builtins()
+	options := newMessage(file, builtins.FieldOptions.toRef(file))
+	parent := mapField.Options().Field(builtins.FieldFeatures)
+	features := newMessage(file, builtins.FieldFeatures.toRef(file))
+
+	for v := range parent.AsMessage().Fields() {
+		field := v.Field()
+		if field == builtins.FeatureGroup {
+			// This is diagnosed in the validation step.
+			continue
+		}
+
+		if field == builtins.FeatureUTF8 && mapEntryField.Element().Predeclared() != predeclared.String {
+			continue
+		}
+
+		features.slot(field).Insert(id.Wrap(
+			file,
+			id.ID[Value](file.arenas.values.NewCompressed(rawValue{
+				field: field.toRef(file),
+				bits:  v.Raw().bits,
+			})),
+		))
+	}
+
+	// If no feature options ended up being valid, do not move forward with adding the
+	// options on the map entry field.
+	if len(features.Raw().entries) == 0 {
+		return
+	}
+
+	validateFeatures(features, r)
+	options.slot(builtins.FieldFeatures).Insert(features.AsValue())
+	mapEntryField.Raw().options = options.AsValue().ID()
+	mapEntryField.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+		options: features.AsValue().ID(),
+	}))
 }
