@@ -411,10 +411,9 @@ func featureOptionsForMapEntryField(file *File, r *report.Report, mapEntryField,
 	}
 
 	builtins := file.builtins()
-	options := newMessage(file, builtins.FieldOptions.toRef(file))
 	parent := mapField.Options().Field(builtins.FieldFeatures)
-	features := newMessage(file, builtins.FieldFeatures.toRef(file))
 
+	var features MessageValue
 	for v := range parent.AsMessage().Fields() {
 		field := v.Field()
 		if field == builtins.FeatureGroup {
@@ -424,6 +423,10 @@ func featureOptionsForMapEntryField(file *File, r *report.Report, mapEntryField,
 
 		if field == builtins.FeatureUTF8 && mapEntryField.Element().Predeclared() != predeclared.String {
 			continue
+		}
+
+		if features.IsZero() {
+			features = newMessage(file, builtins.FieldFeatures.toRef(file))
 		}
 
 		features.slot(field).Insert(id.Wrap(
@@ -437,11 +440,12 @@ func featureOptionsForMapEntryField(file *File, r *report.Report, mapEntryField,
 
 	// If no feature options ended up being valid, do not move forward with adding the
 	// options on the map entry field.
-	if len(features.Raw().entries) == 0 {
+	if features.IsZero() {
 		return
 	}
-
 	validateFeatures(features, r)
+
+	options := newMessage(file, builtins.FieldOptions.toRef(file))
 	options.slot(builtins.FieldFeatures).Insert(features.AsValue())
 	mapEntryField.Raw().options = options.AsValue().ID()
 	mapEntryField.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
