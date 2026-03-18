@@ -37,9 +37,10 @@ import (
 )
 
 type generator struct {
-	currentFile      *ir.File
-	includeDebugInfo bool
-	exclude          func(*ir.File) bool
+	currentFile                  *ir.File
+	includeDebugInfo             bool
+	generateExtraOptionLocations bool
+	exclude                      func(*ir.File) bool
 
 	path               *path
 	sourceCodeInfo     *descriptorpb.SourceCodeInfo
@@ -816,12 +817,23 @@ func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue, sourcePath ...
 				continue
 			}
 
+			span := optionSpan.Span()
 			if messageField := field.AsMessage(); !messageField.IsZero() {
+				if field.IsTopLevel() {
+					// If this is a top-level option declaration for a message type with a message
+					// literal, we add a location for the declaration.
+					g.addSourceLocationWithSourcePathElements(span, append(sourcePath, field.Field().Number()), false)
+
+					if !g.generateExtraOptionLocations {
+						// If the option [GenerateExtraOptionLocations] is not set, then continue
+						// without adding source locations for elements within the value.
+						continue
+					}
+				}
 				g.messageValueSourceCodeInfo(messageField, append(sourcePath, field.Field().Number())...)
 				continue
 			}
 
-			span := optionSpan.Span()
 			// For declarations with bodies, e.g. messages, enums, services, methods, files,
 			// leading and trailing comments are attributed on the option declarations based on
 			// the option keyword and semicolon, respectively, e.g.

@@ -103,6 +103,12 @@ type rawValue struct {
 
 	// The message which contains this value.
 	container id.ID[MessageValue]
+
+	// Indicates whether this value corresponds with a top-level option declaration in source.
+	//
+	// This is not set for options on synthetic types, e.g. the map_entry option on map
+	// entry types.
+	isTopLevel bool
 }
 
 // rawValueBits is used to represent the actual value for all types, according to
@@ -290,6 +296,18 @@ func (v Value) Elements() seq.Indexer[Element] {
 			bits:        bits,
 		}
 	})
+}
+
+// IsTopLevel returns whether this value corresponds with a top-level option declaration
+// in source.
+//
+// This will return false on options for synthetic types, e.g. the map_entry option on
+// map entry types, because this is not set for synthetic types.
+func (v Value) IsTopLevel() bool {
+	if v.IsZero() {
+		return false
+	}
+	return v.Raw().isTopLevel
 }
 
 // Outlined to promote inlining of Elements().

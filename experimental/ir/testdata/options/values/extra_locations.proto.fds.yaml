@@ -1,0 +1,133 @@
+file:
+- name: "testdata/options/values/extra_locations.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "bar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "bar"
+      options.$unknown: |
+        1000: {
+          1: {"bar"}
+          2: 5
+          3: {`060708`}
+        }
+    options.$unknown: "1000: {1: {\"foo\"}}"
+  - name: "OptionMessage"
+    field:
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "a"
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "b"
+    - name: "c"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "c"
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
+  - name: "y"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "y"
+  - name: "z"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.FieldOptions"
+    json_name: "z"
+  options.$unknown: |
+    1000: {
+      2: 1
+      3: {`020304`}
+    }
+  source_code_info.location:
+  - span: [17, 0, 62, 1]
+  - path: [12]
+    span: [17, 0, 18]
+    leading_comments: "% descriptor: true\n% source_code_info: true\n% generate_extra_option_locations: true\n"
+    leading_detached_comments:
+    - " Copyright 2020-2025 Buf Technologies, Inc.\n\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n\n      http://www.apache.org/licenses/LICENSE-2.0\n\n Unless required by applicable law or agreed to in writing, software\n distributed under the License is distributed on an \"AS IS\" BASIS,\n WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n See the License for the specific language governing permissions and\n limitations under the License.\n"
+  - { path: [2], span: [19, 0, 17] }
+  - { path: [3, 0], span: [21, 0, 42] }
+  - { path: [8], span: [23, 0, 28, 2] }
+  - { path: [8, 1000], span: [23, 7, 28, 1] }
+  - { path: [8, 1000, 2], span: [24, 4, 8] }
+  - { path: [8, 1000, 3, 0], span: [25, 4, 8] }
+  - { path: [8, 1000, 3, 1], span: [26, 4, 8] }
+  - { path: [8, 1000, 3, 2], span: [27, 4, 8] }
+  - { path: [4, 0], span: [30, 0, 44, 1] }
+  - { path: [4, 0, 1], span: [30, 8, 11] }
+  - { path: [4, 0, 7], span: [31, 4, 33, 6] }
+  - { path: [4, 0, 7, 1000], span: [31, 11, 33, 5] }
+  - { path: [4, 0, 7, 1000, 1], span: [32, 8, 16] }
+  - { path: [4, 0, 2, 0, 4], span: [35, 4, 12] }
+  - { path: [4, 0, 2, 0], span: [35, 4, 43, 6] }
+  - { path: [4, 0, 2, 0, 5], span: [35, 13, 19] }
+  - { path: [4, 0, 2, 0, 1], span: [35, 20, 23] }
+  - { path: [4, 0, 2, 0, 3], span: [35, 26, 27] }
+  - { path: [4, 0, 2, 0, 8], span: [35, 28, 43, 5] }
+  - { path: [4, 0, 2, 0, 8, 1000], span: [36, 6, 42, 7] }
+  - { path: [4, 0, 2, 0, 8, 1000, 1], span: [37, 10, 18] }
+  - { path: [4, 0, 2, 0, 8, 1000, 2], span: [38, 10, 14] }
+  - { path: [4, 0, 2, 0, 8, 1000, 3, 0], span: [39, 10, 14] }
+  - { path: [4, 0, 2, 0, 8, 1000, 3, 1], span: [40, 10, 14] }
+  - { path: [4, 0, 2, 0, 8, 1000, 3, 2], span: [41, 10, 14] }
+  - { path: [4, 1], span: [46, 0, 50, 1] }
+  - { path: [4, 1, 1], span: [46, 8, 21] }
+  - { path: [4, 1, 2, 0, 4], span: [47, 4, 12] }
+  - { path: [4, 1, 2, 0], span: [47, 4, 26] }
+  - { path: [4, 1, 2, 0, 5], span: [47, 13, 19] }
+  - { path: [4, 1, 2, 0, 1], span: [47, 20, 21] }
+  - { path: [4, 1, 2, 0, 3], span: [47, 24, 25] }
+  - { path: [4, 1, 2, 1, 4], span: [48, 4, 12] }
+  - { path: [4, 1, 2, 1], span: [48, 4, 25] }
+  - { path: [4, 1, 2, 1, 5], span: [48, 13, 18] }
+  - { path: [4, 1, 2, 1, 1], span: [48, 19, 20] }
+  - { path: [4, 1, 2, 1, 3], span: [48, 23, 24] }
+  - { path: [4, 1, 2, 2, 4], span: [49, 4, 12] }
+  - { path: [4, 1, 2, 2], span: [49, 4, 25] }
+  - { path: [4, 1, 2, 2, 5], span: [49, 13, 18] }
+  - { path: [4, 1, 2, 2, 1], span: [49, 19, 20] }
+  - { path: [4, 1, 2, 2, 3], span: [49, 23, 24] }
+  - { path: [7], span: [52, 0, 54, 1] }
+  - { path: [7, 0, 2], span: [52, 7, 34] }
+  - { path: [7, 0, 4], span: [53, 4, 12] }
+  - { path: [7, 0], span: [53, 4, 36] }
+  - { path: [7, 0, 6], span: [53, 13, 26] }
+  - { path: [7, 0, 1], span: [53, 27, 28] }
+  - { path: [7, 0, 3], span: [53, 31, 35] }
+  - { path: [7], span: [56, 0, 58, 1] }
+  - { path: [7, 1, 2], span: [56, 7, 37] }
+  - { path: [7, 1, 4], span: [57, 4, 12] }
+  - { path: [7, 1], span: [57, 4, 36] }
+  - { path: [7, 1, 6], span: [57, 13, 26] }
+  - { path: [7, 1, 1], span: [57, 27, 28] }
+  - { path: [7, 1, 3], span: [57, 31, 35] }
+  - { path: [7], span: [60, 0, 62, 1] }
+  - { path: [7, 2, 2], span: [60, 7, 35] }
+  - { path: [7, 2, 4], span: [61, 4, 12] }
+  - { path: [7, 2], span: [61, 4, 36] }
+  - { path: [7, 2, 6], span: [61, 13, 26] }
+  - { path: [7, 2, 1], span: [61, 27, 28] }
+  - { path: [7, 2, 3], span: [61, 31, 35] }

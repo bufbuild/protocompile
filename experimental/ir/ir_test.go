@@ -76,6 +76,9 @@ type Test struct {
 	Descriptor bool `yaml:"descriptor"`
 	// Whether the descriptor should include SourceCodeInfo
 	SourceCodeInfo bool `yaml:"source_code_info"`
+	// Whether the descriptor should be generated with extra SourceCodeInfo locations for
+	// elements of message literals.
+	GenerateExtraOptionLocations bool `yaml:"generate_extra_option_locations"`
 
 	// Whether to output a symbol table. Useful for tests that build symbol
 	// tables.
@@ -204,6 +207,7 @@ func TestIR(t *testing.T) {
 		if test.Descriptor {
 			bytes, err := fdp.DescriptorSetBytes(irs,
 				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
 				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
 			)
 			require.NoError(t, err)
