@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message Foo {
+  optional string name = 1 [deprecated = true];
+
+  optional string name_with_options = 2 [
+    (custom.float_field_option) = "nan",
+    (custom.double_field_option) = "inf",
+    (custom.int32_field_option) = -3,
+    (custom.int64_field_option) = -4,
+    (custom.uint32_field_option) = 5,
+    (custom.uint64_field_option) = 6
+  ];
+}

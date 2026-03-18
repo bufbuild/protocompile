@@ -1,0 +1,34 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test compound string formatting: adjacent string literals are fused by
+# the lexer into a single token and printed one per line.
+
+format: true
+
+source: |
+  syntax = "proto3";
+
+  option (custom.description) = "One" "Two" "Three";
+
+  option (custom.long_description) =
+    "First line of a long description. " // A
+    "Second line continues here. " /*B*/
+    "Third and final line."; // C
+
+  option (custom.single) = "Just one string";
+
+  message Foo {
+    optional string name = 1;
+  }

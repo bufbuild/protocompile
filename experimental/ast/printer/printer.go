@@ -30,7 +30,17 @@ const (
 	gapNone gapStyle = iota
 	gapSpace
 	gapNewline
-	gapSoftline // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
+	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
+	gapBlankline // gapBlankline inserts two newline characters
+)
+
+// scopeKind distinguishes file-level scopes from body-level scopes,
+// which have different gap rules.
+type scopeKind int
+
+const (
+	scopeFile scopeKind = iota
+	scopeBody
 )
 
 // PrintFile renders an AST file to protobuf source text.
@@ -57,8 +67,8 @@ func Print(options Options, decl ast.DeclAny) string {
 			push:    push,
 			options: options,
 		}
-		p.printDecl(decl)
-		p.flushPending()
+		p.printDecl(decl, gapNewline)
+		p.emitTrivia(gapNone)
 	})
 }
 
@@ -66,111 +76,287 @@ func Print(options Options, decl ast.DeclAny) string {
 type printer struct {
 	options Options
 	trivia  *triviaIndex
-	pending strings.Builder
+	pending []token.Token
 	push    dom.Sink
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
 func (p *printer) printFile(file *ast.File) {
 	trivia := p.trivia.scopeTrivia(0)
-	p.printScopeDecls(trivia, file.Decls())
-	p.flushPending()
+	decls := seq.Indexer[ast.DeclAny](file.Decls())
+	if p.options.Format {
+		sorted := seq.ToSlice(decls)
+		sortFileDeclsForFormat(sorted)
+		decls = seq.NewFunc(len(sorted), func(i int) ast.DeclAny {
+			return sorted[i]
+		})
+	}
+	p.printScopeDecls(trivia, decls, scopeFile)
+	// In format mode, trailing file comments need a newline gap so they
+	// don't run into the last declaration's closing token.
+	endGap := gapNone
+	if p.options.Format {
+		endGap = gapNewline
+	}
+	p.emitTrivia(endGap)
 }
 
-// printToken is the standard entry point for printing a semantic token.
-// It emits leading attached trivia, the gap, the token text, and trailing
-// attached trivia.
+// pendingHasComments reports whether pending contains comments.
+func (p *printer) pendingHasComments() bool {
+	for _, tok := range p.pending {
+		if tok.Kind() == token.Comment {
+			return true
+		}
+	}
+	return false
+}
+
+// printToken emits a token with its trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
 	}
+	p.printTokenAs(tok, gap, tok.Text())
+}
 
+// printTokenAs prints a token using replacement text instead of the token's
+// own text. This is used for normalizing delimiters (e.g., angle brackets
+// to curly braces) while preserving the token's attached trivia.
+func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
-		p.emitTriviaRun(att.leading)
-	} else {
-		p.emitGap(gap)
+		p.appendPending(att.leading)
 	}
 
-	// Emit the token text.
-	p.emit(tok.Text())
+	if len(text) > 0 {
+		if hasTrivia {
+			if !p.options.Format {
+				gap = gapNone
+			}
+			p.emitTrivia(gap)
+		} else {
+			p.emitGap(gap)
+		}
 
-	// Emit trailing attached trivia.
-	if hasTrivia && len(att.trailing) > 0 {
-		p.emitTriviaRun(att.trailing)
+		p.push(dom.Text(text))
+	}
+
+	if hasTrivia {
+		p.emitTrailing(att.trailing)
 	}
 }
 
-// printScopeDecls zips trivia slots with declarations.
-// If there are more slots than children+1 (due to AST mutations),
-// remaining slots are flushed after the last child.
-func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny]) {
+// emitTrailing emits trailing attached trivia for a token.
+func (p *printer) emitTrailing(trailing []token.Token) {
+	if len(trailing) == 0 {
+		return
+	}
+	if p.options.Format {
+		for _, t := range trailing {
+			if t.Kind() == token.Comment {
+				p.push(dom.Text(" "))
+				p.push(dom.Text(t.Text()))
+			}
+		}
+	} else {
+		p.pending = append(p.pending, trailing...)
+	}
+}
+
+// appendPending buffers trivia tokens, filtering non-newline whitespace
+// in format mode.
+func (p *printer) appendPending(tokens []token.Token) {
+	if p.options.Format {
+		for _, tok := range tokens {
+			if tok.Kind() == token.Space && tok.Text() != "\n" {
+				continue
+			}
+			p.pending = append(p.pending, tok)
+		}
+		return
+	}
+	p.pending = append(p.pending, tokens...)
+}
+
+// printScopeDecls prints declarations in a scope, computing
+// inter-declaration gaps and emitting trivia slots between them.
+func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind) {
 	for i := range decls.Len() {
 		p.emitTriviaSlot(trivia, i)
-		if i < decls.Len() {
-			p.printDecl(decls.At(i))
-		}
+		gap := p.declGap(decls, trivia, i, scope)
+		p.printDecl(decls.At(i), gap)
 	}
 	p.emitRemainingTrivia(trivia, decls.Len())
 }
 
-// emitTriviaSlot emits the detached trivia for slot[i], if it exists.
+// declGap computes the gap before declaration i in a scope.
+//
+// For the first declaration (i==0), it handles flushing detached leading
+// comments (copyright headers at file level, or comments between '{'
+// and the first member at body level). For subsequent declarations, it
+// determines whether a blank line or regular newline separates them.
+func (p *printer) declGap(
+	decls seq.Indexer[ast.DeclAny],
+	trivia detachedTrivia,
+	i int,
+	scope scopeKind,
+) gapStyle {
+	if i == 0 {
+		return p.firstDeclGap(trivia, scope)
+	}
+
+	if !p.options.Format {
+		return gapNewline
+	}
+
+	// File level: blank line between different sections (syntax ->
+	// package, imports -> options, etc.) and between body declarations.
+	if scope == scopeFile {
+		prev, curr := rankDecl(decls.At(i-1)), rankDecl(decls.At(i))
+		if prev != curr || curr == rankBody {
+			return gapBlankline
+		}
+		return gapNewline
+	}
+
+	// Body level: preserve blank lines from the original source.
+	if trivia.hasBlankBefore(i) {
+		return gapBlankline
+	}
+	return gapNewline
+}
+
+// firstDeclGap computes the gap before the first declaration in a scope,
+// flushing any detached leading comments when necessary.
+func (p *printer) firstDeclGap(trivia detachedTrivia, scope scopeKind) gapStyle {
+	if !p.options.Format {
+		if scope == scopeFile {
+			return gapNone
+		}
+		return gapNewline
+	}
+
+	// Detect leading comments that need to be flushed separately from
+	// the first declaration. At file level, these are copyright headers
+	// or other file-leading comments. At body level, these are comments
+	// between '{' and the first member that were separated by a blank
+	// line in the source.
+	flush := false
+	if scope == scopeFile {
+		flush = p.pendingHasComments()
+	} else {
+		flush = trivia.hasBlankBefore(0)
+	}
+
+	if flush {
+		beforeComments := gapNone
+		if scope == scopeBody {
+			beforeComments = gapNewline
+		}
+		p.emitTrivia(beforeComments)
+		return gapNewline
+	}
+
+	if scope == scopeFile {
+		return gapNone
+	}
+	return gapNewline
+}
+
+// emitTriviaSlot appends the detached trivia for slot[i] to pending.
+// In format mode, whitespace tokens are filtered via appendPending.
 func (p *printer) emitTriviaSlot(trivia detachedTrivia, i int) {
 	if i >= len(trivia.slots) {
 		return
 	}
-	p.emitTriviaRun(trivia.slots[i])
+	p.appendPending(trivia.slots[i])
 }
 
-// emitRemainingTrivia emits the remaining detached trivia for slot >= i, if it exists.
+// emitRemainingTrivia emits the remaining detached trivia for slot >= i.
 func (p *printer) emitRemainingTrivia(trivia detachedTrivia, i int) {
 	for ; i < len(trivia.slots); i++ {
 		p.emitTriviaSlot(trivia, i)
 	}
 }
 
-// emitTriviaRun appends trivia tokens to the pending buffer.
-//
-// Used for trailing trivia and slot (detached) trivia. These accumulate in
-// the pending buffer so that adjacent pure-newline runs are combined into a
-// single kindBreak dom tag, preventing the dom from merging them and
-// collapsing blank lines.
-func (p *printer) emitTriviaRun(tokens []token.Token) {
-	for _, tok := range tokens {
-		p.pending.WriteString(tok.Text())
-	}
-}
-
-// emitGap writes a gap to the output. If pending already has content
-// (from preceding natural trivia), the existing whitespace takes precedence
-// and the gap is skipped.
+// emitGap pushes whitespace tags for the given gap style.
 func (p *printer) emitGap(gap gapStyle) {
 	switch gap {
-	case gapNewline:
-		p.emit("\n")
 	case gapSpace:
-		p.emit(" ")
+		p.push(dom.Text(" "))
+	case gapNewline:
+		p.push(dom.Text("\n"))
 	case gapSoftline:
 		p.push(dom.TextIf(dom.Flat, " "))
 		p.push(dom.TextIf(dom.Broken, "\n"))
+	case gapBlankline:
+		p.push(dom.Text("\n"))
+		p.push(dom.Text("\n"))
 	}
 }
 
-// emit writes non-whitespace text to the output, flushing pending whitespace first.
-func (p *printer) emit(s string) {
-	if len(s) > 0 {
-		p.flushPending()
-		p.push(dom.Text(s))
+// commentGap returns the appropriate gap for comment separation.
+func commentGap(contextGap gapStyle, isLineComment bool, blankRun int) gapStyle {
+	if blankRun >= 2 {
+		return gapBlankline
 	}
+	if isLineComment {
+		return gapNewline
+	}
+	return contextGap
 }
 
-// flushPending flushes accumulated whitespace from the pending buffer as a
-// single dom.Text node.
-func (p *printer) flushPending() {
-	if p.pending.Len() > 0 {
-		p.push(dom.Text(p.pending.String()))
-		p.pending.Reset()
+// emitTrivia flushes pending trivia. In format mode, only comments
+// are emitted with canonical spacing; in non-format mode, all tokens
+// are concatenated verbatim.
+func (p *printer) emitTrivia(gap gapStyle) {
+	if !p.options.Format {
+		if len(p.pending) > 0 {
+			var buf strings.Builder
+			for _, tok := range p.pending {
+				buf.WriteString(tok.Text())
+			}
+			p.push(dom.Text(buf.String()))
+			p.pending = p.pending[:0]
+		}
+		return
 	}
+
+	afterGap := gapSoftline
+	if gap == gapSpace {
+		afterGap = gapSpace
+	}
+
+	hasComment := false
+	prevIsLine := false
+	newlineRun := 0
+	for _, tok := range p.pending {
+		if tok.Kind() == token.Space {
+			if tok.Text() == "\n" {
+				newlineRun++
+			}
+			continue
+		}
+		if tok.Kind() != token.Comment {
+			continue
+		}
+		if !hasComment {
+			p.emitGap(gap)
+		} else {
+			p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
+		}
+		newlineRun = 0
+		p.push(dom.Text(tok.Text()))
+		hasComment = true
+		prevIsLine = strings.HasPrefix(tok.Text(), "//")
+	}
+	p.pending = p.pending[:0]
+
+	if hasComment {
+		p.emitGap(commentGap(afterGap, prevIsLine, 0))
+		return
+	}
+	p.emitGap(gap)
 }
 
 // withIndent runs fn with an indented printer, swapping the sink temporarily.

@@ -1,0 +1,64 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test that comments inside body scopes are correctly indented and
+# separated with newlines.
+
+format: true
+
+source: |
+  syntax = "proto3";
+
+  message Message {};
+
+  service Foo {
+    rpc One(Message) returns (Message) {
+      /* C-style comment in the middle */
+    }
+    rpc Two(Message) returns (Message);
+    rpc Three(Message) returns (Message) {
+      // Body comment.
+    }
+
+    // Leading comment on '}'.
+  }
+
+  service Bar { /* inline body comment */ }
+
+  service Baz {
+    // Normal comment in the middle
+  }
+
+  service Qux {
+
+  // Body comment after blank line.
+  }
+
+  message Outer {
+      // Outer comment.
+    message Inner {
+        // Inner comment.
+      string value = 1;
+    }
+  }
+
+  enum Status {
+    // Unspecified.
+    STATUS_UNSPECIFIED = 0;
+      /* Block
+         comment. */
+    STATUS_ACTIVE = 1;
+  }
+
+  message /* A */ B /* C */ {}
