@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package sourceinfo contains decoding operations for Protobuf descriptor
 // SourceCodeInfo paths.
 //
@@ -8,10 +22,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // Location is a decoded location within a SourceCodeInfo message.
@@ -88,6 +103,8 @@ type Path []Component
 //
 // A Component corresponds to a field of a message within a descriptor, rooted
 // at a FileDescriptorProto.
+//
+//nolint:govet // Field alignment doesn't matter for this.
 type Component struct {
 	Number int32  // The field number od the message.
 	Name   string // The name of the field. Empty if not known.
@@ -143,7 +160,7 @@ func DecodePath(path []int32, fdp *descriptorpb.FileDescriptorProto) Path {
 		c.Repeated = true
 		c.Index = int(path[i])
 		if msg != nil {
-			msg = msg.Get(field).List().Get(int(c.Index)).Message()
+			msg = msg.Get(field).List().Get(c.Index).Message()
 
 			name := msg.Descriptor().Fields().ByName("name")
 			if name == nil || name.Kind() != protoreflect.StringKind {

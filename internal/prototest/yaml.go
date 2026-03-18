@@ -60,8 +60,8 @@ func ToYAML(v any, opts ToYAMLOptions) string {
 		d = opts.message(msg.ProtoReflect())
 	} else {
 		v = opts.any(reflect.ValueOf(v))
-		if v, ok := v.(*doc); ok {
-			d = v
+		if v2, ok := v.(*doc); ok {
+			d = v2
 		} else {
 			d = new(doc)
 			d.push(protoreflect.Name("value"), v)
