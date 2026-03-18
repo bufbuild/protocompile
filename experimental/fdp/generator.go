@@ -230,14 +230,33 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 }
 
 func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourcePath ...int32) {
-	reset := g.path.with(sourcePath...)
-	defer reset()
+	// Source location operations are wrapped because source locations are not add for map
+	// entry types.
+	addSourceLocation := func(span source.Span, checkForComments bool) {
+		if !ty.IsMapEntry() {
+			g.addSourceLocation(span, checkForComments)
+		}
+	}
+	addSourceLocationWithSourcePathElements := func(
+		span source.Span,
+		sourcePathElements []int32,
+		checkForComments bool,
+	) {
+		if !ty.IsMapEntry() {
+			g.addSourceLocationWithSourcePathElements(span, sourcePathElements, checkForComments)
+		}
+	}
+
+	if !ty.IsMapEntry() {
+		reset := g.path.with(sourcePath...)
+		defer reset()
+	}
 
 	messageAST := ty.AST().AsMessage()
-	g.addSourceLocation(messageAST.Span(), true)
+	addSourceLocation(messageAST.Span(), true)
 
 	mdp.Name = addr(ty.Name())
-	g.addSourceLocationWithSourcePathElements(messageAST.Name.Span(), []int32{internal.MessageNameTag}, false)
+	addSourceLocationWithSourcePathElements(messageAST.Name.Span(), []int32{internal.MessageNameTag}, false)
 
 	for i, field := range seq.All(ty.Members()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
@@ -247,7 +266,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 
 	var extnIndex int32
 	for extend := range seq.Values(ty.Extends()) {
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			extend.AST().Span(),
 			[]int32{internal.MessageExtensionsTag},
 			true,
@@ -285,12 +304,14 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		er.Start = addr(start)
 		er.End = addr(end + 1) // Exclusive.
 
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			extensions.DeclAST().Span(),
 			[]int32{internal.MessageExtensionRangesTag},
 			true,
 		)
 
+		// There should not be a range defined in a synthetic map entry type, but this is
+		// checked as a precaution.
 		g.rangeSourceCodeInfo(
 			extensions.AST(),
 			internal.MessageExtensionRangesTag,
@@ -300,7 +321,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		)
 
 		if options := extensions.Options(); !iterx.Empty(options.Fields()) {
-			g.addSourceLocationWithSourcePathElements(
+			addSourceLocationWithSourcePathElements(
 				extensions.DeclAST().Options().Span(),
 				[]int32{internal.ExtensionRangeOptionsTag},
 				false,
@@ -314,7 +335,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 	var topLevelSourceLocation bool
 	for i, reserved := range seq.All(ty.ReservedRanges()) {
 		if !topLevelSourceLocation {
-			g.addSourceLocationWithSourcePathElements(
+			addSourceLocationWithSourcePathElements(
 				reserved.DeclAST().Span(),
 				[]int32{internal.MessageReservedRangesTag},
 				true,
@@ -329,19 +350,23 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		rr.Start = addr(start)
 		rr.End = addr(end + 1) // Exclusive.
 
-		g.rangeSourceCodeInfo(
-			reserved.AST(),
-			internal.MessageReservedRangesTag,
-			internal.ReservedRangeStartTag,
-			internal.ReservedRangeEndTag,
-			int32(i),
-		)
+		// There should not be a range defined in a synthetic map entry type, but this is
+		// checked as a precaution.
+		if !ty.IsMapEntry() {
+			g.rangeSourceCodeInfo(
+				reserved.AST(),
+				internal.MessageReservedRangesTag,
+				internal.ReservedRangeStartTag,
+				internal.ReservedRangeEndTag,
+				int32(i),
+			)
+		}
 	}
 
 	topLevelSourceLocation = false
 	for i, name := range seq.All(ty.ReservedNames()) {
 		if !topLevelSourceLocation {
-			g.addSourceLocationWithSourcePathElements(
+			addSourceLocationWithSourcePathElements(
 				name.DeclAST().Span(),
 				[]int32{internal.MessageReservedNamesTag},
 				true,
@@ -350,7 +375,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 		}
 
 		mdp.ReservedName = append(mdp.ReservedName, name.Name())
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			name.AST().Span(),
 			[]int32{internal.MessageReservedNamesTag, int32(i)},
 			false,
@@ -382,7 +407,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 
 	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		for option := range messageAST.Body.Options() {
-			g.addSourceLocationWithSourcePathElements(option.Span(), []int32{internal.MessageOptionsTag}, false)
+			addSourceLocationWithSourcePathElements(option.Span(), []int32{internal.MessageOptionsTag}, false)
 		}
 
 		mdp.Options = new(descriptorpb.MessageOptions)
@@ -401,24 +426,43 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 }
 
 func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, sourcePath ...int32) {
-	reset := g.path.with(sourcePath...)
-	defer reset()
+	// Source location operations are wrapped because source locations are not added for
+	// synthetic fields, e.g. map entry type fields.
+	addSourceLocation := func(span source.Span, checkForComments bool) {
+		if !f.IsSynthetic() {
+			g.addSourceLocation(span, checkForComments)
+		}
+	}
+	addSourceLocationWithSourcePathElements := func(
+		span source.Span,
+		sourcePathElements []int32,
+		checkForComments bool,
+	) {
+		if !f.IsSynthetic() {
+			g.addSourceLocationWithSourcePathElements(span, sourcePathElements, checkForComments)
+		}
+	}
+
+	if !f.IsSynthetic() {
+		reset := g.path.with(sourcePath...)
+		defer reset()
+	}
 
 	// If a field is a proto2 group field, the leading comments of the field are instead
 	// attributed to the synthetic message for the group field, rather than the field itself,
 	// so no tokens are checked for comments.
 	fieldAST := f.AST().AsField()
 	if f.IsGroup() {
-		g.addSourceLocation(fieldAST.Span(), false)
+		addSourceLocation(fieldAST.Span(), false)
 	} else {
-		g.addSourceLocation(fieldAST.Span(), true)
+		addSourceLocation(fieldAST.Span(), true)
 	}
 
 	fdp.Name = addr(f.Name())
-	g.addSourceLocationWithSourcePathElements(fieldAST.Name.Span(), []int32{internal.FieldNameTag}, false)
+	addSourceLocationWithSourcePathElements(fieldAST.Name.Span(), []int32{internal.FieldNameTag}, false)
 
 	fdp.Number = addr(f.Number())
-	g.addSourceLocationWithSourcePathElements(fieldAST.Tag.Span(), []int32{internal.FieldNumberTag}, false)
+	addSourceLocationWithSourcePathElements(fieldAST.Tag.Span(), []int32{internal.FieldNumberTag}, false)
 
 	switch f.Presence() {
 	case presence.Explicit, presence.Implicit, presence.Shared:
@@ -433,7 +477,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	// AST allows for arbitrary nesting of prefixes, so the API returns an iterator, but
 	// [descriptorpb.FieldDescriptorProto] expects a single label.
 	for prefix := range fieldAST.Type.Prefixes() {
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			prefix.PrefixToken().Span(),
 			[]int32{internal.FieldLabelTag},
 			false,
@@ -457,7 +501,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 			}
 		}
 	}
-	g.addSourceLocationWithSourcePathElements(
+	addSourceLocationWithSourcePathElements(
 		fieldAST.Type.RemovePrefixes().Span(),
 		[]int32{int32(fieldTypeSourcePathElement)},
 		false,
@@ -465,7 +509,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 
 	if f.IsExtension() && f.Container().FullName() != "" {
 		fdp.Extendee = addr(string(f.Container().FullName().ToAbsolute()))
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			f.Extend().AST().Name().Span(),
 			[]int32{internal.FieldExtendeeTag},
 			false,
@@ -477,7 +521,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	}
 
 	if options := f.Options(); !iterx.Empty(options.Fields()) {
-		g.addSourceLocationWithSourcePathElements(
+		addSourceLocationWithSourcePathElements(
 			fieldAST.Options.Span(),
 			[]int32{internal.FieldOptionsTag},
 			false,
