@@ -63,6 +63,7 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         json_name: "value"
+        options.features.utf8_validation: VERIFY
       options.map_entry: true
   options.features.utf8_validation: NONE
   syntax: "editions"

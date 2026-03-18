@@ -312,13 +312,15 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto, sourc
 
 		// There should not be a range defined in a synthetic map entry type, but this is
 		// checked as a precaution.
-		g.rangeSourceCodeInfo(
-			extensions.AST(),
-			internal.MessageExtensionRangesTag,
-			internal.ExtensionRangeStartTag,
-			internal.ExtensionRangeEndTag,
-			int32(i),
-		)
+		if !ty.IsMapEntry() {
+			g.rangeSourceCodeInfo(
+				extensions.AST(),
+				internal.MessageExtensionRangesTag,
+				internal.ExtensionRangeStartTag,
+				internal.ExtensionRangeEndTag,
+				int32(i),
+			)
+		}
 
 		if options := extensions.Options(); !iterx.Empty(options.Fields()) {
 			addSourceLocationWithSourcePathElements(
@@ -529,6 +531,18 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 
 		fdp.Options = new(descriptorpb.FieldOptions)
 		g.options(options, fdp.Options, internal.FieldOptionsTag)
+	}
+
+	// If this field is part of a map entry type, we need to grab all the explicitly set
+	// feature options from the originating map field and add them to this field.
+	//
+	// There should be no options on the synthetic field prior to this.
+	if mapField := f.Container().MapField(); !mapField.IsZero() {
+		if mapFieldFeatures := mapField.FeatureSet().Options(); !mapFieldFeatures.IsZero() {
+			fdp.Options = new(descriptorpb.FieldOptions)
+			fdp.Options.Features = new(descriptorpb.FeatureSet)
+			fdp.Options.Features.ProtoReflect().SetUnknown(mapFieldFeatures.Marshal(nil, nil))
+		}
 	}
 
 	fdp.JsonName = addr(f.JSONName())
