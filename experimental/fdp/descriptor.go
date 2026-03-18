@@ -60,7 +60,7 @@ func DescriptorProtoBytes(file *ir.File, options ...DescriptorOption) ([]byte, e
 // DescriptorOption is an option to pass to [DescriptorSetBytes] or [DescriptorProtoBytes].
 type DescriptorOption func(*generator)
 
-// IncludeDebugInfo sets whether or not to include google.protobuf.SourceCodeInfo in
+// IncludeSourceCodeInfo sets whether or not to include google.protobuf.SourceCodeInfo in
 // the output.
 func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 	return func(g *generator) {
@@ -72,5 +72,14 @@ func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 func ExcludeFiles(exclude func(*ir.File) bool) DescriptorOption {
 	return func(g *generator) {
 		g.exclude = exclude
+	}
+}
+
+// GenerateExtraOptionLocations set whether or not to generate additional locations for
+// elements inside of message literals in option values. This option is a no-op if
+// [IncludeSourceCodeInfo] is not set.
+func GenerateExtraOptionLocations(flag bool) DescriptorOption {
+	return func(g *generator) {
+		g.generateExtraOptionLocations = flag
 	}
 }
