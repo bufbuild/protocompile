@@ -52,14 +52,14 @@ func (p *printer) printSyntax(decl ast.DeclSyntax, gap gapStyle) {
 	p.printToken(decl.Equals(), gapSpace)
 	p.printExpr(decl.Value(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon(), gapNone)
+	p.printToken(decl.Semicolon(), p.semiGap())
 }
 
 func (p *printer) printPackage(decl ast.DeclPackage, gap gapStyle) {
 	p.printToken(decl.KeywordToken(), gap)
 	p.printPath(decl.Path(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon(), gapNone)
+	p.printToken(decl.Semicolon(), p.semiGap())
 }
 
 func (p *printer) printImport(decl ast.DeclImport, gap gapStyle) {
@@ -70,7 +70,7 @@ func (p *printer) printImport(decl ast.DeclImport, gap gapStyle) {
 	}
 	p.printExpr(decl.ImportPath(), gapSpace)
 	p.printCompactOptions(decl.Options())
-	p.printToken(decl.Semicolon(), gapNone)
+	p.printToken(decl.Semicolon(), p.semiGap())
 }
 
 func (p *printer) printDef(decl ast.DeclDef, gap gapStyle) {
@@ -105,7 +105,7 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
 		p.printToken(opt.Equals, gapSpace)
 		p.printExpr(opt.Value, gapSpace)
 	}
-	p.printToken(opt.Semicolon, gapNone)
+	p.printToken(opt.Semicolon, p.semiGap())
 }
 
 func (p *printer) printMessage(msg ast.DefMessage, gap gapStyle) {
@@ -166,7 +166,7 @@ func (p *printer) printField(f ast.DefField, gap gapStyle) {
 		p.printExpr(f.Tag, gapSpace)
 	}
 	p.printCompactOptions(f.Options)
-	p.printToken(f.Semicolon, gapNone)
+	p.printToken(f.Semicolon, p.semiGap())
 }
 
 func (p *printer) printEnumValue(ev ast.DefEnumValue, gap gapStyle) {
@@ -176,7 +176,7 @@ func (p *printer) printEnumValue(ev ast.DefEnumValue, gap gapStyle) {
 		p.printExpr(ev.Tag, gapSpace)
 	}
 	p.printCompactOptions(ev.Options)
-	p.printToken(ev.Semicolon, gapNone)
+	p.printToken(ev.Semicolon, p.semiGap())
 }
 
 func (p *printer) printMethod(m ast.DefMethod, gap gapStyle) {
@@ -186,7 +186,7 @@ func (p *printer) printMethod(m ast.DefMethod, gap gapStyle) {
 	if !m.Body.IsZero() {
 		p.printBody(m.Body)
 	} else {
-		p.printToken(m.Decl.Semicolon(), gapNone)
+		p.printToken(m.Decl.Semicolon(), p.semiGap())
 	}
 }
 
@@ -200,13 +200,13 @@ func (p *printer) printSignature(sig ast.Signature) {
 		p.withGroup(func(p *printer) {
 			openTok, closeTok := inputs.Brackets().StartEnd()
 			trivia := p.trivia.scopeTrivia(inputs.Brackets().ID())
-			p.printToken(openTok, gapNone)
+			p.printToken(openTok, gapGlue)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.printTypeListContents(inputs, trivia)
 				p.push(dom.TextIf(dom.Broken, "\n"))
 			})
-			p.printToken(closeTok, gapNone)
+			p.printToken(closeTok, gapGlue)
 		})
 	}
 
@@ -223,18 +223,18 @@ func (p *printer) printSignature(sig ast.Signature) {
 					indented.printTypeListContents(outputs, slots)
 					p.push(dom.TextIf(dom.Broken, "\n"))
 				})
-				p.printToken(closeTok, gapNone)
+				p.printToken(closeTok, gapGlue)
 			})
 		}
 	}
 }
 
 func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia) {
-	gap := gapNone
+	gap := gapGlue
 	for i := range list.Len() {
 		p.emitTriviaSlot(trivia, i)
 		if i > 0 {
-			p.printToken(list.Comma(i-1), gapNone)
+			p.printToken(list.Comma(i-1), p.semiGap())
 			gap = gapSoftline
 		}
 		p.printType(list.At(i), gap)
@@ -335,12 +335,12 @@ func (p *printer) printRange(r ast.DeclRange, gap gapStyle) {
 	ranges := r.Ranges()
 	for i := range ranges.Len() {
 		if i > 0 {
-			p.printToken(ranges.Comma(i-1), gapNone)
+			p.printToken(ranges.Comma(i-1), p.semiGap())
 		}
 		p.printExpr(ranges.At(i), gapSpace)
 	}
 	p.printCompactOptions(r.Options())
-	p.printToken(r.Semicolon(), gapNone)
+	p.printToken(r.Semicolon(), p.semiGap())
 }
 
 func (p *printer) printCompactOptions(co ast.CompactOptions) {
@@ -383,7 +383,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 				for i := range entries.Len() {
 					indented.emitTriviaSlot(slots, i)
 					if i > 0 {
-						indented.printToken(entries.Comma(i-1), gapNone)
+						indented.printToken(entries.Comma(i-1), p.semiGap())
 					}
 					opt := entries.At(i)
 					indented.printPath(opt.Path, gapNewline)
@@ -406,7 +406,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			for i := range entries.Len() {
 				indented.emitTriviaSlot(slots, i)
 				if i > 0 {
-					indented.printToken(entries.Comma(i-1), gapNone)
+					indented.printToken(entries.Comma(i-1), p.semiGap())
 					indented.printPath(entries.At(i).Path, gapSoftline)
 				} else {
 					indented.printPath(entries.At(i).Path, gapNone)

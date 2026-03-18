@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 message Message {}
-
 service Ping {
   // This service is deprecated.
   option deprecated = true; // In-line comment on deprecated option.

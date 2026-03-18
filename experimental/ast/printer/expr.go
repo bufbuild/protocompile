@@ -56,9 +56,6 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	openTok, closeTok := tok.StartEnd()
 	trivia := p.trivia.scopeTrivia(tok.ID())
 
-	// Print the first string part using the fused token's outer trivia.
-	p.printTokenAs(tok, gap, openTok.Text())
-
 	// Collect interior string parts from the children cursor.
 	var parts []token.Token
 	cursor := tok.Children()
@@ -69,6 +66,8 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	}
 
 	if !p.options.Format {
+		// Print the first string part using the fused token's outer trivia.
+		p.printTokenAs(tok, gap, openTok.Text())
 		for i, part := range parts {
 			p.emitTriviaSlot(trivia, i)
 			p.printToken(part, gapNone)
@@ -78,8 +77,11 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 		return
 	}
 
-	// In format mode, indent continuation parts.
+	// In format mode, all parts go on their own indented lines.
+	// The first element uses the fused token's trivia, with a
+	// newline gap to start on a new line after the `=`.
 	p.withIndent(func(indented *printer) {
+		indented.printTokenAs(tok, gapNewline, openTok.Text())
 		for i, part := range parts {
 			indented.emitTriviaSlot(trivia, i)
 			indented.printToken(part, gapNewline)
@@ -127,7 +129,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			p.emitTriviaSlot(slots, i)
 			elemGap := gapNone
 			if i > 0 {
-				p.printToken(elements.Comma(i-1), gapNone)
+				p.printToken(elements.Comma(i-1), p.semiGap())
 				elemGap = gapSpace
 			}
 			p.printExpr(elements.At(i), elemGap)
@@ -165,7 +167,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(slots, i)
 			if i > 0 {
-				indented.printToken(elements.Comma(i-1), gapNone)
+				indented.printToken(elements.Comma(i-1), p.semiGap())
 			}
 			indented.printExpr(elements.At(i), gapNewline)
 		}

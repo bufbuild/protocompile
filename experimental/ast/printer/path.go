@@ -24,14 +24,16 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 
 	first := true
 	for pc := range path.Components {
-		// Print separator (dot or slash) if present
+		// Print separator (dot or slash) if present.
+		// Use gapGlue so that comments between path components are
+		// glued without spaces (e.g., header/*comment*/.v1).
 		if !pc.Separator().IsZero() {
-			p.printToken(pc.Separator(), gapNone)
+			p.printToken(pc.Separator(), gapGlue)
 		}
 
 		// Print the name component
 		if !pc.Name().IsZero() {
-			componentGap := gapNone
+			componentGap := gapGlue
 			if first {
 				componentGap = gap
 				first = false
@@ -46,9 +48,9 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 
 				p.printToken(openTok, componentGap)
 				p.emitTriviaSlot(trivia, 0)
-				p.printPath(extn, gapNone)
+				p.printPath(extn, gapGlue)
 				p.emitTriviaSlot(trivia, 1)
-				p.printToken(closeTok, gapNone)
+				p.printToken(closeTok, gapGlue)
 			} else {
 				// Simple identifier
 				p.printToken(pc.Name(), componentGap)

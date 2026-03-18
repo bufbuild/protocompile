@@ -32,6 +32,8 @@ const (
 	gapNewline
 	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
 	gapBlankline // gapBlankline inserts two newline characters
+	gapInline    // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
+	gapGlue      // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
 )
 
 // scopeKind distinguishes file-level scopes from body-level scopes,
@@ -46,6 +48,18 @@ const (
 // PrintFile renders an AST file to protobuf source text.
 func PrintFile(options Options, file *ast.File) string {
 	options = options.withDefaults()
+
+	// In format mode, a file with no declarations and no comments
+	// produces empty output. The dom renderer always appends a trailing
+	// newline, so we short-circuit here.
+	if options.Format && file.Decls().Len() == 0 {
+		trivia := buildTriviaIndex(file.Stream())
+		scope := trivia.scopeTrivia(0)
+		if !triviaHasComments(scope) {
+			return ""
+		}
+	}
+
 	return dom.Render(options.domOptions(), func(push dom.Sink) {
 		trivia := buildTriviaIndex(file.Stream())
 		p := &printer{
@@ -93,10 +107,13 @@ func (p *printer) printFile(file *ast.File) {
 	}
 	p.printScopeDecls(trivia, decls, scopeFile)
 	// In format mode, trailing file comments need a newline gap so they
-	// don't run into the last declaration's closing token.
+	// don't run into the last declaration's closing token. But if there
+	// are no declarations at all, emit nothing (empty file = empty output).
 	endGap := gapNone
 	if p.options.Format {
-		endGap = gapNewline
+		if decls.Len() > 0 || p.pendingHasComments() {
+			endGap = gapNewline
+		}
 	}
 	p.emitTrivia(endGap)
 }
@@ -155,7 +172,11 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				p.push(dom.Text(t.Text()))
+				text := t.Text()
+				if p.options.Format {
+					text = strings.TrimRight(text, " \t")
+				}
+				p.push(dom.Text(text))
 			}
 		}
 	} else {
@@ -210,10 +231,14 @@ func (p *printer) declGap(
 	}
 
 	// File level: blank line between different sections (syntax ->
-	// package, imports -> options, etc.) and between body declarations.
+	// package, imports -> options, etc.). For body declarations,
+	// preserve blank lines from the source rather than always adding them.
 	if scope == scopeFile {
 		prev, curr := rankDecl(decls.At(i-1)), rankDecl(decls.At(i))
-		if prev != curr || curr == rankBody {
+		if prev != curr {
+			return gapBlankline
+		}
+		if curr == rankBody && trivia.hasBlankBefore(i) {
 			return gapBlankline
 		}
 		return gapNewline
@@ -292,6 +317,11 @@ func (p *printer) emitGap(gap gapStyle) {
 	case gapBlankline:
 		p.push(dom.Text("\n"))
 		p.push(dom.Text("\n"))
+	case gapInline:
+		// gapInline emits nothing when there are no comments.
+		// Comment handling is done in emitTrivia.
+	case gapGlue:
+		// gapGlue emits nothing (like gapNone).
 	}
 }
 
@@ -323,8 +353,23 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	}
 
 	afterGap := gapSoftline
-	if gap == gapSpace {
+	switch gap {
+	case gapSpace:
 		afterGap = gapSpace
+	case gapGlue:
+		// gapGlue is used for path separators where comments should be
+		// glued to their tokens with no surrounding spaces.
+		afterGap = gapNone
+	case gapInline:
+		// gapInline is used for punctuation tokens (`;`, `,`) where
+		// comments should have a space before the first and no gap after
+		// the last, keeping the punctuation on the same line.
+		afterGap = gapNone
+	}
+
+	firstGap := gap
+	if gap == gapInline {
+		firstGap = gapSpace
 	}
 
 	hasComment := false
@@ -341,22 +386,39 @@ func (p *printer) emitTrivia(gap gapStyle) {
 			continue
 		}
 		if !hasComment {
-			p.emitGap(gap)
+			p.emitGap(firstGap)
 		} else {
 			p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
 		}
 		newlineRun = 0
-		p.push(dom.Text(tok.Text()))
+		text := tok.Text()
+		if p.options.Format {
+			text = strings.TrimRight(text, " \t")
+		}
+		p.push(dom.Text(text))
 		hasComment = true
-		prevIsLine = strings.HasPrefix(tok.Text(), "//")
+		prevIsLine = strings.HasPrefix(text, "//")
 	}
 	p.pending = p.pending[:0]
 
 	if hasComment {
-		p.emitGap(commentGap(afterGap, prevIsLine, 0))
+		// Use the actual newlineRun from trailing tokens after the last
+		// comment. When the source had a blank line (2+ newlines) after
+		// the last comment, this preserves it.
+		p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
 		return
 	}
 	p.emitGap(gap)
+}
+
+// semiGap returns the gap to use before a semicolon or comma.
+// In format mode, uses gapInline to keep comments on the same line as
+// the preceding token. In non-format mode, uses gapNone.
+func (p *printer) semiGap() gapStyle {
+	if p.options.Format {
+		return gapInline
+	}
+	return gapNone
 }
 
 // withIndent runs fn with an indented printer, swapping the sink temporarily.
