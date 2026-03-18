@@ -1,0 +1,166 @@
+"testdata/options/values/locations.proto":
+- { path: "", start: { line: 16, column: 0 }, end: { line: 61, column: 1 } }
+- path: ".syntax"
+  start: { line: 16, column: 0 }
+  end: { line: 16, column: 18 }
+  leading: "% descriptor: true\n% source_code_info: true\n"
+  detached: {}
+- path: ".package"
+  start: { line: 18, column: 0 }
+  end: { line: 18, column: 17 }
+- path: ".dependency.0"
+  start: { line: 20, column: 0 }
+  end: { line: 20, column: 42 }
+- path: ".options"
+  start: { line: 22, column: 0 }
+  end: { line: 27, column: 2 }
+- path: ".options.0"
+  start: { line: 22, column: 7 }
+  end: { line: 27, column: 1 }
+- path: ".message_type[Foo]"
+  start: { line: 29, column: 0 }
+  end: { line: 43, column: 1 }
+- path: ".message_type[Foo].name"
+  start: { line: 29, column: 8 }
+  end: { line: 29, column: 11 }
+- path: ".message_type[Foo].options"
+  start: { line: 30, column: 4 }
+  end: { line: 32, column: 6 }
+- path: ".message_type[Foo].options.0"
+  start: { line: 30, column: 11 }
+  end: { line: 32, column: 5 }
+- path: ".message_type[Foo].field[bar].label"
+  start: { line: 34, column: 4 }
+  end: { line: 34, column: 12 }
+- path: ".message_type[Foo].field[bar]"
+  start: { line: 34, column: 4 }
+  end: { line: 42, column: 6 }
+- path: ".message_type[Foo].field[bar].type"
+  start: { line: 34, column: 13 }
+  end: { line: 34, column: 19 }
+- path: ".message_type[Foo].field[bar].name"
+  start: { line: 34, column: 20 }
+  end: { line: 34, column: 23 }
+- path: ".message_type[Foo].field[bar].number"
+  start: { line: 34, column: 26 }
+  end: { line: 34, column: 27 }
+- path: ".message_type[Foo].field[bar].options"
+  start: { line: 34, column: 28 }
+  end: { line: 42, column: 5 }
+- path: ".message_type[Foo].field[bar].options.0"
+  start: { line: 35, column: 6 }
+  end: { line: 41, column: 7 }
+- path: ".message_type[OptionMessage]"
+  start: { line: 45, column: 0 }
+  end: { line: 49, column: 1 }
+- path: ".message_type[OptionMessage].name"
+  start: { line: 45, column: 8 }
+  end: { line: 45, column: 21 }
+- path: ".message_type[OptionMessage].field[a].label"
+  start: { line: 46, column: 4 }
+  end: { line: 46, column: 12 }
+- path: ".message_type[OptionMessage].field[a]"
+  start: { line: 46, column: 4 }
+  end: { line: 46, column: 26 }
+- path: ".message_type[OptionMessage].field[a].type"
+  start: { line: 46, column: 13 }
+  end: { line: 46, column: 19 }
+- path: ".message_type[OptionMessage].field[a].name"
+  start: { line: 46, column: 20 }
+  end: { line: 46, column: 21 }
+- path: ".message_type[OptionMessage].field[a].number"
+  start: { line: 46, column: 24 }
+  end: { line: 46, column: 25 }
+- path: ".message_type[OptionMessage].field[b].label"
+  start: { line: 47, column: 4 }
+  end: { line: 47, column: 12 }
+- path: ".message_type[OptionMessage].field[b]"
+  start: { line: 47, column: 4 }
+  end: { line: 47, column: 25 }
+- path: ".message_type[OptionMessage].field[b].type"
+  start: { line: 47, column: 13 }
+  end: { line: 47, column: 18 }
+- path: ".message_type[OptionMessage].field[b].name"
+  start: { line: 47, column: 19 }
+  end: { line: 47, column: 20 }
+- path: ".message_type[OptionMessage].field[b].number"
+  start: { line: 47, column: 23 }
+  end: { line: 47, column: 24 }
+- path: ".message_type[OptionMessage].field[c].label"
+  start: { line: 48, column: 4 }
+  end: { line: 48, column: 12 }
+- path: ".message_type[OptionMessage].field[c]"
+  start: { line: 48, column: 4 }
+  end: { line: 48, column: 25 }
+- path: ".message_type[OptionMessage].field[c].type"
+  start: { line: 48, column: 13 }
+  end: { line: 48, column: 18 }
+- path: ".message_type[OptionMessage].field[c].name"
+  start: { line: 48, column: 19 }
+  end: { line: 48, column: 20 }
+- path: ".message_type[OptionMessage].field[c].number"
+  start: { line: 48, column: 23 }
+  end: { line: 48, column: 24 }
+- path: ".extension"
+  start: { line: 51, column: 0 }
+  end: { line: 53, column: 1 }
+- path: ".extension[x].extendee"
+  start: { line: 51, column: 7 }
+  end: { line: 51, column: 34 }
+- path: ".extension[x].label"
+  start: { line: 52, column: 4 }
+  end: { line: 52, column: 12 }
+- path: ".extension[x]"
+  start: { line: 52, column: 4 }
+  end: { line: 52, column: 36 }
+- path: ".extension[x].type_name"
+  start: { line: 52, column: 13 }
+  end: { line: 52, column: 26 }
+- path: ".extension[x].name"
+  start: { line: 52, column: 27 }
+  end: { line: 52, column: 28 }
+- path: ".extension[x].number"
+  start: { line: 52, column: 31 }
+  end: { line: 52, column: 35 }
+- path: ".extension"
+  start: { line: 55, column: 0 }
+  end: { line: 57, column: 1 }
+- path: ".extension[y].extendee"
+  start: { line: 55, column: 7 }
+  end: { line: 55, column: 37 }
+- path: ".extension[y].label"
+  start: { line: 56, column: 4 }
+  end: { line: 56, column: 12 }
+- path: ".extension[y]"
+  start: { line: 56, column: 4 }
+  end: { line: 56, column: 36 }
+- path: ".extension[y].type_name"
+  start: { line: 56, column: 13 }
+  end: { line: 56, column: 26 }
+- path: ".extension[y].name"
+  start: { line: 56, column: 27 }
+  end: { line: 56, column: 28 }
+- path: ".extension[y].number"
+  start: { line: 56, column: 31 }
+  end: { line: 56, column: 35 }
+- path: ".extension"
+  start: { line: 59, column: 0 }
+  end: { line: 61, column: 1 }
+- path: ".extension[z].extendee"
+  start: { line: 59, column: 7 }
+  end: { line: 59, column: 35 }
+- path: ".extension[z].label"
+  start: { line: 60, column: 4 }
+  end: { line: 60, column: 12 }
+- path: ".extension[z]"
+  start: { line: 60, column: 4 }
+  end: { line: 60, column: 36 }
+- path: ".extension[z].type_name"
+  start: { line: 60, column: 13 }
+  end: { line: 60, column: 26 }
+- path: ".extension[z].name"
+  start: { line: 60, column: 27 }
+  end: { line: 60, column: 28 }
+- path: ".extension[z].number"
+  start: { line: 60, column: 31 }
+  end: { line: 60, column: 35 }

@@ -16,6 +16,8 @@ package prototest
 
 import (
 	"fmt"
+	"reflect"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -25,8 +27,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/reflectx"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
@@ -38,11 +42,11 @@ type ToYAMLOptions struct {
 	Indent string
 }
 
-// ToYAML converts a Protobuf message into a YAML document in a deterministic
-// manner. This is intended for generating YAML for golden outputs.
+// ToYAML converts a Protobuf message or Go struct into a YAML document in a
+// deterministic manner. This is intended for generating YAML for golden outputs.
 //
 // The result will use a compressed representation where possible.
-func ToYAML(m proto.Message, opts ToYAMLOptions) string {
+func ToYAML(v any, opts ToYAMLOptions) string {
 	if opts.MaxWidth == 0 {
 		opts.MaxWidth = 80
 	}
@@ -51,7 +55,18 @@ func ToYAML(m proto.Message, opts ToYAMLOptions) string {
 		opts.Indent = "  "
 	}
 
-	d := opts.message(m.ProtoReflect())
+	var d *doc
+	if msg, ok := v.(proto.Message); ok {
+		d = opts.message(msg.ProtoReflect())
+	} else {
+		v = opts.any(reflect.ValueOf(v))
+		if v2, ok := v.(*doc); ok {
+			d = v2
+		} else {
+			d = new(doc)
+			d.push(protoreflect.Name("value"), v)
+		}
+	}
 	d.prepare()
 
 	return dom.Render(dom.Options{
@@ -129,6 +144,84 @@ func (y ToYAMLOptions) value(v protoreflect.Value, f protoreflect.FieldDescripto
 
 	default:
 		return v
+	}
+}
+
+// goValue converts a Go value into a value that can be placed into a [doc].
+func (y ToYAMLOptions) any(v reflect.Value) any {
+	if b, ok := reflect.TypeAssert[[]byte](v); ok {
+		return string(b)
+	}
+	if v, ok := reflect.TypeAssert[reflect.Value](v); ok {
+		return y.any(v)
+	}
+
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if v.IsZero() {
+			return nil
+		}
+		return y.any(v.Elem())
+	case reflect.Slice, reflect.Array:
+		if v.Kind() == reflect.Slice && v.IsZero() {
+			return nil
+		}
+
+		d := new(doc)
+		for i := range v.Len() {
+			d.push(nil, y.any(v.Index(i)))
+		}
+		return d
+	case reflect.Map:
+		if v.IsZero() {
+			return nil
+		}
+
+		d := new(doc)
+		keys := reflect.MakeSlice(reflect.SliceOf(v.Type().Key()), 0, v.Len())
+		iter := v.MapRange()
+		for iter.Next() {
+			keys = reflect.Append(keys, iter.Key())
+		}
+		reflectx.Sort(keys)
+		for i := range keys.Len() {
+			key := keys.Index(i)
+			d.push(
+				y.any(key),
+				y.any(v.MapIndex(key)),
+			)
+		}
+		return d
+
+	case reflect.Struct:
+		d := new(doc)
+		t := v.Type()
+		for i := range t.NumField() {
+			f := t.Field(i)
+			d.push(
+				protoreflect.Name(cases.Snake.Convert(f.Name)),
+				y.any(v.Field(i)),
+			)
+		}
+		return d
+
+	case reflect.Func:
+		if v.IsZero() {
+			return nil
+		}
+
+		pc := v.Pointer()
+		name := runtime.FuncForPC(pc).Name()
+		if name == "" {
+			name = "?"
+		}
+
+		return fmt.Sprintf("<func %s>", name)
+	case reflect.Chan:
+		return fmt.Sprintf("<%v>", v.Type())
+
+	default:
+		return v.Interface()
 	}
 }
 
@@ -307,9 +400,11 @@ type doc struct {
 }
 
 // push adds a new entry to this document.
-//
-// All pushes entries must either have a non-nil key OR a nil key.
 func (d *doc) push(k, v any) {
+	if v == nil {
+		return
+	}
+
 	if len(d.pairs) == 0 {
 		d.isArray = k == nil
 	} else if d.isArray != (k == nil) {

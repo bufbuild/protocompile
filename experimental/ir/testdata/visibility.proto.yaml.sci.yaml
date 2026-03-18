@@ -1,0 +1,858 @@
+"export.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 21, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 17 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 20 }
+- path: ".options"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 55 }
+- path: ".options.features.default_symbol_visibility"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 55 }
+- path: ".message_type[N]"
+  start: { line: 5, column: 0 }
+  end: { line: 9, column: 1 }
+- path: ".message_type[N].name"
+  start: { line: 5, column: 8 }
+  end: { line: 5, column: 9 }
+- path: ".message_type[N].nested_type[D]"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 14 }
+- path: ".message_type[N].nested_type[D].name"
+  start: { line: 6, column: 10 }
+  end: { line: 6, column: 11 }
+- path: ".message_type[N].nested_type[E]"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 21 }
+- path: ".message_type[N].nested_type[E].name"
+  start: { line: 7, column: 17 }
+  end: { line: 7, column: 18 }
+- path: ".message_type[N].nested_type[L]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 20 }
+- path: ".message_type[N].nested_type[L].name"
+  start: { line: 8, column: 16 }
+  end: { line: 8, column: 17 }
+- path: ".message_type[D]"
+  start: { line: 10, column: 0 }
+  end: { line: 10, column: 12 }
+- path: ".message_type[D].name"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+- path: ".message_type[E]"
+  start: { line: 11, column: 0 }
+  end: { line: 11, column: 19 }
+- path: ".message_type[E].name"
+  start: { line: 11, column: 15 }
+  end: { line: 11, column: 16 }
+- path: ".message_type[L]"
+  start: { line: 12, column: 0 }
+  end: { line: 12, column: 18 }
+- path: ".message_type[L].name"
+  start: { line: 12, column: 14 }
+  end: { line: 12, column: 15 }
+- path: ".message_type[U]"
+  start: { line: 14, column: 0 }
+  end: { line: 21, column: 1 }
+- path: ".message_type[U].name"
+  start: { line: 14, column: 8 }
+  end: { line: 14, column: 9 }
+- path: ".message_type[U].field[d].type_name"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 3 }
+- path: ".message_type[U].field[d]"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 10 }
+- path: ".message_type[U].field[d].name"
+  start: { line: 15, column: 4 }
+  end: { line: 15, column: 5 }
+- path: ".message_type[U].field[d].number"
+  start: { line: 15, column: 8 }
+  end: { line: 15, column: 9 }
+- path: ".message_type[U].field[e].type_name"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 3 }
+- path: ".message_type[U].field[e]"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 10 }
+- path: ".message_type[U].field[e].name"
+  start: { line: 16, column: 4 }
+  end: { line: 16, column: 5 }
+- path: ".message_type[U].field[e].number"
+  start: { line: 16, column: 8 }
+  end: { line: 16, column: 9 }
+- path: ".message_type[U].field[l].type_name"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 3 }
+- path: ".message_type[U].field[l]"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 10 }
+- path: ".message_type[U].field[l].name"
+  start: { line: 17, column: 4 }
+  end: { line: 17, column: 5 }
+- path: ".message_type[U].field[l].number"
+  start: { line: 17, column: 8 }
+  end: { line: 17, column: 9 }
+- path: ".message_type[U].field[nd].type_name"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 5 }
+- path: ".message_type[U].field[nd]"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 13 }
+- path: ".message_type[U].field[nd].name"
+  start: { line: 18, column: 6 }
+  end: { line: 18, column: 8 }
+- path: ".message_type[U].field[nd].number"
+  start: { line: 18, column: 11 }
+  end: { line: 18, column: 12 }
+- path: ".message_type[U].field[ne].type_name"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 5 }
+- path: ".message_type[U].field[ne]"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 13 }
+- path: ".message_type[U].field[ne].name"
+  start: { line: 19, column: 6 }
+  end: { line: 19, column: 8 }
+- path: ".message_type[U].field[ne].number"
+  start: { line: 19, column: 11 }
+  end: { line: 19, column: 12 }
+- path: ".message_type[U].field[nl].type_name"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 5 }
+- path: ".message_type[U].field[nl]"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 13 }
+- path: ".message_type[U].field[nl].name"
+  start: { line: 20, column: 6 }
+  end: { line: 20, column: 8 }
+- path: ".message_type[U].field[nl].number"
+  start: { line: 20, column: 11 }
+  end: { line: 20, column: 12 }
+"local.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 21, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 17 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 19 }
+- path: ".options"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 54 }
+- path: ".options.features.default_symbol_visibility"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 54 }
+- path: ".message_type[N]"
+  start: { line: 5, column: 0 }
+  end: { line: 9, column: 1 }
+- path: ".message_type[N].name"
+  start: { line: 5, column: 8 }
+  end: { line: 5, column: 9 }
+- path: ".message_type[N].nested_type[D]"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 14 }
+- path: ".message_type[N].nested_type[D].name"
+  start: { line: 6, column: 10 }
+  end: { line: 6, column: 11 }
+- path: ".message_type[N].nested_type[E]"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 21 }
+- path: ".message_type[N].nested_type[E].name"
+  start: { line: 7, column: 17 }
+  end: { line: 7, column: 18 }
+- path: ".message_type[N].nested_type[L]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 20 }
+- path: ".message_type[N].nested_type[L].name"
+  start: { line: 8, column: 16 }
+  end: { line: 8, column: 17 }
+- path: ".message_type[D]"
+  start: { line: 10, column: 0 }
+  end: { line: 10, column: 12 }
+- path: ".message_type[D].name"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+- path: ".message_type[E]"
+  start: { line: 11, column: 0 }
+  end: { line: 11, column: 19 }
+- path: ".message_type[E].name"
+  start: { line: 11, column: 15 }
+  end: { line: 11, column: 16 }
+- path: ".message_type[L]"
+  start: { line: 12, column: 0 }
+  end: { line: 12, column: 18 }
+- path: ".message_type[L].name"
+  start: { line: 12, column: 14 }
+  end: { line: 12, column: 15 }
+- path: ".message_type[U]"
+  start: { line: 14, column: 0 }
+  end: { line: 21, column: 1 }
+- path: ".message_type[U].name"
+  start: { line: 14, column: 8 }
+  end: { line: 14, column: 9 }
+- path: ".message_type[U].field[d].type_name"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 3 }
+- path: ".message_type[U].field[d]"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 10 }
+- path: ".message_type[U].field[d].name"
+  start: { line: 15, column: 4 }
+  end: { line: 15, column: 5 }
+- path: ".message_type[U].field[d].number"
+  start: { line: 15, column: 8 }
+  end: { line: 15, column: 9 }
+- path: ".message_type[U].field[e].type_name"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 3 }
+- path: ".message_type[U].field[e]"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 10 }
+- path: ".message_type[U].field[e].name"
+  start: { line: 16, column: 4 }
+  end: { line: 16, column: 5 }
+- path: ".message_type[U].field[e].number"
+  start: { line: 16, column: 8 }
+  end: { line: 16, column: 9 }
+- path: ".message_type[U].field[l].type_name"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 3 }
+- path: ".message_type[U].field[l]"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 10 }
+- path: ".message_type[U].field[l].name"
+  start: { line: 17, column: 4 }
+  end: { line: 17, column: 5 }
+- path: ".message_type[U].field[l].number"
+  start: { line: 17, column: 8 }
+  end: { line: 17, column: 9 }
+- path: ".message_type[U].field[nd].type_name"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 5 }
+- path: ".message_type[U].field[nd]"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 13 }
+- path: ".message_type[U].field[nd].name"
+  start: { line: 18, column: 6 }
+  end: { line: 18, column: 8 }
+- path: ".message_type[U].field[nd].number"
+  start: { line: 18, column: 11 }
+  end: { line: 18, column: 12 }
+- path: ".message_type[U].field[ne].type_name"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 5 }
+- path: ".message_type[U].field[ne]"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 13 }
+- path: ".message_type[U].field[ne].name"
+  start: { line: 19, column: 6 }
+  end: { line: 19, column: 8 }
+- path: ".message_type[U].field[ne].number"
+  start: { line: 19, column: 11 }
+  end: { line: 19, column: 12 }
+- path: ".message_type[U].field[nl].type_name"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 5 }
+- path: ".message_type[U].field[nl]"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 13 }
+- path: ".message_type[U].field[nl].name"
+  start: { line: 20, column: 6 }
+  end: { line: 20, column: 8 }
+- path: ".message_type[U].field[nl].number"
+  start: { line: 20, column: 11 }
+  end: { line: 20, column: 12 }
+"main.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 42, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 17 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 13 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 22 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 21 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 25 }
+- path: ".dependency.0"
+  start: { line: 6, column: 0 }
+  end: { line: 6, column: 22 }
+- path: ".message_type[Export]"
+  start: { line: 8, column: 0 }
+  end: { line: 15, column: 1 }
+- path: ".message_type[Export].name"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 14 }
+- path: ".message_type[Export].field[d].type_name"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 10 }
+- path: ".message_type[Export].field[d]"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 17 }
+- path: ".message_type[Export].field[d].name"
+  start: { line: 9, column: 11 }
+  end: { line: 9, column: 12 }
+- path: ".message_type[Export].field[d].number"
+  start: { line: 9, column: 15 }
+  end: { line: 9, column: 16 }
+- path: ".message_type[Export].field[e].type_name"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 10 }
+- path: ".message_type[Export].field[e]"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 17 }
+- path: ".message_type[Export].field[e].name"
+  start: { line: 10, column: 11 }
+  end: { line: 10, column: 12 }
+- path: ".message_type[Export].field[e].number"
+  start: { line: 10, column: 15 }
+  end: { line: 10, column: 16 }
+- path: ".message_type[Export].field[l].type_name"
+  start: { line: 11, column: 2 }
+  end: { line: 11, column: 10 }
+- path: ".message_type[Export].field[l]"
+  start: { line: 11, column: 2 }
+  end: { line: 11, column: 17 }
+- path: ".message_type[Export].field[l].name"
+  start: { line: 11, column: 11 }
+  end: { line: 11, column: 12 }
+- path: ".message_type[Export].field[l].number"
+  start: { line: 11, column: 15 }
+  end: { line: 11, column: 16 }
+- path: ".message_type[Export].field[nd].type_name"
+  start: { line: 12, column: 2 }
+  end: { line: 12, column: 12 }
+- path: ".message_type[Export].field[nd]"
+  start: { line: 12, column: 2 }
+  end: { line: 12, column: 20 }
+- path: ".message_type[Export].field[nd].name"
+  start: { line: 12, column: 13 }
+  end: { line: 12, column: 15 }
+- path: ".message_type[Export].field[nd].number"
+  start: { line: 12, column: 18 }
+  end: { line: 12, column: 19 }
+- path: ".message_type[Export].field[ne].type_name"
+  start: { line: 13, column: 2 }
+  end: { line: 13, column: 12 }
+- path: ".message_type[Export].field[ne]"
+  start: { line: 13, column: 2 }
+  end: { line: 13, column: 20 }
+- path: ".message_type[Export].field[ne].name"
+  start: { line: 13, column: 13 }
+  end: { line: 13, column: 15 }
+- path: ".message_type[Export].field[ne].number"
+  start: { line: 13, column: 18 }
+  end: { line: 13, column: 19 }
+- path: ".message_type[Export].field[nl].type_name"
+  start: { line: 14, column: 2 }
+  end: { line: 14, column: 12 }
+- path: ".message_type[Export].field[nl]"
+  start: { line: 14, column: 2 }
+  end: { line: 14, column: 20 }
+- path: ".message_type[Export].field[nl].name"
+  start: { line: 14, column: 13 }
+  end: { line: 14, column: 15 }
+- path: ".message_type[Export].field[nl].number"
+  start: { line: 14, column: 18 }
+  end: { line: 14, column: 19 }
+- path: ".message_type[Local]"
+  start: { line: 17, column: 0 }
+  end: { line: 24, column: 1 }
+- path: ".message_type[Local].name"
+  start: { line: 17, column: 8 }
+  end: { line: 17, column: 13 }
+- path: ".message_type[Local].field[d].type_name"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 9 }
+- path: ".message_type[Local].field[d]"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 16 }
+- path: ".message_type[Local].field[d].name"
+  start: { line: 18, column: 10 }
+  end: { line: 18, column: 11 }
+- path: ".message_type[Local].field[d].number"
+  start: { line: 18, column: 14 }
+  end: { line: 18, column: 15 }
+- path: ".message_type[Local].field[e].type_name"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 9 }
+- path: ".message_type[Local].field[e]"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 16 }
+- path: ".message_type[Local].field[e].name"
+  start: { line: 19, column: 10 }
+  end: { line: 19, column: 11 }
+- path: ".message_type[Local].field[e].number"
+  start: { line: 19, column: 14 }
+  end: { line: 19, column: 15 }
+- path: ".message_type[Local].field[l].type_name"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 9 }
+- path: ".message_type[Local].field[l]"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 16 }
+- path: ".message_type[Local].field[l].name"
+  start: { line: 20, column: 10 }
+  end: { line: 20, column: 11 }
+- path: ".message_type[Local].field[l].number"
+  start: { line: 20, column: 14 }
+  end: { line: 20, column: 15 }
+- path: ".message_type[Local].field[nd].type_name"
+  start: { line: 21, column: 2 }
+  end: { line: 21, column: 11 }
+- path: ".message_type[Local].field[nd]"
+  start: { line: 21, column: 2 }
+  end: { line: 21, column: 19 }
+- path: ".message_type[Local].field[nd].name"
+  start: { line: 21, column: 12 }
+  end: { line: 21, column: 14 }
+- path: ".message_type[Local].field[nd].number"
+  start: { line: 21, column: 17 }
+  end: { line: 21, column: 18 }
+- path: ".message_type[Local].field[ne].type_name"
+  start: { line: 22, column: 2 }
+  end: { line: 22, column: 11 }
+- path: ".message_type[Local].field[ne]"
+  start: { line: 22, column: 2 }
+  end: { line: 22, column: 19 }
+- path: ".message_type[Local].field[ne].name"
+  start: { line: 22, column: 12 }
+  end: { line: 22, column: 14 }
+- path: ".message_type[Local].field[ne].number"
+  start: { line: 22, column: 17 }
+  end: { line: 22, column: 18 }
+- path: ".message_type[Local].field[nl].type_name"
+  start: { line: 23, column: 2 }
+  end: { line: 23, column: 11 }
+- path: ".message_type[Local].field[nl]"
+  start: { line: 23, column: 2 }
+  end: { line: 23, column: 19 }
+- path: ".message_type[Local].field[nl].name"
+  start: { line: 23, column: 12 }
+  end: { line: 23, column: 14 }
+- path: ".message_type[Local].field[nl].number"
+  start: { line: 23, column: 17 }
+  end: { line: 23, column: 18 }
+- path: ".message_type[TopLevel]"
+  start: { line: 26, column: 0 }
+  end: { line: 33, column: 1 }
+- path: ".message_type[TopLevel].name"
+  start: { line: 26, column: 8 }
+  end: { line: 26, column: 16 }
+- path: ".message_type[TopLevel].field[d].type_name"
+  start: { line: 27, column: 2 }
+  end: { line: 27, column: 13 }
+- path: ".message_type[TopLevel].field[d]"
+  start: { line: 27, column: 2 }
+  end: { line: 27, column: 20 }
+- path: ".message_type[TopLevel].field[d].name"
+  start: { line: 27, column: 14 }
+  end: { line: 27, column: 15 }
+- path: ".message_type[TopLevel].field[d].number"
+  start: { line: 27, column: 18 }
+  end: { line: 27, column: 19 }
+- path: ".message_type[TopLevel].field[e].type_name"
+  start: { line: 28, column: 2 }
+  end: { line: 28, column: 13 }
+- path: ".message_type[TopLevel].field[e]"
+  start: { line: 28, column: 2 }
+  end: { line: 28, column: 20 }
+- path: ".message_type[TopLevel].field[e].name"
+  start: { line: 28, column: 14 }
+  end: { line: 28, column: 15 }
+- path: ".message_type[TopLevel].field[e].number"
+  start: { line: 28, column: 18 }
+  end: { line: 28, column: 19 }
+- path: ".message_type[TopLevel].field[l].type_name"
+  start: { line: 29, column: 2 }
+  end: { line: 29, column: 13 }
+- path: ".message_type[TopLevel].field[l]"
+  start: { line: 29, column: 2 }
+  end: { line: 29, column: 20 }
+- path: ".message_type[TopLevel].field[l].name"
+  start: { line: 29, column: 14 }
+  end: { line: 29, column: 15 }
+- path: ".message_type[TopLevel].field[l].number"
+  start: { line: 29, column: 18 }
+  end: { line: 29, column: 19 }
+- path: ".message_type[TopLevel].field[nd].type_name"
+  start: { line: 30, column: 2 }
+  end: { line: 30, column: 15 }
+- path: ".message_type[TopLevel].field[nd]"
+  start: { line: 30, column: 2 }
+  end: { line: 30, column: 23 }
+- path: ".message_type[TopLevel].field[nd].name"
+  start: { line: 30, column: 16 }
+  end: { line: 30, column: 18 }
+- path: ".message_type[TopLevel].field[nd].number"
+  start: { line: 30, column: 21 }
+  end: { line: 30, column: 22 }
+- path: ".message_type[TopLevel].field[ne].type_name"
+  start: { line: 31, column: 2 }
+  end: { line: 31, column: 15 }
+- path: ".message_type[TopLevel].field[ne]"
+  start: { line: 31, column: 2 }
+  end: { line: 31, column: 23 }
+- path: ".message_type[TopLevel].field[ne].name"
+  start: { line: 31, column: 16 }
+  end: { line: 31, column: 18 }
+- path: ".message_type[TopLevel].field[ne].number"
+  start: { line: 31, column: 21 }
+  end: { line: 31, column: 22 }
+- path: ".message_type[TopLevel].field[nl].type_name"
+  start: { line: 32, column: 2 }
+  end: { line: 32, column: 15 }
+- path: ".message_type[TopLevel].field[nl]"
+  start: { line: 32, column: 2 }
+  end: { line: 32, column: 23 }
+- path: ".message_type[TopLevel].field[nl].name"
+  start: { line: 32, column: 16 }
+  end: { line: 32, column: 18 }
+- path: ".message_type[TopLevel].field[nl].number"
+  start: { line: 32, column: 21 }
+  end: { line: 32, column: 22 }
+- path: ".message_type[Strict]"
+  start: { line: 35, column: 0 }
+  end: { line: 42, column: 1 }
+- path: ".message_type[Strict].name"
+  start: { line: 35, column: 8 }
+  end: { line: 35, column: 14 }
+- path: ".message_type[Strict].field[d].type_name"
+  start: { line: 36, column: 2 }
+  end: { line: 36, column: 10 }
+- path: ".message_type[Strict].field[d]"
+  start: { line: 36, column: 2 }
+  end: { line: 36, column: 17 }
+- path: ".message_type[Strict].field[d].name"
+  start: { line: 36, column: 11 }
+  end: { line: 36, column: 12 }
+- path: ".message_type[Strict].field[d].number"
+  start: { line: 36, column: 15 }
+  end: { line: 36, column: 16 }
+- path: ".message_type[Strict].field[e].type_name"
+  start: { line: 37, column: 2 }
+  end: { line: 37, column: 10 }
+- path: ".message_type[Strict].field[e]"
+  start: { line: 37, column: 2 }
+  end: { line: 37, column: 17 }
+- path: ".message_type[Strict].field[e].name"
+  start: { line: 37, column: 11 }
+  end: { line: 37, column: 12 }
+- path: ".message_type[Strict].field[e].number"
+  start: { line: 37, column: 15 }
+  end: { line: 37, column: 16 }
+- path: ".message_type[Strict].field[l].type_name"
+  start: { line: 38, column: 2 }
+  end: { line: 38, column: 10 }
+- path: ".message_type[Strict].field[l]"
+  start: { line: 38, column: 2 }
+  end: { line: 38, column: 17 }
+- path: ".message_type[Strict].field[l].name"
+  start: { line: 38, column: 11 }
+  end: { line: 38, column: 12 }
+- path: ".message_type[Strict].field[l].number"
+  start: { line: 38, column: 15 }
+  end: { line: 38, column: 16 }
+- path: ".message_type[Strict].field[nd].type_name"
+  start: { line: 39, column: 2 }
+  end: { line: 39, column: 12 }
+- path: ".message_type[Strict].field[nd]"
+  start: { line: 39, column: 2 }
+  end: { line: 39, column: 20 }
+- path: ".message_type[Strict].field[nd].name"
+  start: { line: 39, column: 13 }
+  end: { line: 39, column: 15 }
+- path: ".message_type[Strict].field[nd].number"
+  start: { line: 39, column: 18 }
+  end: { line: 39, column: 19 }
+- path: ".message_type[Strict].field[ne].type_name"
+  start: { line: 40, column: 2 }
+  end: { line: 40, column: 12 }
+- path: ".message_type[Strict].field[ne]"
+  start: { line: 40, column: 2 }
+  end: { line: 40, column: 20 }
+- path: ".message_type[Strict].field[ne].name"
+  start: { line: 40, column: 13 }
+  end: { line: 40, column: 15 }
+- path: ".message_type[Strict].field[ne].number"
+  start: { line: 40, column: 18 }
+  end: { line: 40, column: 19 }
+- path: ".message_type[Strict].field[nl].type_name"
+  start: { line: 41, column: 2 }
+  end: { line: 41, column: 12 }
+- path: ".message_type[Strict].field[nl]"
+  start: { line: 41, column: 2 }
+  end: { line: 41, column: 20 }
+- path: ".message_type[Strict].field[nl].name"
+  start: { line: 41, column: 13 }
+  end: { line: 41, column: 15 }
+- path: ".message_type[Strict].field[nl].number"
+  start: { line: 41, column: 18 }
+  end: { line: 41, column: 19 }
+"strict.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 21, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 17 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 20 }
+- path: ".options"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 51 }
+- path: ".options.features.default_symbol_visibility"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 51 }
+- path: ".message_type[N]"
+  start: { line: 5, column: 0 }
+  end: { line: 9, column: 1 }
+- path: ".message_type[N].name"
+  start: { line: 5, column: 8 }
+  end: { line: 5, column: 9 }
+- path: ".message_type[N].nested_type[D]"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 14 }
+- path: ".message_type[N].nested_type[D].name"
+  start: { line: 6, column: 10 }
+  end: { line: 6, column: 11 }
+- path: ".message_type[N].nested_type[E]"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 21 }
+- path: ".message_type[N].nested_type[E].name"
+  start: { line: 7, column: 17 }
+  end: { line: 7, column: 18 }
+- path: ".message_type[N].nested_type[L]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 20 }
+- path: ".message_type[N].nested_type[L].name"
+  start: { line: 8, column: 16 }
+  end: { line: 8, column: 17 }
+- path: ".message_type[D]"
+  start: { line: 10, column: 0 }
+  end: { line: 10, column: 12 }
+- path: ".message_type[D].name"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+- path: ".message_type[E]"
+  start: { line: 11, column: 0 }
+  end: { line: 11, column: 19 }
+- path: ".message_type[E].name"
+  start: { line: 11, column: 15 }
+  end: { line: 11, column: 16 }
+- path: ".message_type[L]"
+  start: { line: 12, column: 0 }
+  end: { line: 12, column: 18 }
+- path: ".message_type[L].name"
+  start: { line: 12, column: 14 }
+  end: { line: 12, column: 15 }
+- path: ".message_type[U]"
+  start: { line: 14, column: 0 }
+  end: { line: 21, column: 1 }
+- path: ".message_type[U].name"
+  start: { line: 14, column: 8 }
+  end: { line: 14, column: 9 }
+- path: ".message_type[U].field[d].type_name"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 3 }
+- path: ".message_type[U].field[d]"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 10 }
+- path: ".message_type[U].field[d].name"
+  start: { line: 15, column: 4 }
+  end: { line: 15, column: 5 }
+- path: ".message_type[U].field[d].number"
+  start: { line: 15, column: 8 }
+  end: { line: 15, column: 9 }
+- path: ".message_type[U].field[e].type_name"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 3 }
+- path: ".message_type[U].field[e]"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 10 }
+- path: ".message_type[U].field[e].name"
+  start: { line: 16, column: 4 }
+  end: { line: 16, column: 5 }
+- path: ".message_type[U].field[e].number"
+  start: { line: 16, column: 8 }
+  end: { line: 16, column: 9 }
+- path: ".message_type[U].field[l].type_name"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 3 }
+- path: ".message_type[U].field[l]"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 10 }
+- path: ".message_type[U].field[l].name"
+  start: { line: 17, column: 4 }
+  end: { line: 17, column: 5 }
+- path: ".message_type[U].field[l].number"
+  start: { line: 17, column: 8 }
+  end: { line: 17, column: 9 }
+- path: ".message_type[U].field[nd].type_name"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 5 }
+- path: ".message_type[U].field[nd]"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 13 }
+- path: ".message_type[U].field[nd].name"
+  start: { line: 18, column: 6 }
+  end: { line: 18, column: 8 }
+- path: ".message_type[U].field[nd].number"
+  start: { line: 18, column: 11 }
+  end: { line: 18, column: 12 }
+- path: ".message_type[U].field[ne].type_name"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 5 }
+- path: ".message_type[U].field[ne]"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 13 }
+- path: ".message_type[U].field[ne].name"
+  start: { line: 19, column: 6 }
+  end: { line: 19, column: 8 }
+- path: ".message_type[U].field[ne].number"
+  start: { line: 19, column: 11 }
+  end: { line: 19, column: 12 }
+- path: ".message_type[U].field[nl].type_name"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 5 }
+- path: ".message_type[U].field[nl]"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 13 }
+- path: ".message_type[U].field[nl].name"
+  start: { line: 20, column: 6 }
+  end: { line: 20, column: 8 }
+- path: ".message_type[U].field[nl].number"
+  start: { line: 20, column: 11 }
+  end: { line: 20, column: 12 }
+"top_level.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 21, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 17 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 23 }
+- path: ".options"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 61 }
+- path: ".options.features.default_symbol_visibility"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 61 }
+- path: ".message_type[N]"
+  start: { line: 5, column: 0 }
+  end: { line: 9, column: 1 }
+- path: ".message_type[N].name"
+  start: { line: 5, column: 8 }
+  end: { line: 5, column: 9 }
+- path: ".message_type[N].nested_type[D]"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 14 }
+- path: ".message_type[N].nested_type[D].name"
+  start: { line: 6, column: 10 }
+  end: { line: 6, column: 11 }
+- path: ".message_type[N].nested_type[E]"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 21 }
+- path: ".message_type[N].nested_type[E].name"
+  start: { line: 7, column: 17 }
+  end: { line: 7, column: 18 }
+- path: ".message_type[N].nested_type[L]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 20 }
+- path: ".message_type[N].nested_type[L].name"
+  start: { line: 8, column: 16 }
+  end: { line: 8, column: 17 }
+- path: ".message_type[D]"
+  start: { line: 10, column: 0 }
+  end: { line: 10, column: 12 }
+- path: ".message_type[D].name"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+- path: ".message_type[E]"
+  start: { line: 11, column: 0 }
+  end: { line: 11, column: 19 }
+- path: ".message_type[E].name"
+  start: { line: 11, column: 15 }
+  end: { line: 11, column: 16 }
+- path: ".message_type[L]"
+  start: { line: 12, column: 0 }
+  end: { line: 12, column: 18 }
+- path: ".message_type[L].name"
+  start: { line: 12, column: 14 }
+  end: { line: 12, column: 15 }
+- path: ".message_type[U]"
+  start: { line: 14, column: 0 }
+  end: { line: 21, column: 1 }
+- path: ".message_type[U].name"
+  start: { line: 14, column: 8 }
+  end: { line: 14, column: 9 }
+- path: ".message_type[U].field[d].type_name"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 3 }
+- path: ".message_type[U].field[d]"
+  start: { line: 15, column: 2 }
+  end: { line: 15, column: 10 }
+- path: ".message_type[U].field[d].name"
+  start: { line: 15, column: 4 }
+  end: { line: 15, column: 5 }
+- path: ".message_type[U].field[d].number"
+  start: { line: 15, column: 8 }
+  end: { line: 15, column: 9 }
+- path: ".message_type[U].field[e].type_name"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 3 }
+- path: ".message_type[U].field[e]"
+  start: { line: 16, column: 2 }
+  end: { line: 16, column: 10 }
+- path: ".message_type[U].field[e].name"
+  start: { line: 16, column: 4 }
+  end: { line: 16, column: 5 }
+- path: ".message_type[U].field[e].number"
+  start: { line: 16, column: 8 }
+  end: { line: 16, column: 9 }
+- path: ".message_type[U].field[l].type_name"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 3 }
+- path: ".message_type[U].field[l]"
+  start: { line: 17, column: 2 }
+  end: { line: 17, column: 10 }
+- path: ".message_type[U].field[l].name"
+  start: { line: 17, column: 4 }
+  end: { line: 17, column: 5 }
+- path: ".message_type[U].field[l].number"
+  start: { line: 17, column: 8 }
+  end: { line: 17, column: 9 }
+- path: ".message_type[U].field[nd].type_name"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 5 }
+- path: ".message_type[U].field[nd]"
+  start: { line: 18, column: 2 }
+  end: { line: 18, column: 13 }
+- path: ".message_type[U].field[nd].name"
+  start: { line: 18, column: 6 }
+  end: { line: 18, column: 8 }
+- path: ".message_type[U].field[nd].number"
+  start: { line: 18, column: 11 }
+  end: { line: 18, column: 12 }
+- path: ".message_type[U].field[ne].type_name"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 5 }
+- path: ".message_type[U].field[ne]"
+  start: { line: 19, column: 2 }
+  end: { line: 19, column: 13 }
+- path: ".message_type[U].field[ne].name"
+  start: { line: 19, column: 6 }
+  end: { line: 19, column: 8 }
+- path: ".message_type[U].field[ne].number"
+  start: { line: 19, column: 11 }
+  end: { line: 19, column: 12 }
+- path: ".message_type[U].field[nl].type_name"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 5 }
+- path: ".message_type[U].field[nl]"
+  start: { line: 20, column: 2 }
+  end: { line: 20, column: 13 }
+- path: ".message_type[U].field[nl].name"
+  start: { line: 20, column: 6 }
+  end: { line: 20, column: 8 }
+- path: ".message_type[U].field[nl].number"
+  start: { line: 20, column: 11 }
+  end: { line: 20, column: 12 }

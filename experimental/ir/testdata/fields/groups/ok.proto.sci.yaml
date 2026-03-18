@@ -1,0 +1,136 @@
+"testdata/fields/groups/ok.proto":
+- { path: "", start: { line: 17, column: 0 }, end: { line: 33, column: 1 } }
+- path: ".syntax"
+  start: { line: 17, column: 0 }
+  end: { line: 17, column: 18 }
+  leading: "% descriptor: true\n% source_code_info: true\n% exclude: [\"required fields\", \"group suntax\"]\n"
+  detached: {}
+- path: ".package"
+  start: { line: 19, column: 0 }
+  end: { line: 19, column: 13 }
+- path: ".message_type[Foo]"
+  start: { line: 21, column: 0 }
+  end: { line: 33, column: 1 }
+- path: ".message_type[Foo].name"
+  start: { line: 21, column: 8 }
+  end: { line: 21, column: 11 }
+- path: ".message_type[Foo].field[foobar].label"
+  start: { line: 22, column: 4 }
+  end: { line: 22, column: 12 }
+- path: ".message_type[Foo].field[foobar]"
+  start: { line: 22, column: 4 }
+  end: { line: 29, column: 5 }
+- path: ".message_type[Foo].nested_type[FooBar]"
+  start: { line: 22, column: 4 }
+  end: { line: 29, column: 5 }
+- path: ".message_type[Foo].field[foobar].type_name"
+  start: { line: 22, column: 13 }
+  end: { line: 22, column: 18 }
+- path: ".message_type[Foo].field[foobar].name"
+  start: { line: 22, column: 19 }
+  end: { line: 22, column: 25 }
+- path: ".message_type[Foo].nested_type[FooBar].name"
+  start: { line: 22, column: 19 }
+  end: { line: 22, column: 25 }
+- path: ".message_type[Foo].field[foobar].number"
+  start: { line: 22, column: 28 }
+  end: { line: 22, column: 29 }
+- path: ".message_type[Foo].nested_type[FooBar].options"
+  start: { line: 23, column: 8 }
+  end: { line: 23, column: 33 }
+- path: ".message_type[Foo].nested_type[FooBar].options.deprecated"
+  start: { line: 23, column: 8 }
+  end: { line: 23, column: 33 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x].label"
+  start: { line: 25, column: 8 }
+  end: { line: 25, column: 16 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x]"
+  start: { line: 25, column: 8 }
+  end: { line: 25, column: 29 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x].type"
+  start: { line: 25, column: 17 }
+  end: { line: 25, column: 22 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x].name"
+  start: { line: 25, column: 23 }
+  end: { line: 25, column: 24 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x].number"
+  start: { line: 25, column: 27 }
+  end: { line: 25, column: 28 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].label"
+  start: { line: 26, column: 8 }
+  end: { line: 26, column: 16 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z]"
+  start: { line: 26, column: 8 }
+  end: { line: 28, column: 9 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z]"
+  start: { line: 26, column: 8 }
+  end: { line: 28, column: 9 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].type_name"
+  start: { line: 26, column: 17 }
+  end: { line: 26, column: 22 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].name"
+  start: { line: 26, column: 23 }
+  end: { line: 26, column: 28 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].name"
+  start: { line: 26, column: 23 }
+  end: { line: 26, column: 28 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].number"
+  start: { line: 26, column: 31 }
+  end: { line: 26, column: 32 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].options"
+  start: { line: 26, column: 33 }
+  end: { line: 26, column: 52 }
+- path: ".message_type[Foo].nested_type[FooBar].field[x_y_z].options.deprecated"
+  start: { line: 26, column: 34 }
+  end: { line: 26, column: 51 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].field[baz].label"
+  start: { line: 27, column: 12 }
+  end: { line: 27, column: 20 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].field[baz]"
+  start: { line: 27, column: 12 }
+  end: { line: 27, column: 37 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].nested_type[Baz]"
+  start: { line: 27, column: 12 }
+  end: { line: 27, column: 37 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].field[baz].type_name"
+  start: { line: 27, column: 21 }
+  end: { line: 27, column: 26 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].field[baz].name"
+  start: { line: 27, column: 27 }
+  end: { line: 27, column: 30 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].nested_type[Baz].name"
+  start: { line: 27, column: 27 }
+  end: { line: 27, column: 30 }
+- path: ".message_type[Foo].nested_type[FooBar].nested_type[X_Y_Z].field[baz].number"
+  start: { line: 27, column: 33 }
+  end: { line: 27, column: 34 }
+- path: ".message_type[Foo].field[x].label"
+  start: { line: 31, column: 4 }
+  end: { line: 31, column: 12 }
+- path: ".message_type[Foo].field[x]"
+  start: { line: 31, column: 4 }
+  end: { line: 31, column: 26 }
+- path: ".message_type[Foo].field[x].type_name"
+  start: { line: 31, column: 13 }
+  end: { line: 31, column: 19 }
+- path: ".message_type[Foo].field[x].name"
+  start: { line: 31, column: 20 }
+  end: { line: 31, column: 21 }
+- path: ".message_type[Foo].field[x].number"
+  start: { line: 31, column: 24 }
+  end: { line: 31, column: 25 }
+- path: ".message_type[Foo].field[y].label"
+  start: { line: 32, column: 4 }
+  end: { line: 32, column: 12 }
+- path: ".message_type[Foo].field[y]"
+  start: { line: 32, column: 4 }
+  end: { line: 32, column: 32 }
+- path: ".message_type[Foo].field[y].type_name"
+  start: { line: 32, column: 13 }
+  end: { line: 32, column: 25 }
+- path: ".message_type[Foo].field[y].name"
+  start: { line: 32, column: 26 }
+  end: { line: 32, column: 27 }
+- path: ".message_type[Foo].field[y].number"
+  start: { line: 32, column: 30 }
+  end: { line: 32, column: 31 }
