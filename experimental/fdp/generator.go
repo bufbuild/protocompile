@@ -37,16 +37,16 @@ import (
 )
 
 type generator struct {
-	currentFile      *ir.File
-	includeDebugInfo bool
-	exclude          func(*ir.File) bool
+	currentFile                  *ir.File
+	includeDebugInfo             bool
+	generateExtraOptionLocations bool
+	exclude                      func(*ir.File) bool
 
 	path               *path
 	sourceCodeInfo     *descriptorpb.SourceCodeInfo
 	sourceCodeInfoExtn *descriptorv1.SourceCodeInfoExtension
 
-	commentTracker               *commentTracker
-	generateExtraOptionLocations bool
+	commentTracker *commentTracker
 }
 
 func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet) {
