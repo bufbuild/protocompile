@@ -45,7 +45,8 @@ type generator struct {
 	sourceCodeInfo     *descriptorpb.SourceCodeInfo
 	sourceCodeInfoExtn *descriptorv1.SourceCodeInfoExtension
 
-	commentTracker *commentTracker
+	commentTracker               *commentTracker
+	generateExtraOptionLocations bool
 }
 
 func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet) {
@@ -795,10 +796,14 @@ func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue, sourcePath ...
 					// If this is a top-level option declaration for a message type with a message
 					// literal, we add a location for the declaration.
 					g.addSourceLocationWithSourcePathElements(span, append(sourcePath, field.Field().Number()), false)
-				} else {
-					// Otherwise, we continue into the message option.
-					g.messageValueSourceCodeInfo(messageField, append(sourcePath, field.Field().Number())...)
+
+					if !g.generateExtraOptionLocations {
+						// If the option [GenerateExtraOptionLocations] is not set, then continue
+						// without adding source locations for elements within the value.
+						continue
+					}
 				}
+				g.messageValueSourceCodeInfo(messageField, append(sourcePath, field.Field().Number())...)
 				continue
 			}
 
