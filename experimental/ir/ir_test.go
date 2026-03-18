@@ -37,11 +37,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
+	"github.com/bufbuild/protocompile/experimental/ir/sourceinfo"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -135,6 +137,7 @@ func TestIR(t *testing.T) {
 		Outputs: []golden.Output{
 			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
+			{Extension: "sci.yaml"},
 			{Extension: "symtab.yaml"},
 		},
 	}
@@ -212,6 +215,46 @@ func TestIR(t *testing.T) {
 			require.NoError(t, proto.Unmarshal(bytes, fds))
 			assert.False(t, iterx.Empty2(fds.ProtoReflect().Range), "empty descriptor")
 
+			if test.SourceCodeInfo {
+				type loc struct {
+					Path              string
+					Start, End        sourceinfo.Position
+					Leading, Trailing *string // Pointer so that if not present it doesn't get printed.
+					Detached          []string
+				}
+				info := make(map[string][]loc)
+				for _, fdp := range fds.File {
+					info[*fdp.Name] = slicesx.Transform(sourceinfo.Decode(fdp), func(entry sourceinfo.Location) loc {
+						loc := loc{
+							Path:     entry.Path.String(),
+							Start:    entry.Start,
+							End:      entry.End,
+							Detached: entry.Detached,
+						}
+						if entry.Leading != "" {
+							loc.Leading = &entry.Leading
+						}
+						if entry.Trailing != "" {
+							loc.Leading = &entry.Trailing
+						}
+
+						// Delete the copyright notice comment, because it's
+						// noisy.
+						loc.Detached = slices.DeleteFunc(loc.Detached, func(s string) bool {
+							return strings.HasPrefix(s, " Copyright 2020-")
+						})
+
+						return loc
+					})
+
+					fdp.SourceCodeInfo.Location = nil
+					if iterx.Empty2(fdp.SourceCodeInfo.ProtoReflect().Range) {
+						fdp.SourceCodeInfo = nil
+					}
+				}
+				outputs[2] = prototest.ToYAML(info, prototest.ToYAMLOptions{})
+			}
+
 			outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
 		}
 
@@ -219,7 +262,7 @@ func TestIR(t *testing.T) {
 			symtab := symtabProto(irs)
 			assert.False(t, iterx.Empty2(symtab.ProtoReflect().Range), "empty symtab")
 
-			outputs[2] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
+			outputs[3] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
 		}
 	})
 }

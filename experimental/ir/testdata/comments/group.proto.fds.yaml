@@ -18,35 +18,3 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_STRING
         json_name: "id"
-  source_code_info.location:
-  - span: [17, 0, 32, 1]
-  - path: [12]
-    span: [17, 0, 16]
-    leading_comments: "% descriptor: true\n% source_code_info: true\n% exclude: [\"required fields are deprecated\", \"group syntax is deprecated\"]\n"
-    leading_detached_comments:
-    - " Copyright 2020-2025 Buf Technologies, Inc.\n\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n\n      http://www.apache.org/licenses/LICENSE-2.0\n\n Unless required by applicable law or agreed to in writing, software\n distributed under the License is distributed on an \"AS IS\" BASIS,\n WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n See the License for the specific language governing permissions and\n limitations under the License.\n"
-  - { path: [2], span: [19, 0, 17] }
-  - path: [4, 0]
-    span: [22, 0, 32, 1]
-    leading_comments: " This is a leading comment for message Foo.\n"
-    trailing_comments: " This is considered a trailing comment for message Foo.\n"
-  - { path: [4, 0, 1], span: [22, 8, 11] }
-  - { path: [4, 0, 2, 0, 4], span: [28, 2, 10] }
-  - { path: [4, 0, 2, 0], span: [28, 2, 31, 3] }
-  - path: [4, 0, 3, 0]
-    span: [28, 2, 31, 3]
-    leading_comments: " This is a leading for the synthetic message Group rather than the field.\n"
-    trailing_comments: " This is a trailing comment for synthetic message Group"
-    leading_detached_comments:
-    - " This is a detached leading comment for synthetic message Group rather than the field.\n"
-  - { path: [4, 0, 2, 0, 6], span: [28, 11, 16] }
-  - { path: [4, 0, 2, 0, 1], span: [28, 17, 22] }
-  - { path: [4, 0, 3, 0, 1], span: [28, 17, 22] }
-  - { path: [4, 0, 2, 0, 3], span: [28, 25, 26] }
-  - { path: [4, 0, 3, 0, 2, 0, 4], span: [30, 4, 12] }
-  - path: [4, 0, 3, 0, 2, 0]
-    span: [30, 4, 27]
-    leading_comments: " This is a leading comment for synthetic field, id.\n"
-  - { path: [4, 0, 3, 0, 2, 0, 5], span: [30, 13, 19] }
-  - { path: [4, 0, 3, 0, 2, 0, 1], span: [30, 20, 22] }
-  - { path: [4, 0, 3, 0, 2, 0, 3], span: [30, 25, 26] }

@@ -1,0 +1,57 @@
+"testdata/comments/group.proto":
+- { path: "", start: { line: 17, column: 0 }, end: { line: 32, column: 1 } }
+- path: ".syntax"
+  start: { line: 17, column: 0 }
+  end: { line: 17, column: 16 }
+  leading: "% descriptor: true\n% source_code_info: true\n% exclude: [\"required fields are deprecated\", \"group syntax is deprecated\"]\n"
+  detached: {}
+- path: ".package"
+  start: { line: 19, column: 0 }
+  end: { line: 19, column: 17 }
+- path: ".message_type[Foo]"
+  start: { line: 22, column: 0 }
+  end: { line: 32, column: 1 }
+  leading: " This is considered a trailing comment for message Foo.\n"
+- path: ".message_type[Foo].name"
+  start: { line: 22, column: 8 }
+  end: { line: 22, column: 11 }
+- path: ".message_type[Foo].field[group].label"
+  start: { line: 28, column: 2 }
+  end: { line: 28, column: 10 }
+- path: ".message_type[Foo].field[group]"
+  start: { line: 28, column: 2 }
+  end: { line: 31, column: 3 }
+- path: ".message_type[Foo].nested_type[Group]"
+  start: { line: 28, column: 2 }
+  end: { line: 31, column: 3 }
+  leading: " This is a trailing comment for synthetic message Group"
+  detached:
+  - " This is a detached leading comment for synthetic message Group rather than the field.\n"
+- path: ".message_type[Foo].field[group].type_name"
+  start: { line: 28, column: 11 }
+  end: { line: 28, column: 16 }
+- path: ".message_type[Foo].field[group].name"
+  start: { line: 28, column: 17 }
+  end: { line: 28, column: 22 }
+- path: ".message_type[Foo].nested_type[Group].name"
+  start: { line: 28, column: 17 }
+  end: { line: 28, column: 22 }
+- path: ".message_type[Foo].field[group].number"
+  start: { line: 28, column: 25 }
+  end: { line: 28, column: 26 }
+- path: ".message_type[Foo].nested_type[Group].field[id].label"
+  start: { line: 30, column: 4 }
+  end: { line: 30, column: 12 }
+- path: ".message_type[Foo].nested_type[Group].field[id]"
+  start: { line: 30, column: 4 }
+  end: { line: 30, column: 27 }
+  leading: " This is a leading comment for synthetic field, id.\n"
+- path: ".message_type[Foo].nested_type[Group].field[id].type"
+  start: { line: 30, column: 13 }
+  end: { line: 30, column: 19 }
+- path: ".message_type[Foo].nested_type[Group].field[id].name"
+  start: { line: 30, column: 20 }
+  end: { line: 30, column: 22 }
+- path: ".message_type[Foo].nested_type[Group].field[id].number"
+  start: { line: 30, column: 25 }
+  end: { line: 30, column: 26 }
