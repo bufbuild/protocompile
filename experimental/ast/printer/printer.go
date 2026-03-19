@@ -33,7 +33,7 @@ const (
 	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
 	gapBlankline // gapBlankline inserts two newline characters
 	gapInline    // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
-	gapGlue      // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
+	gapGlue // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
 )
 
 // scopeKind distinguishes file-level scopes from body-level scopes,
@@ -398,8 +398,8 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	case gapSpace:
 		afterGap = gapSpace
 	case gapGlue:
-		// gapGlue is used for path separators where comments should be
-		// glued to their tokens with no surrounding spaces.
+		// gapGlue is used for bracket contexts where tokens are
+		// glued with no surrounding spaces.
 		afterGap = gapNone
 	case gapInline:
 		// gapInline is used for punctuation tokens (`;`, `,`) where

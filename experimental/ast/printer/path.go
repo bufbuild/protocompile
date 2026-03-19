@@ -25,8 +25,9 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	first := true
 	for pc := range path.Components {
 		// Print separator (dot or slash) if present.
-		// Use gapGlue so that comments between path components are
-		// glued without spaces (e.g., header/*comment*/.v1).
+		// Use gapGlue so that comments between path components
+		// get spaces but non-comment tokens are glued (foo.bar stays
+		// glued, but foo /* comment */ .bar gets spaces).
 		if !pc.Separator().IsZero() {
 			p.printToken(pc.Separator(), gapGlue)
 		}
