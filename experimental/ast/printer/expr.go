@@ -80,6 +80,7 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// In format mode, all parts go on their own indented lines.
 	// The first element uses the fused token's trivia, with a
 	// newline gap to start on a new line after the `=`.
+	// In format mode, all parts go on their own indented lines.
 	p.withIndent(func(indented *printer) {
 		indented.printTokenAs(tok, gapNewline, openTok.Text())
 		for i, part := range parts {
