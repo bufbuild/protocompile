@@ -15,6 +15,7 @@
 package fdp
 
 import (
+	"bytes"
 	"math"
 	"slices"
 	"strconv"
@@ -577,7 +578,14 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
 			}
 		} else if v, ok := d.AsString(); ok {
-			fdp.DefaultValue = addr(v)
+			// For bytes fields, the default value needs to be escaped.
+			if fdp.GetType() == descriptorpb.FieldDescriptorProto_TYPE_BYTES {
+				var buf bytes.Buffer
+				internal.WriteEscapedBytes(&buf, []byte(v))
+				fdp.DefaultValue = addr(buf.String())
+			} else {
+				fdp.DefaultValue = addr(v)
+			}
 		}
 
 		g.addSourceLocationWithSourcePathElements(
