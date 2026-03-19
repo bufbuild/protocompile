@@ -258,30 +258,32 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		// first (the first token's trivia is already set by walkScope).
 		if tok != startToken {
 			leading := pending
-			// Extract inline trailing comments after commas. A comment on
-			// the same line as a comma (e.g., "true, // comment") should be
-			// trailing trivia on the comma, not leading on the next token.
-			if endToken.Keyword() == keyword.Comma {
-				firstNewline := len(leading)
-				for i, t := range leading {
-					if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
-						firstNewline = i
-						break
-					}
+			// Extract inline trailing comments on the previous token.
+			// A comment on the same line (e.g., "1, // comment" or
+			// "2 // comment") should be trailing trivia on the previous
+			// token, not leading on the next. This is especially
+			// important for message literal fields where commas are
+			// removed during formatting -- without this, the comment
+			// on the comma's line would be lost or misplaced.
+			firstNewline := len(leading)
+			for i, t := range leading {
+				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
+					firstNewline = i
+					break
 				}
-				hasInlineComment := false
-				for _, t := range leading[:firstNewline] {
-					if t.Kind() == token.Comment {
-						hasInlineComment = true
-						break
-					}
+			}
+			hasInlineComment := false
+			for _, t := range leading[:firstNewline] {
+				if t.Kind() == token.Comment {
+					hasInlineComment = true
+					break
 				}
-				if hasInlineComment {
-					att := idx.attached[endToken.ID()]
-					att.trailing = leading[:firstNewline]
-					idx.attached[endToken.ID()] = att
-					leading = leading[firstNewline:]
-				}
+			}
+			if hasInlineComment && firstNewline < len(leading) {
+				att := idx.attached[endToken.ID()]
+				att.trailing = leading[:firstNewline]
+				idx.attached[endToken.ID()] = att
+				leading = leading[firstNewline:]
 			}
 			idx.attached[tok.ID()] = attachedTrivia{leading: leading}
 			pending = nil

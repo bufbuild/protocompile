@@ -1,0 +1,18 @@
+format: true
+
+# Test that comments in message literal fields are preserved,
+# especially trailing comments after commas (which are removed
+# during formatting) and after values with no trailing comma.
+
+source: |
+  syntax = "proto2";
+  import "custom.proto";
+  message Foo {
+    optional string a = 1 [(custom) = {
+      foo: 1, // Trailing on comma.
+      // Leading on bar.
+      bar: 2 // Trailing on value.
+      // Leading on baz.
+      baz: 3
+    }];
+  }

@@ -225,6 +225,21 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 	}
 }
 
+// emitCommaTrivia emits trailing trivia from a comma token that is not
+// itself printed (e.g., commas removed from message literal fields in
+// format mode). This ensures comments attached to skipped commas are
+// never lost.
+func (p *printer) emitCommaTrivia(comma token.Token) {
+	if comma.IsZero() {
+		return
+	}
+	att, ok := p.trivia.tokenTrivia(comma.ID())
+	if !ok {
+		return
+	}
+	p.emitTrailing(att.trailing)
+}
+
 // appendPending buffers trivia tokens, filtering non-newline whitespace
 // in format mode.
 func (p *printer) appendPending(tokens []token.Token) {
@@ -539,6 +554,17 @@ func (p *printer) semiGap() gapStyle {
 		return gapInline
 	}
 	return gapNone
+}
+
+// withLineToBlock runs fn with convertLineToBlock set to the given value,
+// restoring the previous value when fn returns. This controls whether
+// trailing // comments are converted to /* */ to prevent them from
+// eating following tokens like `;` or `]`.
+func (p *printer) withLineToBlock(enabled bool, fn func()) {
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = enabled
+	defer func() { p.convertLineToBlock = saved }()
+	fn()
 }
 
 // withIndent runs fn with an indented printer, swapping the sink temporarily.

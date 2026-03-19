@@ -105,7 +105,12 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
 	p.printPath(opt.Path, gapSpace)
 	if !opt.Equals.IsZero() {
 		p.printToken(opt.Equals, gapSpace)
-		p.printExpr(opt.Value, gapSpace)
+		// Convert trailing // comments to /* */ on the value expression,
+		// since the `;` follows on the same line and a line comment
+		// would consume it.
+		p.withLineToBlock(true, func() {
+			p.printExpr(opt.Value, gapSpace)
+		})
 	}
 	p.printToken(opt.Semicolon, p.semiGap())
 }
@@ -402,19 +407,19 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			// message literal values expand naturally while keeping
 			// [ and ] on the field line. Convert any trailing //
 			// comments to /* */ so they don't eat the closing bracket.
-			p.convertLineToBlock = true
-			p.printToken(openTok, gapSpace)
-			opt := entries.At(0)
-			p.emitTriviaSlot(slots, 0)
-			p.printPath(opt.Path, gapNone)
-			if !opt.Equals.IsZero() {
-				p.printToken(opt.Equals, gapSpace)
-				p.printExpr(opt.Value, gapSpace)
-			}
-			p.emitTriviaSlot(slots, 1)
-			p.emitTrivia(gapNone)
-			p.printToken(closeTok, gapNone)
-			p.convertLineToBlock = false
+			p.withLineToBlock(true, func() {
+				p.printToken(openTok, gapSpace)
+				opt := entries.At(0)
+				p.emitTriviaSlot(slots, 0)
+				p.printPath(opt.Path, gapNone)
+				if !opt.Equals.IsZero() {
+					p.printToken(opt.Equals, gapSpace)
+					p.printExpr(opt.Value, gapSpace)
+				}
+				p.emitTriviaSlot(slots, 1)
+				p.emitTrivia(gapNone)
+				p.printToken(closeTok, gapNone)
+			})
 		} else {
 			// Multiple options or comments force expand: one-per-line.
 			// When the open bracket has trailing comments, suppress

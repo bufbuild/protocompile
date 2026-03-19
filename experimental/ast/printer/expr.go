@@ -78,9 +78,15 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	}
 
 	// In format mode, all parts go on their own indented lines.
-	// The first element uses the fused token's trivia, with a
-	// newline gap to start on a new line after the `=`.
-	// In format mode, all parts go on their own indented lines.
+	// Clear convertLineToBlock: intermediate // comments between
+	// string parts are on their own lines and are safe as-is.
+	// Restore the caller's value for the last part's trailing,
+	// since a trailing // there would eat the following token
+	// (`;`, `]`, etc) if the caller requested conversion.
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = false
+	defer func() { p.convertLineToBlock = saved }()
+
 	p.withIndent(func(indented *printer) {
 		indented.printTokenAs(tok, gapNewline, openTok.Text())
 		for i, part := range parts {
@@ -88,7 +94,21 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 			indented.printToken(part, gapNewline)
 		}
 		indented.emitRemainingTrivia(trivia, len(parts))
-		indented.printToken(closeTok, gapNewline)
+
+		// Emit the last part's leading trivia with conversion off,
+		// then restore the caller's value for trailing only.
+		att, hasTrivia := indented.trivia.tokenTrivia(closeTok.ID())
+		if hasTrivia {
+			indented.appendPending(att.leading)
+			indented.emitTrivia(gapNewline)
+		} else {
+			indented.emitGap(gapNewline)
+		}
+		indented.push(dom.Text(closeTok.Text()))
+		indented.convertLineToBlock = saved
+		if hasTrivia {
+			indented.emitTrailing(att.trailing)
+		}
 	})
 }
 
@@ -252,6 +272,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				for i := range elements.Len() {
 					indented.emitTriviaSlot(trivia, i)
 					indented.printExprField(elements.At(i), gapNewline)
+					indented.emitCommaTrivia(elements.Comma(i))
 				}
 				indented.emitTriviaSlot(trivia, elements.Len())
 			})
@@ -287,6 +308,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.emitTriviaSlot(trivia, 0)
 				indented.printExprField(elements.At(0), gapNone)
+				indented.emitCommaTrivia(elements.Comma(0))
 				indented.emitTriviaSlot(trivia, 1)
 			})
 			p.push(dom.TextIf(dom.Broken, "\n"))
@@ -330,6 +352,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(trivia, i)
 			indented.printExprField(elements.At(i), gapNewline)
+			indented.emitCommaTrivia(elements.Comma(i))
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())
 		if len(closeComments) > 0 {

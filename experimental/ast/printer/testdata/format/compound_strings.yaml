@@ -29,6 +29,13 @@ source: |
 
   option (custom.single) = "Just one string";
 
+  // Line comment on last part must become block comment so `;` isn't eaten.
+  option (custom.trailing) =
+    "One"
+    "Two"
+    "Three" // Trailing
+  ;
+
   message Foo {
     optional string name = 1;
   }
