@@ -385,7 +385,9 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		if entries.Len() == 1 && !forceExpand {
 			// Single option: stays inline. No group wrapping, so
 			// message literal values expand naturally while keeping
-			// [ and ] on the field line.
+			// [ and ] on the field line. Convert any trailing //
+			// comments to /* */ so they don't eat the closing bracket.
+			p.convertLineToBlock = true
 			p.printToken(openTok, gapSpace)
 			opt := entries.At(0)
 			p.emitTriviaSlot(slots, 0)
@@ -397,6 +399,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			p.emitTriviaSlot(slots, 1)
 			p.emitTrivia(gapNone)
 			p.printToken(closeTok, gapNone)
+			p.convertLineToBlock = false
 		} else {
 			// Multiple options or comments force expand: one-per-line.
 			// When the open bracket has trailing comments, suppress

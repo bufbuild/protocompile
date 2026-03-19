@@ -92,6 +92,12 @@ type printer struct {
 	trivia  *triviaIndex
 	pending []token.Token
 	push    dom.Sink
+
+	// convertLineToBlock, when true, causes emitTrailing to convert
+	// line comments (// ...) to block comments (/* ... */). This is
+	// used when collapsing compact options to a single line, where a
+	// trailing // comment would eat the closing bracket.
+	convertLineToBlock bool
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -205,6 +211,10 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				text := strings.TrimRight(t.Text(), " \t")
 				if strings.HasPrefix(text, "/*") {
 					p.emitBlockComment(text)
+				} else if p.convertLineToBlock {
+					// Convert // comment to /* comment */ for inline contexts.
+					body := strings.TrimPrefix(text, "//")
+					p.push(dom.Text("/*" + body + " */"))
 				} else {
 					p.push(dom.Text(text))
 				}
