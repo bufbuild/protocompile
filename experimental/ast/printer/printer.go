@@ -94,9 +94,11 @@ type printer struct {
 	push    dom.Sink
 
 	// convertLineToBlock, when true, causes emitTrailing to convert
-	// line comments (// ...) to block comments (/* ... */). This is
-	// used when collapsing compact options to a single line, where a
-	// trailing // comment would eat the closing bracket.
+	// line comments (// ...) to block comments (/* ... */). This
+	// only affects trailing trivia, not leading. It is set in
+	// contexts where inline tokens follow without a newline break
+	// (paths, compact options, option values before `;`) so that
+	// a trailing // comment doesn't eat the next token.
 	convertLineToBlock bool
 }
 
@@ -453,14 +455,6 @@ func (p *printer) emitTrivia(gap gapStyle) {
 			text = strings.TrimRight(text, " \t")
 		}
 		isLine := strings.HasPrefix(text, "//")
-		if isLine && p.convertLineToBlock {
-			// Convert // comment to /* comment */ for inline contexts
-			// where a line comment would eat important following tokens
-			// (compact options, single-line brackets).
-			body := strings.TrimPrefix(text, "//")
-			text = "/*" + body + " */"
-			isLine = false
-		}
 		if p.options.Format && strings.HasPrefix(text, "/*") {
 			p.emitBlockComment(text)
 		} else {

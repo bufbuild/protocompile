@@ -22,6 +22,13 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 		return
 	}
 
+	// Path components are glued inline (gapGlue), so a trailing //
+	// comment on any component would eat subsequent components.
+	// Convert to /* */ to keep the path intact.
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = true
+	defer func() { p.convertLineToBlock = saved }()
+
 	first := true
 	for pc := range path.Components {
 		// Print separator (dot or slash) if present.
