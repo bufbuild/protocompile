@@ -81,11 +81,17 @@ error: cannot use `<...>` for message expression here
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-error: unexpected range expression in option setting value
-  --> testdata/parser/option/values.proto:57:8
+error: unexpected `to` in message expression
+  --> testdata/parser/option/values.proto:57:10
    |
 57 |     x: x to y
-   |        ^^^^^^
+   |          ^^ expected message field value
+
+error: unexpected identifier in message expression
+  --> testdata/parser/option/values.proto:57:13
+   |
+57 |     x: x to y
+   |             ^ expected message field value
 
 error: unexpected identifier in message expression
   --> testdata/parser/option/values.proto:59:5
@@ -193,56 +199,86 @@ warning: using `<...>` for message expression is not recommended
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-error: cannot name extension field using `(...)` in message expression
-  --> testdata/parser/option/values.proto:77:5
+warning: using `<...>` for message expression is not recommended
+  --> testdata/parser/option/values.proto:75:7
    |
-77 |     (x.y): 42
+75 |     x <a: 42>
+   |       ^^^^^^^
+  help: use `{...}` instead
+   |
+75 | -     x <a: 42>
+75 | +     x {a: 42}
+   |
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
+
+warning: using `<...>` for message expression is not recommended
+  --> testdata/parser/option/values.proto:76:7
+   |
+76 |     x <a: 42, b: 43>
+   |       ^^^^^^^^^^^^^^
+  help: use `{...}` instead
+   |
+76 | -     x <a: 42, b: 43>
+76 | +     x {a: 42, b: 43}
+   |
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
+
+error: cannot name extension field using `(...)` in message expression
+  --> testdata/parser/option/values.proto:85:5
+   |
+85 |     (x.y): 42
    |     ^^^^^ expected this to be wrapped in `[...]` instead
    |
   help: replace the `(...)` with `[...]`
    |
-77 | -     (x.y): 42
-77 | +     [x.y]: 42
+85 | -     (x.y): 42
+85 | +     [x.y]: 42
    |
 
 error: unexpected absolute path in extension name
-  --> testdata/parser/option/values.proto:82:6
+  --> testdata/parser/option/values.proto:90:6
    |
-82 |     [.x.y]: 42
+90 |     [.x.y]: 42
    |      ^^^^ expected a path without a leading `.`
    |
   help: remove the leading `.`
    |
-82 | -     [.x.y]: 42
-82 | +     [x.y]: 42
+90 | -     [.x.y]: 42
+90 | +     [x.y]: 42
    |
 
 error: unexpected array expression in message field value
-  --> testdata/parser/option/values.proto:83:5
+  --> testdata/parser/option/values.proto:91:5
    |
-83 |     [x, y, z]: 42
+91 |     [x, y, z]: 42
    |     ^^^^^^^^^
    |      |
    |      expected message field name, extension name, or `Any` type URL
 
 error: unexpected array expression in message field value
-  --> testdata/parser/option/values.proto:84:5
+  --> testdata/parser/option/values.proto:92:5
    |
-84 |     []: 42
+92 |     []: 42
    |     ^^ expected message field name, extension name, or `Any` type URL
 
 error: type URL can only contain a single `/`
-  --> testdata/parser/option/values.proto:86:17
+  --> testdata/parser/option/values.proto:94:17
    |
-86 |     [buf.build/x/y]: 42
+94 |     [buf.build/x/y]: 42
    |               - ^
    |               |
    |               first one is here
 
 error: unexpected integer literal in array expression
-  --> testdata/parser/option/values.proto:88:16
+  --> testdata/parser/option/values.proto:96:16
    |
-88 |     x [{x: 5}, 1, <x: 5>, 2, 3],
+96 |     x [{x: 5}, 1, <x: 5>, 2, 3],
    |     -          ^ expected message expression
    |     |
    |     because this message field value is missing a `:`
@@ -251,18 +287,18 @@ error: unexpected integer literal in array expression
            value is a message expression or a array expression of them
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:88:19
+  --> testdata/parser/option/values.proto:96:19
    |
-88 |     x [{x: 5}, 1, <x: 5>, 2, 3],
+96 |     x [{x: 5}, 1, <x: 5>, 2, 3],
    |                   ^^^^^^
   help: use `{...}` instead
    |
-88 | -     x [{x: 5}, 1, <x: 5>, 2, 3],
-88 | +     x [{x: 5}, 1, {x: 5}, 2, 3],
+96 | -     x [{x: 5}, 1, <x: 5>, 2, 3],
+96 | +     x [{x: 5}, 1, {x: 5}, 2, 3],
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-encountered 19 errors and 6 warnings
+encountered 20 errors and 8 warnings

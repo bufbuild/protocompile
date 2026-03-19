@@ -37,7 +37,7 @@ var validDefParents = [...]taxa.Set{
 	ast.DefKindExtend:    taxa.NewSet(taxa.TopLevel, taxa.Message, taxa.Group),
 	ast.DefKindField:     taxa.NewSet(taxa.Message, taxa.Group, taxa.Extend, taxa.Oneof),
 	ast.DefKindOneof:     taxa.NewSet(taxa.Message, taxa.Group),
-	ast.DefKindGroup:     taxa.NewSet(taxa.Message, taxa.Group, taxa.Extend),
+	ast.DefKindGroup:     taxa.NewSet(taxa.Message, taxa.Group, taxa.Extend, taxa.Oneof),
 	ast.DefKindEnumValue: taxa.NewSet(taxa.Enum),
 	ast.DefKindMethod:    taxa.NewSet(taxa.Service),
 	ast.DefKindOption: taxa.NewSet(

@@ -61,17 +61,26 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 				)
 				fallthrough
 			case keyword.Colon:
+				// Field values in a message literal are never infix
+				// expressions. In protoc's grammar, a field value is a
+				// scalar, a message literal, or a list literal -- never a
+				// range or any other infix production. We use
+				// parseExprPrefix (not parseExprInfix) so that infix
+				// keywords like "to" are not consumed as part of the value.
+				//
+				// Without this, a field named "to" on the following line
+				// gets swallowed into the previous field's value as a range:
+				//
+				//   reserved: true
+				//   to: true          <- would be parsed as "true to true"
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
 					Colon: c.Next(),
-					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
+					Value: parseExprPrefix(p, c, where),
 				}).AsAny()
 
 			case keyword.Braces, keyword.Lt, keyword.Brackets:
 				// This is for colon-less, array or dict-valued fields.
-				if next.IsLeaf() {
-					break
-				}
 
 				// The previous expression cannot also be a key-value pair, since
 				// this messes with parsing of dicts, which are not comma-separated.
@@ -91,17 +100,11 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 					break
 				}
 
+				// Same rationale as the colon case above: field values are
+				// not infix expressions, so use parseExprPrefix.
 				return p.NewExprField(ast.ExprFieldArgs{
-					Key: lhs,
-					// Why not call parseExprSolo? Suppose the following
-					// (invalid) production:
-					//
-					// foo { ... } to { ... }
-					//
-					// Calling parseExprInfix will cause this to be parsed
-					// as a range expression, which will be diagnosed when
-					// we legalize.
-					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
+					Key:   lhs,
+					Value: parseExprPrefix(p, c, where),
 				}).AsAny()
 			}
 		}

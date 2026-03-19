@@ -133,9 +133,9 @@ decls:
     - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "foo", separator: SEPARATOR_DOT }]
     - key.path.components: [{ ident: "x" }]
-      value.range:
-        start.path.components: [{ ident: "x" }]
-        end.path.components: [{ ident: "y" }]
+      value.path.components: [{ ident: "x" }]
+    - value.path.components: [{ ident: "to" }]
+    - value.path.components: [{ ident: "y" }]
     - value.path.components: [{ ident: "x" }]
     - { key.path.components: [{ ident: "x" }], value.array: {} }
     - key.path.components: [{ ident: "x" }]
@@ -162,6 +162,21 @@ decls:
       - key.path.components: [{ ident: "a" }]
         value.dict.entries:
         - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - { key.path.components: [{ ident: "x" }], value.dict: {} }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+      - { key.path.components: [{ ident: "b" }], value.literal.int_value: 43 }
+    - key.path.components: [{ ident: "reserved" }]
+      value.path.components: [{ ident: "true" }]
+    - key.path.components: [{ ident: "to" }]
+      value.path.components: [{ ident: "true" }]
     - { key.literal.string_value: "ident", value.literal.int_value: 42 }
     - { key.literal.string_value: "???", value.literal.int_value: 42 }
     - { key.literal.int_value: 42, value.literal.int_value: 42 }
