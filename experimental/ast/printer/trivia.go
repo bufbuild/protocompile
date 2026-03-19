@@ -352,6 +352,10 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			}
 		}
 		if hasRestComment {
+			// Check for a blank line in rest to set hasBlankLine,
+			// so that blankBeforeClose is true for the scope.
+			_, detachedRest := splitDetached(rest)
+			hasBlankLine = len(rest) > len(detachedRest)
 			for range len(rest) {
 				cursor.PrevSkippable()
 			}
