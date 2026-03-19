@@ -1,0 +1,52 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test block comment formatting (rule 21): asterisk-style normalization,
+# plain-style preservation, blank interior lines, inline block comments,
+# and degenerate multi-line cases.
+
+format: true
+
+source: |
+  /*
+      * Asterisk style with inconsistent indent.
+       * Second line.
+        */
+  syntax /* inline */ = "proto3";
+
+  message Foo {
+      /*
+          * Body comment.
+           * Second line.
+            */
+    string name = 1;
+  }
+
+  /*
+     This is plain style.
+
+     More content here.
+  */
+  message Bar {}
+
+  /*
+   * Line before blank.
+   *
+   * Line after blank.
+   */
+  message Baz {}
+
+  /* Degenerate
+     comment. */
+  message Qux {}

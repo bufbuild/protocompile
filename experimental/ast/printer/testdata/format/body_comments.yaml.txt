@@ -38,7 +38,7 @@ enum Status {
   // Unspecified.
   STATUS_UNSPECIFIED = 0;
   /* Block
-       comment. */
+     comment. */
   STATUS_ACTIVE = 1;
 }
 

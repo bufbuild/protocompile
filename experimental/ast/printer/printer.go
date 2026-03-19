@@ -176,7 +176,11 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				if p.options.Format {
 					text = strings.TrimRight(text, " \t")
 				}
-				p.push(dom.Text(text))
+				if strings.HasPrefix(text, "/*") {
+					p.emitBlockComment(text)
+				} else {
+					p.push(dom.Text(text))
+				}
 			}
 		}
 	} else {
@@ -395,7 +399,11 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		if p.options.Format {
 			text = strings.TrimRight(text, " \t")
 		}
-		p.push(dom.Text(text))
+		if p.options.Format && strings.HasPrefix(text, "/*") {
+			p.emitBlockComment(text)
+		} else {
+			p.push(dom.Text(text))
+		}
 		hasComment = true
 		prevIsLine = strings.HasPrefix(text, "//")
 	}
@@ -439,4 +447,153 @@ func (p *printer) withGroup(fn func(p *printer)) {
 		fn(p)
 	}))
 	p.push = originalPush
+}
+
+// emitBlockComment normalizes and emits a multi-line block comment as
+// separate dom.Text calls so that dom.Indent can apply outer indentation
+// to each line.
+//
+// Single-line block comments (e.g., /* foo */) are emitted as-is.
+// Multi-line comments where the closing line has content before */ are
+// treated as degenerate and emitted verbatim.
+//
+// The normalization algorithm matches buf format's behavior:
+//   - Detect if all non-empty interior lines share a common non-alphanumeric
+//     prefix character (e.g., *, =). If so, strip all whitespace and re-add
+//     " " before each line (prefix style). If the prefix is *, the closing
+//     line becomes " */".
+//   - Otherwise (plain style), compute the minimum visual indentation of
+//     non-empty interior lines, unindent by that amount, then add "   "
+//     (3 spaces) before each line.
+func (p *printer) emitBlockComment(text string) {
+	lines := strings.Split(text, "\n")
+	if len(lines) <= 1 {
+		p.push(dom.Text(text))
+		return
+	}
+
+	// Determine whether the last line is a standalone closing "*/" or
+	// contains content before it (e.g., "  buzz */").
+	lastTrimmed := strings.TrimLeft(lines[len(lines)-1], " \t")
+	standaloneClose := strings.HasPrefix(lastTrimmed, "*/") && strings.TrimRight(lastTrimmed, " \t") == "*/"
+
+	// Compute minimum indent and detect prefix character across all
+	// lines after the first (interior + closing).
+	minIndent := -1
+	var prefix byte
+	prefixSet := false
+	for i := 1; i < len(lines); i++ {
+		trimmed := strings.TrimLeft(lines[i], " \t")
+		if trimmed == "" || trimmed == "*/" {
+			continue
+		}
+
+		indent := computeVisualIndent(lines[i])
+		if minIndent < 0 || indent < minIndent {
+			minIndent = indent
+		}
+
+		ch := trimmed[0]
+		if isCommentPrefix(ch) {
+			if !prefixSet {
+				prefix = ch
+				prefixSet = true
+			} else if ch != prefix {
+				prefix = 0
+			}
+		} else {
+			prefix = 0
+		}
+	}
+	if minIndent < 0 {
+		minIndent = 0
+	}
+
+	// Emit first line.
+	p.push(dom.Text(strings.TrimRight(lines[0], " \t")))
+
+	// Process lines 1..N-1 (interior lines, and closing if not standalone).
+	end := len(lines) - 1
+	if !standaloneClose {
+		// Closing line has content; process it like any other line.
+		end = len(lines)
+	}
+
+	for i := 1; i < end; i++ {
+		p.push(dom.Text("\n"))
+		trimmed := strings.TrimLeft(lines[i], " \t")
+
+		if trimmed == "" {
+			continue
+		}
+
+		if prefix != 0 {
+			trimmed = strings.TrimRight(trimmed, " \t")
+			p.push(dom.Text(" " + trimmed))
+		} else {
+			line := unindent(lines[i], minIndent)
+			line = strings.TrimRight(line, " \t")
+			if line == "" {
+				continue
+			}
+			p.push(dom.Text("   " + line))
+		}
+	}
+
+	// Emit standalone closing line if applicable.
+	if standaloneClose {
+		p.push(dom.Text("\n"))
+		if prefix == '*' {
+			p.push(dom.Text(" */"))
+		} else {
+			p.push(dom.Text("*/"))
+		}
+	}
+}
+
+// isCommentPrefix reports whether ch is a valid block comment line prefix.
+// Letters and digits are not valid prefixes.
+func isCommentPrefix(ch byte) bool {
+	return !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
+}
+
+// computeVisualIndent returns the visual indentation of a line, expanding
+// tabs to 8-column tab stops (matching buf format behavior).
+func computeVisualIndent(line string) int {
+	indent := 0
+	for _, r := range line {
+		switch r {
+		case ' ':
+			indent++
+		case '\t':
+			indent += 8 - (indent % 8)
+		default:
+			return indent
+		}
+	}
+	return 0
+}
+
+// unindent removes up to n visual columns of leading whitespace from line,
+// expanding tabs to 8-column tab stops.
+func unindent(line string, n int) string {
+	pos := 0
+	for i, r := range line {
+		if pos == n {
+			return line[i:]
+		}
+		if pos > n {
+			// Tab stop overshot; add back spaces to compensate.
+			return strings.Repeat(" ", pos-n) + line[i:]
+		}
+		switch r {
+		case ' ':
+			pos++
+		case '\t':
+			pos += 8 - (pos % 8)
+		default:
+			return line[i:]
+		}
+	}
+	return ""
 }

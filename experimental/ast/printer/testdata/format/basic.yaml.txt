@@ -5,7 +5,7 @@ edition = "2024";
 package acme.v1.weather;
 
 /* Multi line comment
-  * invalid indent
+ * invalid indent
  */
 import "acme/payment/v1/payment.proto"; /* trailing */
 // Datetime import.
