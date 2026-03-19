@@ -15,6 +15,7 @@
 package printer
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -58,14 +59,28 @@ func (t detachedTrivia) hasBlankBefore(i int) bool {
 
 // triviaHasComments reports whether any slot contains comment tokens.
 func triviaHasComments(trivia detachedTrivia) bool {
-	for _, slot := range trivia.slots {
-		for _, tok := range slot {
-			if tok.Kind() == token.Comment {
-				return true
-			}
+	return slices.ContainsFunc(trivia.slots, sliceHasComment)
+}
+
+// sliceHasComment reports whether tokens contains at least one comment.
+func sliceHasComment(tokens []token.Token) bool {
+	for _, tok := range tokens {
+		if tok.Kind() == token.Comment {
+			return true
 		}
 	}
 	return false
+}
+
+// firstNewlineIndex returns the index of the first Space token containing
+// a newline, or len(tokens) if none is found.
+func firstNewlineIndex(tokens []token.Token) int {
+	for i, t := range tokens {
+		if t.Kind() == token.Space && strings.Contains(t.Text(), "\n") {
+			return i
+		}
+	}
+	return len(tokens)
 }
 
 // triviaIndex is the complete trivia decomposition for one file.
@@ -153,27 +168,12 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 		// comment become trailing trivia on the open brace token,
 		// keeping "{ // comment" on one line.
 		if len(trivia.slots) == 0 && scopeID != 0 {
-			firstNewline := len(pending)
-			for i, t := range pending {
-				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
-					firstNewline = i
-					break
-				}
-			}
-			if firstNewline < len(pending) {
-				hasComment := false
-				for _, t := range pending[:firstNewline] {
-					if t.Kind() == token.Comment {
-						hasComment = true
-						break
-					}
-				}
-				if hasComment {
-					att := idx.attached[scopeID]
-					att.trailing = pending[:firstNewline]
-					idx.attached[scopeID] = att
-					pending = pending[firstNewline:]
-				}
+			firstNewline := firstNewlineIndex(pending)
+			if firstNewline < len(pending) && sliceHasComment(pending[:firstNewline]) {
+				att := idx.attached[scopeID]
+				att.trailing = pending[:firstNewline]
+				idx.attached[scopeID] = att
+				pending = pending[firstNewline:]
 			}
 		}
 
@@ -186,13 +186,8 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 		// blankBefore[0] true so printScopeDecls can insert a blank
 		// line between those comments and the first declaration.
 		blank := hadBlank
-		if len(trivia.blankBefore) == 0 && !blank && len(detached) > 0 {
-			for _, t := range detached {
-				if t.Kind() == token.Comment {
-					blank = true
-					break
-				}
-			}
+		if len(trivia.blankBefore) == 0 && !blank && sliceHasComment(detached) {
+			blank = true
 		}
 		trivia.blankBefore = append(trivia.blankBefore, blank)
 		idx.attached[tok.ID()] = attachedTrivia{leading: attached}
@@ -208,21 +203,7 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 	// leading-on-close). Only for brace scopes, not file-level.
 	if !hadBlank && scopeID != 0 && len(pending) > 0 {
 		detached, attached := splitDetached(pending)
-		hasDetachedComment := false
-		for _, t := range detached {
-			if t.Kind() == token.Comment {
-				hasDetachedComment = true
-				break
-			}
-		}
-		hasAttachedComment := false
-		for _, t := range attached {
-			if t.Kind() == token.Comment {
-				hasAttachedComment = true
-				break
-			}
-		}
-		hadBlank = hasDetachedComment && hasAttachedComment
+		hadBlank = sliceHasComment(detached) && sliceHasComment(attached)
 	}
 	trivia.blankBeforeClose = hadBlank
 	idx.detached[scopeID] = trivia
@@ -265,21 +246,8 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			// important for message literal fields where commas are
 			// removed during formatting -- without this, the comment
 			// on the comma's line would be lost or misplaced.
-			firstNewline := len(leading)
-			for i, t := range leading {
-				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
-					firstNewline = i
-					break
-				}
-			}
-			hasInlineComment := false
-			for _, t := range leading[:firstNewline] {
-				if t.Kind() == token.Comment {
-					hasInlineComment = true
-					break
-				}
-			}
-			if hasInlineComment && firstNewline < len(leading) {
+			firstNewline := firstNewlineIndex(leading)
+			if sliceHasComment(leading[:firstNewline]) && firstNewline < len(leading) {
 				att := idx.attached[endToken.ID()]
 				att.trailing = leading[:firstNewline]
 				idx.attached[endToken.ID()] = att
@@ -312,7 +280,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 	hasBlankLine := false
 	var trailing []token.Token
 	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
-		isNewline := tok.Kind() == token.Space && strings.Count(tok.Text(), "\n") > 0
+		isNewline := tok.Kind() == token.Space && strings.Contains(tok.Text(), "\n")
 		isSpace := tok.Kind() == token.Space && !isNewline
 		isComment := tok.Kind() == token.Comment
 		if !afterNewline && !isNewline && !isSpace && !isComment {
@@ -325,13 +293,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			// trailing. This ensures trailing comments like "} // foo"
 			// stay attached to their token even when there's no blank
 			// line before the next declaration.
-			firstNewline := len(trailing)
-			for i, t := range trailing {
-				if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
-					firstNewline = i
-					break
-				}
-			}
+			firstNewline := firstNewlineIndex(trailing)
 
 			rest := trailing[firstNewline:]
 			detached, attached := splitDetached(rest)
@@ -354,28 +316,12 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 	// token's leading via walkFused. Pure whitespace is discarded since the
 	// printer provides appropriate gaps.
 	if atEndOfScope && len(pending) > 0 && len(trailing) == 0 {
-		firstNewline := len(pending)
-		for i, t := range pending {
-			if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
-				firstNewline = i
-				break
-			}
-		}
-		for _, t := range pending[:firstNewline] {
-			if t.Kind() == token.Comment {
-				trailing = pending[:firstNewline]
-				break
-			}
+		firstNewline := firstNewlineIndex(pending)
+		if sliceHasComment(pending[:firstNewline]) {
+			trailing = pending[:firstNewline]
 		}
 		rest := pending[firstNewline:]
-		hasRestComment := false
-		for _, t := range rest {
-			if t.Kind() == token.Comment {
-				hasRestComment = true
-				break
-			}
-		}
-		if hasRestComment {
+		if sliceHasComment(rest) {
 			// Check for a blank line in rest to set hasBlankLine,
 			// so that blankBeforeClose is true for the scope.
 			_, detachedRest := splitDetached(rest)
@@ -410,13 +356,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 	// trailing. Put back newlines and beyond so they flow to the scope's last
 	// slot and become the close token's leading trivia via walkFused.
 	if atEndOfScope && afterNewline {
-		firstNewline := len(trailing)
-		for i, tok := range trailing {
-			if tok.Kind() == token.Space && strings.Count(tok.Text(), "\n") > 0 {
-				firstNewline = i
-				break
-			}
-		}
+		firstNewline := firstNewlineIndex(trailing)
 		for range len(trailing) - firstNewline {
 			cursor.PrevSkippable()
 		}
@@ -438,7 +378,7 @@ func splitDetached(tokens []token.Token) (detached, attached []token.Token) {
 		tok := tokens[index]
 		if tok.Kind() != token.Space {
 			lastBlankEnd = -1
-		} else if n := strings.Count(tok.Text(), "\n"); n > 0 {
+		} else if strings.Contains(tok.Text(), "\n") {
 			if lastBlankEnd != -1 {
 				break
 			}

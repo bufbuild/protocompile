@@ -206,11 +206,11 @@ func (p *printer) printSignature(sig ast.Signature) {
 	if !inputs.Brackets().IsZero() {
 		p.withGroup(func(p *printer) {
 			openTok, closeTok := inputs.Brackets().StartEnd()
-			trivia := p.trivia.scopeTrivia(inputs.Brackets().ID())
+			slots := p.trivia.scopeTrivia(inputs.Brackets().ID())
 			p.printToken(openTok, gapGlue)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
-				indented.printTypeListContents(inputs, trivia)
+				indented.printTypeListContents(inputs, slots)
 				p.push(dom.TextIf(dom.Broken, "\n"))
 			})
 			p.printToken(closeTok, gapGlue)
@@ -264,21 +264,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	p.printToken(openTok, gapSpace)
 
-	var closeAtt attachedTrivia
-	var closeComments []token.Token
-	if p.options.Format {
-		att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
-		if hasTrivia {
-			closeAtt = att
-			for _, t := range att.leading {
-				if t.Kind() == token.Comment {
-					closeComments = att.leading
-					break
-				}
-			}
-		}
-	}
-
+	closeComments, closeAtt := p.extractCloseComments(closeTok)
 	hasContent := body.Decls().Len() > 0 || !trivia.isEmpty() || len(closeComments) > 0
 	if !hasContent {
 		p.printToken(closeTok, gapNone)
@@ -295,13 +281,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 		}
 	})
 
-	if len(closeComments) > 0 {
-		p.emitGap(gapNewline)
-		p.push(dom.Text(closeTok.Text()))
-		p.emitTrailing(closeAtt.trailing)
-	} else {
-		p.printToken(closeTok, gapNewline)
-	}
+	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
 }
 
 // emitCloseComments emits close-brace leading comments inside an
@@ -316,7 +296,12 @@ func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose boo
 			continue
 		}
 		p.emitGap(gapNewline)
-		p.push(dom.Text(t.Text()))
+		text := strings.TrimRight(t.Text(), " \t")
+		if strings.HasPrefix(text, "/*") {
+			p.emitBlockComment(text)
+		} else {
+			p.push(dom.Text(text))
+		}
 	}
 	p.pending = p.pending[:0]
 
@@ -344,7 +329,12 @@ func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose boo
 		}
 		newlineRun = 0
 		p.emitGap(gap)
-		p.push(dom.Text(t.Text()))
+		text := strings.TrimRight(t.Text(), " \t")
+		if strings.HasPrefix(text, "/*") {
+			p.emitBlockComment(text)
+		} else {
+			p.push(dom.Text(text))
+		}
 		gap = gapNewline
 	}
 }
@@ -386,19 +376,8 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		// Force multi-line if the open bracket has trailing comments
 		// or if slots contain comments, since inline // comments
 		// would eat the closing bracket.
-		forceExpand := false
-		var openTrailing []token.Token
-		if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
-			for _, t := range att.trailing {
-				if t.Kind() == token.Comment {
-					forceExpand = true
-					break
-				}
-			}
-			if forceExpand {
-				openTrailing = att.trailing
-			}
-		}
+		openTrailing := p.extractOpenTrailing(openTok)
+		forceExpand := len(openTrailing) > 0
 		if !forceExpand {
 			forceExpand = triviaHasComments(slots)
 		}
@@ -462,13 +441,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 				}
 			})
 			p.emitTrivia(gapNone)
-			if len(closeComments) > 0 {
-				p.emitGap(gapNewline)
-				p.push(dom.Text(closeTok.Text()))
-				p.emitTrailing(closeAtt.trailing)
-			} else {
-				p.printToken(closeTok, gapNewline)
-			}
+			p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
 		}
 		return
 	}
@@ -478,14 +451,14 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		p.withIndent(func(indented *printer) {
 			for i := range entries.Len() {
 				indented.emitTriviaSlot(slots, i)
+				opt := entries.At(i)
 				if i > 0 {
 					indented.printToken(entries.Comma(i-1), p.semiGap())
-					indented.printPath(entries.At(i).Path, gapSoftline)
+					indented.printPath(opt.Path, gapSoftline)
 				} else {
-					indented.printPath(entries.At(i).Path, gapNone)
+					indented.printPath(opt.Path, gapNone)
 				}
 
-				opt := entries.At(i)
 				if !opt.Equals.IsZero() {
 					indented.printToken(opt.Equals, gapSpace)
 					indented.printExpr(opt.Value, gapSpace)

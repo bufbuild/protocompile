@@ -134,12 +134,7 @@ func (p *printer) printFile(file *ast.File) {
 
 // pendingHasComments reports whether pending contains comments.
 func (p *printer) pendingHasComments() bool {
-	for _, tok := range p.pending {
-		if tok.Kind() == token.Comment {
-			return true
-		}
-	}
-	return false
+	return sliceHasComment(p.pending)
 }
 
 // printToken emits a token with its trivia.
@@ -450,12 +445,9 @@ func (p *printer) emitTrivia(gap gapStyle) {
 			p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
 		}
 		newlineRun = 0
-		text := tok.Text()
-		if p.options.Format {
-			text = strings.TrimRight(text, " \t")
-		}
+		text := strings.TrimRight(tok.Text(), " \t")
 		isLine := strings.HasPrefix(text, "//")
-		if p.options.Format && strings.HasPrefix(text, "/*") {
+		if strings.HasPrefix(text, "/*") {
 			p.emitBlockComment(text)
 		} else {
 			p.push(dom.Text(text))
@@ -487,12 +479,38 @@ func (p *printer) extractCloseComments(closeTok token.Token) ([]token.Token, att
 	if !hasTrivia {
 		return nil, attachedTrivia{}
 	}
-	for _, t := range att.leading {
-		if t.Kind() == token.Comment {
-			return att.leading, att
-		}
+	if sliceHasComment(att.leading) {
+		return att.leading, att
 	}
 	return nil, attachedTrivia{}
+}
+
+// extractOpenTrailing returns the trailing trivia for a token if it
+// contains comments, or nil otherwise. Used to detect trailing comments
+// on open brackets that need to be moved inside an indented block.
+func (p *printer) extractOpenTrailing(tok token.Token) []token.Token {
+	att, ok := p.trivia.tokenTrivia(tok.ID())
+	if !ok {
+		return nil
+	}
+	if sliceHasComment(att.trailing) {
+		return att.trailing
+	}
+	return nil
+}
+
+// emitCloseTok emits a close token, respecting pre-extracted close
+// comments. When close comments were extracted (and emitted inside the
+// preceding indent block), the token text is emitted directly with its
+// trailing trivia. Otherwise, printToken/printTokenAs handles it normally.
+func (p *printer) emitCloseTok(closeTok token.Token, closeText string, closeComments []token.Token, closeAtt attachedTrivia) {
+	if len(closeComments) > 0 {
+		p.emitGap(gapNewline)
+		p.push(dom.Text(closeText))
+		p.emitTrailing(closeAtt.trailing)
+	} else {
+		p.printTokenAs(closeTok, gapNewline, closeText)
+	}
 }
 
 // scopeHasAttachedComments checks whether any token in a fused scope
@@ -504,18 +522,14 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 	openTok, closeTok := fused.StartEnd()
 	// Check open token trailing.
 	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
-		for _, t := range att.trailing {
-			if t.Kind() == token.Comment {
-				return true
-			}
+		if sliceHasComment(att.trailing) {
+			return true
 		}
 	}
 	// Check close token leading.
 	if att, ok := p.trivia.tokenTrivia(closeTok.ID()); ok {
-		for _, t := range att.leading {
-			if t.Kind() == token.Comment {
-				return true
-			}
+		if sliceHasComment(att.leading) {
+			return true
 		}
 	}
 	// Check interior tokens.
@@ -525,15 +539,8 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 			continue
 		}
 		if att, ok := p.trivia.tokenTrivia(tok.ID()); ok {
-			for _, t := range att.leading {
-				if t.Kind() == token.Comment {
-					return true
-				}
-			}
-			for _, t := range att.trailing {
-				if t.Kind() == token.Comment {
-					return true
-				}
+			if sliceHasComment(att.leading) || sliceHasComment(att.trailing) {
+				return true
 			}
 		}
 	}

@@ -139,11 +139,8 @@ func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
 		}
 		if !firstTok.IsZero() {
 			if att, ok := p.trivia.tokenTrivia(firstTok.ID()); ok {
-				for _, t := range att.leading {
-					if t.Kind() == token.Comment {
-						valueGap = gapSpace
-						break
-					}
+				if sliceHasComment(att.leading) {
+					valueGap = gapSpace
 				}
 			}
 		}
@@ -237,13 +234,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		}
 	})
 
-	if len(closeComments) > 0 {
-		p.emitGap(gapNewline)
-		p.push(dom.Text(closeTok.Text()))
-		p.emitTrailing(closeAtt.trailing)
-	} else {
-		p.printToken(closeTok, gapNewline)
-	}
+	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
 }
 
 func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
@@ -321,18 +312,12 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	// Check if the open brace has trailing comments that should be
 	// moved inside the indented block.
-	var openTrailing []token.Token
-	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
-		for _, t := range att.trailing {
-			if t.Kind() == token.Comment {
-				openTrailing = att.trailing
-				break
-			}
-		}
-	}
+	openTrailing := p.extractOpenTrailing(openTok)
 
 	if len(openTrailing) > 0 {
 		// Suppress trailing on open brace; emit inside indent block.
+		// Cannot use printTokenAs here because we need to suppress
+		// trailing and may need replacement text (angle -> brace).
 		att, hasTrivia := p.trivia.tokenTrivia(openTok.ID())
 		if hasTrivia {
 			p.appendPending(att.leading)
@@ -360,13 +345,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 	})
 
-	if len(closeComments) > 0 {
-		p.emitGap(gapNewline)
-		p.push(dom.Text(closeText))
-		p.emitTrailing(closeAtt.trailing)
-	} else {
-		p.printTokenAs(closeTok, gapNewline, closeText)
-	}
+	p.emitCloseTok(closeTok, closeText, closeComments, closeAtt)
 }
 
 func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
