@@ -96,7 +96,38 @@ func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
 		return
 	}
 	p.printToken(expr.PrefixToken(), gap)
-	p.printExpr(expr.Expr(), gapNone)
+	// In format mode, check if the value has leading comments. If so,
+	// use gapSpace for proper spacing (e.g., "- /* comment */ 32").
+	// Otherwise use gapNone to keep prefix glued (e.g., "-32").
+	valueGap := gapNone
+	if p.options.Format {
+		inner := expr.Expr()
+		var firstTok token.Token
+		switch inner.Kind() {
+		case ast.ExprKindLiteral:
+			firstTok = inner.AsLiteral().Token
+		case ast.ExprKindPath:
+			for pc := range inner.AsPath().Path.Components {
+				if !pc.Separator().IsZero() {
+					firstTok = pc.Separator()
+				} else if !pc.Name().IsZero() {
+					firstTok = pc.Name()
+				}
+				break
+			}
+		}
+		if !firstTok.IsZero() {
+			if att, ok := p.trivia.tokenTrivia(firstTok.ID()); ok {
+				for _, t := range att.leading {
+					if t.Kind() == token.Comment {
+						valueGap = gapSpace
+						break
+					}
+				}
+			}
+		}
+	}
+	p.printExpr(expr.Expr(), valueGap)
 }
 
 func (p *printer) printExprRange(expr ast.ExprRange, gap gapStyle) {
