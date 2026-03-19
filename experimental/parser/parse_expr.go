@@ -46,6 +46,20 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	}
 
 	next := peekTokenExpr(p, c)
+	// If the next token is an identifier, we check two tokens ahead for validaton that this
+	// is an infix expression, either using ":" and "=" or colon-less assignments.
+	//
+	// If it is valid, then we return the left-hand side. Otherwise, we continue to parse
+	// the infix expression.
+	if next.Kind() == token.Ident {
+		clone := c.Clone()
+		clone.Next()
+		switch clone.Peek().Keyword() {
+		case keyword.Assign, keyword.Colon, keyword.Braces, keyword.Lt, keyword.Brackets:
+			return lhs
+		}
+	}
+
 	switch prec {
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
@@ -61,22 +75,10 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 				)
 				fallthrough
 			case keyword.Colon:
-				// Field values in a message literal are never infix
-				// expressions. In protoc's grammar, a field value is a
-				// scalar, a message literal, or a list literal -- never a
-				// range or any other infix production. We use
-				// parseExprPrefix (not parseExprInfix) so that infix
-				// keywords like "to" are not consumed as part of the value.
-				//
-				// Without this, a field named "to" on the following line
-				// gets swallowed into the previous field's value as a range:
-				//
-				//   reserved: true
-				//   to: true          <- would be parsed as "true to true"
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
 					Colon: c.Next(),
-					Value: parseExprPrefix(p, c, where),
+					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
 			case keyword.Braces, keyword.Lt, keyword.Brackets:
@@ -104,7 +106,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 				// not infix expressions, so use parseExprPrefix.
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
-					Value: parseExprPrefix(p, c, where),
+					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 			}
 		}
