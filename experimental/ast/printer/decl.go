@@ -282,7 +282,10 @@ func (p *printer) printBody(body ast.DeclBody) {
 
 	p.withIndent(func(indented *printer) {
 		indented.printScopeDecls(trivia, body.Decls(), scopeBody)
-		if len(closeComments) > 0 {
+		// Emit close comments inside the indent block. Also flush
+		// any pending slot comments that would otherwise be emitted
+		// outside the indent block with wrong indentation.
+		if len(closeComments) > 0 || indented.pendingHasComments() {
 			indented.emitCloseComments(closeComments, trivia.blankBeforeClose)
 		}
 	})
