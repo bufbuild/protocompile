@@ -456,6 +456,26 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	p.emitGap(gap)
 }
 
+// extractCloseComments checks if a close token (], }) has leading
+// comments in its trivia. Returns the comments and the full trivia
+// so the caller can suppress the default printToken and emit the
+// comments inside an indented block instead.
+func (p *printer) extractCloseComments(closeTok token.Token) ([]token.Token, attachedTrivia) {
+	if !p.options.Format {
+		return nil, attachedTrivia{}
+	}
+	att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
+	if !hasTrivia {
+		return nil, attachedTrivia{}
+	}
+	for _, t := range att.leading {
+		if t.Kind() == token.Comment {
+			return att.leading, att
+		}
+	}
+	return nil, attachedTrivia{}
+}
+
 // semiGap returns the gap to use before a semicolon or comma.
 // In format mode, uses gapInline to keep comments on the same line as
 // the preceding token. In non-format mode, uses gapNone.

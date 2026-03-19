@@ -168,6 +168,8 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
+	closeComments, closeAtt := p.extractCloseComments(closeTok)
+
 	p.printToken(openTok, gap)
 	p.withIndent(func(indented *printer) {
 		for i := range elements.Len() {
@@ -178,8 +180,18 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			indented.printExpr(elements.At(i), gapNewline)
 		}
 		indented.emitTriviaSlot(slots, elements.Len())
+		if len(closeComments) > 0 {
+			indented.emitCloseComments(closeComments, slots.blankBeforeClose)
+		}
 	})
-	p.printToken(closeTok, gapNewline)
+
+	if len(closeComments) > 0 {
+		p.emitGap(gapNewline)
+		p.push(dom.Text(closeTok.Text()))
+		p.emitTrailing(closeAtt.trailing)
+	} else {
+		p.printToken(closeTok, gapNewline)
+	}
 }
 
 func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
@@ -245,6 +257,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
+	closeComments, closeAtt := p.extractCloseComments(closeTok)
+
 	p.printTokenAs(openTok, gap, openText)
 	p.withIndent(func(indented *printer) {
 		for i := range elements.Len() {
@@ -252,8 +266,18 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 			indented.printExprField(elements.At(i), gapNewline)
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())
+		if len(closeComments) > 0 {
+			indented.emitCloseComments(closeComments, trivia.blankBeforeClose)
+		}
 	})
-	p.printTokenAs(closeTok, gapNewline, closeText)
+
+	if len(closeComments) > 0 {
+		p.emitGap(gapNewline)
+		p.push(dom.Text(closeText))
+		p.emitTrailing(closeAtt.trailing)
+	} else {
+		p.printTokenAs(closeTok, gapNewline, closeText)
+	}
 }
 
 func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
