@@ -485,6 +485,51 @@ func (p *printer) extractCloseComments(closeTok token.Token) ([]token.Token, att
 	return nil, attachedTrivia{}
 }
 
+// scopeHasAttachedComments checks whether any token in a fused scope
+// (brackets, braces, parens) has attached comments (leading or trailing).
+func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
+	if p.trivia == nil {
+		return false
+	}
+	openTok, closeTok := fused.StartEnd()
+	// Check open token trailing.
+	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
+		for _, t := range att.trailing {
+			if t.Kind() == token.Comment {
+				return true
+			}
+		}
+	}
+	// Check close token leading.
+	if att, ok := p.trivia.tokenTrivia(closeTok.ID()); ok {
+		for _, t := range att.leading {
+			if t.Kind() == token.Comment {
+				return true
+			}
+		}
+	}
+	// Check interior tokens.
+	cursor := fused.Children()
+	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok.Kind().IsSkippable() {
+			continue
+		}
+		if att, ok := p.trivia.tokenTrivia(tok.ID()); ok {
+			for _, t := range att.leading {
+				if t.Kind() == token.Comment {
+					return true
+				}
+			}
+			for _, t := range att.trailing {
+				if t.Kind() == token.Comment {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // semiGap returns the gap to use before a semicolon or comma.
 // In format mode, uses gapInline to keep comments on the same line as
 // the preceding token. In non-format mode, uses gapNone.

@@ -235,6 +235,12 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 
 	hasComments := triviaHasComments(trivia)
+	// Also check for comments attached to any token in the scope
+	// (trailing on open brace, leading on close brace, or on any
+	// interior token). These force multi-line expansion.
+	if !hasComments {
+		hasComments = p.scopeHasAttachedComments(braces)
+	}
 
 	if elements.Len() == 0 && !hasComments {
 		p.printTokenAs(openTok, gap, openText)
@@ -259,8 +265,36 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
-	p.printTokenAs(openTok, gap, openText)
+	// Check if the open brace has trailing comments that should be
+	// moved inside the indented block.
+	var openTrailing []token.Token
+	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
+		for _, t := range att.trailing {
+			if t.Kind() == token.Comment {
+				openTrailing = att.trailing
+				break
+			}
+		}
+	}
+
+	if len(openTrailing) > 0 {
+		// Suppress trailing on open brace; emit inside indent block.
+		att, hasTrivia := p.trivia.tokenTrivia(openTok.ID())
+		if hasTrivia {
+			p.appendPending(att.leading)
+			p.emitTrivia(gap)
+		} else {
+			p.emitGap(gap)
+		}
+		p.push(dom.Text(openText))
+	} else {
+		p.printTokenAs(openTok, gap, openText)
+	}
 	p.withIndent(func(indented *printer) {
+		if len(openTrailing) > 0 {
+			indented.appendPending(openTrailing)
+			indented.emitTrivia(gapNewline)
+		}
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(trivia, i)
 			indented.printExprField(elements.At(i), gapNewline)

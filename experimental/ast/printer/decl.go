@@ -415,6 +415,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			} else {
 				p.printToken(openTok, gapSpace)
 			}
+			closeComments, closeAtt := p.extractCloseComments(closeTok)
 			p.withIndent(func(indented *printer) {
 				if len(openTrailing) > 0 {
 					// Emit the trailing comments from the open bracket
@@ -441,9 +442,18 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					}
 				}
 				indented.emitTriviaSlot(slots, entries.Len())
+				if len(closeComments) > 0 {
+					indented.emitCloseComments(closeComments, slots.blankBeforeClose)
+				}
 			})
 			p.emitTrivia(gapNone)
-			p.printToken(closeTok, gapNewline)
+			if len(closeComments) > 0 {
+				p.emitGap(gapNewline)
+				p.push(dom.Text(closeTok.Text()))
+				p.emitTrailing(closeAtt.trailing)
+			} else {
+				p.printToken(closeTok, gapNewline)
+			}
 		}
 		return
 	}
