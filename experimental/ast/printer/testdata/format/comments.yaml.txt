@@ -60,4 +60,5 @@ service Svc { // Trailing on service open.
 extend Foo { // Trailing on extend open.
   optional int32 ext_field = 100; // Trailing on extend field.
 } // Trailing on extend close.
+
 // These comments are attached to the EOF.

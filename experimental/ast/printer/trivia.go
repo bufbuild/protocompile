@@ -235,7 +235,33 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		// Register leading trivia for every non-skippable token after the
 		// first (the first token's trivia is already set by walkScope).
 		if tok != startToken {
-			idx.attached[tok.ID()] = attachedTrivia{leading: pending}
+			leading := pending
+			// Extract inline trailing comments after commas. A comment on
+			// the same line as a comma (e.g., "true, // comment") should be
+			// trailing trivia on the comma, not leading on the next token.
+			if endToken.Keyword() == keyword.Comma {
+				firstNewline := len(leading)
+				for i, t := range leading {
+					if t.Kind() == token.Space && strings.Count(t.Text(), "\n") > 0 {
+						firstNewline = i
+						break
+					}
+				}
+				hasInlineComment := false
+				for _, t := range leading[:firstNewline] {
+					if t.Kind() == token.Comment {
+						hasInlineComment = true
+						break
+					}
+				}
+				if hasInlineComment {
+					att := idx.attached[endToken.ID()]
+					att.trailing = leading[:firstNewline]
+					idx.attached[endToken.ID()] = att
+					leading = leading[firstNewline:]
+				}
+			}
+			idx.attached[tok.ID()] = attachedTrivia{leading: leading}
 			pending = nil
 		}
 

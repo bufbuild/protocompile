@@ -113,6 +113,12 @@ func (p *printer) printFile(file *ast.File) {
 	if p.options.Format {
 		if decls.Len() > 0 || p.pendingHasComments() {
 			endGap = gapNewline
+			// If the last declaration's trailing trivia had a blank
+			// line before the remaining tokens, preserve it for EOF
+			// comments separated from the last declaration.
+			if trivia.blankBeforeClose && p.pendingHasComments() {
+				endGap = gapBlankline
+			}
 		}
 	}
 	p.emitTrivia(endGap)
@@ -127,6 +133,7 @@ func (p *printer) pendingHasComments() bool {
 	}
 	return false
 }
+
 
 // printToken emits a token with its trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
