@@ -12,29 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test message literal formatting (rule 12): single-field inline,
-# multi-field expand, nested literals.
+# Issue 6: EOF trailing comment after blank line should preserve the
+# blank line separator.
 
 format: true
 
 source: |
   syntax = "proto3";
 
-  option (custom.message_thing_option) = { foo: 5 };
-
-  option (custom.service_thing_option) = { foo: 1  bar: 2   };
-
-  option (custom.file_thing_option) = {
-    foo: 1
-    bar: 2
-    truth: false
-    recursive: {
-      foo: 3
-      bar: 4
-      truth: true
-    }
-  };
-
-  // Issue 9: Message literal with inline block comments should expand
-  // to multi-line.
-  option (custom.commented_option) = {/*leading*/ foo: 1 /*trailing*/};
+  // EOF comment after blank line

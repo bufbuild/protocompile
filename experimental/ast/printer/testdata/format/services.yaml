@@ -38,4 +38,7 @@ source: |
 
       // The Streamer method is bidirectional.
     rpc Streamer(stream  Message) returns (stream  Message);
+
+    // Issue 7: Block comments inside RPC parens should not have extra spaces.
+    rpc Commented(Message /* After Request */) returns (Message /* After Response */);
   }

@@ -43,3 +43,10 @@ enum Status {
 }
 
 message /* A */ B /* C */ {}
+
+// Issue 5: Comment before } inside enum should be indented with no
+// extra blank line.
+enum TrailingEnum {
+  TRAILING_ENUM_UNSPECIFIED = 0;
+  // Comment before close brace.
+}

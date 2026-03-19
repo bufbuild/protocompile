@@ -1,5 +1,12 @@
 syntax = "proto3";
 
+// Issue 9: Message literal with inline block comments should expand
+// to multi-line.
+option (custom.commented_option) = {
+  /*leading*/
+  foo: 1
+  /*trailing*/
+};
 option (custom.file_thing_option) = {
   foo: 1
   bar: 2
