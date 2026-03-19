@@ -436,13 +436,22 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		if p.options.Format {
 			text = strings.TrimRight(text, " \t")
 		}
+		isLine := strings.HasPrefix(text, "//")
+		if isLine && p.convertLineToBlock {
+			// Convert // comment to /* comment */ for inline contexts
+			// where a line comment would eat important following tokens
+			// (compact options, single-line brackets).
+			body := strings.TrimPrefix(text, "//")
+			text = "/*" + body + " */"
+			isLine = false
+		}
 		if p.options.Format && strings.HasPrefix(text, "/*") {
 			p.emitBlockComment(text)
 		} else {
 			p.push(dom.Text(text))
 		}
 		hasComment = true
-		prevIsLine = strings.HasPrefix(text, "//")
+		prevIsLine = isLine
 	}
 	p.pending = p.pending[:0]
 

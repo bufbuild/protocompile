@@ -25,20 +25,26 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	first := true
 	for pc := range path.Components {
 		// Print separator (dot or slash) if present.
-		// Use gapGlue so that comments between path components
-		// get spaces but non-comment tokens are glued (foo.bar stays
-		// glued, but foo /* comment */ .bar gets spaces).
+		// The first separator uses the caller's gap (e.g., gapSpace
+		// after "extend" for fully-qualified paths like ".google").
+		// Subsequent separators use gapGlue for tight binding.
+		sepGap := gapGlue
+		if first && !pc.Separator().IsZero() {
+			sepGap = gap
+		}
 		if !pc.Separator().IsZero() {
-			p.printToken(pc.Separator(), gapGlue)
+			p.printToken(pc.Separator(), sepGap)
 		}
 
 		// Print the name component
 		if !pc.Name().IsZero() {
 			componentGap := gapGlue
-			if first {
+			if first && pc.Separator().IsZero() {
+				// Only use the caller's gap for the first NAME if
+				// there was no separator before it.
 				componentGap = gap
-				first = false
 			}
+			first = false
 
 			if extn := pc.AsExtension(); !extn.IsZero() {
 				// Extension path component like (foo.bar).
