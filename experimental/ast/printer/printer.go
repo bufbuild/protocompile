@@ -33,7 +33,7 @@ const (
 	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
 	gapBlankline // gapBlankline inserts two newline characters
 	gapInline    // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
-	gapGlue // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
+	gapGlue      // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
 )
 
 // scopeKind distinguishes file-level scopes from body-level scopes,
@@ -142,7 +142,6 @@ func (p *printer) pendingHasComments() bool {
 	return false
 }
 
-
 // printToken emits a token with its trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
@@ -211,13 +210,14 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
 				text := strings.TrimRight(t.Text(), " \t")
-				if strings.HasPrefix(text, "/*") {
+				switch {
+				case strings.HasPrefix(text, "/*"):
 					p.emitBlockComment(text)
-				} else if p.convertLineToBlock {
+				case p.convertLineToBlock:
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(text, "//")
 					p.push(dom.Text("/*" + body + " */"))
-				} else {
+				default:
 					p.push(dom.Text(text))
 				}
 			}

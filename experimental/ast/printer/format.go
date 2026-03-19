@@ -125,4 +125,3 @@ func isExtensionOption(opt ast.DefOption) bool {
 	}
 	return false
 }
-

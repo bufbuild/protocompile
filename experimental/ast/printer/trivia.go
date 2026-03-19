@@ -338,7 +338,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			hasBlankLine = len(detached) > 0
 
 			cursor.PrevSkippable()
-			for range len(attached) {
+			for range attached {
 				cursor.PrevSkippable()
 			}
 			trailing = trailing[:firstNewline+len(detached)]
@@ -380,7 +380,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			// so that blankBeforeClose is true for the scope.
 			_, detachedRest := splitDetached(rest)
 			hasBlankLine = len(rest) > len(detachedRest)
-			for range len(rest) {
+			for range rest {
 				cursor.PrevSkippable()
 			}
 		}
@@ -400,7 +400,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			}
 		}
 		if hasBlock {
-			for range len(trailing) {
+			for range trailing {
 				cursor.PrevSkippable()
 			}
 			trailing = nil
