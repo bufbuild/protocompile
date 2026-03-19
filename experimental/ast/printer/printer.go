@@ -202,10 +202,7 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				text := t.Text()
-				if p.options.Format {
-					text = strings.TrimRight(text, " \t")
-				}
+				text := strings.TrimRight(t.Text(), " \t")
 				if strings.HasPrefix(text, "/*") {
 					p.emitBlockComment(text)
 				} else {
