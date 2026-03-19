@@ -398,9 +398,10 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	case gapSpace:
 		afterGap = gapSpace
 	case gapGlue:
-		// gapGlue is used for bracket contexts where tokens are
-		// glued with no surrounding spaces.
-		afterGap = gapNone
+		// When comments are present in a glued context, the
+		// post-comment gap needs a space (e.g., /* comment */ stream).
+		// Without comments, gapGlue still emits nothing.
+		afterGap = gapSpace
 	case gapInline:
 		// gapInline is used for punctuation tokens (`;`, `,`) where
 		// comments should have a space before the first and no gap after

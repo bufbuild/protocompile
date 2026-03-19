@@ -28,5 +28,5 @@ message Foo {
   ];
 
   // Issue 8: Extension path with interleaved comments.
-  optional string path_comments = 6 [(custom/* One */./* Two */name) = "hello"];
+  optional string path_comments = 6 [(custom/* One */ ./* Two */ name) = "hello"];
 }

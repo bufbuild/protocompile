@@ -52,8 +52,8 @@ service Svc { // Trailing on service open.
   rpc Echo(Foo) returns (Foo) { // Trailing on rpc body open.
     option deprecated = true; // Trailing on method option.
   } // Trailing on rpc body close.
-  rpc WithComments(/* input comment */Foo) returns (/* output comment */Foo);
-  rpc WithBodyComments(/* in */Foo) returns (/* out */Foo) {}
+  rpc WithComments(/* input comment */ Foo) returns (/* output comment */ Foo);
+  rpc WithBodyComments(/* in */ Foo) returns (/* out */ Foo) {}
   rpc TrailingInParens(Foo /* after input */) returns (Foo /* after output */);
 } // Trailing on service close.
 
