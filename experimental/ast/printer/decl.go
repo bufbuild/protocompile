@@ -248,6 +248,11 @@ func (p *printer) printBody(body ast.DeclBody) {
 	if body.IsZero() || body.Braces().IsZero() {
 		return
 	}
+	// Entering a nested scope: clear convertLineToBlock since //
+	// comments on their own lines inside bodies are fine.
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = false
+	defer func() { p.convertLineToBlock = saved }()
 
 	openTok, closeTok := body.Braces().StartEnd()
 	trivia := p.trivia.scopeTrivia(body.Braces().ID())

@@ -119,6 +119,12 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
+	// Entering a nested scope: clear convertLineToBlock since //
+	// comments on their own lines inside arrays are fine.
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = false
+	defer func() { p.convertLineToBlock = saved }()
+
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
 	elements := expr.Elements()
@@ -180,6 +186,11 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	if expr.IsZero() {
 		return
 	}
+	// Entering a nested scope: clear convertLineToBlock since //
+	// comments on their own lines inside dicts are fine.
+	saved := p.convertLineToBlock
+	p.convertLineToBlock = false
+	defer func() { p.convertLineToBlock = saved }()
 
 	braces := expr.Braces()
 	if braces.IsZero() {
