@@ -383,6 +383,27 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			}
 		}
 	}
+	// At end of scope with no newline, if trailing on `;` has a block
+	// comment, push it back so it flows to the scope's last slot.
+	// Block comments after `;` at end of a body should be on their own
+	// line, not inline (e.g., `enum Foo { VAL = 1; /* comment */ }`).
+	// Only applies when endToken is `;` to avoid affecting parens,
+	// brackets, and other inline contexts.
+	if atEndOfScope && !afterNewline && len(trailing) > 0 && endToken.Keyword() == keyword.Semi {
+		hasBlock := false
+		for _, t := range trailing {
+			if t.Kind() == token.Comment && strings.HasPrefix(t.Text(), "/*") {
+				hasBlock = true
+				break
+			}
+		}
+		if hasBlock {
+			for range len(trailing) {
+				cursor.PrevSkippable()
+			}
+			trailing = nil
+		}
+	}
 	// At end of scope, keep only inline content (before the first newline) as
 	// trailing. Put back newlines and beyond so they flow to the scope's last
 	// slot and become the close token's leading trivia via walkFused.
