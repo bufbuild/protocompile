@@ -143,6 +143,29 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	p.printTokenAs(tok, gap, tok.Text())
 }
 
+// printTokenSuppressTrailing prints a token with its leading trivia but
+// suppresses its trailing trivia. The caller is responsible for emitting
+// the trailing trivia elsewhere (e.g., inside an indented block).
+func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
+	if tok.IsZero() {
+		return
+	}
+	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
+	if hasTrivia {
+		p.appendPending(att.leading)
+	}
+	if hasTrivia {
+		if !p.options.Format {
+			gap = gapNone
+		}
+		p.emitTrivia(gap)
+	} else {
+		p.emitGap(gap)
+	}
+	p.push(dom.Text(tok.Text()))
+	// Trailing trivia intentionally not emitted.
+}
+
 // printTokenAs prints a token using replacement text instead of the token's
 // own text. This is used for normalizing delimiters (e.g., angle brackets
 // to curly braces) while preserving the token's attached trivia.

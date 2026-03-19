@@ -15,6 +15,8 @@
 package printer
 
 import (
+	"strings"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -361,7 +363,26 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		// In format mode, compact options layout is deterministic:
 		// - 1 option: inline [key = value]
 		// - 2+ options: expanded one-per-line
-		if entries.Len() == 1 {
+		// Force multi-line if the open bracket has trailing comments
+		// or if slots contain comments, since inline // comments
+		// would eat the closing bracket.
+		forceExpand := false
+		var openTrailing []token.Token
+		if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
+			for _, t := range att.trailing {
+				if t.Kind() == token.Comment {
+					forceExpand = true
+					break
+				}
+			}
+			if forceExpand {
+				openTrailing = att.trailing
+			}
+		}
+		if !forceExpand {
+			forceExpand = triviaHasComments(slots)
+		}
+		if entries.Len() == 1 && !forceExpand {
 			// Single option: stays inline. No group wrapping, so
 			// message literal values expand naturally while keeping
 			// [ and ] on the field line.
@@ -377,9 +398,28 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			p.emitTrivia(gapNone)
 			p.printToken(closeTok, gapNone)
 		} else {
-			// Multiple options: always expand one-per-line.
-			p.printToken(openTok, gapSpace)
+			// Multiple options or comments force expand: one-per-line.
+			// When the open bracket has trailing comments, suppress
+			// them from the inline position and emit them as the first
+			// line inside the indented block instead.
+			if len(openTrailing) > 0 {
+				p.printTokenSuppressTrailing(openTok, gapSpace)
+			} else {
+				p.printToken(openTok, gapSpace)
+			}
 			p.withIndent(func(indented *printer) {
+				if len(openTrailing) > 0 {
+					// Emit the trailing comments from the open bracket
+					// on their own indented lines. The first option's
+					// gapNewline provides separation, so we only need
+					// to emit the comments themselves.
+					for _, t := range openTrailing {
+						if t.Kind() == token.Comment {
+							indented.emitGap(gapNewline)
+							indented.push(dom.Text(strings.TrimRight(t.Text(), " \t")))
+						}
+					}
+				}
 				for i := range entries.Len() {
 					indented.emitTriviaSlot(slots, i)
 					if i > 0 {
