@@ -202,6 +202,28 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 	}
 	// Append any remaining tokens at the end of scope.
 	trivia.slots = append(trivia.slots, pending)
+	// If hadBlank wasn't set by walkDecl (e.g., empty body with only
+	// comments), check whether the pending tokens have a blank line
+	// that separates two comment groups (trailing-on-open and
+	// leading-on-close). Only for brace scopes, not file-level.
+	if !hadBlank && scopeID != 0 && len(pending) > 0 {
+		detached, attached := splitDetached(pending)
+		hasDetachedComment := false
+		for _, t := range detached {
+			if t.Kind() == token.Comment {
+				hasDetachedComment = true
+				break
+			}
+		}
+		hasAttachedComment := false
+		for _, t := range attached {
+			if t.Kind() == token.Comment {
+				hasAttachedComment = true
+				break
+			}
+		}
+		hadBlank = hasDetachedComment && hasAttachedComment
+	}
 	trivia.blankBeforeClose = hadBlank
 	idx.detached[scopeID] = trivia
 }

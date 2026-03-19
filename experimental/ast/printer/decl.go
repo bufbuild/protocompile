@@ -299,19 +299,26 @@ func (p *printer) printBody(body ast.DeclBody) {
 // emitCloseComments emits close-brace leading comments inside an
 // indented context, flushing any pending scope trivia first.
 func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose bool) {
-	gap := gapNewline
-	if blankBeforeClose {
-		gap = gapBlankline
-	}
+	// First, flush any pending comments (from trivia slots -- these
+	// are typically trailing-on-open comments like "{ // comment").
+	// These always use gapNewline since they're the first content
+	// inside the indent block.
 	for _, t := range p.pending {
 		if t.Kind() != token.Comment {
 			continue
 		}
-		p.emitGap(gap)
+		p.emitGap(gapNewline)
 		p.push(dom.Text(t.Text()))
-		gap = gapNewline
 	}
 	p.pending = p.pending[:0]
+
+	// The gap before close comments: use gapBlankline when
+	// blankBeforeClose is true (there was a blank line between the
+	// last declaration/comment and the close brace in the source).
+	gap := gapNewline
+	if blankBeforeClose {
+		gap = gapBlankline
+	}
 
 	newlineRun := 0
 	for _, t := range comments {
