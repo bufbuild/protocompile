@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+message Foo {
+  optional string name = 1 [deprecated = true];
+
+  optional string name_with_options = 2 [
+    (custom.float_field_option) = "nan",
+    (custom.double_field_option) = "inf",
+    (custom.int32_field_option) = -3,
+    (custom.int64_field_option) = -4,
+    (custom.uint32_field_option) = 5,
+    (custom.uint64_field_option) = 6
+  ];
+
+  // Issue 1: Trailing // comment before ] should become /* */ on single-line.
+  optional string trail = 3 [deprecated = true /* Trailing */];
+
+  // Issue 2: Trailing comment after , should stay inline.
+  optional string multi = 4 [
+    deprecated = true, // After comma
+    json_name = "m"
+  ];
+
+  // Issue 3: Comment after [ opener.
+  optional string opener = 5 [
+    // After bracket
+    deprecated = true
+  ];
+
+  // Issue 8: Extension path with interleaved comments.
+  optional string path_comments = 6 [(custom/* One */ ./* Two */ name) = "hello"];
+}

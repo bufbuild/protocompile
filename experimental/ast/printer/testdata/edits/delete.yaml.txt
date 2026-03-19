@@ -1,0 +1,13 @@
+syntax = "proto3";
+package test;
+
+// This is a detached comment (blank line follows)
+
+message WithFields {
+  string keep_first = 1;
+  bool keep_last = 3;
+}
+
+message KeepMe {} // trailing comment on KeepMe
+
+// This EOF comment should be preserved

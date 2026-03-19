@@ -1,0 +1,25 @@
+source: |
+  edition = "2023";
+
+  package example.editions;
+
+  message Foo {
+    string name = 1;
+    int32 id = 2;
+
+    message Bar {
+      string value = 1;
+    }
+
+    Bar nested = 3;
+  }
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+    STATUS_INACTIVE = 2;
+  }
+
+  service MyService {
+    rpc GetFoo(Foo) returns (Foo);
+  }

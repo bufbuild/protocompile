@@ -1,0 +1,392 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package printer
+
+import (
+	"slices"
+	"strings"
+
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+)
+
+// attachedTrivia holds trivia tightly bound to a single semantic token.
+type attachedTrivia struct {
+	// leading contains all skippable tokens before this token
+	// (since the previous non-skippable token in the same scope),
+	// with any trailing comment already extracted into trailing.
+	leading []token.Token
+
+	// trailing contains the trailing comment on the same line
+	// after this token (if any).
+	trailing []token.Token
+}
+
+// detachedTrivia holds a set of trivia runs as slots within a scope.
+type detachedTrivia struct {
+	slots [][]token.Token
+
+	// blankBefore[i] is true when there was a blank line between
+	// declaration i-1 and declaration i. Always false for i==0.
+	blankBefore []bool
+
+	// blankBeforeClose is true when there was a blank line between
+	// the last declaration and the close brace of the scope.
+	blankBeforeClose bool
+}
+
+func (t detachedTrivia) isEmpty() bool {
+	return len(t.slots) == 0 || len(t.slots) == 1 && len(t.slots[0]) == 0
+}
+
+// hasBlankBefore reports whether there was a blank line before
+// declaration i in the original source.
+func (t detachedTrivia) hasBlankBefore(i int) bool {
+	return i < len(t.blankBefore) && t.blankBefore[i]
+}
+
+// triviaHasComments reports whether any slot contains comment tokens.
+func triviaHasComments(trivia detachedTrivia) bool {
+	return slices.ContainsFunc(trivia.slots, sliceHasComment)
+}
+
+// sliceHasComment reports whether tokens contains at least one comment.
+func sliceHasComment(tokens []token.Token) bool {
+	for _, tok := range tokens {
+		if tok.Kind() == token.Comment {
+			return true
+		}
+	}
+	return false
+}
+
+// firstNewlineIndex returns the index of the first Space token containing
+// a newline, or len(tokens) if none is found.
+func firstNewlineIndex(tokens []token.Token) int {
+	for i, t := range tokens {
+		if t.Kind() == token.Space && strings.Contains(t.Text(), "\n") {
+			return i
+		}
+	}
+	return len(tokens)
+}
+
+// triviaIndex is the complete trivia decomposition for one file.
+//
+// Trivia refers to tokens that carry no syntactic meaning but preserve
+// the original source formatting: whitespace (spaces, newlines) and comments
+// (both line comments like "// ..." and block comments like "/* ... */").
+// For example, in this source:
+//
+//	// A detached comment about Foo.
+//
+//	message Foo {
+//		int32 x = 1; // field comment
+//	}
+//
+// The trivia includes: the detached comment and blank line before "message",
+// the spaces and newlines between tokens inside the body, and the trailing
+// line comment "// field comment" after the semicolon.
+//
+// Every natural non-skippable token gets an entry in attached, even if
+// both leading and trailing are empty. This distinguishes natural tokens
+// (use leading trivia) from synthetic tokens (use gap fallback).
+type triviaIndex struct {
+	attached map[token.ID]attachedTrivia
+	detached map[token.ID]detachedTrivia
+}
+
+// scopeTrivia returns the detached trivia for a tokens scope.
+func (idx *triviaIndex) scopeTrivia(scopeID token.ID) detachedTrivia {
+	if idx == nil {
+		return detachedTrivia{}
+	}
+	return idx.detached[scopeID]
+}
+
+// tokenTrivia returns the attached trivia for a token.
+// Returns true for all natural tokens, false for synthetic tokens.
+func (idx *triviaIndex) tokenTrivia(id token.ID) (attachedTrivia, bool) {
+	if idx == nil {
+		return attachedTrivia{}, false
+	}
+	att, ok := idx.attached[id]
+	return att, ok
+}
+
+// buildTriviaIndex walks the entire token stream and builds the trivia index.
+//
+// For each non-skippable token, it collects all preceding skippable tokens
+// as the token's "leading" trivia. Trailing comments (line comments on the
+// same line as the previous token) are extracted and stored separately.
+//
+// Declaration boundaries (`;` and `}`) are tracked to build scope slots.
+// When trivia between two declarations contains a blank line, the portion
+// before the last blank line is stored as detached trivia in a slot,
+// enabling it to survive if the following declaration is deleted.
+func buildTriviaIndex(stream *token.Stream) *triviaIndex {
+	idx := &triviaIndex{
+		attached: make(map[token.ID]attachedTrivia),
+		detached: make(map[token.ID]detachedTrivia),
+	}
+	idx.walkScope(stream.Cursor(), 0)
+	return idx
+}
+
+// walkScope processes all tokens within one scope.
+//
+// scopeID is 0 for the file-level scope, or the fused bracket's
+// token.ID for bracket-interior scopes.
+//
+// It builds both per-token attached trivia and per-scope slot arrays.
+// Slot boundaries are detected by tracking `;` and `}` tokens, which
+// mark the end of declarations in protobuf syntax.
+func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
+	var pending []token.Token
+	var trivia detachedTrivia
+	hadBlank := false
+	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok.Kind().IsSkippable() {
+			pending = append(pending, tok)
+			continue
+		}
+		// For the first non-skippable token in a brace scope, extract
+		// inline trailing comments on the open brace. Tokens on the
+		// same line as "{" (before the first newline) that contain a
+		// comment become trailing trivia on the open brace token,
+		// keeping "{ // comment" on one line.
+		if len(trivia.slots) == 0 && scopeID != 0 {
+			firstNewline := firstNewlineIndex(pending)
+			if firstNewline < len(pending) && sliceHasComment(pending[:firstNewline]) {
+				att := idx.attached[scopeID]
+				att.trailing = pending[:firstNewline]
+				idx.attached[scopeID] = att
+				pending = pending[firstNewline:]
+			}
+		}
+
+		detached, attached := splitDetached(pending)
+		trivia.slots = append(trivia.slots, detached)
+
+		// When the first slot has comments but no preceding blank line,
+		// this means comments appeared between the open brace and the
+		// first declaration (e.g. trailing comments on "{"). Mark
+		// blankBefore[0] true so printScopeDecls can insert a blank
+		// line between those comments and the first declaration.
+		blank := hadBlank
+		if len(trivia.blankBefore) == 0 && !blank && sliceHasComment(detached) {
+			blank = true
+		}
+		trivia.blankBefore = append(trivia.blankBefore, blank)
+		idx.attached[tok.ID()] = attachedTrivia{leading: attached}
+		pending = nil
+
+		hadBlank = idx.walkDecl(cursor, tok)
+	}
+	// Append any remaining tokens at the end of scope.
+	trivia.slots = append(trivia.slots, pending)
+	// If hadBlank wasn't set by walkDecl (e.g., empty body with only
+	// comments), check whether the pending tokens have a blank line
+	// that separates two comment groups (trailing-on-open and
+	// leading-on-close). Only for brace scopes, not file-level.
+	if !hadBlank && scopeID != 0 && len(pending) > 0 {
+		detached, attached := splitDetached(pending)
+		hadBlank = sliceHasComment(detached) && sliceHasComment(attached)
+	}
+	trivia.blankBeforeClose = hadBlank
+	idx.detached[scopeID] = trivia
+}
+
+func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
+	openToken, closeToken := leafToken.StartEnd()
+	idx.walkScope(leafToken.Children(), openToken.ID())
+
+	trivia := idx.scopeTrivia(openToken.ID())
+	endTokens := trivia.slots[len(trivia.slots)-1]
+	detached, attached := splitDetached(endTokens)
+	trivia.slots[len(trivia.slots)-1] = detached
+	idx.detached[openToken.ID()] = trivia
+	idx.attached[closeToken.ID()] = attachedTrivia{
+		leading: attached,
+	}
+	return closeToken
+}
+
+// walkDecl processes a declaration. Returns true if the trailing trivia
+// contained a blank line separating this declaration from the next.
+func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) bool {
+	endToken := startToken
+	var pending []token.Token
+	for tok := startToken; !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok != startToken && tok.Kind().IsSkippable() {
+			pending = append(pending, tok)
+			continue
+		}
+
+		// Register leading trivia for every non-skippable token after the
+		// first (the first token's trivia is already set by walkScope).
+		if tok != startToken {
+			leading := pending
+			// Extract inline trailing comments on the previous token.
+			// A comment on the same line (e.g., "1, // comment" or
+			// "2 // comment") should be trailing trivia on the previous
+			// token, not leading on the next. This is especially
+			// important for message literal fields where commas are
+			// removed during formatting -- without this, the comment
+			// on the comma's line would be lost or misplaced.
+			firstNewline := firstNewlineIndex(leading)
+			if sliceHasComment(leading[:firstNewline]) && firstNewline < len(leading) {
+				att := idx.attached[endToken.ID()]
+				att.trailing = leading[:firstNewline]
+				idx.attached[endToken.ID()] = att
+				leading = leading[firstNewline:]
+			}
+			idx.attached[tok.ID()] = attachedTrivia{leading: leading}
+			pending = nil
+		}
+
+		endToken = tok
+		if !tok.IsLeaf() {
+			// Recurse into fused tokens (non-leaf tokens).
+			endToken = idx.walkFused(tok)
+		}
+
+		// Only `;` and `{...}` mark declaration boundaries. Other fused
+		// brackets (parens, square brackets, angles) appear mid-declaration
+		// and must not split it. Splitting at parens would cause the cursor
+		// to land on an interior close bracket after PrevSkippable, making
+		// walkScope register trivia under the wrong token ID.
+		atDeclBoundary := tok.Keyword() == keyword.Semi || tok.Keyword() == keyword.Braces
+		if atDeclBoundary {
+			break
+		}
+	}
+	// Capture trailing trivia for end of declaration. This includes comments on
+	// the last line and all blank lines beneath it, up until the last newline.
+	afterNewline := false
+	atEndOfScope := true
+	hasBlankLine := false
+	var trailing []token.Token
+	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
+		isNewline := tok.Kind() == token.Space && strings.Contains(tok.Text(), "\n")
+		isSpace := tok.Kind() == token.Space && !isNewline
+		isComment := tok.Kind() == token.Comment
+		if !afterNewline && !isNewline && !isSpace && !isComment {
+			cursor.PrevSkippable()
+			atEndOfScope = false
+			break
+		}
+		if afterNewline && !isNewline && !isSpace {
+			// Keep only the inline portion (before first newline) as
+			// trailing. This ensures trailing comments like "} // foo"
+			// stay attached to their token even when there's no blank
+			// line before the next declaration.
+			firstNewline := firstNewlineIndex(trailing)
+
+			rest := trailing[firstNewline:]
+			detached, attached := splitDetached(rest)
+			hasBlankLine = len(detached) > 0
+
+			cursor.PrevSkippable()
+			for range attached {
+				cursor.PrevSkippable()
+			}
+			trailing = trailing[:firstNewline+len(detached)]
+			atEndOfScope = false
+			break
+		}
+		afterNewline = afterNewline || isNewline
+		trailing = append(trailing, tok)
+	}
+	// At end of scope with leftover pending from the main loop (no `;` or `}`
+	// was found), extract inline comments as trailing on the end token.
+	// Comments after a newline are pushed back so they flow to the close
+	// token's leading via walkFused. Pure whitespace is discarded since the
+	// printer provides appropriate gaps.
+	if atEndOfScope && len(pending) > 0 && len(trailing) == 0 {
+		firstNewline := firstNewlineIndex(pending)
+		if sliceHasComment(pending[:firstNewline]) {
+			trailing = pending[:firstNewline]
+		}
+		rest := pending[firstNewline:]
+		if sliceHasComment(rest) {
+			// Check for a blank line in rest to set hasBlankLine,
+			// so that blankBeforeClose is true for the scope.
+			_, detachedRest := splitDetached(rest)
+			hasBlankLine = len(rest) > len(detachedRest)
+			for range rest {
+				cursor.PrevSkippable()
+			}
+		}
+	}
+	// At end of scope with no newline, if trailing on `;` has a block
+	// comment, push it back so it flows to the scope's last slot.
+	// Block comments after `;` at end of a body should be on their own
+	// line, not inline (e.g., `enum Foo { VAL = 1; /* comment */ }`).
+	// Only applies when endToken is `;` to avoid affecting parens,
+	// brackets, and other inline contexts.
+	if atEndOfScope && !afterNewline && len(trailing) > 0 && endToken.Keyword() == keyword.Semi {
+		hasBlock := false
+		for _, t := range trailing {
+			if t.Kind() == token.Comment && strings.HasPrefix(t.Text(), "/*") {
+				hasBlock = true
+				break
+			}
+		}
+		if hasBlock {
+			for range trailing {
+				cursor.PrevSkippable()
+			}
+			trailing = nil
+		}
+	}
+	// At end of scope, keep only inline content (before the first newline) as
+	// trailing. Put back newlines and beyond so they flow to the scope's last
+	// slot and become the close token's leading trivia via walkFused.
+	if atEndOfScope && afterNewline {
+		firstNewline := firstNewlineIndex(trailing)
+		for range len(trailing) - firstNewline {
+			cursor.PrevSkippable()
+		}
+		trailing = trailing[:firstNewline]
+	}
+	if len(trailing) > 0 {
+		att := idx.attached[endToken.ID()]
+		att.trailing = trailing
+		idx.attached[endToken.ID()] = att
+	}
+	return hasBlankLine
+}
+
+// splitDetached splits a trivia token slice at the last blank line boundary.
+// A blank line boundary consists 2+ newlines within a set of only Space tokens.
+func splitDetached(tokens []token.Token) (detached, attached []token.Token) {
+	lastBlankEnd := -1
+	for index := len(tokens) - 1; index >= 0; index-- {
+		tok := tokens[index]
+		if tok.Kind() != token.Space {
+			lastBlankEnd = -1
+		} else if strings.Contains(tok.Text(), "\n") {
+			if lastBlankEnd != -1 {
+				break
+			}
+			lastBlankEnd = index
+		}
+	}
+	if lastBlankEnd == -1 {
+		return nil, tokens
+	}
+	return tokens[:lastBlankEnd], tokens[lastBlankEnd:]
+}

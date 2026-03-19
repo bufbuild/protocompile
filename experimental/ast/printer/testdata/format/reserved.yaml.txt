@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+message Foo {
+  reserved 43 to max;
+  reserved "foo", "bar";
+
+  // Always reserve the forty-second field.
+  reserved 42;
+
+  reserved "baz"; // Don't forget baz.
+
+  // The name field should exist after the reserved block.
+  string name = 1;
+}
