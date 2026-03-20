@@ -27,9 +27,8 @@ import (
 	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/ext/flagx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/wellknownimports"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // convertPath converts a fully-qualified Protobuf path from descriptor.proto
@@ -105,8 +104,10 @@ func each[T protoreflect.Descriptor, L interface {
 
 func main() {
 	flagx.Main(func() error {
-		fdp := descriptorpb.File_google_protobuf_descriptor_proto
-		anyfdp := anypb.File_google_protobuf_any_proto
+		files := wellknownimports.Files()
+		descpb, _ := files.FindFileByPath("google/protobuf/descriptor.proto")
+		anypb, _ := files.FindFileByPath("google/protobuf/any.proto")
+
 		info, ok := debug.ReadBuildInfo()
 		if !ok {
 			return errors.New("debug: could not read build info")
@@ -117,18 +118,18 @@ func main() {
 		fmt.Fprintf(out, "package %s\n\n", os.Getenv("GOPACKAGE"))
 
 		fmt.Fprintf(out, "const (\n")
-		for field := range walk[protoreflect.FieldDescriptor](fdp) {
+		for field := range walk[protoreflect.FieldDescriptor](descpb) {
 			fmt.Fprintf(out, "// Field number for %v.\n", field.FullName())
 			fmt.Fprintf(out, "\t%s = %v\n\n", convertPath(field.FullName()), field.Number())
 		}
-		for field := range walk[protoreflect.FieldDescriptor](anyfdp) {
+		for field := range walk[protoreflect.FieldDescriptor](anypb) {
 			fmt.Fprintf(out, "// Field number for %v.\n", field.FullName())
 			fmt.Fprintf(out, "\t%s = %v\n\n", convertPath(field.FullName()), field.Number())
 		}
 		fmt.Fprintf(out, ")\n\n")
 
 		fmt.Fprintf(out, "const (\n")
-		for value := range walk[protoreflect.EnumValueDescriptor](fdp) {
+		for value := range walk[protoreflect.EnumValueDescriptor](descpb) {
 			fmt.Fprintf(out, "// Enum value for %v.\n", value.FullName())
 
 			// Use nice, enum-relative names.
