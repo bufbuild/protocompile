@@ -22,11 +22,12 @@ import (
 	"io/fs"
 	"sync"
 
-	"github.com/bufbuild/protocompile"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile"
 )
 
 //go:embed google/protobuf/*.proto google/protobuf/*/*.proto
