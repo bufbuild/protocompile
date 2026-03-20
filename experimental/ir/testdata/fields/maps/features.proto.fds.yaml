@@ -1,5 +1,5 @@
 file:
-- name: "testdata/fields/maps/ok.proto"
+- name: "testdata/fields/maps/features.proto"
   package: "test"
   message_type:
   - name: "Foo"
@@ -16,18 +16,13 @@ file:
       type: TYPE_MESSAGE
       type_name: ".test.Foo.BarEntry"
       json_name: "bar"
-    - name: "__foo2__"
+    - name: "baz"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
-      type_name: ".test.Foo.Foo2Entry"
-      json_name: "Foo2"
-    - name: "__foo_3__"
-      number: 4
-      label: LABEL_REPEATED
-      type: TYPE_MESSAGE
-      type_name: ".test.Foo.Foo3Entry"
-      json_name: "Foo3"
+      type_name: ".test.Foo.BazEntry"
+      json_name: "baz"
+      options.features.utf8_validation: VERIFY
     nested_type:
     - name: "FooEntry"
       field:
@@ -52,34 +47,24 @@ file:
       - name: "value"
         number: 2
         label: LABEL_OPTIONAL
-        type: TYPE_MESSAGE
-        type_name: ".test.Foo"
+        type: TYPE_INT32
         json_name: "value"
       options.map_entry: true
-    - name: "Foo2Entry"
+    - name: "BazEntry"
       field:
       - name: "key"
         number: 1
         label: LABEL_OPTIONAL
-        type: TYPE_INT32
+        type: TYPE_STRING
         json_name: "key"
+        options.features.utf8_validation: VERIFY
       - name: "value"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         json_name: "value"
+        options.features.utf8_validation: VERIFY
       options.map_entry: true
-    - name: "Foo3Entry"
-      field:
-      - name: "key"
-        number: 1
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        json_name: "key"
-      - name: "value"
-        number: 2
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        json_name: "value"
-      options.map_entry: true
-  syntax: "proto3"
+  options.features.utf8_validation: NONE
+  syntax: "editions"
+  edition: EDITION_2023
