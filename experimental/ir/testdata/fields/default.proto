@@ -43,6 +43,8 @@ message M {
     bool b2 = 32 [default = 1];
     bool b3 = 33 [default = false];
 
+    bytes b = 40 [default = "\0\1\2\3\4\5\6\7fubar!"];
+
     enum E {
         E0 = 0;
         E1 = 1;
