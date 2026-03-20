@@ -578,8 +578,10 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
 			}
 		} else if v, ok := d.AsString(); ok {
-			// For bytes fields, the default value needs to be escaped.
 			if fdp.GetType() == descriptorpb.FieldDescriptorProto_TYPE_BYTES {
+				// For bytes fields, the default value needs to be escaped.
+				// Reference for default value encoding:
+				// https://protobuf.com/docs/descriptors#encoding-default-values
 				var buf bytes.Buffer
 				internal.WriteEscapedBytes(&buf, []byte(v))
 				fdp.DefaultValue = addr(buf.String())
