@@ -24,12 +24,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/report/tags"
+	"github.com/bufbuild/protocompile/experimental/report/rtags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
@@ -149,7 +150,7 @@ func resolveFieldType(field Member, r *report.Report) {
 			)
 		}
 
-		if !field.Container().MapField().IsZero() && field.Number() == 1 {
+		if !field.Container().MapField().IsZero() && field.Number() == tags.MapEntry_Key {
 			// Legalize that the key type must be comparable.
 			ty := sym.AsType()
 			if !ty.Predeclared().IsMapKey() {
@@ -320,7 +321,7 @@ func (r symbolRef) resolve() Symbol {
 func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Diagnostic {
 	if sym.IsZero() {
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
-			report.Tag(tags.UnknownSymbol),
+			report.Tag(rtags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Helpf("the full name of this scope is `%s`", r.scope),
 		)
@@ -337,7 +338,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 	case expectedName != "":
 		// Complain if we found the "wrong" type.
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
-			report.Tag(tags.UnknownSymbol),
+			report.Tag(rtags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Snippetf(sym.Definition(),
 				"found possibly related symbol `%s`", sym.FullName()),

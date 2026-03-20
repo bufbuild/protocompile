@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package tags defines publicly-exposed diagnostic tag constants for use with [report.Tag].
-package tags
+package rtags
 
 import _ "github.com/bufbuild/protocompile/experimental/report" // Imported for package documentation.
 
