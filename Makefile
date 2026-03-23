@@ -153,7 +153,7 @@ wellknownimports: $(PROTOC) $(sort $(wildcard $(PROTOC_DIR)/include/google/proto
 	@mkdir -p wellknownimports/google/protobuf/compiler
 	cp -R $(PROTOC_DIR)/include/google/protobuf/*.proto wellknownimports/google/protobuf
 	cp -R $(PROTOC_DIR)/include/google/protobuf/compiler/*.proto wellknownimports/google/protobuf/compiler
-	find wellknownimports/google -type f | sed 's|wellknownimports/||' | xargs protoc -I wellknownimports -owellknownimports/wkt.pb
+	find wellknownimports/google -type f | sed 's|wellknownimports/||' | xargs $(PROTOC) -I wellknownimports -owellknownimports/wkt.pb
 
 internal/testdata/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/*.proto))
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
