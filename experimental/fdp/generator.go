@@ -236,7 +236,6 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 	for i, extensions := range seq.All(ty.ExtensionRanges()) {
 		g.debug.comments(extensions.DeclAST(), tags.Message_ExtensionRange)
 		g.debug.in(tags.Message_ExtensionRange, int32(i))(func() {
-
 			g.rangeSourceCodeInfo(extensions.AST(),
 				tags.Message_ExtensionRange_Start,
 				tags.Message_ExtensionRange_End)
