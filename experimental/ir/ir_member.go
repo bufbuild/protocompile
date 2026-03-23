@@ -307,7 +307,7 @@ func (m Member) Element() Type {
 // FDPType returns the descriptor type that would be used for this field.
 func (m Member) FDPType() descriptorpb.FieldDescriptorProto_Type {
 	switch {
-	case !m.IsMessageField():
+	case m.IsZero() || m.IsEnumValue():
 		return 0
 	case m.IsGroup():
 		return descriptorpb.FieldDescriptorProto_TYPE_GROUP

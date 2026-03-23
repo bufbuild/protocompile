@@ -805,7 +805,7 @@ func (v MessageValue) Concrete() MessageValue {
 
 // IsEmpty returns whether any fields are set on this value.
 func (v MessageValue) IsEmpty() bool {
-	return v.IsZero() || len(v.Raw().entries) > 0
+	return v.IsZero() || len(v.Raw().entries) == 0
 }
 
 // Field returns the field corresponding with the given member, if it is set.

@@ -356,11 +356,13 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 	}
 
 	if ty := f.Element(); !ty.IsZero() {
+		tag := int32(tags.Field_Type)
 		fdp.Type = f.FDPType().Enum()
-		g.debug.span(ast.Type.RemovePrefixes(), tags.Field_Type)
 		if !ty.IsPredeclared() {
 			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
+			tag = tags.Field_TypeName
 		}
+		g.debug.span(ast.Type.RemovePrefixes(), tag)
 	}
 
 	if f.IsExtension() && f.Container().FullName() != "" {
