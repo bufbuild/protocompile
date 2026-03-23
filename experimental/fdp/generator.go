@@ -550,7 +550,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 	if jsonName := f.PseudoOptions().JSONName; !jsonName.IsZero() {
 		g.addSourceLocationWithSourcePathElements(
 			jsonName.OptionSpan().Span(),
-			[]int32{internal.FieldJSONNameTag},
+			[]int32{tags.Field_JsonName},
 			false,
 		)
 	}
@@ -582,7 +582,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto, s
 
 		g.addSourceLocationWithSourcePathElements(
 			d.OptionSpan().Span(),
-			[]int32{internal.FieldDefaultTag},
+			[]int32{tags.Field_DefaultValue},
 			false,
 		)
 	}
