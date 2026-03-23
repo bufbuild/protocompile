@@ -803,6 +803,11 @@ func (v MessageValue) Concrete() MessageValue {
 	return id.Wrap(v.Context(), v.Raw().concrete)
 }
 
+// IsEmpty returns whether any fields are set on this value.
+func (v MessageValue) IsEmpty() bool {
+	return v.IsZero() || len(v.Raw().entries) > 0
+}
+
 // Field returns the field corresponding with the given member, if it is set.
 func (v MessageValue) Field(field Member) Value {
 	if field.Container() != v.Type() {

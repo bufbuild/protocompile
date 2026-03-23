@@ -15,7 +15,6 @@
 package fdp
 
 import (
-	"bytes"
 	"math"
 	"slices"
 	"strconv"
@@ -25,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -177,7 +177,7 @@ func (g *generator) file(file *ir.File, fdp *descriptorpb.FileDescriptorProto) {
 		}
 	}
 
-	if options := file.Options(); !iterx.Empty(options.Fields()) {
+	if options := file.Options(); !options.IsEmpty() {
 		g.debug.in(tags.File_Options)(func() {
 			for option := range file.AST().Options() {
 				g.debug.span(option)
@@ -247,7 +247,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 			er.Start = addr(start)
 			er.End = addr(end + 1) // Exclusive.
 
-			if options := extensions.Options(); !iterx.Empty(options.Fields()) {
+			if options := extensions.Options(); !options.IsEmpty() {
 				g.debug.in(tags.Message_ExtensionRange_Options)(func() {
 					g.debug.span(extensions.DeclAST().Options())
 
@@ -297,20 +297,19 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 		// Only now that we have added all of the normal oneofs do we add the
 		// synthetic oneofs.
 		for i, field := range seq.All(ty.Members()) {
-			if field.SyntheticOneofName() == "" {
+			oneof := field.SyntheticOneofName()
+			if oneof == "" {
 				continue
 			}
 
 			fdp := mdp.Field[i]
 			fdp.Proto3Optional = addr(true)
 			fdp.OneofIndex = addr(int32(len(mdp.OneofDecl)))
-			mdp.OneofDecl = append(mdp.OneofDecl, &descriptorpb.OneofDescriptorProto{
-				Name: addr(field.SyntheticOneofName()),
-			})
+			slicesx.PushNew(&mdp.OneofDecl).Name = addr(oneof)
 		}
 	}
 
-	if options := ty.Options(); !iterx.Empty(options.Fields()) {
+	if options := ty.Options(); !options.IsEmpty() {
 		g.debug.in(tags.Message_Options)(func() {
 			for option := range ast.Body.Options() {
 				g.debug.span(option)
@@ -320,15 +319,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 		})
 	}
 
-	switch exported, explicit := ty.IsExported(); {
-	case !explicit:
-		break
-	case exported:
-		mdp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
-	case !exported:
-		mdp.Visibility =
-			descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
-	}
+	mdp.Visibility = visibility(ty)
 }
 
 func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
@@ -365,20 +356,10 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 	}
 
 	if ty := f.Element(); !ty.IsZero() {
-		if kind := ty.Predeclared().FDPType(); kind != 0 {
-			fdp.Type = kind.Enum()
-			g.debug.span(ast.Type.RemovePrefixes(), tags.Field_Type)
-		} else {
+		fdp.Type = f.FDPType().Enum()
+		g.debug.span(ast.Type.RemovePrefixes(), tags.Field_Type)
+		if !ty.IsPredeclared() {
 			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
-			switch {
-			case ty.IsEnum():
-				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-			case f.IsGroup():
-				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_GROUP.Enum()
-			default:
-				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
-			}
-			g.debug.span(ast.Type.RemovePrefixes(), tags.Field_TypeName)
 		}
 	}
 
@@ -391,7 +372,7 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 		fdp.OneofIndex = addr(int32(oneof.Index()))
 	}
 
-	if options := f.Options(); !iterx.Empty(options.Fields()) {
+	if options := f.Options(); !options.IsEmpty() {
 		g.debug.in(tags.Field_Options)(func() {
 			g.debug.span(ast.Options)
 			fdp.Options = new(descriptorpb.FieldOptions)
@@ -437,16 +418,14 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
 			}
 		} else if v, ok := d.AsString(); ok {
-			if fdp.GetType() == descriptorpb.FieldDescriptorProto_TYPE_BYTES {
+			if f.Element().Predeclared() == predeclared.Bytes {
 				// For bytes fields, the default value needs to be escaped.
 				// Reference for default value encoding:
 				// https://protobuf.com/docs/descriptors#encoding-default-values
-				var buf bytes.Buffer
-				internal.WriteEscapedBytes(&buf, []byte(v))
-				fdp.DefaultValue = addr(buf.String())
-			} else {
-				fdp.DefaultValue = addr(v)
+				v = internal.EscapeBytes(v)
 			}
+
+			fdp.DefaultValue = addr(v)
 		}
 
 		g.debug.span(d.OptionSpan(), tags.Field_DefaultValue)
@@ -460,7 +439,7 @@ func (g *generator) oneof(o ir.Oneof, odp *descriptorpb.OneofDescriptorProto) {
 	odp.Name = addr(o.Name())
 	g.debug.span(ast.Name, tags.Oneof_Name)
 
-	if options := o.Options(); !iterx.Empty(options.Fields()) {
+	if options := o.Options(); !options.IsEmpty() {
 		g.debug.in(tags.Oneof_Options)(func() {
 			for option := range ast.Body.Options() {
 				g.debug.span(option)
@@ -513,7 +492,7 @@ func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto) {
 		edp.ReservedName = append(edp.ReservedName, name.Name())
 	}
 
-	if options := ty.Options(); !iterx.Empty(options.Fields()) {
+	if options := ty.Options(); !options.IsEmpty() {
 		g.debug.in(tags.Enum_Options)(func() {
 			for option := range ast.Body.Options() {
 				g.debug.span(option)
@@ -523,15 +502,7 @@ func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto) {
 		})
 	}
 
-	switch exported, explicit := ty.IsExported(); {
-	case !explicit:
-		break
-	case exported:
-		edp.Visibility = descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
-	case !exported:
-		edp.Visibility =
-			descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
-	}
+	edp.Visibility = visibility(ty)
 }
 
 func (g *generator) enumValue(f ir.Member, evdp *descriptorpb.EnumValueDescriptorProto) {
@@ -544,7 +515,7 @@ func (g *generator) enumValue(f ir.Member, evdp *descriptorpb.EnumValueDescripto
 	evdp.Number = addr(f.Number())
 	g.debug.span(ast.Tag, tags.EnumValue_Number)
 
-	if options := f.Options(); !iterx.Empty(options.Fields()) {
+	if options := f.Options(); !options.IsEmpty() {
 		g.debug.in(tags.EnumValue_Options)(func() {
 			g.debug.span(ast.Options)
 			evdp.Options = new(descriptorpb.EnumValueOptions)
@@ -566,7 +537,7 @@ func (g *generator) service(s ir.Service, sdp *descriptorpb.ServiceDescriptorPro
 		})
 	}
 
-	if options := s.Options(); !iterx.Empty(options.Fields()) {
+	if options := s.Options(); !options.IsEmpty() {
 		g.debug.in(tags.Service_Options)(func() {
 			for option := range ast.Body.Options() {
 				g.debug.span(option)
@@ -628,77 +599,82 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto)
 
 func (g *generator) options(v ir.MessageValue, target proto.Message) {
 	target.ProtoReflect().SetUnknown(v.Marshal(nil, nil))
-	g.messageValueSourceCodeInfo(v)
-}
+	if g.debug == nil {
+		return
+	}
 
-func (g *generator) messageValueSourceCodeInfo(v ir.MessageValue) {
-	for field := range v.Fields() {
-		var optionSpanIndex int32
-		for ast := range seq.Values(field.OptionSpans()) {
-			if ast == nil {
-				continue
-			}
-
-			if messageField := field.AsMessage(); !messageField.IsZero() {
-				if field.IsTopLevel() {
-					// If this is a top-level option declaration for a message type with a message
-					// literal, we add a location for the declaration.
-					g.debug.span(ast, field.Field().Number())
-
-					if !g.generateExtraOptionLocations {
-						// If the option [GenerateExtraOptionLocations] is not set, then continue
-						// without adding source locations for elements within the value.
-						continue
-					}
+	var rec func(ir.MessageValue)
+	rec = func(v ir.MessageValue) {
+		for field := range v.Fields() {
+			var optionSpanIndex int32
+			for ast := range seq.Values(field.OptionSpans()) {
+				if ast == nil {
+					continue
 				}
-				g.debug.in(field.Field().Number())(func() {
-					g.messageValueSourceCodeInfo(messageField)
-				})
-				continue
-			}
 
-			// For declarations with bodies, e.g. messages, enums, services, methods, files,
-			// leading and trailing comments are attributed on the option declarations based on
-			// the option keyword and semicolon, respectively, e.g.
-			//
-			// message Foo {
-			//   // Leading comment for the following option declaration, (a) = 10.
-			//   option (a) = 10;
-			//   option (b) = 20; // Trailing comment for the option declaration (b) = 20.
-			// }
-			//
-			// However, the optionSpan in the IR does not capture the keyword and semicolon
-			// tokens. In addition to the comments, the span including the option keyword and
-			// semicolon is needed for the source location.
-			//
-			// So this hack checks the non-skippable token directly before and after the
-			// optionSpan for the option keyword and semicolon tokens respectively.
-			//
-			// For declarations with compact options, e.g. fields, enum values, there are no
-			// comments attributed to the option spans, e.g.
-			//
-			// message Foo {
-			//   string name = 1 [
-			//     // This is dropped.
-			//     (c) = 15, // This is also dropped.
-			//   ]
-			// }
-			span := ast.Span()
-			keyword, semicolon := g.optionKeywordAndSemicolon(span)
-			checkForComments := false
-			if !keyword.IsZero() && !semicolon.IsZero() {
-				span = source.Between(keyword.Span(), semicolon.Span())
-				checkForComments = true
-			}
+				if messageField := field.AsMessage(); !messageField.IsZero() {
+					if field.IsTopLevel() {
+						// If this is a top-level option declaration for a message type with a message
+						// literal, we add a location for the declaration.
+						g.debug.span(ast, field.Field().Number())
 
-			if field.Field().IsRepeated() {
-				g.debug.maybeComments(span, checkForComments, field.Field().Number(), optionSpanIndex)
-				optionSpanIndex++
-			} else {
-				g.debug.maybeComments(span, checkForComments, field.Field().Number())
+						if !g.generateExtraOptionLocations {
+							// If the option [GenerateExtraOptionLocations] is not set, then continue
+							// without adding source locations for elements within the value.
+							continue
+						}
+					}
+					g.debug.in(field.Field().Number())(func() {
+						rec(messageField)
+					})
+					continue
+				}
+
+				// For declarations with bodies, e.g. messages, enums, services, methods, files,
+				// leading and trailing comments are attributed on the option declarations based on
+				// the option keyword and semicolon, respectively, e.g.
+				//
+				// message Foo {
+				//   // Leading comment for the following option declaration, (a) = 10.
+				//   option (a) = 10;
+				//   option (b) = 20; // Trailing comment for the option declaration (b) = 20.
+				// }
+				//
+				// However, the optionSpan in the IR does not capture the keyword and semicolon
+				// tokens. In addition to the comments, the span including the option keyword and
+				// semicolon is needed for the source location.
+				//
+				// So this hack checks the non-skippable token directly before and after the
+				// optionSpan for the option keyword and semicolon tokens respectively.
+				//
+				// For declarations with compact options, e.g. fields, enum values, there are no
+				// comments attributed to the option spans, e.g.
+				//
+				// message Foo {
+				//   string name = 1 [
+				//     // This is dropped.
+				//     (c) = 15, // This is also dropped.
+				//   ]
+				// }
+				span := ast.Span()
+				keyword, semicolon := g.optionKeywordAndSemicolon(span)
+				checkForComments := false
+				if !keyword.IsZero() && !semicolon.IsZero() {
+					span = source.Between(keyword.Span(), semicolon.Span())
+					checkForComments = true
+				}
+
+				if field.Field().IsRepeated() {
+					g.debug.maybeComments(span, checkForComments, field.Field().Number(), optionSpanIndex)
+					optionSpanIndex++
+				} else {
+					g.debug.maybeComments(span, checkForComments, field.Field().Number())
+				}
 			}
 		}
 	}
+
+	rec(v)
 }
 
 // optionKeywordAndSemicolon is a helper function that checks the non-skippable tokens
@@ -711,31 +687,39 @@ func (g *generator) optionKeywordAndSemicolon(span source.Span) (token.Token, to
 	if prev.Keyword() != keyword.Option {
 		return token.Zero, token.Zero
 	}
+
 	_, end := g.currentFile.AST().Stream().Around(span.End)
 	after := token.NewCursorAt(end)
 	next := after.Next()
 	if next.Keyword() != keyword.Semi {
 		return token.Zero, token.Zero
 	}
+
 	return prev, next
 }
 
-func (g *generator) rangeSourceCodeInfo(expr ast.ExprAny, start, end int32) {
+func (g *generator) rangeSourceCodeInfo(expr ast.ExprAny, startTag, endTag int32) {
 	g.debug.span(expr)
 
-	startSpan := expr.Span()
-	endSpan := expr.Span()
+	start := expr.Span()
+	end := expr.Span()
 	if expr.Kind() == ast.ExprKindRange {
-		start, end := expr.AsRange().Bounds()
-		startSpan = start.Span()
-		endSpan = end.Span()
+		a, b := expr.AsRange().Bounds()
+		start, end = a.Span(), b.Span()
 	}
 
-	if start != 0 {
-		g.debug.span(startSpan, start)
-	}
-	if end != 0 {
-		g.debug.span(endSpan, end)
+	g.debug.span(start, startTag)
+	g.debug.span(end, endTag)
+}
+
+func visibility(ty ir.Type) *descriptorpb.SymbolVisibility {
+	switch exported, explicit := ty.IsExported(); {
+	case !explicit:
+		return nil
+	case exported:
+		return descriptorpb.SymbolVisibility_VISIBILITY_EXPORT.Enum()
+	default:
+		return descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
 	}
 }
 
