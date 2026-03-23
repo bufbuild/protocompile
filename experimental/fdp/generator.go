@@ -15,6 +15,7 @@
 package fdp
 
 import (
+	"bytes"
 	"math"
 	"slices"
 	"strconv"
@@ -31,6 +32,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -435,7 +437,16 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
 			}
 		} else if v, ok := d.AsString(); ok {
-			fdp.DefaultValue = addr(v)
+			if fdp.GetType() == descriptorpb.FieldDescriptorProto_TYPE_BYTES {
+				// For bytes fields, the default value needs to be escaped.
+				// Reference for default value encoding:
+				// https://protobuf.com/docs/descriptors#encoding-default-values
+				var buf bytes.Buffer
+				internal.WriteEscapedBytes(&buf, []byte(v))
+				fdp.DefaultValue = addr(buf.String())
+			} else {
+				fdp.DefaultValue = addr(v)
+			}
 		}
 
 		g.debug.span(d.OptionSpan(), tags.Field_DefaultValue)
