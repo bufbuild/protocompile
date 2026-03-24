@@ -11,7 +11,8 @@
 - path: ".message_type[Foo]"
   start: { line: 22, column: 0 }
   end: { line: 32, column: 1 }
-  leading: " This is considered a trailing comment for message Foo.\n"
+  leading: " This is a leading comment for message Foo.\n"
+  trailing: " This is considered a trailing comment for message Foo.\n"
 - path: ".message_type[Foo].name"
   start: { line: 22, column: 8 }
   end: { line: 22, column: 11 }
@@ -24,7 +25,8 @@
 - path: ".message_type[Foo].nested_type[Group]"
   start: { line: 28, column: 2 }
   end: { line: 31, column: 3 }
-  leading: " This is a trailing comment for synthetic message Group"
+  leading: " This is a leading for the synthetic message Group rather than the field.\n"
+  trailing: " This is a trailing comment for synthetic message Group"
   detached:
   - " This is a detached leading comment for synthetic message Group rather than the field.\n"
 - path: ".message_type[Foo].field[group].type_name"

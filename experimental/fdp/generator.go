@@ -339,9 +339,14 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 	fdp.Number = addr(f.Number())
 	g.debug.span(ast.Tag, tags.Field_Number)
 
-	switch f.Presence() {
+	switch label := f.Presence(); label {
 	case presence.Explicit, presence.Implicit, presence.Shared:
 		fdp.Label = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
+		if label == presence.Explicit && g.currentFile.Syntax() == syntax.Proto3 {
+			// For proto3, if the presence is set explicitly with "optional", we need to set
+			// "proto3_optional" field to true.
+			fdp.Proto3Optional = addr(true)
+		}
 	case presence.Repeated:
 		fdp.Label = descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum()
 	case presence.Required:
