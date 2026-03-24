@@ -117,6 +117,7 @@ checkgenerate:
 	@echo git status --porcelain
 	@if [[ -n "$$(git status --porcelain | tee /dev/stderr)" ]]; then \
 	  git diff; \
+	  xxd wellknownimports/wkt.pb; \
 	  false; \
 	fi
 
