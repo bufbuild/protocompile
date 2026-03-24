@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum option_target.yaml
@@ -121,7 +122,7 @@ func (m Member) IsPacked() bool {
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
 	value, _ := feature.AsInt()
-	return value == 1 // google.protobuf.FeatureSet.PACKED
+	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
 // IsUnicode returns whether this is a string-typed message field that must
@@ -133,7 +134,7 @@ func (m Member) IsUnicode() bool {
 
 	builtins := m.Context().builtins()
 	utf8Feature, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
-	return utf8Feature == 2 // FeatureSet.VERIFY
+	return utf8Feature == tags.FeatureSet_Utf8Validation_Verify
 }
 
 // AsTagRange wraps this member in a TagRange.
@@ -172,9 +173,9 @@ func (m Member) TypeAST() ast.TypeAny {
 	if !ty.MapField().IsZero() {
 		k, v := ty.AST().Type().RemovePrefixes().AsGeneric().AsMap()
 		switch m.Number() {
-		case 1:
+		case tags.MapEntry_Key:
 			return k
-		case 2:
+		case tags.MapEntry_Value:
 			return v
 		}
 	}

@@ -17,7 +17,6 @@ package ir
 import (
 	"fmt"
 	"iter"
-	"math"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -30,6 +29,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/interval"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // TagRange is a range of tag numbers in a [Type].
@@ -182,7 +182,7 @@ func (t Type) IsClosedEnum() bool {
 
 	builtins := t.Context().builtins()
 	n, _ := t.FeatureSet().Lookup(builtins.FeatureEnum).Value().AsInt()
-	return n == 2 // FeatureSet.CLOSED
+	return n == tags.FeatureSet_EnumType_Closed
 }
 
 // IsPackable returns whether this type can be the element of a packed repeated
@@ -222,11 +222,13 @@ func (t Type) IsExported() (exported, explicit bool) {
 	if key := t.Context().builtins().FeatureVisibility; !key.IsZero() {
 		feature := t.FeatureSet().Lookup(key)
 		switch v, _ := feature.Value().AsInt(); v {
-		case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+		case tags.FeatureSet_DefaultSymbolVisibility_Unknown,
+			tags.FeatureSet_DefaultSymbolVisibility_ExportAll:
 			return true, false
-		case 2: // EXPORT_TOP_LEVEL
+		case tags.FeatureSet_DefaultSymbolVisibility_ExportTopLevel:
 			return t.Parent().IsZero(), false
-		case 3, 4: // LOCAL_ALL, STRICT
+		case tags.FeatureSet_DefaultSymbolVisibility_LocalAll,
+			tags.FeatureSet_DefaultSymbolVisibility_Strict:
 			return false, false
 		}
 	}
@@ -529,11 +531,11 @@ func (t Type) AbsoluteRange() (start, end int32) {
 	}
 	switch {
 	case t.IsEnum():
-		return math.MinInt32, math.MaxInt32
+		return tags.EnumMin, tags.EnumMax
 	case t.IsMessageSet():
-		return 1, messageSetNumberMax
+		return tags.MessageSetMin, tags.MessageSetMax
 	default:
-		return 1, fieldNumberMax
+		return tags.FieldMin, tags.FieldMax
 	}
 }
 

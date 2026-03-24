@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bufbuild/protocompile/internal/cases"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // JSONName returns the default JSON name for a field with the given name.
@@ -196,9 +197,9 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, FileMessagesTag)
+				path = append(path, tags.File_MessageType)
 			case protoreflect.MessageDescriptor:
-				path = append(path, MessageNestedMessagesTag)
+				path = append(path, tags.Message_NestedType)
 			default:
 				return nil, false
 			}
@@ -207,15 +208,15 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
 				if d.IsExtension() {
-					path = append(path, FileExtensionsTag)
+					path = append(path, tags.File_Extension)
 				} else {
 					return nil, false
 				}
 			case protoreflect.MessageDescriptor:
 				if d.IsExtension() {
-					path = append(path, MessageExtensionsTag)
+					path = append(path, tags.Message_Extension)
 				} else {
-					path = append(path, MessageFieldsTag)
+					path = append(path, tags.Message_Field)
 				}
 			default:
 				return nil, false
@@ -223,7 +224,7 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 		case protoreflect.OneofDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.MessageDescriptor); ok {
-				path = append(path, MessageOneofsTag)
+				path = append(path, tags.Message_OneofDecl)
 			} else {
 				return nil, false
 			}
@@ -231,30 +232,30 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, FileEnumsTag)
+				path = append(path, tags.File_EnumType)
 			case protoreflect.MessageDescriptor:
-				path = append(path, MessageEnumsTag)
+				path = append(path, tags.Message_EnumType)
 			default:
 				return nil, false
 			}
 		case protoreflect.EnumValueDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.EnumDescriptor); ok {
-				path = append(path, EnumValuesTag)
+				path = append(path, tags.Enum_Value)
 			} else {
 				return nil, false
 			}
 		case protoreflect.ServiceDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.FileDescriptor); ok {
-				path = append(path, FileServicesTag)
+				path = append(path, tags.File_Service)
 			} else {
 				return nil, false
 			}
 		case protoreflect.MethodDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.ServiceDescriptor); ok {
-				path = append(path, ServiceMethodsTag)
+				path = append(path, tags.Service_Method)
 			} else {
 				return nil, false
 			}

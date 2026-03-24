@@ -20,6 +20,12 @@ import (
 	"embed"
 	"io"
 	"io/fs"
+	"sync"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
 )
@@ -56,4 +62,28 @@ func WithStandardImports(resolver protocompile.Resolver) protocompile.Resolver {
 			},
 		},
 	}
+}
+
+var (
+	//go:embed wkt.pb
+	encoded  []byte
+	registry = sync.OnceValue(func() *protoregistry.Files {
+		fds := new(descriptorpb.FileDescriptorSet)
+		if err := proto.Unmarshal(encoded, fds); err != nil {
+			panic(err)
+		}
+
+		reg, err := protodesc.NewFiles(fds)
+		if err != nil {
+			panic(err)
+		}
+
+		return reg
+	})
+)
+
+// Files returns reflection information for the WKTs included with protocompile,
+// which are not the ones bundled with protoreflect.
+func Files() *protoregistry.Files {
+	return registry()
 }
