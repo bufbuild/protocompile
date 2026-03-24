@@ -27,7 +27,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"sort"
 	"strings"
@@ -45,7 +44,9 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/protoc"
+	"github.com/bufbuild/protocompile/internal/testing/memory"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/parser/fastscan"
 	"github.com/bufbuild/protocompile/protoutil"
@@ -611,10 +612,10 @@ func measure(t *testing.T, v any) {
 	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	t.Logf("(heap used: %d bytes)", m.Alloc)
+	t.Logf("(heap used: %v)", bitsx.ByteSize(m.Alloc))
 
 	// and then try to directly measure just the given value
-	mt := newMeasuringTape()
-	mt.measure(reflect.ValueOf(v))
-	t.Logf("memory used: %d bytes", mt.memoryUsed())
+	mt := new(memory.MeasuringTape)
+	mt.Measure(v)
+	t.Logf("memory used: %v", bitsx.ByteSize(mt.Usage()))
 }
