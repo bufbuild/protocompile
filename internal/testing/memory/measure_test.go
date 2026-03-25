@@ -28,15 +28,15 @@ func TestMeasuringTapeMeasure(t *testing.T) {
 	mt := new(memory.MeasuringTape)
 	bytes := make([]byte, 1000000)
 	mt.Measure(bytes)
-	require.Equal(t, uint64(1000000), mt.Usage())
+	require.Equal(t, 1000000, int(mt.Usage()))
 	// these do nothing since they are part of already-measured slice
 	mt.Measure(bytes[0:10])
 	mt.Measure(bytes[1000:10000])
-	require.Equal(t, uint64(1000000), mt.Usage())
+	require.Equal(t, 1000000, int(mt.Usage()))
 
 	int64s := make([]int64, 1000000)
 	mt.Measure(int64s)
-	require.Equal(t, uint64(9000000), mt.Usage())
+	require.Equal(t, 9000000, int(mt.Usage()))
 
 	int64ptrs := make([]*int64, 1000000)
 	for i := range int64ptrs {
@@ -45,6 +45,6 @@ func TestMeasuringTapeMeasure(t *testing.T) {
 	mt.Measure(int64ptrs)
 	// increase is only the size of slice, not pointed-to values, since all pointers
 	// point to locations in already-measured slice above
-	ptrsSz := uint64(1000000 * reflect.TypeOf(uintptr(0)).Size())
-	require.Equal(t, 9000000+ptrsSz, mt.Usage())
+	ptrBytes := len(int64ptrs) * int(reflect.TypeOf((*int64)(nil)).Size())
+	require.Equal(t, 9000000+ptrBytes, int(mt.Usage()))
 }

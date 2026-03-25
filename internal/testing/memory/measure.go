@@ -15,6 +15,7 @@
 package memory
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
@@ -37,7 +38,7 @@ type MeasuringTape struct {
 func (t *MeasuringTape) Usage() uint64 {
 	var total uint64
 	for entry := range t.heap.Contiguous(false) {
-		total += uint64(entry.End - entry.Start)
+		total += uint64(entry.End - entry.Start + 1)
 	}
 	return total + t.extra
 }
@@ -58,7 +59,7 @@ func (t *MeasuringTape) measure(v reflect.Value) {
 		}
 		t.visited[[2]uintptr{start, end}] = struct{}{}
 
-		t.heap.Insert(start, end, struct{}{})
+		t.heap.Insert(start, end-1, struct{}{})
 		return true
 	}
 
@@ -78,6 +79,7 @@ func (t *MeasuringTape) measure(v reflect.Value) {
 		t.measure(v.Elem())
 
 	case reflect.Slice:
+		fmt.Println(v.UnsafePointer(), v.Cap()*int(v.Type().Elem().Size()))
 		if !insert(v.Pointer(), v.Cap()*int(v.Type().Elem().Size())) {
 			return
 		}
