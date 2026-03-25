@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -36,9 +37,14 @@ var (
 	googleapisOpener    source.Opener
 	googleapisWorkspace source.Workspace
 	googleapisOnce      sync.Once
+
+	googleapisSkip = os.Getenv("SKIP_DOWNLOAD_GOOGLEAPIS") != ""
 )
 
 func GoogleapisProtos() (source.Workspace, source.Opener) {
+	if googleapisSkip {
+		return nil, nil
+	}
 	googleapisOnce.Do(func() {
 		url := fmt.Sprintf("https://github.com/googleapis/googleapis/archive/%s.tar.gz", *googleapisCommit)
 		dir := "googleapis-" + *googleapisCommit

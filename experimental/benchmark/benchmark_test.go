@@ -31,6 +31,9 @@ import (
 
 func BenchmarkCompileGoogleapis(b *testing.B) {
 	workspace, sources := GoogleapisProtos()
+	if workspace == nil {
+		b.Skip()
+	}
 	sources = &source.Openers{sources, source.WKTs()}
 	benchmark(b, sources, workspace)
 }
@@ -100,6 +103,9 @@ func benchmark(b *testing.B, sources source.Opener, workspace source.Workspace) 
 
 func TestCompileGoogleapisMemory(t *testing.T) {
 	workspace, sources := GoogleapisProtos()
+	if workspace == nil {
+		t.Skip()
+	}
 	sources = &source.Openers{sources, source.WKTs()}
 	testMemory(t, sources, workspace)
 }
