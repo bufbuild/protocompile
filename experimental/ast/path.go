@@ -111,11 +111,15 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	first, _ := iterx.OnlyOne(p.Components())
-	if !first.Separator().IsZero() {
+	if p.raw.start != p.raw.end {
 		return token.Zero
 	}
-	return first.AsIdent()
+
+	tok := id.Wrap(p.Context().Stream(), p.raw.start)
+	if tok.Kind() != token.Ident {
+		return token.Zero
+	}
+	return tok
 }
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
