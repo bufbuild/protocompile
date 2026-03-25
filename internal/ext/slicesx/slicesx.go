@@ -37,6 +37,13 @@ func One[E any](p *E) []E {
 	return unsafe.Slice(p, 1)
 }
 
+// New returns a new slice with at least the given length.
+func New[S ~[]E, E any](count int) []E {
+	// Append will always round up to a size class for us.
+	s := append(S(nil), make(S, count)...)[:]
+	return s[:cap(s)]
+}
+
 // Get performs a bounds check and returns the value at idx.
 //
 // If the bounds check fails, returns the zero value and false.
