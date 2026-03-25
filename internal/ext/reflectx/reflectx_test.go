@@ -18,8 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/ext/reflectx"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/ext/reflectx"
 )
 
 func TestUnwrap(t *testing.T) {

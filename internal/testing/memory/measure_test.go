@@ -18,8 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/testing/memory"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bufbuild/protocompile/internal/testing/memory"
 )
 
 func TestMeasuringTapeMeasure(t *testing.T) {

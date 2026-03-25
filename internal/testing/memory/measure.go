@@ -135,6 +135,7 @@ func (t *MeasuringTape) measure(v reflect.Value) {
 	}
 }
 
+//nolint:revive,predeclared
 func estimateMapSize(m reflect.Value) int {
 	const table = 8 * 4 // See internal/maps.table in maps/table.go.
 	const groupSize = 8
@@ -145,8 +146,8 @@ func estimateMapSize(m reflect.Value) int {
 	cap := bitsx.NextPowerOfTwo(uint(m.Len()))
 
 	// Approximation: this is missing padding.
-	group := 8 + 8*(m.Type().Key().Size()+m.Type().Elem().Size())
+	group := groupSize + groupSize*(m.Type().Key().Size()+m.Type().Elem().Size())
 
 	// We assume that the internal map directory has exactly one entry in it.
-	return table + int(cap/8)*int(group)
+	return table + int(cap/groupSize)*int(group)
 }

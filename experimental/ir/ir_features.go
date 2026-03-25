@@ -58,10 +58,6 @@ type rawFeatureInfo struct {
 	deprecationWarning              string
 }
 
-type featureKey struct {
-	extension, field *rawMember
-}
-
 type featureDefault struct {
 	edition syntax.Syntax
 	value   id.ID[Value]

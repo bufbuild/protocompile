@@ -195,16 +195,12 @@ func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	return JoinSpanSeq(iterx.Map(seq, func(s S) Span { return GetSpan(s) }))
 }
 
-// JoinSpans is like [Join], but does not use interfaces.
-//
-// See go.dev/issue/78336
+// See go.dev/issue/78336.
 func JoinSpans(spans ...Span) Span {
 	return JoinSpanSeq(slices.Values(spans))
 }
 
-// JoinSpanSeq is like [JoinSeq], but does not use interfaces.
-//
-// See go.dev/issue/78336
+// See go.dev/issue/78336.
 func JoinSpanSeq(seq iter.Seq[Span]) Span {
 	joined := Span{Start: math.MaxInt}
 	for span := range seq {

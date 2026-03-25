@@ -1,8 +1,24 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package benchmark
 
 import (
 	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
@@ -11,7 +27,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/testing/memory"
-	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkCompileGoogleapis(b *testing.B) {
@@ -38,7 +53,7 @@ func benchmark(b *testing.B, sources source.Opener, workspace source.Workspace) 
 						exec = incremental.New()
 						sess = new(ir.Session)
 					}
-					incremental.Run(b.Context(), exec, queries.Link{
+					_, _, _ = incremental.Run(b.Context(), exec, queries.Link{
 						Opener:    sources,
 						Session:   sess,
 						Workspace: workspace,
@@ -103,7 +118,7 @@ func testMemory(t *testing.T, sources source.Opener, workspace source.Workspace)
 		Session:   sess,
 		Workspace: workspace,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	runtime.GC()
 	m := new(runtime.MemStats)

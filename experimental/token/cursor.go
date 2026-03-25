@@ -57,7 +57,6 @@ func NewCursorAt(tok Token) *Cursor {
 
 //go:noinline
 func newCursorAt(c *Cursor, tok Token) *Cursor {
-
 	if tok.IsZero() {
 		panic(fmt.Sprintf("protocompile/token: passed zero token to NewCursorAt: %v", tok))
 	}
