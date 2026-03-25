@@ -64,7 +64,11 @@ type DescriptorOption func(*generator)
 // the output.
 func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 	return func(g *generator) {
-		g.includeDebugInfo = flag
+		if flag {
+			g.debug = new(debug)
+		} else {
+			g.debug = nil
+		}
 	}
 }
 

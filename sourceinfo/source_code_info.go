@@ -22,6 +22,7 @@ package sourceinfo
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -183,7 +184,7 @@ func generateSourceInfoForFile(opts OptionIndex, sci *sourceCodeInfo, file *ast.
 		case *ast.ExtendNode:
 			extsPath := append(path, tags.File_Extension) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here so that append can't mutate extsPath, since they may share storage
-			msgsPath := append(internal.ClonePath(path), tags.File_MessageType)
+			msgsPath := append(slices.Clone(path), tags.File_MessageType)
 			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &msgIndex, extsPath, msgsPath)
 		case *ast.ServiceNode:
 			generateSourceCodeInfoForService(opts, sci, child, append(path, tags.File_Service, svcIndex))
@@ -349,7 +350,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			fieldIndex++
 			// we clone the path here so that append can't mutate fldPath, since they may share storage
-			msgPath := append(internal.ClonePath(path), tags.Message_NestedType, nestedMsgIndex)
+			msgPath := append(slices.Clone(path), tags.Message_NestedType, nestedMsgIndex)
 			generateSourceCodeInfoForMessage(opts, sci, child.AsMessage(), fldPath, msgPath)
 			nestedMsgIndex++
 		case *ast.MapFieldNode:
@@ -360,8 +361,8 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			fldsPath := append(path, tags.Message_Field) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here and below so that append ops can't mutate
 			// fldPath or msgsPath, since they may otherwise share storage
-			msgsPath := append(internal.ClonePath(path), tags.Message_NestedType)
-			ooPath := append(internal.ClonePath(path), tags.Message_OneofDecl, oneofIndex)
+			msgsPath := append(slices.Clone(path), tags.Message_NestedType)
+			ooPath := append(slices.Clone(path), tags.Message_OneofDecl, oneofIndex)
 			generateSourceCodeInfoForOneof(opts, sci, child, &fieldIndex, &nestedMsgIndex, fldsPath, msgsPath, ooPath)
 			oneofIndex++
 		case *ast.MessageNode:
@@ -373,7 +374,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 		case *ast.ExtendNode:
 			extsPath := append(path, tags.Message_Extension) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here so that append can't mutate extsPath, since they may share storage
-			msgsPath := append(internal.ClonePath(path), tags.Message_NestedType)
+			msgsPath := append(slices.Clone(path), tags.Message_NestedType)
 			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &nestedMsgIndex, extsPath, msgsPath)
 		case *ast.ExtensionRangeNode:
 			generateSourceCodeInfoForExtensionRanges(opts, sci, child, &extRangeIndex, append(path, tags.Message_ExtensionRange))
@@ -673,7 +674,7 @@ func (sci *sourceCodeInfo) newLocWithoutComments(n ast.Node, path []int32) {
 		start, end = info.Start(), info.End()
 	}
 	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
-		Path: internal.ClonePath(path),
+		Path: slices.Clone(path),
 		Span: makeSpan(start, end),
 	})
 }
@@ -683,7 +684,7 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	if !sci.extraComments {
 		start, end := info.Start(), info.End()
 		sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
-			Path: internal.ClonePath(path),
+			Path: slices.Clone(path),
 			Span: makeSpan(start, end),
 		})
 	} else {
@@ -748,7 +749,7 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, detach
 		LeadingDetachedComments: detached,
 		LeadingComments:         lead,
 		TrailingComments:        trail,
-		Path:                    internal.ClonePath(path),
+		Path:                    slices.Clone(path),
 		Span:                    makeSpan(nodeInfo.Start(), nodeInfo.End()),
 	})
 }

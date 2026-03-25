@@ -157,3 +157,17 @@ func Among[E comparable](needle E, haystack ...E) bool {
 func PointerEqual[S ~[]E, E any](a, b S) bool {
 	return unsafe.SliceData(a) == unsafe.SliceData(b)
 }
+
+// Push appends a new element to a slice, and returns a pointer to it.
+func Push[S ~[]E, E any](s *S) *E {
+	var z E
+	*s = append(*s, z)
+	return LastPointer(*s)
+}
+
+// PushNew appends a new pointer-typed element to a slice, and returns it.
+func PushNew[S ~[]P, P ~*E, E any](s *S) P {
+	p := new(E)
+	*s = append(*s, p)
+	return p
+}
