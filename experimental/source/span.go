@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/source/length"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // Spanner is any type with a [Span].
@@ -186,14 +187,27 @@ func (s Span) String() string {
 // If there are at least two distinct files among the non-zero spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
-	return JoinSeq[Spanner](slices.Values(spans))
+	return JoinSeq(slices.Values(spans))
 }
 
 // JoinSeq is like [Join], but takes a sequence of any spannable type.
 func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
+	return JoinSpanSeq(iterx.Map(seq, func(s S) Span { return GetSpan(s) }))
+}
+
+// JoinSpans is like [Join], but does not use interfaces.
+//
+// See go.dev/issue/78336
+func JoinSpans(spans ...Span) Span {
+	return JoinSpanSeq(slices.Values(spans))
+}
+
+// JoinSpanSeq is like [JoinSeq], but does not use interfaces.
+//
+// See go.dev/issue/78336
+func JoinSpanSeq(seq iter.Seq[Span]) Span {
 	joined := Span{Start: math.MaxInt}
-	for spanner := range seq {
-		span := GetSpan(spanner)
+	for span := range seq {
 		if span.IsZero() {
 			continue
 		}

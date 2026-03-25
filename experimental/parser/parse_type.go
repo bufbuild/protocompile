@@ -84,7 +84,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			break // Absolute paths cannot start with a modifier, so we are done.
 		}
 
-		first, _ := iterx.First(tyPath.Components)
+		first, _ := iterx.First(tyPath.Components())
 		ident := first.AsIdent()
 		if ident.IsZero() {
 			break // If this starts with an extension, we're done.
