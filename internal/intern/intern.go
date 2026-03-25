@@ -19,12 +19,13 @@ package intern
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
-	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/syncx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
@@ -57,7 +58,7 @@ func (id ID) String() string {
 		return `intern.ID("")`
 	}
 	if id < 0 {
-		return fmt.Sprintf("intern.ID(%q)", decodeChar6(id))
+		return fmt.Sprintf("intern.ID(%q)", decodeChar6(id, new(inlined)))
 	}
 	return fmt.Sprintf("intern.ID(%d)", int(id))
 }
@@ -73,10 +74,8 @@ func (id ID) GoString() string {
 //
 // The zero value of Table is empty and ready to use.
 type Table struct {
-	mu    sync.RWMutex
-	index map[string]ID
-	table []string
-
+	index sync.Map // [string, atomic.Int32]
+	table syncx.Log[string]
 	stats atomic.Pointer[stats]
 }
 
@@ -192,16 +191,28 @@ func (t *Table) Query(s string) (ID, bool) {
 		return char6, true
 	}
 
-	t.mu.RLock()
-	id, ok := t.index[s]
-	t.mu.RUnlock()
-
+	v, ok := t.index.Load(s)
 	if stats != nil {
 		stats.queries.Add(1)
 		stats.queryBytes.Add(int64(len(s)))
 	}
 
-	return id, ok
+	if !ok {
+		return 0, false
+	}
+
+	p := v.(*atomic.Int32) //nolint:errcheck
+	if p == nil {
+		// This key has been poisoned because we ran out of entries.
+		return 0, false
+	}
+	id := ID(p.Load())
+	if id == 0 {
+		// Handle the case where this is a mid-insertion.
+		return 0, false
+	}
+
+	return id, true
 }
 
 func (t *Table) internSlow(s string) ID {
@@ -212,34 +223,44 @@ func (t *Table) internSlow(s string) ID {
 	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	// Pre-convert to `any`, since this triggers an allocation via
+	// `runtime.convTstring`.
+	key := any(s)
 
-	// Check if someone raced us to intern this string. We have to check again
-	// because in the unsynchronized section between RUnlock and Lock, another
-	// goroutine might have successfully interned s.
-	//
-	// TODO: We can reduce the number of map hits if we switch to a different
-	// Map implementation that provides an upsert primitive.
-	if id, ok := t.index[s]; ok {
+again:
+	// Try to become the "leader" which is interning s. Insert a 0, which is
+	// "" (never interned), to mark this slot as taken.
+	v, loaded := t.index.LoadOrStore(key, new(atomic.Int32))
+	p := v.(*atomic.Int32) //nolint:errcheck
+	if loaded {
+		if p == nil {
+			// We ran out of IDs for this key.
+			panic(syncx.ErrLogExhausted)
+		}
+
+		id := ID(p.Load())
+		if id == 0 {
+			// Someone *else* is doing the inserting, apparently.
+			runtime.Gosched()
+			goto again
+		}
+
+		// Someone else already inserted, we'de done.
 		return id
 	}
 
-	// As of here, we have unique ownership of the table, and s has not been
-	// inserted yet.
-
-	t.table = append(t.table, s)
-
-	// The first ID will have value 1. ID 0 is reserved for "".
-	id := ID(len(t.table))
-	if id < 0 {
-		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(t.table)))
+	// Figure out the next interning ID.
+	i, err := t.table.Append(s)
+	if err != nil {
+		// Poison this key. This will cause any goroutines waiting for interning
+		// to complete to also panic.
+		t.index.Store(key, (*atomic.Int32)(nil))
+		panic(err)
 	}
 
-	if t.index == nil {
-		t.index = make(map[string]ID)
-	}
-	t.index[s] = id
+	// Commit the new ID.
+	id := ID(i + 1)
+	p.Store(int32(id))
 
 	return id
 }
@@ -274,18 +295,18 @@ func (t *Table) QueryBytes(bytes []byte) (ID, bool) {
 //
 // This function may be called by multiple goroutines concurrently.
 func (t *Table) Value(id ID) string {
-	if id == 0 {
-		return ""
+	// NOTE: this function is carefully written such that Go inlines it into
+	// the caller, allowing the result to be promoted to the stack.
+	return t.value(id, new(inlined))
+}
+
+//go:noinline
+func (t *Table) value(id ID, buf *inlined) string {
+	if id <= 0 {
+		return decodeChar6(id, buf)
 	}
 
-	if id < 0 {
-		return decodeChar6(id)
-	}
-
-	// The locking part of Get is outlined to promote inlining of the two
-	// fast paths above. This in turn allows decodeChar6 to be inlined, which
-	// allows the returned string to be stack-promoted.
-	return t.getSlow(id)
+	return t.table.Load(int(id) - 1)
 }
 
 // Preload takes a pointer to a struct type and initializes [ID]-typed fields
@@ -308,68 +329,4 @@ func (t *Table) Preload(ids any) {
 			r.Field(i).Set(reflect.ValueOf(t.Intern(text)))
 		}
 	}
-}
-
-func (t *Table) getSlow(id ID) string {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.table[int(id)-1]
-}
-
-// Set is a set of intern IDs.
-type Set map[ID]struct{}
-
-// ContainsID returns whether s contains the given ID.
-func (s Set) ContainsID(id ID) bool {
-	_, ok := s[id]
-	return ok
-}
-
-// Contains returns whether s contains the given string.
-func (s Set) Contains(table *Table, key string) bool {
-	k, ok := table.Query(key)
-	if !ok {
-		return false
-	}
-	_, ok = s[k]
-	return ok
-}
-
-// AddID adds an ID to s, and returns whether it was added.
-func (s Set) AddID(id ID) (inserted bool) {
-	return mapsx.AddZero(s, id)
-}
-
-// Add adds a string to s, and returns whether it was added.
-func (s Set) Add(table *Table, key string) (inserted bool) {
-	k := table.Intern(key)
-	_, ok := s[k]
-	if !ok {
-		s[k] = struct{}{}
-	}
-	return !ok
-}
-
-// Map is a map keyed by intern IDs.
-type Map[T any] map[ID]T
-
-// Get returns the value that key maps to.
-func (m Map[T]) Get(table *Table, key string) (T, bool) {
-	k, ok := table.Query(key)
-	if !ok {
-		var z T
-		return z, false
-	}
-	v, ok := m[k]
-	return v, ok
-}
-
-// AddID adds an ID to m, and returns whether it was added.
-func (m Map[T]) AddID(id ID, v T) (mapped T, inserted bool) {
-	return mapsx.Add(m, id, v)
-}
-
-// Add adds a string to m, and returns whether it was added.
-func (m Map[T]) Add(table *Table, key string, v T) (mapped T, inserted bool) {
-	return m.AddID(table.Intern(key), v)
 }
