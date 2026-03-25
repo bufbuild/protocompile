@@ -1,0 +1,35 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test declaration ordering (rule 3), import sorting (rule 4),
+# and option sorting (rule 5).
+
+format: true
+
+source: |
+  syntax = "proto3";
+
+  package all.v1;
+
+  // import comment
+  import "google/protobuf/timestamp.proto"; // import-inline comment
+
+
+  import "custom.proto";
+  // between-imports comment
+  import "google/protobuf/duration.proto";    // import-inline comment  2
+
+  option (file_option) = true;
+  option java_multiple_files = true;
+  option cc_enable_arenas = true;

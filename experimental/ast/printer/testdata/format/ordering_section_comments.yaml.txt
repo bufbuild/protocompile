@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+// Section comment about imports
+
+import "a.proto";
+import "b.proto";
+
+// Section comment about body
+
+message A {}

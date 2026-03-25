@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+import "custom.proto";
+
+message Foo {
+  optional string a = 1 [(custom) = {
+    foo: 1 // Trailing on comma.
+    // Leading on bar.
+    bar: 2 // Trailing on value.
+    // Leading on baz.
+    baz: 3
+  }];
+}
