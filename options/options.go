@@ -26,7 +26,6 @@
 package options
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -474,7 +473,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	if str, ok := v.(string); ok {
 		fld.DefaultValue = proto.String(str)
 	} else if b, ok := v.([]byte); ok {
-		fld.DefaultValue = proto.String(encodeDefaultBytes(b))
+		fld.DefaultValue = proto.String(internal.EscapeBytes(b))
 	} else {
 		var flt float64
 		var ok bool
@@ -536,12 +535,6 @@ func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fl
 		return string(name), nil
 	}
 	return interp.scalarFieldValueFromProto(mc, fld.GetType(), opt, node)
-}
-
-func encodeDefaultBytes(b []byte) string {
-	var buf bytes.Buffer
-	internal.WriteEscapedBytes(&buf, b)
-	return buf.String()
 }
 
 func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.EnumDescriptorProto, customOpts bool) error {
@@ -2258,7 +2251,7 @@ func (interp *interpreter) messageLiteralValue(
 
 func newSrcInfo(path []int32, children sourceinfo.OptionChildrenSourceInfo) sourceinfo.OptionSourceInfo {
 	return sourceinfo.OptionSourceInfo{
-		Path:     internal.ClonePath(path),
+		Path:     slices.Clone(path),
 		Children: children,
 	}
 }

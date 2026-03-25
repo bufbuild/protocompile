@@ -129,6 +129,10 @@ func testZeroAny[T any](t *testing.T) {
 						assert.Equal(t, 1, m.Type().NumOut())
 						r = m.Call(nil)[0]
 					}
+					if m.Name == "IsEmpty" {
+						v, _ := reflect.TypeAssert[bool](r)
+						r = reflect.ValueOf(!v)
+					}
 					assert.Zero(t, r.Interface(), "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
 				}
 			}

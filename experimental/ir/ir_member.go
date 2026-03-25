@@ -17,6 +17,8 @@ package ir
 import (
 	"iter"
 
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
@@ -300,6 +302,22 @@ func (m Member) Element() Type {
 		return Type{}
 	}
 	return GetRef(m.Context(), m.Raw().elem)
+}
+
+// FDPType returns the descriptor type that would be used for this field.
+func (m Member) FDPType() descriptorpb.FieldDescriptorProto_Type {
+	switch {
+	case m.IsZero() || m.IsEnumValue():
+		return 0
+	case m.IsGroup():
+		return descriptorpb.FieldDescriptorProto_TYPE_GROUP
+	case m.Element().IsMessage():
+		return descriptorpb.FieldDescriptorProto_TYPE_MESSAGE
+	case m.Element().IsEnum():
+		return descriptorpb.FieldDescriptorProto_TYPE_ENUM
+	default:
+		return m.Element().Predeclared().FDPType()
+	}
 }
 
 // Container returns the type which contains this member: this is either
