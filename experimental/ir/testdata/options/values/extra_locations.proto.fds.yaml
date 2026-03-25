@@ -1,0 +1,63 @@
+file:
+- name: "testdata/options/values/extra_locations.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "bar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "bar"
+      options.$unknown: |
+        1000: {
+          1: {"bar"}
+          2: 5
+          3: {`060708`}
+        }
+    options.$unknown: "1000: {1: {\"foo\"}}"
+  - name: "OptionMessage"
+    field:
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "a"
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "b"
+    - name: "c"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "c"
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
+  - name: "y"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "y"
+  - name: "z"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.OptionMessage"
+    extendee: ".google.protobuf.FieldOptions"
+    json_name: "z"
+  options.$unknown: |
+    1000: {
+      2: 1
+      3: {`020304`}
+    }

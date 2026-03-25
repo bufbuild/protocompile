@@ -17,7 +17,6 @@ package ir
 import (
 	"fmt"
 	"iter"
-	"math"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -30,6 +29,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/interval"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // TagRange is a range of tag numbers in a [Type].
@@ -76,7 +76,7 @@ type rawType struct {
 	parent          id.ID[Type]
 	extnsStart      uint32
 	rangesExtnStart uint32
-	mapEntryOf      id.ID[Member]
+	syntheticTypeOf id.ID[Member]
 	features        id.ID[FeatureSet]
 
 	isEnum, isMessageSet bool
@@ -182,7 +182,7 @@ func (t Type) IsClosedEnum() bool {
 
 	builtins := t.Context().builtins()
 	n, _ := t.FeatureSet().Lookup(builtins.FeatureEnum).Value().AsInt()
-	return n == 2 // FeatureSet.CLOSED
+	return n == tags.FeatureSet_EnumType_Closed
 }
 
 // IsPackable returns whether this type can be the element of a packed repeated
@@ -222,11 +222,13 @@ func (t Type) IsExported() (exported, explicit bool) {
 	if key := t.Context().builtins().FeatureVisibility; !key.IsZero() {
 		feature := t.FeatureSet().Lookup(key)
 		switch v, _ := feature.Value().AsInt(); v {
-		case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+		case tags.FeatureSet_DefaultSymbolVisibility_Unknown,
+			tags.FeatureSet_DefaultSymbolVisibility_ExportAll:
 			return true, false
-		case 2: // EXPORT_TOP_LEVEL
+		case tags.FeatureSet_DefaultSymbolVisibility_ExportTopLevel:
 			return t.Parent().IsZero(), false
-		case 3, 4: // LOCAL_ALL, STRICT
+		case tags.FeatureSet_DefaultSymbolVisibility_LocalAll,
+			tags.FeatureSet_DefaultSymbolVisibility_Strict:
 			return false, false
 		}
 	}
@@ -345,7 +347,13 @@ func (t Type) MapField() Member {
 	if t.IsZero() {
 		return Member{}
 	}
-	return id.Wrap(t.Context(), t.Raw().mapEntryOf)
+	member := id.Wrap(t.Context(), t.Raw().syntheticTypeOf)
+	// We ensure that the member is not a group field. We cannot check [Member.IsMap] because
+	// that would recursively check [Type.MapField] here.
+	if !member.IsGroup() {
+		return member
+	}
+	return Member{}
 }
 
 // EntryFields returns the key and value fields for this map entry type.
@@ -355,6 +363,18 @@ func (t Type) EntryFields() (key, value Member) {
 	}
 
 	return id.Wrap(t.Context(), t.Raw().members[0]), id.Wrap(t.Context(), t.Raw().members[1])
+}
+
+// GroupField returns the group field that generated this type, if any.
+func (t Type) GroupField() Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	member := id.Wrap(t.Context(), t.Raw().syntheticTypeOf)
+	if member.IsGroup() {
+		return member
+	}
+	return Member{}
 }
 
 // Members returns the members of this type.
@@ -511,11 +531,11 @@ func (t Type) AbsoluteRange() (start, end int32) {
 	}
 	switch {
 	case t.IsEnum():
-		return math.MinInt32, math.MaxInt32
+		return tags.EnumMin, tags.EnumMax
 	case t.IsMessageSet():
-		return 1, messageSetNumberMax
+		return tags.MessageSetMin, tags.MessageSetMax
 	default:
-		return 1, fieldNumberMax
+		return tags.FieldMin, tags.FieldMax
 	}
 }
 

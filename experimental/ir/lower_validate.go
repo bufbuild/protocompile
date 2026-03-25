@@ -31,7 +31,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/report/tags"
+	"github.com/bufbuild/protocompile/experimental/report/rtags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -41,6 +41,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
@@ -58,7 +59,7 @@ func diagnoseUnusedImports(f *File, r *report.Report) {
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
 			report.Helpf("no symbols from this file are referenced"),
-			report.Tag(tags.UnusedImport),
+			report.Tag(rtags.UnusedImport),
 		)
 	}
 }
@@ -220,10 +221,10 @@ func validateFileOptions(f *File, r *report.Report) {
 	}
 
 	optimize := f.Options().Field(builtins.OptimizeFor)
-	if v, _ := optimize.AsInt(); v != 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+	if v, _ := optimize.AsInt(); v != tags.FileOptions_OptimizeMode_LiteRuntime {
 		for imp := range seq.Values(f.Imports()) {
 			impOptimize := imp.Options().Field(builtins.OptimizeFor)
-			if v, _ := impOptimize.AsInt(); v == 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+			if v, _ := impOptimize.AsInt(); v == tags.FileOptions_OptimizeMode_LiteRuntime {
 				r.Errorf("`LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file").Apply(
 					report.Snippet(imp.Decl.ImportPath()),
 					report.Snippetf(optimize.ValueAST(), "optimization level set here"),
@@ -236,7 +237,7 @@ func validateFileOptions(f *File, r *report.Report) {
 	}
 
 	defaultPresence := f.FeatureSet().Lookup(builtins.FeaturePresence).Value()
-	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
+	if v, _ := defaultPresence.AsInt(); v == tags.FeatureSet_FieldPresence_LegacyRequired {
 		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
 			report.Snippet(defaultPresence.ValueAST()),
 		)
@@ -738,8 +739,8 @@ func validatePresence(m Member, r *report.Report) {
 	}
 
 	switch v, _ := feature.Value().AsInt(); v {
-	case 1: // EXPLICIT
-	case 2: // IMPLICIT
+	case tags.FeatureSet_FieldPresence_Explicit:
+	case tags.FeatureSet_FieldPresence_Implicit:
 		if m.Element().IsMessage() {
 			r.Error(errTypeConstraint{
 				want: taxa.MessageType,
@@ -754,7 +755,7 @@ func validatePresence(m Member, r *report.Report) {
 				report.Helpf("all message-typed fields explicit presence"),
 			)
 		}
-	case 3: // LEGACY_REQUIRED
+	case tags.FeatureSet_FieldPresence_LegacyRequired:
 		r.Warnf("required fields are deprecated").Apply(
 			report.Snippet(feature.Value().ValueAST()),
 			report.Helpf(
@@ -851,7 +852,7 @@ func validateLazy(m Member, r *report.Report) {
 
 		group := m.FeatureSet().Lookup(builtins.FeatureGroup)
 		groupValue, _ := group.Value().AsInt()
-		if groupValue == 2 { // FeatureSet.DELIMITED
+		if groupValue == tags.FeatureSet_MessageEncoding_Delimited {
 			d := r.SoftErrorf(set, "expected length-prefixed field").Apply(
 				report.Snippet(m.AST()),
 				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
@@ -904,11 +905,11 @@ func validateCType(m Member, r *report.Report) {
 
 	var want string
 	switch ctypeValue {
-	case 0: // FieldOptions.STRING
+	case tags.FieldOptions_CType_String:
 		want = "STRING"
-	case 1: // FieldOptions.CORD
+	case tags.FieldOptions_CType_Cord:
 		want = "CORD"
-	case 2: // FieldOptions.STRING_PIECE
+	case tags.FieldOptions_CType_StringPiece:
 		want = "VIEW"
 	}
 
@@ -941,7 +942,7 @@ func validateCType(m Member, r *report.Report) {
 			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
-	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
+	case m.IsExtension() && ctypeValue == tags.FieldOptions_CType_Cord:
 		d := r.SoftErrorf(is2023, "cannot use `CORD` on an extension field").Apply(
 			report.Snippet(m.AST()),
 			report.Snippetf(ctype.ValueAST(), "`CORD` set here"),
@@ -1094,14 +1095,16 @@ func validateVisibility(ty Type, r *report.Report) {
 	}
 	feature := ty.FeatureSet().Lookup(key)
 	value, _ := feature.Value().AsInt()
-	strict := value == 4 // STRICT
+	strict := value == tags.FeatureSet_DefaultSymbolVisibility_Strict
 	var impliedExport bool
 	switch value {
-	case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+	case tags.FeatureSet_DefaultSymbolVisibility_Unknown,
+		tags.FeatureSet_DefaultSymbolVisibility_ExportAll:
 		impliedExport = true
-	case 2: // EXPORT_TOP_LEVEL
+	case tags.FeatureSet_DefaultSymbolVisibility_ExportTopLevel:
 		impliedExport = ty.Parent().IsZero()
-	case 3, 4: // LOCAL_ALL, STRICT
+	case tags.FeatureSet_DefaultSymbolVisibility_LocalAll,
+		tags.FeatureSet_DefaultSymbolVisibility_Strict:
 		impliedExport = false
 	}
 
@@ -1239,7 +1242,7 @@ func validateNamingStyle(f *File, r *report.Report) {
 	isStyle2024 := func(featureSet FeatureSet) bool {
 		feature := featureSet.Lookup(key)
 		value, _ := feature.Value().AsInt()
-		return value == 1 // STYLE2024
+		return value == tags.FeatureSet_EnforceNamingStyle_2024
 	}
 
 	// Validate package name (file-level scope).

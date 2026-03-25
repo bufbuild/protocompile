@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/cases"
+	"github.com/bufbuild/protocompile/internal/tags"
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
@@ -80,14 +81,14 @@ func (r *result) validateFile(handler *reporter.Handler) error {
 	if isEditions(r) {
 		// Validate features
 		if opts.GetFeatures().GetFieldPresence() == descriptorpb.FeatureSet_LEGACY_REQUIRED {
-			span := r.findOptionSpan(r, internal.FileOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			span := r.findOptionSpan(r, tags.FileOptions_Features, tags.FeatureSet_FieldPresence)
 			err := handler.HandleErrorf(span, "LEGACY_REQUIRED field presence cannot be set as the default for a file")
 			if err != nil {
 				return err
 			}
 		}
 		if opts != nil && opts.JavaStringCheckUtf8 != nil {
-			span := r.findOptionSpan(r, internal.FileOptionsJavaStringCheckUTF8Tag)
+			span := r.findOptionSpan(r, tags.FileOptions_JavaStringCheckUtf8)
 			err := handler.HandleErrorf(span, `file option java_string_check_utf8 is not allowed with editions; import "google/protobuf/java_features.proto" and use (pb.java).utf8_validation instead`)
 			if err != nil {
 				return err
@@ -137,7 +138,7 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 		if descriptorpb.Edition(r.Edition()) >= descriptorpb.Edition_EDITION_2024 {
 			// We don't support edition 2024 yet, but we went ahead and mimic'ed this check
 			// from protoc, which currently has experimental support for 2024.
-			span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+			span := r.findOptionSpan(fd, tags.FieldOptions_Ctype)
 			if err := handler.HandleErrorf(span, "ctype option cannot be used as of edition 2024; use features.string_type instead"); err != nil {
 				return err
 			}
@@ -147,10 +148,10 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 		var span ast.SourceSpan
 		var optionName string
 		if fd.proto.Options.GetLazy() {
-			span = r.findOptionSpan(fd, internal.FieldOptionsLazyTag)
+			span = r.findOptionSpan(fd, tags.FieldOptions_Lazy)
 			optionName = "lazy"
 		} else {
-			span = r.findOptionSpan(fd, internal.FieldOptionsUnverifiedLazyTag)
+			span = r.findOptionSpan(fd, tags.FieldOptions_UnverifiedLazy)
 			optionName = "unverified_lazy"
 		}
 		var suffix string
@@ -171,7 +172,7 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 			protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind:
 			// allowed only for 64-bit integer types
 		default:
-			span := r.findOptionSpan(fd, internal.FieldOptionsJSTypeTag)
+			span := r.findOptionSpan(fd, tags.FieldOptions_Jstype)
 			err := handler.HandleErrorf(span, "only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL")
 			if err != nil {
 				return err
@@ -218,13 +219,13 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				return err
 			}
 		}
-	} else if fd.Number() > internal.MaxNormalTag {
+	} else if fd.Number() > tags.FieldMax {
 		// In validateBasic() we just made sure these were within bounds for any message. But
 		// now that things are linked, we can check if the extendee is messageset wire format
 		// and, if not, enforce tighter limit.
 		file := r.FileNode()
 		info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
-		err := handler.HandleErrorf(info, "tag number %d is higher than max allowed tag number (%d)", fd.Number(), internal.MaxNormalTag)
+		err := handler.HandleErrorf(info, "tag number %d is higher than max allowed tag number (%d)", fd.Number(), tags.FieldMax)
 		if err != nil {
 			return err
 		}
@@ -266,7 +267,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationReservedTag)
+					tags.ExtensionRangeOptions_Declaration, int32(j), tags.ExtensionRangeOptions_Declaration_Reserved)
 				err := handler.HandleErrorf(info, "cannot use field number %d for an extension because it is reserved in declaration at %v",
 					fd.Number(), span.Start())
 				if err != nil {
@@ -278,7 +279,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldName())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationFullNameTag)
+					tags.ExtensionRangeOptions_Declaration, int32(j), tags.ExtensionRangeOptions_Declaration_FullName)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be named %s, not %s, per declaration at %v",
 					fd.Number(), strings.TrimPrefix(extDecl.GetFullName(), "."), fd.FullName(), span.Start())
 				if err != nil {
@@ -289,7 +290,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationTypeTag)
+					tags.ExtensionRangeOptions_Declaration, int32(j), tags.ExtensionRangeOptions_Declaration_Type)
 				err := handler.HandleErrorf(info, "expected extension with number %d to have type %s, not %s, per declaration at %v",
 					fd.Number(), strings.TrimPrefix(extDecl.GetType(), "."), getTypeName(fd), span.Start())
 				if err != nil {
@@ -304,7 +305,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationRepeatedTag)
+					tags.ExtensionRangeOptions_Declaration, int32(j), tags.ExtensionRangeOptions_Declaration_Repeated)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be %s, not %s, per declaration at %v",
 					fd.Number(), expected, actual, span.Start())
 				if err != nil {
@@ -317,7 +318,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 			file := r.FileNode()
 			info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
 			span, _ := findExtensionRangeOptionSpan(fd.ParentFile(), msg, i, extRange,
-				internal.ExtensionRangeOptionsVerificationTag)
+				tags.ExtensionRangeOptions_Verification)
 			err := handler.HandleErrorf(info, "expected extension with number %d to be declared in type %s, but no declaration found at %v",
 				fd.Number(), fd.ContainingMessage().FullName(), span.Start())
 			if err != nil {
@@ -331,7 +332,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 
 func (r *result) validatePacked(fd *fldDescriptor, handler *reporter.Handler) error {
 	if fd.proto.Options != nil && fd.proto.Options.Packed != nil && isEditions(r) {
-		span := r.findOptionSpan(fd, internal.FieldOptionsPackedTag)
+		span := r.findOptionSpan(fd, tags.FieldOptions_Packed)
 		err := handler.HandleErrorf(span, "packed option cannot be used with editions; use features.repeated_field_encoding=PACKED instead")
 		if err != nil {
 			return err
@@ -377,22 +378,22 @@ func (r *result) validateFieldFeatures(fld *fldDescriptor, handler *reporter.Han
 	if features.FieldPresence != nil {
 		switch {
 		case fld.proto.OneofIndex != nil:
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_FieldPresence)
 			if err := handler.HandleErrorf(span, "oneof fields may not specify field presence"); err != nil {
 				return err
 			}
 		case fld.Cardinality() == protoreflect.Repeated:
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_FieldPresence)
 			if err := handler.HandleErrorf(span, "repeated fields may not specify field presence"); err != nil {
 				return err
 			}
 		case fld.IsExtension():
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_FieldPresence)
 			if err := handler.HandleErrorf(span, "extension fields may not specify field presence"); err != nil {
 				return err
 			}
 		case fld.Message() != nil && features.GetFieldPresence() == descriptorpb.FeatureSet_IMPLICIT:
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_FieldPresence)
 			if err := handler.HandleErrorf(span, "message fields may not specify implicit presence"); err != nil {
 				return err
 			}
@@ -400,12 +401,12 @@ func (r *result) validateFieldFeatures(fld *fldDescriptor, handler *reporter.Han
 	}
 	if features.RepeatedFieldEncoding != nil {
 		if fld.Cardinality() != protoreflect.Repeated {
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetRepeatedFieldEncodingTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_RepeatedFieldEncoding)
 			if err := handler.HandleErrorf(span, "only repeated fields may specify repeated field encoding"); err != nil {
 				return err
 			}
 		} else if !internal.CanPack(fld.Kind()) && features.GetRepeatedFieldEncoding() == descriptorpb.FeatureSet_PACKED {
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetRepeatedFieldEncodingTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_RepeatedFieldEncoding)
 			if err := handler.HandleErrorf(span, "only repeated primitive fields may specify packed encoding"); err != nil {
 				return err
 			}
@@ -417,7 +418,7 @@ func (r *result) validateFieldFeatures(fld *fldDescriptor, handler *reporter.Han
 			(isMap &&
 				fld.MapKey().Kind() != protoreflect.StringKind &&
 				fld.MapValue().Kind() != protoreflect.StringKind) {
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetUTF8ValidationTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_Utf8Validation)
 			if err := handler.HandleErrorf(span, "only string fields may specify UTF8 validation"); err != nil {
 				return err
 			}
@@ -425,7 +426,7 @@ func (r *result) validateFieldFeatures(fld *fldDescriptor, handler *reporter.Han
 	}
 	if features.MessageEncoding != nil {
 		if fld.Message() == nil || fld.IsMap() {
-			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetMessageEncodingTag)
+			span := r.findOptionSpan(fld, tags.FieldOptions_Features, tags.FeatureSet_MessageEncoding)
 			if err := handler.HandleErrorf(span, "only message fields may specify message encoding"); err != nil {
 				return err
 			}
@@ -580,9 +581,9 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 		// DECLARATION. It's an error for declarations to be present but the
 		// verification field explicitly set to something other than that.
 		if opts.Verification != nil && opts.GetVerification() != descriptorpb.ExtensionRangeOptions_DECLARATION {
-			span, ok := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsVerificationTag)
+			span, ok := findExtensionRangeOptionSpan(r, md, i, extRange, tags.ExtensionRangeOptions_Verification)
 			if !ok {
-				span, _ = findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, 0)
+				span, _ = findExtensionRangeOptionSpan(r, md, i, extRange, tags.ExtensionRangeOptions_Declaration, 0)
 			}
 			if err := handler.HandleErrorf(span, "extension range cannot have declarations and have verification of %s", opts.GetVerification()); err != nil {
 				return err
@@ -591,13 +592,13 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 		declsByTag := map[int32]ast.SourcePos{}
 		for i, extDecl := range extRange.GetOptions().GetDeclaration() {
 			if extDecl.Number == nil {
-				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
+				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, tags.ExtensionRangeOptions_Declaration, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration is missing required field number"); err != nil {
 					return err
 				}
 			} else {
 				extensionNumberSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationNumberTag)
+					tags.ExtensionRangeOptions_Declaration, int32(i), tags.ExtensionRangeOptions_Declaration_Number)
 				if extDecl.GetNumber() < extRange.GetStart() || extDecl.GetNumber() >= extRange.GetEnd() {
 					// Number is out of range.
 					// See if one of the other ranges on the same extends statement includes the number,
@@ -642,14 +643,14 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 			}
 
 			if extDecl.FullName == nil && !extDecl.GetReserved() {
-				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
+				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, tags.ExtensionRangeOptions_Declaration, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a full_name"); err != nil {
 					return err
 				}
 			} else if extDecl.FullName != nil {
 				var extensionFullName protoreflect.FullName
 				extensionNameSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
+					tags.ExtensionRangeOptions_Declaration, int32(i), tags.ExtensionRangeOptions_Declaration_FullName)
 				if !strings.HasPrefix(extDecl.GetFullName(), ".") {
 					if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q should start with a leading dot (.)", extDecl.GetFullName()); err != nil {
 						return err
@@ -669,7 +670,7 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 			}
 
 			if extDecl.Type == nil && !extDecl.GetReserved() {
-				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
+				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, tags.ExtensionRangeOptions_Declaration, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a type"); err != nil {
 					return err
 				}
@@ -677,14 +678,14 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				if strings.HasPrefix(extDecl.GetType(), ".") {
 					if !protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
 						span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-							internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
+							tags.ExtensionRangeOptions_Declaration, int32(i), tags.ExtensionRangeOptions_Declaration_Type)
 						if err := handler.HandleErrorf(span, "extension declaration type %q is not a valid qualified name", extDecl.GetType()); err != nil {
 							return err
 						}
 					}
 				} else if !isBuiltinTypeName(extDecl.GetType()) {
 					span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-						internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
+						tags.ExtensionRangeOptions_Declaration, int32(i), tags.ExtensionRangeOptions_Declaration_Type)
 					if err := handler.HandleErrorf(span, "extension declaration type %q must be a builtin type or start with a leading dot (.)", extDecl.GetType()); err != nil {
 						return err
 					}
@@ -694,12 +695,12 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 			if extDecl.GetReserved() && (extDecl.FullName == nil) != (extDecl.Type == nil) {
 				var fieldTag int32
 				if extDecl.FullName != nil {
-					fieldTag = internal.ExtensionRangeOptionsDeclarationFullNameTag
+					fieldTag = tags.ExtensionRangeOptions_Declaration_FullName
 				} else {
-					fieldTag = internal.ExtensionRangeOptionsDeclarationTypeTag
+					fieldTag = tags.ExtensionRangeOptions_Declaration_Type
 				}
 				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(i), fieldTag)
+					tags.ExtensionRangeOptions_Declaration, int32(i), fieldTag)
 				if err := handler.HandleErrorf(span, "extension declarations that are reserved should specify both full_name and type or neither"); err != nil {
 					return err
 				}
@@ -789,9 +790,9 @@ func findExtensionRangeOptionSpan(
 	}
 
 	//nolint:gocritic // intentionally assigning to different slice variables
-	extRangePath := append(msgPath, internal.MessageExtensionRangesTag, int32(extRangeIndex))
-	optsPath := append(extRangePath, internal.ExtensionRangeOptionsTag) //nolint:gocritic
-	fullPath := append(optsPath, path...)                               //nolint:gocritic
+	extRangePath := append(msgPath, tags.Message_ExtensionRange, int32(extRangeIndex))
+	optsPath := append(extRangePath, tags.Message_ExtensionRange_Options) //nolint:gocritic
+	fullPath := append(optsPath, path...)                                 //nolint:gocritic
 	srcLoc := srcLocs.ByPath(fullPath)
 	if srcLoc.Path != nil {
 		// found it
@@ -861,10 +862,7 @@ func findOptionSpan(
 	var repeatedIndices []int
 	root.RangeOptions(func(n *ast.OptionNode) bool {
 		desc := md
-		limit := len(n.Name.Parts)
-		if limit > len(path) {
-			limit = len(path)
-		}
+		limit := min(len(n.Name.Parts), len(path))
 		var nextIsIndex bool
 		for i := range limit {
 			if desc == nil || nextIsIndex {

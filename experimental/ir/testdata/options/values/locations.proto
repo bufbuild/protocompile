@@ -1,0 +1,62 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//% descriptor: true
+//% source_code_info: true
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+option (x) = {
+    b: 1,
+    c: 2,
+    c: 3,
+    c: 4
+};
+
+message Foo {
+    option (y) = {
+        a: "foo"
+    };
+
+    optional string bar = 1 [
+      (z) = {
+          a: "bar",
+          b: 5,
+          c: 6,
+          c: 7,
+          c: 8
+      }
+    ];
+}
+
+message OptionMessage {
+    optional string a = 1;
+    optional int32 b = 2;
+    repeated int32 c = 3;
+}
+
+extend google.protobuf.FileOptions {
+    optional OptionMessage x = 1000;
+}
+
+extend google.protobuf.MessageOptions {
+    optional OptionMessage y = 1000;
+}
+
+extend google.protobuf.FieldOptions {
+    optional OptionMessage z = 1000;
+}

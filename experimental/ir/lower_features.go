@@ -257,7 +257,7 @@ func validateAllFeatures(file *File, r *report.Report) {
 
 	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.MapField().IsZero() {
-			// Map entries never have features.
+			// Do not set features on map entry fields here.
 			continue
 		}
 

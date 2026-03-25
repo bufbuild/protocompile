@@ -21,12 +21,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/experimental/incremental"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestSum(t *testing.T) {
@@ -182,6 +184,35 @@ func TestUnchanged(t *testing.T) {
 	}
 }
 
+func TestTimings(t *testing.T) {
+	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		timings := make(map[any]time.Duration)
+		ctx := incremental.WithTimings(t.Context(), timings)
+		exec := incremental.New(
+			incremental.WithParallelism(4),
+		)
+
+		queries := []incremental.Query[struct{}]{
+			Wait{ID: 1},
+			Wait{ID: 2, Children: []Wait{
+				{ID: 3},
+				{ID: 4, Children: []Wait{{ID: 6}, {ID: 7}}},
+				{ID: 5},
+			}},
+		}
+
+		results, _, _ := incremental.Run(ctx, exec, queries...)
+		assert.Equal(t, time.Millisecond, results[0].Elapsed)
+		assert.Equal(t, 2*time.Millisecond, results[1].Elapsed)
+
+		for k, v := range timings {
+			id := k.(int) //nolint:errcheck
+			assert.Equal(t, time.Duration(id)*time.Millisecond, v)
+		}
+	})
+}
+
 // ParseInt is a fallible query that parses an integer.
 type ParseInt struct {
 	Input string
@@ -220,7 +251,7 @@ func (s Sum) Key() any {
 
 func (s Sum) Execute(t *incremental.Task) (int, error) {
 	var queries []incremental.Query[int] //nolint:prealloc
-	for _, s := range strings.Split(s.Input, ",") {
+	for s := range strings.SplitSeq(s.Input, ",") {
 		queries = append(queries, ParseInt{s})
 	}
 
@@ -250,4 +281,20 @@ func (r Root) Key() any {
 func (Root) Execute(_ *incremental.Task) (struct{}, error) {
 	time.Sleep(100 * time.Millisecond)
 	return struct{}{}, nil
+}
+
+type Wait struct {
+	ID       int
+	Children []Wait
+}
+
+func (w Wait) Key() any {
+	return w.ID
+}
+
+func (w Wait) Execute(t *incremental.Task) (struct{}, error) {
+	time.Sleep(time.Duration(w.ID) * time.Millisecond)
+	_, err := incremental.Resolve(t,
+		slicesx.Transform(w.Children, func(w Wait) incremental.Query[struct{}] { return w })...)
+	return struct{}{}, err
 }

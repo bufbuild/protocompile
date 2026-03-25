@@ -46,6 +46,20 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	}
 
 	next := peekTokenExpr(p, c)
+	// If the next token is an identifier, we check two tokens ahead for validaton that this
+	// is an infix expression, either using ":" and "=" or colon-less assignments.
+	//
+	// If it is valid, then we return the left-hand side. Otherwise, we continue to parse
+	// the infix expression.
+	if next.Kind() == token.Ident {
+		clone := c.Clone()
+		clone.Next()
+		switch clone.Peek().Keyword() {
+		case keyword.Assign, keyword.Colon, keyword.Braces, keyword.Lt, keyword.Brackets:
+			return lhs
+		}
+	}
+
 	switch prec {
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
@@ -69,9 +83,6 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 
 			case keyword.Braces, keyword.Lt, keyword.Brackets:
 				// This is for colon-less, array or dict-valued fields.
-				if next.IsLeaf() {
-					break
-				}
 
 				// The previous expression cannot also be a key-value pair, since
 				// this messes with parsing of dicts, which are not comma-separated.
@@ -91,16 +102,10 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 					break
 				}
 
+				// Same rationale as the colon case above: field values are
+				// not infix expressions, so use parseExprPrefix.
 				return p.NewExprField(ast.ExprFieldArgs{
-					Key: lhs,
-					// Why not call parseExprSolo? Suppose the following
-					// (invalid) production:
-					//
-					// foo { ... } to { ... }
-					//
-					// Calling parseExprInfix will cause this to be parsed
-					// as a range expression, which will be diagnosed when
-					// we legalize.
+					Key:   lhs,
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 			}

@@ -37,6 +37,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
+	"github.com/bufbuild/protocompile/experimental/ir/sourceinfo"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -77,6 +78,9 @@ type Test struct {
 	Descriptor bool `yaml:"descriptor"`
 	// Whether the descriptor should include SourceCodeInfo
 	SourceCodeInfo bool `yaml:"source_code_info"`
+	// Whether the descriptor should be generated with extra SourceCodeInfo locations for
+	// elements of message literals.
+	GenerateExtraOptionLocations bool `yaml:"generate_extra_option_locations"`
 
 	// Whether to output a symbol table. Useful for tests that build symbol
 	// tables.
@@ -136,6 +140,7 @@ func TestIR(t *testing.T) {
 		Outputs: []golden.Output{
 			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
+			{Extension: "sci.yaml"},
 			{Extension: "symtab.yaml"},
 		},
 	}
@@ -161,22 +166,22 @@ func TestIR(t *testing.T) {
 		)
 
 		session := new(ir.Session)
-		queries := slices.Collect(iterx.FilterMap(
-			slices.Values(test.Files),
-			func(f File) (incremental.Query[*ir.File], bool) {
-				if f.Import {
-					return nil, false
-				}
-				return queries.IR{
-					Opener:  files,
-					Session: session,
-					Path:    f.Path,
-				}, true
-			},
-		))
-
-		results, r, err := incremental.Run(t.Context(), exec, queries...)
+		results, r, err := incremental.Run(t.Context(), exec, queries.Link{
+			Opener:  files,
+			Session: session,
+			Workspace: source.NewWorkspace(slices.Collect(iterx.FilterMap(
+				slices.Values(test.Files),
+				func(f File) (string, bool) {
+					if f.Import {
+						return "", false
+					}
+					return f.Path, true
+				},
+			))...),
+		})
 		require.NoError(t, err)
+		require.NotNil(t, r)
+		require.Len(t, results, 1)
 
 		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
 			matches := func(r *regexp.Regexp) bool {
@@ -199,12 +204,13 @@ func TestIR(t *testing.T) {
 			return
 		}
 
-		irs := slicesx.Transform(results, func(r incremental.Result[*ir.File]) *ir.File { return r.Value })
+		irs := results[0].Value
 		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		if test.Descriptor {
 			bytes, err := fdp.DescriptorSetBytes(irs,
 				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
 				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
 			)
 			require.NoError(t, err)
@@ -213,6 +219,46 @@ func TestIR(t *testing.T) {
 			require.NoError(t, proto.Unmarshal(bytes, fds))
 			assert.False(t, iterx.Empty2(fds.ProtoReflect().Range), "empty descriptor")
 
+			if test.SourceCodeInfo {
+				type loc struct {
+					Path              string
+					Start, End        sourceinfo.Position
+					Leading, Trailing *string // Pointer so that if not present it doesn't get printed.
+					Detached          []string
+				}
+				info := make(map[string][]loc)
+				for _, fdp := range fds.File {
+					info[*fdp.Name] = slicesx.Transform(sourceinfo.Decode(fdp), func(entry sourceinfo.Location) loc {
+						loc := loc{
+							Path:     entry.Path.String(),
+							Start:    entry.Start,
+							End:      entry.End,
+							Detached: entry.Detached,
+						}
+						if entry.Leading != "" {
+							loc.Leading = &entry.Leading
+						}
+						if entry.Trailing != "" {
+							loc.Leading = &entry.Trailing
+						}
+
+						// Delete the copyright notice comment, because it's
+						// noisy.
+						loc.Detached = slices.DeleteFunc(loc.Detached, func(s string) bool {
+							return strings.HasPrefix(s, " Copyright 2020-")
+						})
+
+						return loc
+					})
+
+					fdp.SourceCodeInfo.Location = nil
+					if iterx.Empty2(fdp.SourceCodeInfo.ProtoReflect().Range) {
+						fdp.SourceCodeInfo = nil
+					}
+				}
+				outputs[2] = prototest.ToYAML(info, prototest.ToYAMLOptions{})
+			}
+
 			outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
 		}
 
@@ -220,7 +266,7 @@ func TestIR(t *testing.T) {
 			symtab := symtabProto(irs)
 			assert.False(t, iterx.Empty2(symtab.ProtoReflect().Range), "empty symtab")
 
-			outputs[2] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
+			outputs[3] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
 		}
 	})
 }

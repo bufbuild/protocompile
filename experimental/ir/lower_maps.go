@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	pcinternal "github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // generateMapEntries generates map entry types for all map-typed fields.
@@ -73,7 +74,7 @@ func generateMapEntries(file *File, r *report.Report) {
 				bits:  rawValueBits(file.arenas.messages.Compress(options.Raw())),
 			})),
 
-			mapEntryOf: field.ID(),
+			syntheticTypeOf: field.ID(),
 		})))
 		ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 		if parent.IsZero() {
@@ -100,8 +101,8 @@ func generateMapEntries(file *File, r *report.Report) {
 			ty.Raw().extnsStart++
 		}
 
-		makeField("key", 1)
-		makeField("value", 2)
+		makeField("key", tags.MapEntry_Key)
+		makeField("value", tags.MapEntry_Value)
 
 		// Update the field to be a repeated field of the given type.
 		field.Raw().elem = ty.toRef(file)

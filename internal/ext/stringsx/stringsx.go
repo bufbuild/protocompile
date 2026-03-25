@@ -133,29 +133,6 @@ func Bytes(s string) iter.Seq[byte] {
 	}
 }
 
-// Split polyfills [strings.SplitSeq].
-//
-// Remove in go 1.24.
-func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
-	r := string(sep)
-	return func(yield func(string) bool) {
-		for {
-			chunk, rest, found := strings.Cut(s, r)
-			s = rest
-			if !yield(chunk) || !found {
-				return
-			}
-		}
-	}
-}
-
-// Split polyfills [strings.Lines].
-//
-// Remove in go 1.24.
-func Lines(s string) iter.Seq[string] {
-	return Split(s, '\n')
-}
-
 // CutLast is like [strings.Cut], but searches for the last occurrence of sep.
 // If sep is not present in s, returns "", s, false.
 func CutLast(s, sep string) (before, after string, found bool) {
@@ -163,6 +140,21 @@ func CutLast(s, sep string) (before, after string, found bool) {
 		return s[:i], s[i+len(sep):], true
 	}
 	return "", s, false
+}
+
+// CutOverlap finds the largest string that is both a suffix of a and a prefix
+// of b, and returns it and the pieces around it.
+//
+// This function's runtime is O(len(a)*len(b)).
+func CutOverlap(a, b string) (before, middle, after string) {
+	n := 0
+	for i := 0; i <= min(len(a), len(b)); i++ {
+		if a[len(a)-i:] == b[:i] {
+			n = i
+		}
+	}
+
+	return a[:len(a)-n], a[len(a)-n:], b[n:]
 }
 
 // PartitionKey returns an iterator of the largest substrings of s such that

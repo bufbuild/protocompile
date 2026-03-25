@@ -624,6 +624,8 @@ func (r optionRef) resolve() {
 
 	v := evaluator.eval(args)
 	if raw.IsZero() && !v.IsZero() {
+		// Set this as a top-level option message.
+		v.Raw().isTopLevel = true
 		raw.Insert(v)
 	}
 }

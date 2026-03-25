@@ -1,0 +1,20 @@
+file:
+- name: "testdata/comments/group.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "group"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".buf.test.Foo.Group"
+      json_name: "group"
+    nested_type:
+    - name: "Group"
+      field:
+      - name: "id"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "id"

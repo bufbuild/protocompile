@@ -31,4 +31,8 @@ message Foo {
     }
 
     required group lowercase = 4 {}
+
+    oneof O {
+        group Baz = 5 {}
+    }
 }

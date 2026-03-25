@@ -162,6 +162,32 @@ decls:
       - key.path.components: [{ ident: "a" }]
         value.dict.entries:
         - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - { key.path.components: [{ ident: "x" }], value.dict: {} }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - key.path.components: [{ ident: "x" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+      - { key.path.components: [{ ident: "b" }], value.literal.int_value: 43 }
+    - { key.path.components: [{ ident: "x1" }], value.literal.int_value: 55 }
+    - { key.path.components: [{ ident: "to" }], value.dict: {} }
+    - { key.path.components: [{ ident: "x2" }], value.dict: {} }
+    - { key.path.components: [{ ident: "to" }], value.dict: {} }
+    - value.path.components: [{ ident: "x3" }]
+    - value.literal.int_value: 17
+    - { key.path.components: [{ ident: "to" }], value.dict: {} }
+    - key.path.components: [{ ident: "x4" }]
+      value.range: { start.dict: {}, end.literal.int_value: 91 }
+    - key.path.components: [{ ident: "x1" }]
+      value.path.components: [{ ident: "to" }]
+    - key.path.components: [{ ident: "reserved" }]
+      value.path.components: [{ ident: "true" }]
+    - key.path.components: [{ ident: "to" }]
+      value.path.components: [{ ident: "true" }]
     - { key.literal.string_value: "ident", value.literal.int_value: 42 }
     - { key.literal.string_value: "???", value.literal.int_value: 42 }
     - { key.literal.int_value: 42, value.literal.int_value: 42 }

@@ -59,6 +59,10 @@ func (i IR) Execute(t *incremental.Task) (*ir.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	if r[0].Fatal != nil {
+		return nil, r[0].Fatal
+	}
+
 	file := r[0].Value
 
 	// Check for descriptor.proto in the opener. If it's not present, that's
