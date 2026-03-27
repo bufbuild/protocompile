@@ -119,7 +119,7 @@ func download(ctx context.Context, url string, filter func(string) string) (open
 		}
 
 		buf := new(strings.Builder)
-		if _, err := io.Copy(buf, ar); err != nil { //nolint:gosec
+		if _, err := io.Copy(buf, ar); err != nil {
 			return opener, err
 		}
 
