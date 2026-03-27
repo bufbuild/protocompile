@@ -26,11 +26,12 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
+	"github.com/bufbuild/protocompile/internal/testing/googleapis"
 	"github.com/bufbuild/protocompile/internal/testing/memory"
 )
 
 func BenchmarkCompileGoogleapis(b *testing.B) {
-	workspace, sources := GoogleapisProtos()
+	workspace, sources := googleapis.Get()
 	if workspace == nil {
 		b.Skip()
 	}
@@ -102,7 +103,7 @@ func benchmark(b *testing.B, sources source.Opener, workspace source.Workspace) 
 }
 
 func TestCompileGoogleapisMemory(t *testing.T) {
-	workspace, sources := GoogleapisProtos()
+	workspace, sources := googleapis.Get()
 	if workspace == nil {
 		t.Skip()
 	}

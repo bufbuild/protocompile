@@ -15,25 +15,17 @@
 package benchmarks
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
-	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
@@ -46,6 +38,7 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/protoc"
+	"github.com/bufbuild/protocompile/internal/testing/googleapis"
 	"github.com/bufbuild/protocompile/internal/testing/memory"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/parser/fastscan"
@@ -53,16 +46,9 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-const (
-	googleapisCommit = "cb6fbe8784479b22af38c09a5039d8983e894566"
-)
-
 var (
 	protocPath string
 
-	skipDownload = os.Getenv("SKIP_DOWNLOAD_GOOGLEAPIS") == "true"
-
-	googleapisURI     = fmt.Sprintf("https://github.com/googleapis/googleapis/archive/%s.tar.gz", googleapisCommit)
 	googleapisDir     string
 	googleapisSources []string
 )
@@ -87,151 +73,34 @@ func TestMain(m *testing.M) {
 	}
 
 	var stat int
-	defer func() {
-		os.Exit(stat)
-	}()
+	defer os.Exit(stat)
+
 	// After this point, we can set stat and return instead of directly calling os.Exit.
 	// That allows deferred functions to execute, to perform cleanup, before exiting.
 
-	if !skipDownload {
-		dir, err := os.MkdirTemp("", "testdownloads")
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create temporary directory: %v\n", err)
-			stat = 1
-			return
-		}
-		defer func() {
-			if err := os.RemoveAll(dir); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Failed to cleanup temp directory %s: %v\n", dir, err)
-			}
-		}()
-
-		if err := downloadAndExpand(context.Background(), googleapisURI, dir); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Failed to download and expand googleapis: %v\n", err)
-			stat = 1
-			return
-		}
-
-		googleapisDir = filepath.Join(dir, "googleapis-"+googleapisCommit) + "/"
-		var sourceSize int64
-		err = filepath.Walk(googleapisDir, func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() && strings.HasSuffix(path, ".proto") {
-				relPath := strings.TrimPrefix(path, googleapisDir)
-				googleapisSources = append(googleapisSources, relPath)
-				sourceSize += info.Size()
-			}
-			return nil
-		})
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Failed to enumerate googleapis source files: %v\n", err)
-			stat = 1
-			return
-		}
-		sort.Strings(googleapisSources)
-		fmt.Printf("%d total source files found in googleapis (%d bytes).\n", len(googleapisSources), sourceSize)
+	dir, err := os.MkdirTemp("", "testdownloads")
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Could not create temporary directory: %v\n", err)
+		stat = 1
+		return
 	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to cleanup temp directory %s: %v\n", dir, err)
+		}
+	}()
+
+	if err := googleapis.WriteTo(dir, 0666); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to download and expand googleapis: %v\n", err)
+		stat = 1
+		return
+	}
+
+	googleapisDir = dir
+	ws, _ := googleapis.Get()
+	googleapisSources = ws.Paths()
 
 	stat = m.Run()
-}
-
-func downloadAndExpand(ctx context.Context, url, targetDir string) (e error) {
-	start := time.Now()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.Body != nil {
-		defer func() {
-			if err = resp.Body.Close(); err != nil && e == nil {
-				e = err
-			}
-		}()
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading %s resulted in status code %s", url, resp.Status)
-	}
-	if err := os.MkdirAll(targetDir, 0777); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(targetDir, "testdownload.*.tar.gz")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if f != nil {
-			if err := f.Close(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
-			}
-		}
-	}()
-	n, err := io.Copy(f, resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Downloaded %v; %d bytes (%v).\n", url, n, time.Since(start))
-	archiveName := f.Name()
-	if err := f.Close(); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
-	}
-	f = nil
-
-	f, err = os.OpenFile(archiveName, os.O_RDONLY, 0)
-	if err != nil {
-		return err
-	}
-
-	gzr, err := gzip.NewReader(f)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err = gzr.Close(); err != nil && e == nil {
-			e = err
-		}
-	}()
-
-	tr := tar.NewReader(gzr)
-	count := 0
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		if hdr == nil {
-			continue
-		}
-		target := filepath.Join(targetDir, hdr.Name)
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0777); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, os.FileMode(hdr.Mode))
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-			count++
-		default:
-			// skip anything else
-		}
-	}
-	fmt.Printf("Expanded archive into %d files.\n", count)
-
-	return nil
 }
 
 func BenchmarkGoogleapisProtocompile(b *testing.B) {
@@ -512,9 +381,6 @@ func writeToNull(b *testing.B, fds *descriptorpb.FileDescriptorSet) {
 }
 
 func TestGoogleapisProtocompileResultMemory(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	c := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{googleapisDir},
@@ -527,9 +393,6 @@ func TestGoogleapisProtocompileResultMemory(t *testing.T) {
 }
 
 func TestGoogleapisProtocompileResultMemoryNoSourceInfo(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	c := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{googleapisDir},
@@ -542,9 +405,6 @@ func TestGoogleapisProtocompileResultMemoryNoSourceInfo(t *testing.T) {
 }
 
 func TestGoogleapisProtocompileASTMemory(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	var asts []*ast.FileNode
 	for _, file := range googleapisSources {
 		func() {
@@ -565,9 +425,6 @@ func TestGoogleapisProtocompileASTMemory(t *testing.T) {
 }
 
 func TestGoogleapisProtoparseResultMemory(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	p := protoparse.Parser{
 		ImportPaths:           []string{googleapisDir},
 		IncludeSourceCodeInfo: true,
@@ -578,9 +435,6 @@ func TestGoogleapisProtoparseResultMemory(t *testing.T) {
 }
 
 func TestGoogleapisProtoparseResultMemoryNoSourceInfo(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	p := protoparse.Parser{
 		ImportPaths:           []string{googleapisDir},
 		IncludeSourceCodeInfo: false,
@@ -591,9 +445,6 @@ func TestGoogleapisProtoparseResultMemoryNoSourceInfo(t *testing.T) {
 }
 
 func TestGoogleapisProtoparseASTMemory(t *testing.T) {
-	if skipDownload {
-		t.Skip()
-	}
 	p := protoparse.Parser{
 		IncludeSourceCodeInfo: true,
 	}
