@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:gosec
 package main
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"flag"
@@ -24,6 +27,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"time"
 
@@ -62,7 +66,7 @@ func main() {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("downloading %s resulted in status code %s\n", url, resp.Status)
+			return fmt.Errorf("downloading %s resulted in status code %s", url, resp.Status)
 		}
 
 		ar, err := os.Create(out)
@@ -70,12 +74,26 @@ func main() {
 			return err
 		}
 
-		wrote, err := io.Copy(ar, resp.Body)
+		dir := "googleapis-" + commit
+		total, err := filterArchive(ar, resp.Body, func(path string) string {
+			rel, err := filepath.Rel(dir, path)
+			if err != nil || filepath.Ext(path) != ".proto" {
+				return ""
+			}
+			return rel
+		})
 		if err != nil {
 			return err
 		}
-		fmt.Printf("googleapis: downloaded commit %v (%v) in %v",
-			commit, bitsx.ByteSize(wrote), time.Since(start))
+		elapsed := time.Since(start)
+
+		stat, err := os.Stat(out)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("googleapis: downloaded commit %v (%v, compressed to %v, %0.3f%%) in %v\n",
+			commit, bitsx.ByteSize(total), bitsx.ByteSize(stat.Size()), float64(stat.Size())/float64(total)*100, elapsed)
 
 		info, ok := debug.ReadBuildInfo()
 		if !ok {
@@ -87,8 +105,6 @@ func main() {
 		fmt.Fprintf(embed, "package %s\n\n", os.Getenv("GOPACKAGE"))
 		fmt.Fprintf(embed, "import _ \"embed\"\n\n")
 
-		fmt.Fprintf(embed, "const commit = %q\n\n", commit)
-
 		fmt.Fprintf(embed, "//go:embed %s\n", out)
 		fmt.Fprintf(embed, "var archive string\n")
 
@@ -98,4 +114,55 @@ func main() {
 		}
 		return os.WriteFile("archive.go", src, 0666)
 	})
+}
+
+func filterArchive(dst io.Writer, src io.Reader, filter func(string) string) (total int64, err error) {
+	dstGz, err := gzip.NewWriterLevel(dst, gzip.BestCompression)
+	if err != nil {
+		return total, err
+	}
+	dstAr := tar.NewWriter(dstGz)
+
+	SrcGz, err := gzip.NewReader(src)
+	if err != nil {
+		return total, err
+	}
+	srcAr := tar.NewReader(SrcGz)
+
+	for {
+		hdr, err := srcAr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return total, err
+		}
+
+		if hdr == nil || hdr.Typeflag != tar.TypeReg {
+			continue
+		}
+
+		hdr.Name = filter(hdr.Name)
+		if hdr.Name == "" {
+			continue
+		}
+
+		if err := dstAr.WriteHeader(hdr); err != nil {
+			return total, err
+		}
+
+		n, err := io.Copy(dstAr, srcAr)
+		if err != nil {
+			return total, err
+		}
+		total += n
+	}
+
+	if err := dstAr.Close(); err != nil {
+		return total, err
+	}
+	if err := dstGz.Close(); err != nil {
+		return total, err
+	}
+	return total, err
 }

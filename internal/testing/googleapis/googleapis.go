@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package googleapis makes a checked-in download of
+// https://github.com/googleapis/googleapis available for use by tests.
+//
+// The checked in data at googleapis-xxx.tar.gz is governed by
+// https://github.com/googleapis/googleapis/blob/master/LICENSE.
 package googleapis
 
 //go:generate go run ./gen cb6fbe8784479b22af38c09a5039d8983e894566
@@ -40,15 +45,7 @@ var (
 // for use in tests.
 func Get() (source.Workspace, source.Opener) {
 	once.Do(func() {
-		dir := "googleapis-" + commit
-
-		protos, err := unpack(archive, func(path string) string {
-			rel, err := filepath.Rel(dir, path)
-			if err != nil || filepath.Ext(path) != ".proto" {
-				return ""
-			}
-			return rel
-		})
+		protos, err := unpack(archive)
 		if err != nil {
 			panic(fmt.Errorf("googleapis: %w", err))
 		}
@@ -93,7 +90,7 @@ func WriteTo(dir string, perm os.FileMode) error {
 	return nil
 }
 
-func unpack(archive string, filter func(string) string) (opener source.Map, e error) {
+func unpack(archive string) (opener source.Map, e error) {
 	gz, err := gzip.NewReader(strings.NewReader(archive))
 	if err != nil {
 		return opener, err
@@ -114,17 +111,12 @@ func unpack(archive string, filter func(string) string) (opener source.Map, e er
 			continue
 		}
 
-		target := filter(hdr.Name)
-		if target == "" {
-			continue
-		}
-
 		buf := new(strings.Builder)
-		if _, err := io.Copy(buf, ar); err != nil {
+		if _, err := io.Copy(buf, ar); err != nil { //nolint:gosec
 			return opener, err
 		}
 
-		opener.Add(target, buf.String())
+		opener.Add(hdr.Name, buf.String())
 	}
 
 	return opener, nil

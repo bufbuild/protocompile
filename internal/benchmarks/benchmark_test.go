@@ -72,8 +72,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	var stat int
-	defer os.Exit(stat)
+	stat := new(int)
+	defer os.Exit(*stat)
 
 	// After this point, we can set stat and return instead of directly calling os.Exit.
 	// That allows deferred functions to execute, to perform cleanup, before exiting.
@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 	dir, err := os.MkdirTemp("", "testdownloads")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Could not create temporary directory: %v\n", err)
-		stat = 1
+		*stat = 1
 		return
 	}
 	defer func() {
@@ -92,7 +92,7 @@ func TestMain(m *testing.M) {
 
 	if err := googleapis.WriteTo(dir, 0666); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to download and expand googleapis: %v\n", err)
-		stat = 1
+		*stat = 1
 		return
 	}
 
@@ -100,7 +100,7 @@ func TestMain(m *testing.M) {
 	ws, _ := googleapis.Get()
 	googleapisSources = ws.Paths()
 
-	stat = m.Run()
+	*stat = m.Run()
 }
 
 func BenchmarkGoogleapisProtocompile(b *testing.B) {

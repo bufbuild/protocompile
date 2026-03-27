@@ -18,7 +18,5 @@ package googleapis
 
 import _ "embed"
 
-const commit = "cb6fbe8784479b22af38c09a5039d8983e894566"
-
 //go:embed googleapis-cb6fbe8784479b22af38c09a5039d8983e894566.tar.gz
 var archive string
