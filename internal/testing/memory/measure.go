@@ -49,6 +49,9 @@ func (t *MeasuringTape) Measure(v any) {
 
 func (t *MeasuringTape) measure(v reflect.Value) {
 	insert := func(start uintptr, bytes int) bool {
+		if bytes == 0 {
+			return false
+		}
 		end := start + uintptr(bytes)
 		if _, ok := t.visited[[2]uintptr{start, end}]; ok {
 			return false
