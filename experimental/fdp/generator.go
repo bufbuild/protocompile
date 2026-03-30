@@ -209,10 +209,10 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 
 	var extnIndex int32
 	for extend := range seq.Values(ty.Extends()) {
-		g.debug.comments(extend.AST(), tags.File_Extension)
+		g.debug.comments(extend.AST(), tags.Message_Extension)
 
 		for extn := range seq.Values(extend.Extensions()) {
-			g.debug.in(tags.File_Extension, extnIndex)(func() {
+			g.debug.in(tags.Message_Extension, extnIndex)(func() {
 				g.field(extn, slicesx.PushNew(&mdp.Extension))
 			})
 			extnIndex++
