@@ -342,17 +342,17 @@ func (n *Nodes) panicIfNotOurs(that ...interface{ Path() string }) {
 		var path string
 		switch ctx := that.(type) {
 		case nil:
-			return
+			continue
 
 		case *token.Stream:
 			if ctx == nil || ctx == n.File().Stream() {
-				return
+				continue
 			}
 			path = ctx.Path()
 
 		case *File:
 			if ctx == nil || ctx == n.File() {
-				return
+				continue
 			}
 			path = ctx.Stream().Path()
 
