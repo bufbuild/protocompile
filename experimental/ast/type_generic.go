@@ -139,7 +139,7 @@ func (d TypeList) Brackets() token.Token {
 
 // SetBrackets sets the token tree for the brackets wrapping the argument list.
 func (d TypeList) SetBrackets(brackets token.Token) {
-	d.Context().Nodes().panicIfNotOurs(brackets)
+	d.Context().Nodes().panicIfNotOurs(brackets.Context())
 	d.raw.brackets = brackets.ID()
 }
 
@@ -159,7 +159,7 @@ func (d TypeList) At(n int) TypeAny {
 
 // SetAt implements [seq.Setter].
 func (d TypeList) SetAt(n int, ty TypeAny) {
-	d.Context().Nodes().panicIfNotOurs(ty)
+	d.Context().Nodes().panicIfNotOurs(ty.Context())
 	d.raw.args[n].Value = ty.ID()
 }
 
@@ -185,14 +185,14 @@ func (d TypeList) AppendComma(value TypeAny, comma token.Token) {
 
 // InsertComma implements [Commas].
 func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
-	d.Context().Nodes().panicIfNotOurs(ty, comma)
+	d.Context().Nodes().panicIfNotOurs(ty.Context(), comma.Context())
 
 	d.raw.args = slices.Insert(d.raw.args, n, withComma[id.Dyn[TypeAny, TypeKind]]{ty.ID(), comma.ID()})
 }
 
 // SetComma implements [Commas].
 func (d TypeList) SetComma(n int, comma token.Token) {
-	d.Context().Nodes().panicIfNotOurs(comma)
+	d.Context().Nodes().panicIfNotOurs(comma.Context())
 	d.raw.args[n].Comma = comma.ID()
 }
 

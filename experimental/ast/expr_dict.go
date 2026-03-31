@@ -73,7 +73,7 @@ func (e ExprDict) Elements() Commas[ExprField] {
 				return id.Wrap(e.Context(), c.Value)
 			},
 			func(_ int, e ExprField) withComma[id.ID[ExprField]] {
-				e.Context().Nodes().panicIfNotOurs(e)
+				e.Context().Nodes().panicIfNotOurs(e.Context())
 				return withComma[id.ID[ExprField]]{Value: e.ID()}
 			},
 		),

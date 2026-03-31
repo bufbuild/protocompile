@@ -108,7 +108,7 @@ func (d DeclBody) Decls() seq.Inserter[DeclAny] {
 			return id.WrapDyn(d.Context(), id.NewDyn(k, p))
 		},
 		func(_ int, d DeclAny) (DeclKind, id.ID[DeclAny]) {
-			d.Context().Nodes().panicIfNotOurs(d)
+			d.Context().Nodes().panicIfNotOurs(d.Context())
 			return d.ID().Kind(), d.ID().Value()
 		},
 	)

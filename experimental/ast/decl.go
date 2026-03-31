@@ -124,18 +124,24 @@ func (d DeclAny) AsRange() DeclRange {
 
 // Span implements [source.Spanner].
 func (d DeclAny) Span() source.Span {
-	// At most one of the below will produce a non-zero decl, and that will be
-	// the span selected by source.Join. If all of them are zero, this produces
-	// the zero span.
-	return source.Join(
-		d.AsEmpty(),
-		d.AsSyntax(),
-		d.AsPackage(),
-		d.AsImport(),
-		d.AsDef(),
-		d.AsBody(),
-		d.AsRange(),
-	)
+	switch d.Kind() {
+	case DeclKindBody:
+		return d.AsBody().Span()
+	case DeclKindDef:
+		return d.AsDef().Span()
+	case DeclKindEmpty:
+		return d.AsEmpty().Span()
+	case DeclKindImport:
+		return d.AsImport().Span()
+	case DeclKindPackage:
+		return d.AsPackage().Span()
+	case DeclKindRange:
+		return d.AsRange().Span()
+	case DeclKindSyntax:
+		return d.AsSyntax().Span()
+	default:
+		return source.Span{}
+	}
 }
 
 func (DeclKind) DecodeDynID(lo, _ int32) DeclKind {

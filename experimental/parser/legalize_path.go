@@ -20,7 +20,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // pathOptions is configuration for [legalizePath].
@@ -47,14 +46,14 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 
 	var bytes, components int
 	var slash token.Token
-	for i, pc := range iterx.Enumerate(path.Components) {
+	for pc := range path.Components() {
 		bytes += pc.Separator().Span().Len()
 		// Just Len() here is technically incorrect, because it could be an
 		// extension, but MaxBytes is never used with AllowExts.
 		bytes += pc.Name().Span().Len()
 		components++
 
-		if i == 0 && !opts.AllowAbsolute && pc.Separator().Text() == "." {
+		if pc.IsFirst() && !opts.AllowAbsolute && pc.Separator().Text() == "." {
 			p.Errorf("unexpected absolute path %s", where).Apply(
 				report.Snippetf(path, "expected a path without a leading `%s`", pc.Separator().Text()),
 				report.SuggestEdits(path, "remove the leading `.`", report.Edit{Start: 0, End: 1}),
