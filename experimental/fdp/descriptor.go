@@ -22,6 +22,24 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
+// DescriptorProtoExclude generates a single [*descriptorpb.FileDescriptorProto] for the given [*ir.File].
+func DescriptorProtoExclude(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
+	var g generator
+	for _, opt := range options {
+		if opt != nil {
+			opt(&g)
+		}
+	}
+
+	if g.exclude != nil && g.exclude(file) {
+		return nil, nil
+	}
+
+	fdp := new(descriptorpb.FileDescriptorProto)
+	g.file(file, fdp)
+	return fdp, nil
+}
+
 // DescriptorSetBytes generates a FileDescriptorSet for the given files, and returns the
 // result as an encoded byte slice.
 //
