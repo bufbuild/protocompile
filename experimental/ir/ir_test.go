@@ -165,23 +165,26 @@ func TestIR(t *testing.T) {
 			incremental.WithReportOptions(report.Options{Tracing: *tracing}),
 		)
 
+		workspace := source.NewWorkspace(slices.Collect(iterx.FilterMap(
+			slices.Values(test.Files),
+			func(f File) (string, bool) {
+				if f.Import {
+					return "", false
+				}
+				return f.Path, true
+			},
+		))...)
 		session := new(ir.Session)
-		results, r, err := incremental.Run(t.Context(), exec, queries.Link{
-			Opener:  files,
-			Session: session,
-			Workspace: source.NewWorkspace(slices.Collect(iterx.FilterMap(
-				slices.Values(test.Files),
-				func(f File) (string, bool) {
-					if f.Import {
-						return "", false
-					}
-					return f.Path, true
-				},
-			))...),
+		// We keep this for symtab later
+		linkResult, r, err := incremental.Run(t.Context(), exec, queries.Link{
+			Opener:    files,
+			Session:   session,
+			Workspace: workspace,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, r)
-		require.Len(t, results, 1)
+		irs := linkResult[0].Value
+		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
 			matches := func(r *regexp.Regexp) bool {
@@ -204,18 +207,27 @@ func TestIR(t *testing.T) {
 			return
 		}
 
-		irs := results[0].Value
-		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
-
 		if test.Descriptor {
-			bytes, err := fdp.DescriptorSetBytes(irs,
-				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
-				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
-				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
-			)
+			FDSresult, r, err := incremental.Run(t.Context(), exec, queries.FDS{
+				Opener:    files,
+				Session:   session,
+				Workspace: workspace,
+				Options: fdp.Options{
+					IncludeSourceCodeInfo:        test.SourceCodeInfo,
+					GenerateExtraOptionLocations: test.GenerateExtraOptionLocations,
+				},
+				Excluder: fdp.IRExcluder{},
+			})
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			require.Len(t, FDSresult, 1)
+			fds := FDSresult[0].Value
+			require.NotNil(t, fds)
+
+			bytes, err := proto.Marshal(fds)
 			require.NoError(t, err)
 
-			fds := new(descriptorpb.FileDescriptorSet)
+			fds = new(descriptorpb.FileDescriptorSet)
 			require.NoError(t, proto.Unmarshal(bytes, fds))
 			assert.False(t, iterx.Empty2(fds.ProtoReflect().Range), "empty descriptor")
 
