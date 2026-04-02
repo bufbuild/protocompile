@@ -303,7 +303,6 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 			}
 
 			fdp := mdp.Field[i]
-			fdp.Proto3Optional = addr(true)
 			fdp.OneofIndex = addr(int32(len(mdp.OneofDecl)))
 			slicesx.PushNew(&mdp.OneofDecl).Name = addr(oneof)
 		}
