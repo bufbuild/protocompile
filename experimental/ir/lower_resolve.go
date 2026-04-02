@@ -85,6 +85,22 @@ func resolveFieldType(field Member, r *report.Report) {
 		// NOTE: Editions features are resolved elsewhere, so we default to
 		// explicit presence here.
 
+		if field.IsGroup() {
+			// Group fields can still have a label, so we check the first prefix, similar to a
+			// prefixed non-group field.
+			prefix, ok := iterx.First(field.AST().Prefixes())
+			if ok {
+				switch prefix.Prefix() {
+				case keyword.Optional:
+					kind = presence.Explicit
+				case keyword.Required:
+					kind = presence.Required
+				case keyword.Repeated:
+					kind = presence.Repeated
+				}
+			}
+		}
+
 		path = ty.AsPath().Path
 
 	case ast.TypeKindPrefixed:

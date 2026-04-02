@@ -6,7 +6,7 @@ file:
     field:
     - name: "group"
       number: 1
-      label: LABEL_OPTIONAL
+      label: LABEL_REQUIRED
       type: TYPE_GROUP
       type_name: ".buf.test.Foo.Group"
       json_name: "group"

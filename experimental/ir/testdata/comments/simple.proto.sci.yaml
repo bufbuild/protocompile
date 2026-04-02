@@ -1,0 +1,32 @@
+"testdata/comments/simple.proto":
+- { path: "", start: { line: 16, column: 0 }, end: { line: 25, column: 1 } }
+- path: ".syntax"
+  start: { line: 16, column: 0 }
+  end: { line: 16, column: 17 }
+  leading: "% descriptor: true\n% source_code_info: true\n"
+  detached: {}
+- path: ".package"
+  start: { line: 18, column: 0 }
+  end: { line: 18, column: 17 }
+- path: ".message_type[Foo]"
+  start: { line: 21, column: 0 }
+  end: { line: 25, column: 1 }
+  leading: " Leading comment for buf.test.Foo\n"
+  trailing: " Trailing comment for buf.test.Foo"
+- path: ".message_type[Foo].name"
+  start: { line: 21, column: 8 }
+  end: { line: 21, column: 11 }
+- path: ".message_type[Foo].field[bar].type"
+  start: { line: 23, column: 2 }
+  end: { line: 23, column: 8 }
+- path: ".message_type[Foo].field[bar]"
+  start: { line: 23, column: 2 }
+  end: { line: 23, column: 17 }
+  leading: " Leading comment for buf.test.Foo.bar\n"
+  trailing: " Trailing comment for buf.test.Foo.bar\n"
+- path: ".message_type[Foo].field[bar].name"
+  start: { line: 23, column: 9 }
+  end: { line: 23, column: 12 }
+- path: ".message_type[Foo].field[bar].number"
+  start: { line: 23, column: 15 }
+  end: { line: 23, column: 16 }

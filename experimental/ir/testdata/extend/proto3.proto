@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//% descriptor: true
 syntax = "proto3";
 
 package test;
@@ -60,4 +61,5 @@ extend google.protobuf.ServiceOptions {
 
 extend google.protobuf.MethodOptions {
     repeated int32 i = 1000;
+    optional string j = 1001;
 }
