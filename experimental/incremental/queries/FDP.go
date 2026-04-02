@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
 package queries
 
 import (
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // FDP is an [incremental.Query] that converts the lowered IR files [*ir.File]

@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ package queries
 import (
 	"slices"
 
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // FDS is an [incremental.Query] that produces a [*descriptorpb.FileDescriptorSet].
@@ -84,9 +85,5 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 	}
 	fdps = slices.DeleteFunc(fdps, func(fdp *descriptorpb.FileDescriptorProto) bool { return fdp == nil })
 
-	fds := new(descriptorpb.FileDescriptorSet)
-	for _, fdp := range fdps {
-		fds.File = append(fds.File, fdp)
-	}
-	return fds, nil
+	return &descriptorpb.FileDescriptorSet{File: fdps}, nil
 }
