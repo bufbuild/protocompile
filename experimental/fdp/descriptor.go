@@ -105,3 +105,35 @@ func GenerateExtraOptionLocations(flag bool) DescriptorOption {
 		g.generateExtraOptionLocations = flag
 	}
 }
+
+// Options is a comparable way to set certain options in the generator.
+type Options struct {
+	IncludeSourceCodeInfo        bool
+	GenerateExtraOptionLocations bool
+}
+
+// Excluder is used because functions are not comparable.
+// Instead we create types such as [IRExcluder] which implement this, and are comparable.
+type Excluder interface {
+	Exclude(*ir.File) bool
+}
+
+// OptionsToDescriptorOptions turns [Options] to an array of [DescriptorOption].
+func OptionsToDescriptorOptions(opt Options) []DescriptorOption {
+	return []DescriptorOption{
+		IncludeSourceCodeInfo(opt.IncludeSourceCodeInfo),
+		GenerateExtraOptionLocations(opt.GenerateExtraOptionLocations),
+	}
+}
+
+// ExcluderToOption turns an implementation of Excluder into a DescriptorOption.
+func ExcluderToOption(excl Excluder) DescriptorOption {
+	return ExcludeFiles(func(f *ir.File) bool { return excl.Exclude(f) })
+}
+
+// An implementation of [Excluder]. We exclude files for which IsDescriptorProto() returns true.
+type IRExcluder struct{}
+
+func (IRExcluder) Exclude(file *ir.File) bool {
+	return file.IsDescriptorProto()
+}

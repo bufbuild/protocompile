@@ -212,11 +212,11 @@ func TestIR(t *testing.T) {
 				Opener:    files,
 				Session:   session,
 				Workspace: workspace,
-				Options: &[]fdp.DescriptorOption{
-					fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
-					fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
-					fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
+				Options: fdp.Options{
+					IncludeSourceCodeInfo:        test.SourceCodeInfo,
+					GenerateExtraOptionLocations: test.GenerateExtraOptionLocations,
 				},
+				Excluder: fdp.IRExcluder{},
 			})
 			require.NoError(t, err)
 			require.NotNil(t, r)

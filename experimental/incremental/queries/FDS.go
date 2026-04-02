@@ -36,7 +36,8 @@ type FDS struct {
 	source.Opener // Must be comparable.
 	*ir.Session
 	source.Workspace // Must be comparable
-	Options          *[]fdp.DescriptorOption
+	fdp.Options      // Must be comparable
+	fdp.Excluder
 }
 
 var _ incremental.Query[*descriptorpb.FileDescriptorSet] = FDS{}
@@ -68,9 +69,9 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 		slices.Collect(ir.TopoSort(irs)),
 		func(f *ir.File) incremental.Query[*descriptorpb.FileDescriptorProto] {
 			return FDP{
-				File:    f,
-				Session: l.Session,
-				Options: l.Options,
+				File:     f,
+				Options:  l.Options,
+				Excluder: l.Excluder,
 			}
 		},
 	)
@@ -83,7 +84,10 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 	if err != nil {
 		return nil, err
 	}
-	fdps = slices.DeleteFunc(fdps, func(fdp *descriptorpb.FileDescriptorProto) bool { return fdp == nil })
+	fdps = slices.DeleteFunc(
+		fdps,
+		func(fdp *descriptorpb.FileDescriptorProto) bool { return fdp == nil },
+	)
 
 	return &descriptorpb.FileDescriptorSet{File: fdps}, nil
 }
