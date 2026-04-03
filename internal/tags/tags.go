@@ -20,7 +20,7 @@ package tags
 
 // Field numbers for synthetic map entry messages.
 //
-//nolint:revive,stylecheck
+//nolint:revive,staticcheck
 const (
 	MapEntry_Key   = 1
 	MapEntry_Value = 2

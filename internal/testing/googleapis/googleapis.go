@@ -26,6 +26,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -50,11 +51,7 @@ func Get() (source.Workspace, source.Opener) {
 			panic(fmt.Errorf("googleapis: %w", err))
 		}
 
-		var paths []string
-		for path := range protos.Get() {
-			paths = append(paths, path)
-		}
-		slices.Sort(paths)
+		paths := slices.Sorted(maps.Keys(protos.Get()))
 
 		opener = protos
 		workspace = source.NewWorkspace(paths...)

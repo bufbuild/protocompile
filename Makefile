@@ -75,7 +75,7 @@ install: ## Install all binaries
 
 .PHONY: lint
 lint: $(BIN)/golangci-lint ## Lint Go
-	@# golanci-lint already catches unsafe.Pointer misuse, and can be silenced
+	@# golangci-lint already catches unsafe.Pointer misuse, and can be silenced
 	@# when it has false positives, unlike go vet, which cannot.
 	$(GO) vet  -unsafeptr=false ./... ./internal/benchmarks/...
 	$(BIN)/golangci-lint run
@@ -129,7 +129,7 @@ $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
+		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
