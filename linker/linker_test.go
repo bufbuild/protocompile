@@ -3965,7 +3965,7 @@ func removePrefixIndent(s string) string {
 	}
 	lines = lines[1:] // skip first blank line
 	// determine whitespace prefix from first line (e.g. five tabstops)
-	var prefix []rune //nolint:prealloc
+	var prefix []rune
 	for _, r := range lines[1] {
 		if !unicode.IsSpace(r) {
 			break

@@ -242,7 +242,7 @@ func compareCompilationResults(t *testing.T, result1, result2 CompilationResult,
 	files1 := result1.Files()
 	files2 := result2.Files()
 
-	require.Equal(t, len(files1), len(files2), "different number of files")
+	require.Len(t, files1, len(files2), "different number of files")
 
 	for i := range files1 {
 		fdp1, err := files1[i].FileDescriptorProto()

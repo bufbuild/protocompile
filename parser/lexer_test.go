@@ -489,7 +489,7 @@ func TestStringLiteralMultipleErrors(t *testing.T) {
 			var sym protoSymType
 			tok := l.Lex(&sym)
 			require.Equal(t, _ERROR, tok)
-			require.Equal(t, len(tc.expectedErrs), len(errors))
+			require.Len(t, errors, len(tc.expectedErrs))
 			require.Equal(t, errors[len(errors)-1], sym.err) // returned err in symbol should be last error
 			for i := range tc.expectedErrs {
 				assert.Equal(t, tc.expectedErrs[i], errors[i].Error(), "error#%d", i+1)
