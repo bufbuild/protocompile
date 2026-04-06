@@ -1,6 +1,11 @@
 package bytesx
 
-import "unicode/utf8"
+import (
+	"slices"
+	"unicode/utf8"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
+)
 
 // Writer is like [bytes.Buffer], but only provides writing operations and
 // only appends directly to the buffer.
@@ -16,11 +21,22 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// Insert inserts the given buffer into the given offset, shifting everything
+// after it over if needed.
+func (w *Writer) Insert(n int, p []byte) {
+	*w = slices.Insert(*w, n, p...)
+}
+
 // WriteString appends the contents of s to the buffer, growing the buffer as
 // needed. The return value n is the length of s; err is always nil.
 func (w *Writer) WriteString(s string) (n int, err error) {
 	*w = append(*w, s...)
 	return len(s), nil
+}
+
+// InsertString is like [Writer.Insert], but takes a string instead.
+func (w *Writer) InsertString(n int, p string) {
+	*w = slices.Insert(*w, n, unsafex.BytesAlias[[]byte](p)...)
 }
 
 // WriteByte appends the byte c to the buffer, growing the buffer as needed.

@@ -14,24 +14,35 @@
 
 package unicodex
 
+var hexTable = func() [128]byte {
+	var table [128]byte
+	for d := range len(table) {
+		d := byte(d)
+		var v byte
+		switch {
+		case d >= '0' && d <= '9':
+			v = d - '0'
+
+		case d >= 'a' && d <= 'z':
+			v = d - 'a' + 10
+
+		case d >= 'A' && d <= 'Z':
+			v = d - 'A' + 10
+
+		default:
+			v = 0xff
+		}
+
+		table[d] = v - d
+	}
+	return table
+}()
+
 // Digit parses a digit in the given base, up to base 36.
 func Digit(d rune, base byte) (value byte, ok bool) {
-	switch {
-	case d >= '0' && d <= '9':
-		value = byte(d) - '0'
-
-	case d >= 'a' && d <= 'z':
-		value = byte(d) - 'a' + 10
-
-	case d >= 'A' && d <= 'Z':
-		value = byte(d) - 'A' + 10
-
-	default:
-		value = 0xff
+	if d > 0x7f {
+		return 0xff, false
 	}
-
-	if value >= base {
-		return 0, false
-	}
-	return value, true
+	value = byte(d) + hexTable[d]
+	return value, value < base
 }
