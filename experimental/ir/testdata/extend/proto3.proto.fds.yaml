@@ -1,0 +1,74 @@
+file:
+- name: "testdata/extend/proto3.proto"
+  package: "test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type: [{ name: "M", extension_range: [{ start: 1, end: 2 }] }]
+  extension:
+  - name: "x"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".test.M"
+    json_name: "x"
+  - name: "a"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "a"
+  - name: "b"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "b"
+  - name: "c"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.FieldOptions"
+    json_name: "c"
+  - name: "d"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.OneofOptions"
+    json_name: "d"
+  - name: "e"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.EnumOptions"
+    json_name: "e"
+  - name: "f"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.EnumValueOptions"
+    json_name: "f"
+  - name: "g"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.ExtensionRangeOptions"
+    json_name: "g"
+  - name: "h"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.ServiceOptions"
+    json_name: "h"
+  - name: "i"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.MethodOptions"
+    json_name: "i"
+  - name: "j"
+    number: 1001
+    label: LABEL_OPTIONAL
+    type: TYPE_STRING
+    extendee: ".google.protobuf.MethodOptions"
+    json_name: "j"
+    proto3_optional: true
+  syntax: "proto3"

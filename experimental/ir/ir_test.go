@@ -239,7 +239,7 @@ func TestIR(t *testing.T) {
 							loc.Leading = &entry.Leading
 						}
 						if entry.Trailing != "" {
-							loc.Leading = &entry.Trailing
+							loc.Trailing = &entry.Trailing
 						}
 
 						// Delete the copyright notice comment, because it's
