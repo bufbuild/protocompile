@@ -1,9 +1,9 @@
 module github.com/bufbuild/protocompile/internal/tools
 
-go 1.25.6
+go 1.25.7
 
 require (
-	github.com/bufbuild/buf v1.66.1
+	github.com/bufbuild/buf v1.67.0
 	github.com/golangci/golangci-lint v1.64.8
 	golang.org/x/tools v0.43.0
 )
@@ -14,7 +14,7 @@ require (
 	buf.build/go/app v0.2.0 // indirect
 	buf.build/go/bufprivateusage v0.1.0 // indirect
 	buf.build/go/interrupt v1.1.0 // indirect
-	buf.build/go/standard v0.1.0 // indirect
+	buf.build/go/standard v0.1.1-0.20260325175353-2b287e071df5 // indirect
 	github.com/4meepo/tagalign v1.4.2 // indirect
 	github.com/Abirdcfly/dupword v0.1.3 // indirect
 	github.com/Antonboom/errname v1.0.0 // indirect
@@ -191,7 +191,7 @@ require (
 	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
