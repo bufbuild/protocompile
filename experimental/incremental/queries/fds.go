@@ -37,7 +37,6 @@ type FDS struct {
 	*ir.Session
 	source.Workspace // Must be comparable
 	fdp.Options      // Must be comparable
-	fdp.Excluder
 }
 
 var _ incremental.Query[*descriptorpb.FileDescriptorSet] = FDS{}
@@ -69,9 +68,8 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 		slices.Collect(ir.TopoSort(irs)),
 		func(f *ir.File) incremental.Query[*descriptorpb.FileDescriptorProto] {
 			return FDP{
-				File:     f,
-				Options:  l.Options,
-				Excluder: l.Excluder,
+				File:    f,
+				Options: l.Options,
 			}
 		},
 	)

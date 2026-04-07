@@ -39,12 +39,18 @@ import (
 	"github.com/bufbuild/protocompile/internal/tags"
 )
 
-type generator struct {
-	currentFile                  *ir.File
+// Options records a set of [DescriptorOptions].
+// This type is intended for making options comparable, such as for use in queries.
+type Options struct {
+	debug                        *debug
 	generateExtraOptionLocations bool
-	exclude                      func(*ir.File) bool
+	exclude                      Excluder
+}
 
-	debug *debug
+type generator struct {
+	currentFile *ir.File
+	exclude     func(*ir.File) bool
+	Options
 }
 
 func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet) {

@@ -22,14 +22,19 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
-// DescriptorProtoExclude generates a single [*descriptorpb.FileDescriptorProto] for the given [*ir.File].
-func DescriptorProtoExclude(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
-	var g generator
+func (g *generator) apply(options ...DescriptorOption) *generator {
 	for _, opt := range options {
 		if opt != nil {
-			opt(&g)
+			opt.apply(&g.Options)
 		}
 	}
+	return g
+}
+
+// DescriptorProtoExclude generates a single [*descriptorpb.FileDescriptorProto] for the given [*ir.File].
+func DescriptorProto(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
+	var g generator
+	g.apply(options...)
 
 	if g.exclude != nil && g.exclude(file) {
 		return nil, nil
@@ -47,11 +52,7 @@ func DescriptorProtoExclude(file *ir.File, options ...DescriptorOption) (*descri
 // the WKTs, and all names are fully-qualified.
 func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	for _, opt := range options {
-		if opt != nil {
-			opt(&g)
-		}
-	}
+	g.apply(options...)
 
 	fds := new(descriptorpb.FileDescriptorSet)
 	g.files(files, fds)
@@ -64,71 +65,71 @@ func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, 
 // The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
 func DescriptorProtoBytes(file *ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	for _, opt := range options {
-		if opt != nil {
-			opt(&g)
-		}
-	}
+	g.apply(options...)
 
 	fdp := new(descriptorpb.FileDescriptorProto)
 	g.file(file, fdp)
 	return proto.Marshal(fdp)
 }
 
-// DescriptorOption is an option to pass to [DescriptorSetBytes] or [DescriptorProtoBytes].
-type DescriptorOption func(*generator)
+type DescriptorOption interface{ apply(*Options) }
+type descriptorOption func(*Options)
+
+// [DescriptorOption] instance for [descriptorOption]
+func (dopt descriptorOption) apply(o *Options) {
+	dopt(o)
+}
+
+func (o *Options) apply(that *Options) {
+	*that = *o
+}
+
+// Apply applies the given [DescriptorOption] to this [Options].
+//
+// Nil values are ignored; does nothing if opt is nil.
+func (o *Options) Apply(options ...DescriptorOption) *Options {
+	if o != nil {
+		for _, option := range options {
+			if option != nil {
+				option.apply(o)
+			}
+		}
+	}
+	return o
+}
 
 // IncludeSourceCodeInfo sets whether or not to include google.protobuf.SourceCodeInfo in
 // the output.
-func IncludeSourceCodeInfo(flag bool) DescriptorOption {
-	return func(g *generator) {
+func IncludeSourceCodeInfo(flag bool) descriptorOption {
+	return func(o *Options) {
 		if flag {
-			g.debug = new(debug)
+			o.debug = new(debug)
 		} else {
-			g.debug = nil
+			o.debug = nil
 		}
-	}
-}
-
-// ExcludeFiles excludes the given files from the output of [DescriptorSetBytes].
-func ExcludeFiles(exclude func(*ir.File) bool) DescriptorOption {
-	return func(g *generator) {
-		g.exclude = exclude
 	}
 }
 
 // GenerateExtraOptionLocations set whether or not to generate additional locations for
 // elements inside of message literals in option values. This option is a no-op if
 // [IncludeSourceCodeInfo] is not set.
-func GenerateExtraOptionLocations(flag bool) DescriptorOption {
-	return func(g *generator) {
-		g.generateExtraOptionLocations = flag
+func GenerateExtraOptionLocations(flag bool) descriptorOption {
+	return func(o *Options) {
+		o.generateExtraOptionLocations = flag
 	}
 }
 
-// Options is a comparable way to set certain options in the generator.
-type Options struct {
-	IncludeSourceCodeInfo        bool
-	GenerateExtraOptionLocations bool
-}
-
-// Excluder is used because functions are not comparable.
-// Instead we create types such as [IRExcluder] which implement this, and are comparable.
+// Excluder is used with [ExcludeFIles].
+// This is an interface, rather than a function, so that implementations can be comparable for use in queries.
 type Excluder interface {
 	Exclude(*ir.File) bool
 }
 
-// OptionsToDescriptorOptions turns [Options] to an array of [DescriptorOption].
-func OptionsToDescriptorOptions(opt Options) []DescriptorOption {
-	return []DescriptorOption{
-		IncludeSourceCodeInfo(opt.IncludeSourceCodeInfo),
-		GenerateExtraOptionLocations(opt.GenerateExtraOptionLocations),
+// ExcludeFiles excludes the given files from the output of [DescriptorSetBytes].
+func ExcludeFiles(exclude Excluder) descriptorOption {
+	return func(o *Options) {
+		o.exclude = exclude
 	}
-}
-
-// ExcluderToOption turns an implementation of Excluder into a DescriptorOption.
-func ExcluderToOption(excl Excluder) DescriptorOption {
-	return ExcludeFiles(func(f *ir.File) bool { return excl.Exclude(f) })
 }
 
 // An implementation of [Excluder]. We exclude files for which IsDescriptorProto() returns true.

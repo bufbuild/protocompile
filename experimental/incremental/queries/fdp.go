@@ -28,9 +28,8 @@ import (
 // FDP queries with different File and Options are considered distinct.
 // The File field must not be edited between different FDP queries!
 type FDP struct {
-	*ir.File // Must be comparable.
-	fdp.Options
-	fdp.Excluder
+	*ir.File    // Must be comparable.
+	fdp.Options // Must be comparable
 }
 
 var _ incremental.Query[*descriptorpb.FileDescriptorProto] = FDP{}
@@ -44,8 +43,5 @@ func (l FDP) Key() any {
 func (l FDP) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorProto, error) {
 	t.Report().Options.Stage += stageFDP
 
-	opts := fdp.OptionsToDescriptorOptions(l.Options)
-	opts = append(opts, fdp.ExcluderToOption(l.Excluder))
-
-	return fdp.DescriptorProtoExclude(l.File, opts...)
+	return fdp.DescriptorProto(l.File, &l.Options)
 }

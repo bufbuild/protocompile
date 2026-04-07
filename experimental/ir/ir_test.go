@@ -208,15 +208,18 @@ func TestIR(t *testing.T) {
 		}
 
 		if test.Descriptor {
+			var options fdp.Options
+			options.Apply(
+				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
+				fdp.ExcludeFiles(fdp.IRExcluder{}),
+			)
+
 			FDSresult, r, err := incremental.Run(t.Context(), exec, queries.FDS{
 				Opener:    files,
 				Session:   session,
 				Workspace: workspace,
-				Options: fdp.Options{
-					IncludeSourceCodeInfo:        test.SourceCodeInfo,
-					GenerateExtraOptionLocations: test.GenerateExtraOptionLocations,
-				},
-				Excluder: fdp.IRExcluder{},
+				Options:   options,
 			})
 			require.NoError(t, err)
 			require.NotNil(t, r)
