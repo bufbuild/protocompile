@@ -40,6 +40,7 @@ import (
 )
 
 // Options records a set of [DescriptorOptions].
+//
 // This type is intended for making options comparable, such as for use in queries.
 type Options struct {
 	debug                        *debug
@@ -49,7 +50,6 @@ type Options struct {
 
 type generator struct {
 	currentFile *ir.File
-	exclude     func(*ir.File) bool
 	Options
 }
 
@@ -58,7 +58,7 @@ func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet)
 	// imports for each file because we want the result to be sorted
 	// topologically.
 	for file := range ir.TopoSort(files) {
-		if g.exclude != nil && g.exclude(file) {
+		if g.exclude != nil && g.exclude.Exclude(file) {
 			continue
 		}
 

@@ -130,6 +130,15 @@ func (l *List[T]) UnmarshalYAML(value *yaml.Node) error {
 	return value.Decode((*[]T)(l))
 }
 
+// An implementation of [Excluder].
+//
+// We exclude files for which IsDescriptorProto() returns true.
+type IRExcluder struct{}
+
+func (IRExcluder) Exclude(file *ir.File) bool {
+	return file.IsDescriptorProto()
+}
+
 func TestIR(t *testing.T) {
 	t.Parallel()
 
@@ -212,7 +221,7 @@ func TestIR(t *testing.T) {
 			options.Apply(
 				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
 				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
-				fdp.ExcludeFiles(fdp.IRExcluder{}),
+				fdp.ExcludeFiles(IRExcluder{}),
 			)
 
 			FDSresult, r, err := incremental.Run(t.Context(), exec, queries.FDS{
