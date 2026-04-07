@@ -1,12 +1,28 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package decimal
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"math/bits"
 	"strconv"
 
 	"github.com/bufbuild/protocompile/internal/ext/bigx"
+	"github.com/bufbuild/protocompile/internal/ext/bitsx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
@@ -28,22 +44,9 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 		z = new(Decimal)
 	}
 
-	z.lockFloat(false)
+	z.lockFloat(true)
 	defer z.float.Store(nil)
-
-	z.exp = 0
-	z.binExp = false
-	z.neg = false
-
-	if z.raw.data == nil {
-		z.raw.data = &z.raw.cap
-		z.raw.len = 0
-		z.raw.cap = 0
-	} else {
-		m := z.get()[:1]
-		m[0] = 0
-		z.set(m)
-	}
+	z.clear()
 
 	i := 0
 	switch s[0] {
@@ -55,9 +58,12 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 	}
 
 	base := 10
-	if len(s) >= 2 && s[0] == '0' && (s[0] == 'x' || s[0] == 'X') {
+	places := 1 // Number of places in base that a digit corresponds to.
+	if len(s)-i >= 2 && s[i] == '0' && (s[i+1] == 'x' || s[i+1] == 'X') {
 		base = 16
-		s = s[2:]
+		i += 2
+		places = 4 // 0xf normalizes to 0x0.fp+4
+		z.base2 = true
 	}
 
 	var dot, nonzero bool
@@ -104,8 +110,6 @@ mant:
 				break
 			}
 
-			fmt.Printf("%q, %q\n", s[:stop], s[:skip])
-
 			continue
 		case 'e', 'E':
 			if base == 10 {
@@ -121,14 +125,22 @@ mant:
 			return z, syntaxf("unrecognized rune: %c", r)
 		}
 
-		if d != 0 {
+		places := places
+		if !nonzero && d != 0 {
 			nonzero = true
+
+			if base == 16 {
+				// For the first nonzero digit in hex, we need places to be
+				// the bit length of the digit. This ensures that, for example,
+				// 0x1 has exponent 1, not 4.
+				places = bits.Len(uint(d))
+			}
 		}
 
 		if !dot && nonzero {
-			z.exp++
+			z.exp += int32(places)
 		} else if dot && !nonzero {
-			z.exp--
+			z.exp -= int32(places)
 		}
 
 		m := z.get()
@@ -148,7 +160,7 @@ mant:
 	}
 
 	if s[i] == 'p' || s[i] == 'P' {
-		z.binExp = true
+		z.base2 = true
 	}
 	i++
 
@@ -164,7 +176,7 @@ mant:
 		return z, nil
 	}
 
-	var expMag uint
+	var exp int
 	for ; i < len(s); i++ {
 		b := s[i]
 		if b == '_' {
@@ -177,18 +189,23 @@ mant:
 			return z, syntaxf("unrecognized rune: %c", r)
 		}
 
-		var extra uint
-		extra, expMag = bits.Mul(expMag, 10)
-		if extra != 0 {
-			return z, &parseError{err: strconv.ErrRange}
-		}
-		expMag, extra = bits.Add(expMag, uint(d), 0)
-		if extra != 0 {
-			return z, &parseError{err: strconv.ErrRange}
-		}
+		exp = bitsx.MulSaturate(exp, 10)
+		exp = bitsx.AddSaturate(exp, int(d))
 	}
 
-	z.exp += int(expMag) * expSign
+	exp *= expSign
+	exp = bitsx.AddSaturate(exp, int(z.exp))
+	if exp > math.MaxInt32 || exp < math.MinInt32 {
+		neg := z.neg
+		z.clear()
+		if exp > 0 {
+			z.inf = true
+		}
+		z.neg = neg
+		return z, &parseError{err: strconv.ErrRange}
+	}
+
+	z.exp = int32(exp)
 
 	return z, nil
 }

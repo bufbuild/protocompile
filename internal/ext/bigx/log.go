@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package bigx
 
 import (
@@ -5,13 +19,63 @@ import (
 	"math/big"
 )
 
-var tens = func() [64]big.Int {
-	var table [64]big.Int
-	for i := range table {
-		table[i].Exp(new(big.Int).SetInt64(10), new(big.Int).SetInt64(int64(i)), nil)
+var (
+	tens = func() [64]big.Int {
+		var table [64]big.Int
+		for i := range table {
+			table[i].Exp(new(big.Int).SetInt64(10), new(big.Int).SetInt64(int64(i)), nil)
+		}
+		return table
+	}()
+)
+
+// Scale2 returns z = x * 2^y.
+func Scale2(z, x []big.Word, y uint) []big.Word {
+	return Shl(z, x, y)
+}
+
+// Scale2Fp returns z = x * 2^y.
+func Scale2Fp(z *big.Float, x *big.Float, n int) *big.Float {
+	if z == nil {
+		z = new(big.Float)
 	}
-	return table
-}()
+	if n == 0 {
+		return z.Copy(x)
+	}
+
+	// Unfortunately this seems to be the least painful way to implement
+	// scalbn, despite the fact it aught to be a primitive...
+	pow2 := big.NewFloat(1)
+	pow2.SetMantExp(pow2, n)
+	return z.Mul(x, pow2)
+}
+
+// Scale10 returns z = x * 10^y.
+func Scale10(z, x []big.Word, y uint) []big.Word {
+	zb := new(big.Int).SetBits(z)
+	xb := new(big.Int).SetBits(x)
+
+	var t *big.Int
+	if int(y) < len(tens) {
+		t = &tens[y]
+	} else {
+		t, _ = scratch.Get().(*big.Int)
+		if t == nil {
+			t = new(big.Int)
+		}
+		defer func() {
+			t.SetInt64(0)
+			scratch.Put(t)
+		}()
+		t.Exp(
+			new(big.Int).SetInt64(10),
+			new(big.Int).SetInt64(int64(y)),
+			nil,
+		)
+	}
+
+	return zb.Mul(xb, t).Bits()
+}
 
 // Log2 returns floor(log2(z)).
 //
@@ -23,7 +87,7 @@ func Log2(z []big.Word) int {
 
 // Log10 returns floor(log10(z)).
 //
-// Runtime is O(log N * log log N).
+// Runtime is O(log N * log N).
 func Log10(z []big.Word) int {
 	bz := new(big.Int).SetBits(z)
 

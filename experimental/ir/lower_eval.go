@@ -30,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/decimal"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -878,7 +879,7 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	switch n := got.(type) {
 	case uint64:
 		v = n
-	case *big.Float:
+	case *decimal.Decimal:
 		// We assume that a big.Float is always larger than a uint64.
 		tooLarge = true
 	default:

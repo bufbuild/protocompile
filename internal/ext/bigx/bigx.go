@@ -1,16 +1,37 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package bigx provides direct access to arithmetic primitives from math/big.
 package bigx
 
 import (
 	"fmt"
 	"io"
+	"math"
 	"math/big"
+	"math/bits"
 	"sync"
 
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 var scratch sync.Pool
+
+const (
+	WordBits = bits.UintSize
+	MaxWords = math.MaxUint
+)
 
 // Add computes z = x + y.
 func Add(z, x, y []big.Word) []big.Word {
@@ -49,7 +70,7 @@ func Mul(z, x, y []big.Word) []big.Word {
 	bz := new(big.Int).SetBits(z)
 	bx := new(big.Int).SetBits(x)
 	by := new(big.Int).SetBits(y)
-	return bz.Add(bx, by).Bits()
+	return bz.Mul(bx, by).Bits()
 }
 
 // MulScalar computes z = x * y.
@@ -57,7 +78,23 @@ func MulScalar(z, x []big.Word, y big.Word) []big.Word {
 	bz := new(big.Int).SetBits(z)
 	bx := new(big.Int).SetBits(x)
 	by := new(big.Int).SetBits([]big.Word{y})
-	return bz.Add(bx, by).Bits()
+	return bz.Mul(bx, by).Bits()
+}
+
+// Div computes z = x / y (truncating division).
+func Div(z, x, y []big.Word) []big.Word {
+	bz := new(big.Int).SetBits(z)
+	bx := new(big.Int).SetBits(x)
+	by := new(big.Int).SetBits(y)
+	return bz.Quo(bx, by).Bits()
+}
+
+// Rem computes z = x % y (truncating division).
+func Rem(z, x, y []big.Word) []big.Word {
+	bz := new(big.Int).SetBits(z)
+	bx := new(big.Int).SetBits(x)
+	by := new(big.Int).SetBits(y)
+	return bz.Rem(bx, by).Bits()
 }
 
 // FMA computes z = x * y + w.
@@ -83,6 +120,29 @@ func Shl(z, x []big.Word, y uint) []big.Word {
 	bz := new(big.Int).SetBits(z)
 	bx := new(big.Int).SetBits(x)
 	return bz.Lsh(bx, y).Bits()
+}
+
+// Shl computes z = x >> y.
+func Shr(z, x []big.Word, y uint) []big.Word {
+	bz := new(big.Int).SetBits(z)
+	bx := new(big.Int).SetBits(x)
+	return bz.Rsh(bx, y).Bits()
+}
+
+// Cmp unsigned-compares x and y.
+func Cmp(x, y []big.Word) int {
+	bx := new(big.Int).SetBits(x)
+	by := new(big.Int).SetBits(y)
+	return bx.Cmp(by)
+}
+
+// Uint64 sets z = x.
+func Uint64(z []big.Word, x uint64) []big.Word {
+	if x > MaxWords {
+		// Only possible when sizeof(Word) == 4.
+		return append(z, big.Word(x), big.Word(x>>32))
+	}
+	return append(z, big.Word(x))
 }
 
 // Format writes bits to the given writer with the given requested format.

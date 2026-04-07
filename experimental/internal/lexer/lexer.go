@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/decimal"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
@@ -109,7 +110,8 @@ type lexer struct {
 	cursor, count int
 	braces        []token.ID
 	scratch       []byte
-	scratchFloat  *big.Float
+	scratchInt    big.Int
+	scratchDec    *decimal.Decimal
 
 	// Used for determining longest runs of unrecognized tokens.
 	badBytes int

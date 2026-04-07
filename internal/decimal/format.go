@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package decimal
 
 import (
@@ -14,17 +28,44 @@ import (
 var bufs sync.Pool
 
 // Format implements [fmt.Formatter].
+//
+//nolint:errcheck
 func (z *Decimal) Format(state fmt.State, verb rune) {
 	if z == nil {
 		fmt.Fprintf(state, "<nil>")
 		return
 	}
 
-	if z.binExp {
+	if verb == 'b' || z.inf {
+		switch {
+		case z.neg:
+			fmt.Fprint(state, "-")
+		case state.Flag('+'):
+			fmt.Fprint(state, "+")
+		}
+
+		if z.inf {
+			fmt.Fprint(state, "Infinity")
+			return
+		}
+
+		n, _ := bigx.Format(state, "%v", z.get())
+		e := 'e'
+		if z.base2 {
+			n = z.digits()
+			e = 'p'
+		}
+
+		fmt.Fprintf(state, "%c%+03d", e, int(z.exp)-n)
+		return
+	}
+
+	if z.base2 {
 		fmt.Fprintf(state, fmt.FormatString(state, verb), z.Float())
 		return
 	}
 
+	exp := int(z.exp)
 	prec, havePrec := state.Precision()
 	if !havePrec {
 		prec = -1
@@ -33,7 +74,7 @@ func (z *Decimal) Format(state fmt.State, verb rune) {
 	var scientific bool
 	switch verb {
 	case 'v', 'g', 'G':
-		exp := max(z.exp, z.exp-z.digits())
+		exp := max(exp, exp-z.digits())
 		scientific = exp <= -4 || (havePrec && exp > prec)
 	case 'e', 'E':
 		scientific = true
@@ -48,11 +89,11 @@ func (z *Decimal) Format(state fmt.State, verb rune) {
 	case 'b':
 		n, _ := bigx.Format(state, "%v", z.get())
 		e := 'e'
-		if z.binExp {
+		if z.base2 {
 			e = 'p'
 		}
 
-		fmt.Fprintf(state, "%c%+03d", e, z.exp-n)
+		fmt.Fprintf(state, "%c%+03d", e, exp-n)
 		return
 	default:
 		fmt.Fprintf(state, "%%%c<%T=%v>", verb, z, z)
@@ -95,7 +136,10 @@ func (z *Decimal) Format(state fmt.State, verb rune) {
 		//
 		// Note that for negative values, this means we need to insert leading
 		// zeros.
-		point := z.exp
+		point := exp
+		if z.base2 {
+			point = (point + 1) / 2
+		}
 		if scientific {
 			point = 1
 		}
@@ -137,6 +181,9 @@ func (z *Decimal) Format(state fmt.State, verb rune) {
 		}
 
 		exp := z.exp - 1
+		if z.base2 {
+			z.exp--
+		}
 		if z.IsZero() {
 			exp = 0
 		}

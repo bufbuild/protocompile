@@ -16,7 +16,7 @@ package unicodex
 
 var hexTable = func() [128]byte {
 	var table [128]byte
-	for d := range len(table) {
+	for d := range table {
 		d := byte(d)
 		var v byte
 		switch {
