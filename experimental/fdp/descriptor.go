@@ -22,7 +22,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
-// DescriptorProto generates a single [*descriptorpb.FileDescriptorProto] for the given [*ir.File].
+// DescriptorProto generates a single [*descriptorpb.FileDescriptorProto] for the given
+// [*ir.File].
 func DescriptorProto(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
 	var g generator
 	g.Apply(options...)
@@ -74,14 +75,14 @@ type descriptorOption func(*Options)
 // [DescriptorOption] instance for [descriptorOption].
 //
 // This lets us use arbitrary closures as a DescriptorOption. We use this in
-// [IncludeSourceCodeInfo], [GenerateExtraOptionLocations], and [ExcludeFiles]
+// [IncludeSourceCodeInfo], [GenerateExtraOptionLocations], and [ExcludeFiles].
 func (dopt descriptorOption) apply(o *Options) {
 	dopt(o)
 }
 
 // [DescriptorOption] instance for [Options].
 //
-// This allows us for example to pass a value of [Options] to [DescriptorProto]
+// This allows us for example to pass a value of [Options] to [DescriptorProto].
 func (o *Options) apply(that *Options) {
 	*that = *o
 }
