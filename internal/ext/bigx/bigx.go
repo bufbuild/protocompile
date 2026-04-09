@@ -146,12 +146,12 @@ func Uint64(z []big.Word) uint64 {
 	switch len(z) {
 	case 0:
 		return 0
+	case 1:
+		return uint64(z[0])
 	default:
 		if WordBits == 32 {
 			return uint64(z[0]) | (uint64(z[1]) << 32)
 		}
-		fallthrough
-	case 1:
 		return uint64(z[0])
 	}
 }

@@ -14,35 +14,18 @@
 
 package unicodex
 
-var hexTable = func() [128]byte {
-	var table [128]byte
-	for d := range table {
-		d := byte(d)
-		var v byte
-		switch {
-		case d >= '0' && d <= '9':
-			v = d - '0'
+import "github.com/bufbuild/protocompile/internal/ext/bitsx"
 
-		case d >= 'a' && d <= 'z':
-			v = d - 'a' + 10
+// ToASCIILower converts an ASCII byte to lowercase.
+func ToASCIILower(b byte) byte {
+	diff := byte('a' - 'A')
+	diff &= byte(bitsx.Mask(b >= 'A') & bitsx.Mask(b <= 'Z'))
+	return b + diff
+}
 
-		case d >= 'A' && d <= 'Z':
-			v = d - 'A' + 10
-
-		default:
-			v = 0xff
-		}
-
-		table[d] = v
-	}
-	return table
-}()
-
-// Digit parses a digit in the given base, up to base 36.
-func Digit(d rune, base byte) (value byte, ok bool) {
-	if d > 0x7f {
-		return 0xff, false
-	}
-	value = hexTable[d]
-	return value, value < base
+// ToASCIIUpper converts an ASCII byte to uppercase.
+func ToASCIIUpper(b byte) byte {
+	diff := byte('a' - 'A')
+	diff &= byte(bitsx.Mask(b >= 'a') & bitsx.Mask(b <= 'z'))
+	return b - diff
 }

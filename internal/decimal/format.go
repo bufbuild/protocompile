@@ -68,22 +68,22 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 	}
 
 	if !try(f.sign(w, z)) {
-		return
+		return total, err
 	}
 
 	if f.Repr || !z.IsFinite() {
 		switch {
 		case z.IsInf():
 			if !writeStr("Infinity") {
-				return
+				return total, err
 			}
 
 		case z.IsNaN():
 			if !writeStr("NaN") {
-				return
+				return total, err
 			}
 			if f.Extra && !try(fmt.Fprintf(w, "#%014x", z.NaN())) {
-				return
+				return total, err
 			}
 
 		default:
@@ -102,16 +102,16 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 			}
 
 			if !try(fmt.Fprintf(w, "%s%c%+03d", *buf, e, int(z.exp)-n)) {
-				return
+				return total, err
 			}
 		}
 
-		return
+		return total, err
 	}
 
 	if f.Hex {
 		if !writeStr("0x") {
-			return
+			return total, err
 		}
 	}
 
@@ -133,22 +133,22 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 	if z.IsZero() {
 		// Handling zero explicitly simplifies the logic below substantially.
 		if !writeStr("0") {
-			return
+			return total, err
 		}
 		if prec > 0 {
 			if !writeStr(".") {
-				return
+				return total, err
 			}
 			for range prec {
 				if !writeStr("0") {
-					return
+					return total, err
 				}
 			}
 		}
 		if f.Exp && !writeStr(e, "+00") {
-			return
+			return total, err
 		}
-		return
+		return total, err
 	}
 
 	buf, _ := bufs.Get().(*bytesx.Writer)
@@ -202,13 +202,11 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 
 	case z.base2() && f.Hex:
 		exp = int(z.exp) - 4
-		point = (int(exp)+3)/4 + 1
+		point = (exp+3)/4 + 1
 		*buf = bigx.Format(*buf, z.get(), 16)
 		if f.Upper {
 			// Correct all of the digits to be uppercase if needed.
-			for i := 0; i < len(*buf); i++ {
-				(*buf)[i] = byte(unicode.ToUpper(rune((*buf)[i])))
-			}
+			bytesx.MakeASCIIUpper(*buf)
 		}
 
 	case z.base2() && !f.Hex:
@@ -243,7 +241,7 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 		point = 1
 	} else if point > digits {
 		// If it's positive, we need to append zeros at the end.
-		buf.WriteString(strings.Repeat("0", point-digits))
+		_, _ = buf.WriteString(strings.Repeat("0", point-digits))
 	}
 	digits = len(*buf)
 
@@ -256,7 +254,7 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 
 		// If there aren't enough digits, append some.
 		for range prec - (digits - point) {
-			buf.WriteByte('0')
+			_ = buf.WriteByte('0')
 		}
 	}
 
@@ -270,7 +268,7 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 		fmt.Fprintf(buf, "%s%+03d", e, exp)
 	}
 
-	return
+	return total, err
 }
 
 func (f Formatter) sign(w io.Writer, z *Decimal) (int, error) {
@@ -286,7 +284,7 @@ func (f Formatter) sign(w io.Writer, z *Decimal) (int, error) {
 
 // Format implements [fmt.Formatter].
 //
-//nolint:errcheck
+
 func (z *Decimal) Format(state fmt.State, verb rune) {
 	prec, havePrec := state.Precision()
 	if !havePrec {
