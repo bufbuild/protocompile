@@ -114,6 +114,16 @@ func (f *File) AST() *ast.File {
 	return f.ast
 }
 
+// Lowered returns whether or not the file has completed lowering. If the builtins are
+// invalid (failed to resolve), then we bail out of the rest of the steps for lowering,
+// and the file is not considered lowered..
+func (f *File) Lowered() bool {
+	if f == nil {
+		return false
+	}
+	return f.builtins().valid
+}
+
 // Syntax returns the syntax pragma that applies to this file.
 func (f *File) Syntax() syntax.Syntax {
 	if f == nil {

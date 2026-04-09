@@ -34,8 +34,14 @@ import (
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
-func resolveNames(file *File, r *report.Report) {
+//
+// Returns whether or not lowering should continue for this file.
+func resolveNames(file *File, r *report.Report) bool {
 	resolveBuiltins(file)
+
+	if !file.builtins().valid && !file.IsDescriptorProto() {
+		return false
+	}
 
 	for ty := range seq.Values(file.AllTypes()) {
 		if ty.IsMessage() {
@@ -70,6 +76,7 @@ func resolveNames(file *File, r *report.Report) {
 			resolveMethodTypes(method, r)
 		}
 	}
+	return true
 }
 
 // resolveFieldType fully resolves the type of a field (extension or otherwise).

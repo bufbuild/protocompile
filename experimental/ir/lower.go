@@ -100,7 +100,10 @@ func lower(file *File, r *report.Report, importer Importer) {
 	mergeImportedSymbolTables(file, r)
 
 	// Perform "early" name resolution, i.e. field names and extension types.
-	resolveNames(file, r)
+	if !resolveNames(file, r) {
+		// An invalid descriptor.proto was found, stop lowering the file.
+		return
+	}
 	resolveEarlyOptions(file)
 
 	// Perform constant evaluation.

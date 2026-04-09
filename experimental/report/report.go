@@ -216,7 +216,7 @@ type icePanic struct {
 
 func (e *icePanic) Unwrap() error { return e.error }
 
-// AnnotatePanic will recover a panic and annotate it such that when [CatchICE]
+// AnnotateICE will recover a panic and annotate it such that when [CatchICE]
 // recovers it, it can extract this information and display it in the
 // diagnostic.
 func (r *Report) AnnotateICE(options ...DiagnosticOption) {
