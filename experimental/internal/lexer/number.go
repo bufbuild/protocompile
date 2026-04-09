@@ -197,7 +197,6 @@ func lexNumber(l *lexer) token.Token {
 		// ParseFloat itself says it "returns the nearest floating-point
 		// number rounded using IEEE754 unbiased rounding", which is just a
 		// weird, non-standard way to say "ties-to-even".
-		fmt.Println(digits)
 		switch {
 		case !meta.IsFloat && v.IsInt():
 			n := v.Int(&l.scratchInt)
