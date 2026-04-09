@@ -115,13 +115,14 @@ func (f *File) AST() *ast.File {
 }
 
 // Lowered returns whether or not the file has completed lowering. If the builtins are
-// invalid (failed to resolve), then we bail out of the rest of the steps for lowering,
-// and the file is not considered lowered..
+// invalid (failed to resolve from descriptor.proto), then we bail out of the rest of the
+// steps for lowering, other than for descriptor.proto itself, and the file is not
+// considered lowered.
 func (f *File) Lowered() bool {
 	if f == nil {
 		return false
 	}
-	return f.builtins().valid
+	return f.builtins().valid || f.IsDescriptorProto()
 }
 
 // Syntax returns the syntax pragma that applies to this file.
