@@ -157,6 +157,14 @@ mant:
 		i = skip
 	}
 
+	if base == 16 {
+		// Need to eliminate potential trailing zeros. For example, 0x2 will
+		// have a trailing zero.
+		m := z.get()
+		tz := bigx.TrailingZeros(m)
+		z.set(bigx.Shr(m, m, uint(tz)))
+	}
+
 	switch len(s) - i {
 	case 0:
 		return z, nil

@@ -33,10 +33,10 @@ func TestParse(t *testing.T) {
 
 	type m map[string]string
 	tests := []struct {
-		in                 string
-		invalid            bool
-		want, ints, floats m
-		u64s, f64s         m
+		in         string
+		invalid    bool
+		want, ints m
+		u64s, f64s m
 	}{
 		{
 			in: "0",
@@ -54,7 +54,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0",
 				"%+G": "+0",
 			},
-			floats: m{"%g": "0"},
+			f64s: m{"%g": "0"},
 		},
 
 		{
@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0",
 				"%+G": "+0",
 			},
-			floats: m{"%g": "0"},
+			f64s: m{"%g": "0"},
 		},
 
 		{
@@ -92,7 +92,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-0",
 				"%+G": "-0",
 			},
-			floats: m{"%g": "-0"},
+			f64s: m{"%g": "-0"},
 		},
 
 		{
@@ -111,7 +111,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-0",
 				"%+G": "-0",
 			},
-			floats: m{"%g": "-0"},
+			f64s: m{"%g": "-0"},
 		},
 
 		{
@@ -130,7 +130,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -149,7 +149,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -168,7 +168,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-1",
 				"%+G": "-1",
 			},
-			floats: m{"%g": "-1"},
+			f64s: m{"%g": "-1"},
 		},
 
 		{
@@ -187,7 +187,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-1",
 				"%+G": "-1",
 			},
-			floats: m{"%g": "-1"},
+			f64s: m{"%g": "-1"},
 		},
 
 		{
@@ -206,7 +206,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -225,7 +225,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -244,7 +244,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+42",
 				"%+G": "+42",
 			},
-			floats: m{"%g": "42"},
+			f64s: m{"%g": "42"},
 		},
 
 		{
@@ -263,7 +263,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+66",
 				"%+G": "+66",
 			},
-			floats: m{"%g": "66"},
+			f64s: m{"%g": "66"},
 		},
 
 		{
@@ -282,7 +282,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+100",
 				"%+G": "+100",
 			},
-			floats: m{"%g": "100"},
+			f64s: m{"%g": "100"},
 		},
 
 		{
@@ -301,7 +301,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+999999",
 				"%+G": "+999999",
 			},
-			floats: m{"%g": "999999"},
+			f64s: m{"%g": "999999"},
 		},
 
 		{
@@ -320,7 +320,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+12345678901234567890123456789012345678901234567890123456789012345678901234567890",
 				"%+G": "+12345678901234567890123456789012345678901234567890123456789012345678901234567890",
 			},
-			floats: m{"%g": "1.234567890123456789012345678901234567890123456789012345678901234567890123456789e+79"},
+			f64s: m{"%g": "1.2345678901234568e+79"},
 		},
 
 		{
@@ -339,14 +339,14 @@ func TestParse(t *testing.T) {
 				"%+g": "+0.1234567890123456789012345678901234567890123456789012345678901234567890123456789",
 				"%+G": "+0.1234567890123456789012345678901234567890123456789012345678901234567890123456789",
 			},
-			floats: m{"%g": "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789"},
+			f64s: m{"%g": "0.12345678901234568"},
 		},
 
 		{
 			in: "0xffffffffffffffffffffffffffffffff",
 			want: m{
-				"%g":    "340282366920938463463374607431768211455",
-				"%.32x": "0x1.fffffffffffffffffffffffffffffffep+127",
+				"%g": "340282366920938463463374607431768211455",
+				"%x": "0xffffffffffffffffffffffffffffffff",
 			},
 			ints: m{"%#x": "0xffffffffffffffffffffffffffffffff"},
 		},
@@ -367,7 +367,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0.1",
 				"%+G": "+0.1",
 			},
-			floats: m{"%g": "0.1"},
+			f64s: m{"%g": "0.1"},
 		},
 
 		{
@@ -386,7 +386,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0.5",
 				"%+G": "+0.5",
 			},
-			floats: m{"%g": "0.5"},
+			f64s: m{"%g": "0.5"},
 		},
 
 		{
@@ -405,7 +405,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1.5",
 				"%+G": "+1.5",
 			},
-			floats: m{"%g": "1.5"},
+			f64s: m{"%g": "1.5"},
 		},
 
 		{
@@ -424,7 +424,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-1.5",
 				"%+G": "-1.5",
 			},
-			floats: m{"%g": "-1.5"},
+			f64s: m{"%g": "-1.5"},
 		},
 
 		{
@@ -443,7 +443,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+3.14",
 				"%+G": "+3.14",
 			},
-			floats: m{"%g": "3.14"},
+			f64s: m{"%g": "3.14"},
 		},
 
 		{
@@ -462,7 +462,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+123.456",
 				"%+G": "+123.456",
 			},
-			floats: m{"%g": "123.456"},
+			f64s: m{"%g": "123.456"},
 		},
 
 		{
@@ -481,7 +481,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0.001",
 				"%+G": "+0.001",
 			},
-			floats: m{"%g": "0.001"},
+			f64s: m{"%g": "0.001"},
 		},
 
 		{
@@ -500,7 +500,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+0.0001",
 				"%+G": "+0.0001",
 			},
-			floats: m{"%g": "0.0001"},
+			f64s: m{"%g": "0.0001"},
 		},
 
 		{
@@ -519,7 +519,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1e-05",
 				"%+G": "+1E-05",
 			},
-			floats: m{"%g": "1e-05"},
+			f64s: m{"%g": "1e-05"},
 		},
 
 		{
@@ -538,7 +538,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1e-08",
 				"%+G": "+1E-08",
 			},
-			floats: m{"%g": "1e-08"},
+			f64s: m{"%g": "1e-08"},
 		},
 
 		{
@@ -557,7 +557,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -576,7 +576,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1",
 				"%+G": "+1",
 			},
-			floats: m{"%g": "1"},
+			f64s: m{"%g": "1"},
 		},
 
 		{
@@ -595,7 +595,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+100000",
 				"%+G": "+100000",
 			},
-			floats: m{"%g": "100000"},
+			f64s: m{"%g": "100000"},
 		},
 
 		{
@@ -614,7 +614,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+100000",
 				"%+G": "+100000",
 			},
-			floats: m{"%g": "100000"},
+			f64s: m{"%g": "100000"},
 		},
 
 		{
@@ -633,7 +633,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1e-05",
 				"%+G": "+1E-05",
 			},
-			floats: m{"%g": "1e-05"},
+			f64s: m{"%g": "1e-05"},
 		},
 
 		{
@@ -652,7 +652,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+2500",
 				"%+G": "+2500",
 			},
-			floats: m{"%g": "2500"},
+			f64s: m{"%g": "2500"},
 		},
 
 		{
@@ -671,7 +671,7 @@ func TestParse(t *testing.T) {
 				"%+g": "+1000.5",
 				"%+G": "+1000.5",
 			},
-			floats: m{"%g": "1000.5"},
+			f64s: m{"%g": "1000.5"},
 		},
 
 		// Negative fraction.
@@ -691,7 +691,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-0.5",
 				"%+G": "-0.5",
 			},
-			floats: m{"%g": "-0.5"},
+			f64s: m{"%g": "-0.5"},
 		},
 
 		// Negative with large magnitude and fraction.
@@ -711,7 +711,7 @@ func TestParse(t *testing.T) {
 				"%+g": "-123.456",
 				"%+G": "-123.456",
 			},
-			floats: m{"%g": "-123.456"},
+			f64s: m{"%g": "-123.456"},
 		},
 
 		// Scientific input with negative fractional mantissa.
@@ -731,22 +731,21 @@ func TestParse(t *testing.T) {
 				"%+g": "-0.0025",
 				"%+G": "-0.0025",
 			},
-			floats: m{"%g": "-0.0025"},
+			f64s: m{"%g": "-0.0025"},
 		},
 
 		{
-			in:     ".953e20",
-			want:   m{"%g": "95300000000000000000"},
-			floats: m{"%g": "9.53e+19"},
-			ints:   m{"%v": "95300000000000000000"},
+			in:   ".953e20",
+			want: m{"%g": "95300000000000000000"},
+			f64s: m{"%g": "9.53e+19"},
+			ints: m{"%v": "95300000000000000000"},
 		},
 
 		{
-			in:     "2.2250738585072014E-308",
-			want:   m{"%g": "2.2250738585072014e-308"},
-			floats: m{"%g": "2.2250738585072014e-308"},
-			ints:   m{"%v": "0"},
-			f64s:   m{"%g": "2.2250738585072014e-308"},
+			in:   "2.2250738585072014E-308",
+			want: m{"%g": "2.2250738585072014e-308"},
+			ints: m{"%v": "0"},
+			f64s: m{"%g": "2.2250738585072014e-308"},
 		},
 
 		// Invalid: empty input.
@@ -781,13 +780,6 @@ func TestParse(t *testing.T) {
 				t.Run("int/"+format, func(t *testing.T) {
 					t.Parallel()
 					assert.Equal(t, want, fmt.Sprintf(format, z.Int(nil)))
-				})
-			}
-
-			for format, want := range tt.floats {
-				t.Run("fp/"+format, func(t *testing.T) {
-					t.Parallel()
-					assert.Equal(t, want, fmt.Sprintf(format, z.float(nil)))
 				})
 			}
 
@@ -891,9 +883,9 @@ func TestSetFloat(t *testing.T) {
 		{in: -1.5, want: "-1.5"},
 		{in: 0.125, want: "0.125"},
 		{in: -0.125, want: "-0.125"},
-
-		{in: 1e100, want: "1.0000000000000000159e+100"},
-		{in: 0x1p100, want: "1.2676506002282294015e+30"},
+		{in: 0x42, want: "66"},
+		{in: 1e100, want: "10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104"},
+		{in: 0x1p100, want: "1267650600228229401496703205376"},
 	}
 
 	for _, tt := range tests {
@@ -901,6 +893,7 @@ func TestSetFloat(t *testing.T) {
 			t.Parallel()
 			z := new(Decimal).SetFloat64(tt.in)
 			t.Logf("%b", z)
+			t.Logf("%e", z)
 
 			assert.Equal(t, tt.want, fmt.Sprint(z))
 		})

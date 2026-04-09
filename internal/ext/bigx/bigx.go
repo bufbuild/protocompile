@@ -165,6 +165,11 @@ func SetUint64(z []big.Word, x uint64) []big.Word {
 	return append(z[:0], big.Word(x))
 }
 
+// TrailingZeros returns the number of trailing zeros in z.
+func TrailingZeros(z []big.Word) int {
+	return int(new(big.Int).SetBits(z).TrailingZeroBits())
+}
+
 // Format writes bits to the given writer with the given requested format.
 func Format(buf []byte, z []big.Word, base int) []byte {
 	return new(big.Int).SetBits(z).Append(buf, base)

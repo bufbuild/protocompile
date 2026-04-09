@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math"
 	"math/big"
 	"slices"
 	"strconv"
@@ -68,11 +67,11 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 		return true
 	}
 
-	if f.Repr || !z.IsFinite() {
-		if !try(f.sign(w, z)) {
-			return
-		}
+	if !try(f.sign(w, z)) {
+		return
+	}
 
+	if f.Repr || !z.IsFinite() {
 		switch {
 		case z.IsInf():
 			if !writeStr("Infinity") {
@@ -110,17 +109,25 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 		return
 	}
 
-	exp := int(z.exp)
+	if f.Hex {
+		if !writeStr("0x") {
+			return
+		}
+	}
+
 	prec := max(f.Precision, -1)
 	havePrec := f.Precision >= 0
 
-	e := "e"
-	if f.Upper {
+	var e string
+	switch {
+	case !f.Hex && !f.Upper:
+		e = "e"
+	case !f.Hex && f.Upper:
 		e = "E"
-	}
-
-	if !try(f.sign(w, z)) {
-		return
+	case f.Hex && !f.Upper:
+		e = "p"
+	case f.Hex && f.Upper:
+		e = "P"
 	}
 
 	if z.IsZero() {
@@ -152,68 +159,79 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 	}()
 
 	// Write out all the digits we have to work with in this base.
-	start := len(*buf)
-
+	//
 	// Four cases:
 	// 1. base 10 exp, base 10 output.
 	// 2. base 10 exp, base 16 output.
 	// 3. base 2 exp, base 10 output.
 	// 4. base 2 exp, base 16 output.
+	//
+	// When the bases are different, the easiest way to convert (right now)
+	// is to go through big.Float. Eventually it may be wise to (in base 10
+	// mode) to make the mantissa binary-coded decimal.
+	//
+	// Point is the number of digits before the decimal point.
+	//
+	// Note that for negative values, this means we need to insert leading
+	// zeros.
+	var exp, point int
 	switch {
 	case z.base10() && !f.Hex:
+		exp = int(z.exp) - 1
+		point = exp + 1
 		*buf = bigx.Format(*buf, z.get(), 10)
 
 	case z.base10() && f.Hex:
-		// Convert to float. It's best to take advantage of Go's existing
+		// Convert to f. It's best to take advantage of Go's existing
 		// implementation of formatting big floats.
-		float, _ := bigFloats.Get().(*big.Float)
-		float = z.float(float)
+		f, _ := bigFloats.Get().(*big.Float)
+		f = z.float(f)
+		*buf = f.Append(*buf, 'p', -1)
 
-		*buf = float.Append(*buf, 'p', -1)
+		// Retrieve and delete the exponent.
+		expIdx := bytes.LastIndexByte(*buf, 'p')
+		exp, _ = strconv.Atoi(unsafex.StringAlias((*buf)[:expIdx+1]))
+		point = exp + 1
 
-		// Delete the exponent.
-		idx := bytes.LastIndexByte(*buf, 'p')
-		*buf = (*buf)[:idx]
+		*buf = (*buf)[:expIdx]
 
 		// Delete the 0x. prefix.
-		*buf = slices.Delete(*buf, start, start+len("0x."))
+		*buf = slices.Delete(*buf, 0, len("0x."))
 
-		bigFloats.Put(float)
+		bigFloats.Put(f)
 
 	case z.base2() && f.Hex:
+		exp = int(z.exp) - 4
+		point = (int(exp)+3)/4 + 1
 		*buf = bigx.Format(*buf, z.get(), 16)
 		if f.Upper {
 			// Correct all of the digits to be uppercase if needed.
-			for i := start; i < len(*buf); i++ {
+			for i := 0; i < len(*buf); i++ {
 				(*buf)[i] = byte(unicode.ToUpper(rune((*buf)[i])))
 			}
 		}
 
 	case z.base2() && !f.Hex:
-		// Also convert to float here.
-		float, _ := bigFloats.Get().(*big.Float)
-		float = z.float(float)
+		// Also convert to f here.
+		f, _ := bigFloats.Get().(*big.Float)
+		f = z.float(f)
+		*buf = f.Append(*buf, 'f', -1)
 
-		*buf = float.Append(*buf, 'f', -1)
+		// Delete the decimal dot and retrieve its position.
+		point = bytes.IndexByte(*buf, '.')
+		if point != -1 {
+			*buf = slices.Delete(*buf, point, point+1)
+		} else {
+			point = len(*buf)
+		}
+		exp = point - 1
 
-		// Delete the decimal dot.
-		idx := bytes.LastIndexByte(*buf, '.')
-		*buf = slices.Delete(*buf, idx, idx+1)
-
-		bigFloats.Put(float)
+		bigFloats.Put(f)
 	default:
 		panic("unreachable")
 	}
-	digits := len(*buf) - start
 
-	// Point is the number of digits before the decimal point.
-	//
-	// Note that for negative values, this means we need to insert leading
-	// zeros.
-	point := exp
-	if z.base2() {
-		point = (point + 1) / 2
-	}
+	digits := len(*buf)
 	if f.Exp {
 		point = 1
 	}
@@ -221,19 +239,19 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 	// If point is negative, we need to insert that many leading zeros, plus
 	// a zero before the decimal point.
 	if point <= 0 {
-		buf.InsertString(start, strings.Repeat("0", 1-point))
+		buf.InsertString(0, strings.Repeat("0", 1-point))
 		point = 1
 	} else if point > digits {
 		// If it's positive, we need to append zeros at the end.
 		buf.WriteString(strings.Repeat("0", point-digits))
 	}
-	digits = len(*buf) - start
+	digits = len(*buf)
 
 	// Now we need to discard extra digits, or add extra digits if necessary.
 	if havePrec {
 		if prec+1 < digits-point {
 			// TODO: rounding!
-			*buf = (*buf)[:start+prec+1]
+			*buf = (*buf)[:prec+1]
 		}
 
 		// If there aren't enough digits, append some.
@@ -243,19 +261,12 @@ func (f Formatter) Format(w io.Writer, z *Decimal) (total int, err error) {
 	}
 
 	// If prec == 0, we don't include a decimal point.
-	if n := start + max(1, point); n < len(*buf) {
+	if n := max(1, point); n < len(*buf) {
 		*buf = slices.Insert(*buf, n, '.')
 	}
 
+	// Print the exponent: we're done!
 	if f.Exp {
-		exp := z.exp - 1
-		if z.base2() {
-			z.exp--
-		}
-		if z.IsZero() {
-			exp = 0
-		}
-		// Print the exponent: we're done!
 		fmt.Fprintf(buf, "%s%+03d", e, exp)
 	}
 
@@ -271,59 +282,6 @@ func (f Formatter) sign(w io.Writer, z *Decimal) (int, error) {
 	default:
 		return 0, nil
 	}
-}
-
-// formatString writes an appropriate format string to b.
-func (f Formatter) formatString(z *Decimal, b []byte) string {
-	b = append(b, '%')
-
-	if f.Plus {
-		b = append(b, '+')
-	}
-	if f.Extra {
-		b = append(b, '#')
-	}
-
-	prec := f.Precision
-	if prec < 0 {
-		prec = max(0, int(z.exp))
-		fmt.Println(z.get(), z.digits(), z.exp, prec)
-		if f.Hex {
-			prec = (prec + 1) / 2
-		} else if z.base2() && z.exp < 0 {
-			prec = int(float64(prec)*(math.Ln2/math.Ln10) + 1)
-		}
-	}
-	b = append(b, '.')
-	b = strconv.AppendInt(b, int64(prec), 10)
-
-	var c byte
-	switch {
-	case f.Hex:
-		if f.Upper {
-			c = 'X'
-		} else {
-			c = 'x'
-		}
-	case f.Exp:
-		if f.Upper {
-			c = 'E'
-		} else {
-			c = 'e'
-		}
-	default:
-		if f.Upper {
-			c = 'F'
-		} else {
-			c = 'f'
-		}
-	}
-
-	b = append(b, c)
-
-	s := unsafex.StringAlias(b)
-	fmt.Println(f, s)
-	return s
 }
 
 // Format implements [fmt.Formatter].

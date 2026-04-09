@@ -87,7 +87,6 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		w := w[0]
 		v = float64(w)
 		exact = w < maxMant64
-		fmt.Println(v)
 
 		// No exponent, so we're done.
 		exp := int(z.exp) - z.digits()
@@ -176,7 +175,6 @@ func (z *Decimal) SetFloat64(x float64) *Decimal {
 	z.set(bigx.SetUint64(z.get(), w))
 	z.exp = int32(exp)
 	z.flags |= base2
-	fmt.Println(z.get(), z.exp)
 
 	return z
 }
@@ -184,6 +182,8 @@ func (z *Decimal) SetFloat64(x float64) *Decimal {
 // float calculates the closest floating-point value to this decimal.
 // This is not public API; it exists only to simplify float formatting, and
 // will hopefully be removed eventually.
+//
+// Does not handle non-finite or negative values.
 func (z *Decimal) float(x *big.Float) *big.Float {
 	if x == nil {
 		x = new(big.Float)
@@ -195,20 +195,16 @@ func (z *Decimal) float(x *big.Float) *big.Float {
 	}
 
 	digits := int(z.exp) - z.digits()
+	x.SetPrec(0)
 	x.SetInt(new(big.Int).SetBits(z.get()))
+	x.SetPrec(uint(max(z.exp, -z.exp, int32(x.Prec())))) // Squeeze as much precision as possible out.
 	x.SetMantExp(x, digits)
-	if z.Negative() {
-		x.Mul(x, new(big.Float).SetInt64(-1))
-	}
 
 	// Essentially, we need to multiply z.mant by 5^z.exp to correct the
 	// exponent. Currently, f is set to mant * 2^exp, and to have its value be
 	// mant * 10^exp, it has to be multiplied by 5^z.exp.
 	if z.base10() && digits != 0 {
-		abs := digits
-		if abs < 0 {
-			abs = -abs
-		}
+		abs := max(digits, -digits)
 
 		bits, ok := slicesx.Get(fives[:], abs)
 		pow5 := new(big.Int).SetBits(bits)
@@ -219,6 +215,8 @@ func (z *Decimal) float(x *big.Float) *big.Float {
 		scale := new(big.Float)
 		scale.SetPrec(scale.Prec() + uint(pow5.BitLen()) + 2)
 		scale.SetInt(pow5)
+
+		x.SetPrec(max(x.Prec(), scale.Prec(), uint(z.exp)))
 		if digits > 0 {
 			x.Mul(x, scale)
 		} else {
