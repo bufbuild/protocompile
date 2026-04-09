@@ -28,7 +28,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
-// IsInt returns whether this value is representable as a base 2 float.
+// IsFloat returns whether this value is representable as a base 2 float.
 func (z *Decimal) IsFloat() bool {
 	if z.base2() || len(z.get()) == 0 {
 		return true
@@ -54,12 +54,9 @@ func (z *Decimal) IsFloat() bool {
 	// dividing by 5^4 = 625.
 
 	// Calculate the factor of 5 that must be in the mantissa.
-	var pow5 []big.Word
-	if -exp < len(fives) {
-		pow5 = fives[-exp]
-	} else {
-		five := new(big.Int).SetUint64(5)
-		pow5 = five.Exp(five, new(big.Int).SetUint64(uint64(-exp)), nil).Bits()
+	pow5, ok := slicesx.Get(fives[:], -exp)
+	if !ok {
+		pow5 = new(big.Int).Exp(big.NewInt(5), big.NewInt(int64(-exp)), nil).Bits()
 	}
 
 	// Check to see if we have a chance of successful division. For nonzero

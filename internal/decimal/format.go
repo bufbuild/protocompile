@@ -310,7 +310,7 @@ func (z *Decimal) Format(state fmt.State, verb rune) {
 		fallthrough
 	case 'f', 'F':
 		if !havePrec {
-			f.Precision = 6
+			f.Precision = 6 // Match package fmt.
 		}
 	case 'x', 'X':
 		f.Hex = true

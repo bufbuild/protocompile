@@ -756,6 +756,9 @@ func TestParse(t *testing.T) {
 		{in: "1.2.3", invalid: true},
 		// Invalid: exponent with no digits.
 		{in: "1e", invalid: true},
+		// Mixing bases: e is ambiguous here, and when we get to the + we see
+		// an error. 0x0.fe4 is valid, because e is a hex digit.
+		{in: "0x0.fe+4", invalid: true},
 	}
 
 	for _, tt := range tests {
