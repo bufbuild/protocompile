@@ -515,8 +515,7 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 			m := v.AsMessage()
 
 			var k int
-			var group bool // TODO: v.Field().IsGroup()
-			if group {
+			if v.Field().IsGroup() {
 				buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.StartGroupType)
 				buf, k = m.marshal(buf, r, ranges)
 				buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.EndGroupType)

@@ -209,10 +209,10 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 
 	var extnIndex int32
 	for extend := range seq.Values(ty.Extends()) {
-		g.debug.comments(extend.AST(), tags.File_Extension)
+		g.debug.comments(extend.AST(), tags.Message_Extension)
 
 		for extn := range seq.Values(extend.Extensions()) {
-			g.debug.in(tags.File_Extension, extnIndex)(func() {
+			g.debug.in(tags.Message_Extension, extnIndex)(func() {
 				g.field(extn, slicesx.PushNew(&mdp.Extension))
 			})
 			extnIndex++
@@ -303,7 +303,6 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 			}
 
 			fdp := mdp.Field[i]
-			fdp.Proto3Optional = addr(true)
 			fdp.OneofIndex = addr(int32(len(mdp.OneofDecl)))
 			slicesx.PushNew(&mdp.OneofDecl).Name = addr(oneof)
 		}
@@ -339,9 +338,14 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 	fdp.Number = addr(f.Number())
 	g.debug.span(ast.Tag, tags.Field_Number)
 
-	switch f.Presence() {
+	switch label := f.Presence(); label {
 	case presence.Explicit, presence.Implicit, presence.Shared:
 		fdp.Label = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
+		if label == presence.Explicit && g.currentFile.Syntax() == syntax.Proto3 {
+			// For proto3, if the presence is set explicitly with "optional", we need to set
+			// "proto3_optional" field to true.
+			fdp.Proto3Optional = addr(true)
+		}
 	case presence.Repeated:
 		fdp.Label = descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum()
 	case presence.Required:

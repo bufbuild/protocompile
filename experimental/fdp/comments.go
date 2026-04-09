@@ -228,9 +228,9 @@ func (ct *commentTracker) handleNonSkippableToken(t token.Token) {
 			donate = true
 		case slicesx.Among(
 			t.Text(),
-			keyword.LParen.String(),
-			keyword.LBracket.String(),
-			keyword.LBrace.String(),
+			keyword.RParen.String(),
+			keyword.RBracket.String(),
+			keyword.RBrace.String(),
 		):
 			donate = true
 		case ct.cursor.NewLinesBetween(ct.tracked[0][len(ct.tracked[0])-1], t, 2) > 1:
