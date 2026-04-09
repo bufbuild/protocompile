@@ -37,9 +37,8 @@ import (
 //
 // Returns whether or not lowering should continue for this file.
 func resolveNames(file *File, r *report.Report) bool {
-	resolveBuiltins(file)
-
-	if !file.builtins().valid && !file.IsDescriptorProto() {
+	// If the resolved builtins are invalid, then we only continue lowering for descriptor.proto.
+	if !resolveBuiltins(file) && !file.IsDescriptorProto() {
 		return false
 	}
 

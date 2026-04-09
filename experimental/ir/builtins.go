@@ -194,9 +194,11 @@ type builtinIDs struct {
 	MethodFeatures    intern.ID `intern:"google.protobuf.MethodOptions.features"`
 }
 
-func resolveBuiltins(file *File) {
+// resolveBuiltins resolves the symbols from descriptor.proto and returns whether the
+// builtins resolved are valid.
+func resolveBuiltins(file *File) bool {
 	if !file.IsDescriptorProto() {
-		return
+		return file.builtins().valid
 	}
 
 	// If adding a new kind of symbol to resolve, add it to this map.
@@ -249,10 +251,11 @@ func resolveBuiltins(file *File) {
 			// was provided by the compiler or vendored in from a third-party source. Ideally,
 			// we would crash if the compiler is misbehaving.
 			file.dpBuiltins.valid = false
-			return
+		} else {
+			kind.wrap(sym.Raw().data, field)
 		}
-		kind.wrap(sym.Raw().data, field)
 	}
+	return file.dpBuiltins.valid
 }
 
 // makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
