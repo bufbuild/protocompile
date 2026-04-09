@@ -225,7 +225,7 @@ func resolveBuiltins(file *File) {
 			}
 		}
 
-		ref := file.exported.lookup(file, id)
+		ref := file.exported.lookup(id)
 		sym := GetRef(file, ref)
 		if sym.IsZero() && optional {
 			continue

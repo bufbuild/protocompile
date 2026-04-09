@@ -358,7 +358,7 @@ func (s symtab) sort(file *File) {
 }
 
 // lookupBytes looks up a symbol with the given fully-qualified name.
-func (s symtab) lookup(file *File, fqn intern.ID) Ref[Symbol] {
+func (s symtab) lookup(fqn intern.ID) Ref[Symbol] {
 	idx, ok := slicesx.BinarySearchKey(s, fqn, func(r symbol) intern.ID {
 		return r.fqn
 	})

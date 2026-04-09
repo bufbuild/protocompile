@@ -276,7 +276,7 @@ func (r symbolRef) resolve() Symbol {
 	switch {
 	case r.name.Absolute():
 		if id, ok := r.session.intern.Query(string(r.name.ToRelative())); ok {
-			found = r.imported.lookup(r.File, id)
+			found = r.imported.lookup(id)
 		}
 	case r.allowScalars:
 		// TODO: if symbol resolution would provide a different answer for
