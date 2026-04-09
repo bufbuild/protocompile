@@ -20,12 +20,16 @@ package decimal
 import (
 	"math"
 	"math/big"
-	"runtime"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/bigx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
+)
+
+const (
+	mantBits64 = 52 // Mantissa bits in a binary64.
+	mantMask64 = 1<<mantBits64 - 1
+	maxMant64  = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
 )
 
 var (
@@ -44,7 +48,23 @@ var (
 	}()
 )
 
-// Decimal is an arbitrary-precision numeric type capable of representing values.
+// flags is various flags set on a [Decimal].
+type flags uint32
+
+const (
+	sign  flags = 0b01 // Sign bit: is this value negative?
+	base2 flags = 0b10 // Is the exponent in base 2?
+
+	inf       flags = 0b01_00 // Is this value an infinity?
+	nan       flags = 0b10_00 // Is this value a NaN? If so, the payload lives in get()[0].
+	nonfinite flags = 0b11_00 // Mask for checking whether a value is nonfinite.
+)
+
+// Decimal is an arbitrary-precision numeric type capable of representing any
+// rational number with a power of 10 denominator, up to memory limits.
+//
+// Decimal also has special sentinel values for signed infinity, and
+// distinguishes 0 and -0, much like IEEE 754 floats.
 type Decimal struct {
 	_ unsafex.NoCopy
 
@@ -61,11 +81,7 @@ type Decimal struct {
 	}
 
 	exp   int32
-	neg   bool
-	base2 bool
-	inf   bool
-
-	float atomic.Pointer[big.Float]
+	flags flags
 }
 
 // IsZero returns whether this value is 0.0 or -0.0.
@@ -73,18 +89,49 @@ func (z *Decimal) IsZero() bool {
 	return len(z.get()) == 0
 }
 
-// Clear resets this decimal value to zero.
-func (z *Decimal) Clear() {
-	z.lockFloat(false)
-	defer z.float.Store(nil)
-	z.clear()
+// IsFinite returns whether this value is finite.
+func (z *Decimal) IsFinite() bool {
+	return z.flags&nonfinite == 0
 }
 
-func (z *Decimal) clear() {
+// IsFinite returns whether this value is an infinity.
+func (z *Decimal) IsInf() bool {
+	return z.flags&inf != 0
+}
+
+// IsFinite returns whether this value is a NaN.
+func (z *Decimal) IsNaN() bool {
+	return z.flags&nan != 0
+}
+
+// NaN returns the NaN payload within this value, or -1 if it is
+// not a NaN.
+func (z *Decimal) NaN() int64 {
+	if !z.IsNaN() {
+		return -1
+	}
+	return int64(bigx.Uint64(z.get())) & mantMask64
+}
+
+// Negative returns whether this value's sign bit is set.
+func (z *Decimal) Negative() bool {
+	return z.flags&sign != 0
+}
+
+// SetNegative sets whether this value's sign bit is set.
+func (z *Decimal) SetNegative(neg bool) *Decimal {
+	if neg {
+		z.flags |= sign
+	} else {
+		z.flags &^= sign
+	}
+	return z
+}
+
+// Clear resets this decimal value to zero.
+func (z *Decimal) Clear() {
 	z.exp = 0
-	z.base2 = false
-	z.neg = false
-	z.inf = false
+	z.flags = 0
 
 	if z.raw.data == nil {
 		z.raw.data = &z.raw.small[0]
@@ -96,12 +143,27 @@ func (z *Decimal) clear() {
 
 // SetInf sets z to +Infinity or -Infinity.
 func (z *Decimal) SetInf(neg bool) *Decimal {
-	z.lockFloat(false)
-	defer z.float.Store(nil)
-	z.clear()
+	z.Clear()
+	z.flags |= inf
+	if neg {
+		z.flags |= sign
+	}
+	return z
+}
 
-	z.inf = true
-	z.neg = neg
+// SetNaN sets this value to a quiet NaN with zero payload.
+func (z *Decimal) SetNaN(neg bool) *Decimal {
+	return z.SetNaNPayload(neg, 0)
+}
+
+// SetNaN sets this value to a NaN with arbitrary payload.
+func (z *Decimal) SetNaNPayload(neg bool, payload uint64) *Decimal {
+	z.Clear()
+	z.flags |= nan
+	if neg {
+		z.flags |= sign
+	}
+	z.set(bigx.SetUint64(z.get(), payload&mantBits64))
 	return z
 }
 
@@ -122,7 +184,7 @@ func (z *Decimal) Int(x *big.Int) *big.Int {
 	}
 
 	w := x.Bits()
-	if z.base2 {
+	if z.base2() {
 		w = bigx.Scale2(w, z.get(), uint(n))
 	} else {
 		w = bigx.Scale10(w, z.get(), uint(n))
@@ -140,7 +202,7 @@ func (z *Decimal) SetInt(x *big.Int) *Decimal {
 func (z *Decimal) SetUint64(x uint64) *Decimal {
 	// Doing it this way gives us a good shot to get this slice to allocate
 	// on the stack.
-	xb := new(big.Int).SetBits(bigx.Uint64(make([]big.Word, 0, 2), x))
+	xb := new(big.Int).SetBits(bigx.SetUint64(make([]big.Word, 0, 2), x))
 	return z.setInt(xb, false)
 }
 
@@ -151,22 +213,22 @@ func (z *Decimal) ReuseInt(x *big.Int) *Decimal {
 }
 
 func (z *Decimal) setInt(x *big.Int, reuse bool) *Decimal {
-	z.lockFloat(false)
-	defer z.float.Store(nil)
-	z.clear()
+	z.Clear()
 
-	z.neg = x.Sign() < 0
+	if x.Sign() < 0 {
+		z.flags |= sign
+	}
 
 	exp := x.BitLen()
 	if exp > math.MaxInt32 || exp < math.MinInt32 {
-		z.inf = true
+		z.flags |= inf
 		return z
 	}
 
 	// Because this is an integer, we can use a power of 2 exponent.
 	// This simplifies the task of calculating an exponent, punting the
 	// "convert to base 10" problem to later, if necessary at all.
-	z.base2 = true
+	z.flags |= base2
 
 	w := x.Bits()
 	if !reuse || cap(w) < cap(z.get()) {
@@ -181,132 +243,6 @@ func (z *Decimal) setInt(x *big.Int, reuse bool) *Decimal {
 	// << implied by the 2^e.
 	z.set(bigx.Shr(w, w, x.TrailingZeroBits()))
 	z.exp = int32(exp)
-
-	return z
-}
-
-// IsInt returns whether this value is representable as a base 2 float.
-func (z *Decimal) IsFloat() bool {
-	if z.base2 || len(z.get()) == 0 {
-		return true
-	}
-
-	// Calculate the exponent for an integer mantissa.
-	exp := int(z.exp) - z.digits()
-	if exp >= 0 {
-		// Positive exponents are always representable; just multiply by an
-		// appropriate power of 5.
-		return true
-	}
-
-	// Need to check that the mantissa is divisible by an appropriate power of
-	// 5. When converting to a float, we are looking for a number k such that
-	// m * 10^e = k * 2^e. Then we must have that k = 5^e * m. If e is negative,
-	// m must contain that factor of 5 within it so that dividing by it produces
-	// no remainder.
-	//
-	// For example, consider 18.1875. This is a valid float, because it's equal
-	// to 291 / 16. As a decimal, its representation is 0.181875e+07, or
-	// 181875e-4. As a float, the equivalent form is 291p-4, obtained by
-	// dividing by 5^4 = 625.
-	//
-	// Now consider a very small exponent resulting in leading zero, say
-	// 0.0009765625 equal to 9765625e-10, or 1p-10. We need to divide by
-	// 5^10=1.024e+13. But this division can't work, because the exponent is
-	// huge.
-
-	// Calculate the factor of 5 that must be in the mantissa.
-	var pow5 []big.Word
-	if -exp < len(fives) {
-		pow5 = fives[-exp]
-	} else {
-		five := new(big.Int).SetUint64(5)
-		pow5 = five.Exp(five, new(big.Int).SetUint64(uint64(-exp)), nil).Bits()
-	}
-
-	if bigx.Cmp(z.get(), pow5) < 0 {
-		return false
-	}
-
-	// Perform the very slow division and hope that everything cancels out.
-	rem := bigx.Rem(nil, z.get(), pow5)
-	return len(rem) == 0
-}
-
-// Float calculates the closest floating-point value to this decimal.
-func (z *Decimal) Float() *big.Float {
-	f := z.lockFloat(true)
-	if f != nil {
-		return f
-	}
-
-	f = new(big.Float)
-	defer z.float.Store(f)
-
-	if z.inf {
-		f.SetInf(z.neg)
-		return f
-	}
-
-	digits := int(z.exp) - z.digits()
-	f.SetInt(new(big.Int).SetBits(z.get()))
-	f.SetMantExp(f, digits)
-	if z.neg {
-		f.Mul(f, new(big.Float).SetInt64(-1))
-	}
-
-	// Essentially, we need to multiply z.mant by 5^z.exp to correct the
-	// exponent. Currently, f is set to mant * 2^exp, and to have its value be
-	// mant * 10^exp, it has to be multiplied by 5^z.exp.
-	if !z.base2 && digits != 0 {
-		abs := digits
-		if abs < 0 {
-			abs = -abs
-		}
-
-		var pow5 *big.Int
-		if abs < len(fives) {
-			pow5 = new(big.Int).SetBits(fives[abs])
-		} else {
-			pow5 = new(big.Int).SetUint64(5)
-			pow5 = pow5.Exp(pow5, new(big.Int).SetUint64(uint64(abs)), nil)
-		}
-
-		scale := new(big.Float)
-		scale.SetPrec(scale.Prec() + uint(pow5.BitLen()) + 1)
-		scale.SetInt(pow5)
-		if digits > 0 {
-			f.Mul(f, scale)
-		} else {
-			f.Quo(f, scale)
-		}
-	}
-
-	return f
-}
-
-// SetInt sets this decimal's value to x.
-func (z *Decimal) SetFloat64(x float64) *Decimal {
-	f := z.lockFloat(false)
-	if f != nil {
-		f = big.NewFloat(x)
-	}
-	defer z.float.Store(f)
-	z.clear()
-
-	z.neg = math.Signbit(x)
-	if x == 0 {
-		return z
-	}
-	if math.IsInf(x, 0) {
-		z.inf = true
-		return z
-	}
-
-	mant, exp := math.Frexp(x)
-	z.set(bigx.Uint64(z.get(), 1<<63|math.Float64bits(mant)<<11))
-	z.exp = int32(exp)
-	z.base2 = true
 
 	return z
 }
@@ -350,31 +286,15 @@ func (z *Decimal) set(mant []big.Word) {
 }
 
 // digits returns the number of digits in the mantissa in the given base.
+//
+// z.exp - z.digits() gives the value e such that z is n * b^e, where n is an
+// integer and b is the base.
 func (z *Decimal) digits() int {
-	if z.base2 {
+	if z.base2() {
 		return bigx.Log2(z.get()) + 1
 	}
 	return bigx.Log10(z.get()) + 1
 }
 
-var locked big.Float
-
-// lockFloat locks z.float and returns the current value. To unlock, simply
-// store to z.float.
-//
-// If lockIfNil is true, only locks if z.float is nil.
-func (z *Decimal) lockFloat(lockIfNil bool) *big.Float {
-again:
-	f := z.float.Load()
-	if f == &locked {
-		runtime.Gosched()
-		goto again
-	}
-	if lockIfNil && f != nil {
-		return f
-	}
-	if !z.float.CompareAndSwap(f, &locked) {
-		goto again
-	}
-	return f
-}
+func (z *Decimal) base2() bool  { return z.flags&base2 != 0 }
+func (z *Decimal) base10() bool { return z.flags&base2 == 0 }

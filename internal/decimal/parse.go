@@ -40,18 +40,13 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 	if s == "" {
 		return z, syntaxf("empty input")
 	}
-	if z == nil {
-		z = new(Decimal)
-	}
 
-	z.lockFloat(true)
-	defer z.float.Store(nil)
-	z.clear()
+	z.Clear()
 
 	i := 0
 	switch s[0] {
 	case '-':
-		z.neg = true
+		z.SetNegative(true)
 		fallthrough
 	case '+':
 		i++
@@ -63,9 +58,17 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 		base = 16
 		i += 2
 		places = 4 // 0xf normalizes to 0x0.fp+4
-		z.base2 = true
+		z.flags |= base2
 	}
 
+	// Consume the mantissa. There's three different kinds of mantissas:
+	// dddd0000, ddd.ddddd000 or 0.000dddd. In the former cases, we don't care
+	// about the trailing zeros in the mantissa, because both normalize to
+	// d.ddddd, where the trailing zeros get eliminated. In the latter, we
+	// *also* do not care about leading zeros, because we normalize to d.ddddd.
+	// In all cases, leading/trailing zeros come from the exponent. However, in
+	// case 1, we do need to record the contribution of those zeros to the
+	// exponent.
 	var dot, nonzero bool
 	stop := len(s)
 	skip := 0
@@ -111,6 +114,8 @@ mant:
 			}
 
 			continue
+
+			// If we spot an exponent we're done with the mantissa.
 		case 'e', 'E':
 			if base == 10 {
 				break mant
@@ -160,7 +165,7 @@ mant:
 	}
 
 	if s[i] == 'p' || s[i] == 'P' {
-		z.base2 = true
+		z.flags |= base2
 	}
 	i++
 
@@ -189,6 +194,7 @@ mant:
 			return z, syntaxf("unrecognized rune: %c", r)
 		}
 
+		// If the exponent overflows, we snap to an appropriate infinity.
 		exp = bitsx.MulSaturate(exp, 10)
 		exp = bitsx.AddSaturate(exp, int(d))
 	}
@@ -196,12 +202,12 @@ mant:
 	exp *= expSign
 	exp = bitsx.AddSaturate(exp, int(z.exp))
 	if exp > math.MaxInt32 || exp < math.MinInt32 {
-		neg := z.neg
-		z.clear()
+		neg := z.flags & sign
+		z.Clear()
 		if exp > 0 {
-			z.inf = true
+			z.flags |= inf
 		}
-		z.neg = neg
+		z.flags |= neg
 		return z, &parseError{err: strconv.ErrRange}
 	}
 

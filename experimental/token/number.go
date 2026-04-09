@@ -16,7 +16,6 @@ package token
 
 import (
 	"math"
-	"math/big"
 	"strconv"
 	"strings"
 
@@ -175,8 +174,7 @@ func (n NumberToken) Float() (v float64, exact bool) {
 
 	switch {
 	case n.Raw().Big != nil:
-		v, acc := n.Raw().Big.Float().Float64()
-		return v, acc == big.Exact
+		return n.Raw().Big.Float64()
 	case n.Raw().IsFloat:
 		f := math.Float64frombits(n.Raw().Word)
 		return f, true

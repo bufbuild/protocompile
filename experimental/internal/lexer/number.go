@@ -17,7 +17,6 @@ package lexer
 import (
 	"fmt"
 	"math"
-	"math/big"
 	"regexp"
 	"strings"
 	"unicode"
@@ -207,9 +206,8 @@ func lexNumber(l *lexer) token.Token {
 				return tok
 			}
 		case v.IsFloat():
-			f, acc := v.Float().Float64()
-			fmt.Println(digits, f)
-			if acc == big.Exact {
+
+			if f, exact := v.Float64(); exact {
 				meta.Word = math.Float64bits(f)
 				return tok
 			}

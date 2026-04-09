@@ -16,14 +16,10 @@
 package bigx
 
 import (
-	"fmt"
-	"io"
 	"math"
 	"math/big"
 	"math/bits"
 	"sync"
-
-	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 var scratch sync.Pool
@@ -129,6 +125,15 @@ func Shr(z, x []big.Word, y uint) []big.Word {
 	return bz.Rsh(bx, y).Bits()
 }
 
+// MSBs sets z to the n highest bits of x.
+func MSBs(z, x []big.Word, n uint) []big.Word {
+	bz := new(big.Int).SetBits(z)
+	bx := new(big.Int).SetBits(x)
+
+	shift := max(0, bx.BitLen()-int(n))
+	return bz.Rsh(bx, uint(shift)).Bits()
+}
+
 // Cmp unsigned-compares x and y.
 func Cmp(x, y []big.Word) int {
 	bx := new(big.Int).SetBits(x)
@@ -136,22 +141,31 @@ func Cmp(x, y []big.Word) int {
 	return bx.Cmp(by)
 }
 
-// Uint64 sets z = x.
-func Uint64(z []big.Word, x uint64) []big.Word {
+// Uint64 returns the low 64 bits of z.
+func Uint64(z []big.Word) uint64 {
+	switch len(z) {
+	case 0:
+		return 0
+	default:
+		if WordBits == 32 {
+			return uint64(z[0]) | (uint64(z[1]) << 32)
+		}
+		fallthrough
+	case 1:
+		return uint64(z[0])
+	}
+}
+
+// SetUint64 sets z = x.
+func SetUint64(z []big.Word, x uint64) []big.Word {
 	if x > MaxWords {
 		// Only possible when sizeof(Word) == 4.
-		return append(z, big.Word(x), big.Word(x>>32))
+		return append(z[:0], big.Word(x), big.Word(x>>32))
 	}
-	return append(z, big.Word(x))
+	return append(z[:0], big.Word(x))
 }
 
 // Format writes bits to the given writer with the given requested format.
-func Format(w io.Writer, format string, z []big.Word) (int, error) {
-	bz := new(big.Int).SetBits(z)
-
-	// Passing pointers to fmt causes them to escape, but this is rarely
-	// necessary. It certainly isn't in this case.
-	bz = unsafex.NoEscape(bz)
-
-	return fmt.Fprintf(w, format, bz)
+func Format(buf []byte, z []big.Word, base int) []byte {
+	return new(big.Int).SetBits(z).Append(buf, base)
 }

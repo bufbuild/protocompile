@@ -345,7 +345,7 @@ func TestParse(t *testing.T) {
 		{
 			in: "0xffffffffffffffffffffffffffffffff",
 			want: m{
-				"%g":    "3.40282366920938463463374607431768211455e+38",
+				"%g":    "340282366920938463463374607431768211455",
 				"%.32x": "0x1.fffffffffffffffffffffffffffffffep+127",
 			},
 			ints: m{"%#x": "0xffffffffffffffffffffffffffffffff"},
@@ -787,7 +787,7 @@ func TestParse(t *testing.T) {
 			for format, want := range tt.floats {
 				t.Run("fp/"+format, func(t *testing.T) {
 					t.Parallel()
-					assert.Equal(t, want, fmt.Sprintf(format, z.Float()))
+					assert.Equal(t, want, fmt.Sprintf(format, z.float(nil)))
 				})
 			}
 
@@ -801,7 +801,7 @@ func TestParse(t *testing.T) {
 			for format, want := range tt.f64s {
 				t.Run("f64/"+format, func(t *testing.T) {
 					t.Parallel()
-					f, _ := z.Float().Float64()
+					f, _ := z.Float64()
 					assert.Equal(t, want, fmt.Sprintf(format, f))
 				})
 			}
