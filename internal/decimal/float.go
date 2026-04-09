@@ -115,10 +115,6 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		// Directly update the exponent to add the missing power of 5.
 		v = math.Ldexp(v, exp)
 
-		// If pow10 is 0 or infinite, we are in a bit of a pathological
-		// situation. The value may in fact be representable, but we don't have
-		// enough precision to represent
-
 	default:
 		if z.base2() {
 			// We can do direct conversion, but rounding will always occur.

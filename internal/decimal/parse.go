@@ -29,11 +29,18 @@ import (
 
 // Parse parses a decimal value from the given string, without losing precision.
 //
-// Parsing is done as follows. First, a leading '+' or '-' is removed. Then,
-// a leading '0x' or '0X' is removed, which indicates a hexadecimal literal.
-// Then, digits in the appropriate base are parsed, accounting for at most one
-// decimal digit. Then, one of 'e', 'E', 'p', or 'P' indicates a signed exponent
-// in base 10 or 2, respectively.
+// We support the following formats. Below, d is a decimal digit and h is a hex
+// digit. ± is optional and may be one of + or -. d.ddd/h.hhh also allows ddd,
+// ddd. (equivalent to ddd.0) and .ddd (equivalent to 0.ddd). 0x may also be
+// spelled 0X.
+//
+// * ±d.ddd - decimal mantissa.
+// * ±d.ddde±dd, ±d.dddE±dd - decimal mantissa, decimal exponent.
+// * ±d.dddp±dd, ±d.dddP±dd - decimal mantissa, binary exponent.
+// * ±0xh.hhh - hex mantissa, binary exponent.
+// * ±0xh.hhhp±dd, ±0xh.hhhP±dd - hex mantissa, binary exponent.
+//
+// Underscores may be interspersed adjacent to any digit, and are ignored.
 //
 // If z is not nil, its storage is re-used for this parse.
 func (z *Decimal) Parse(s string) (*Decimal, error) {

@@ -284,7 +284,8 @@ func (f Formatter) sign(w io.Writer, z *Decimal) (int, error) {
 
 // Format implements [fmt.Formatter].
 //
-
+// Supports %v, %g, %G, %f, %x, %X, %e, %E, and %b. See [Formatter] for more
+// precise formatting control.
 func (z *Decimal) Format(state fmt.State, verb rune) {
 	prec, havePrec := state.Precision()
 	if !havePrec {
