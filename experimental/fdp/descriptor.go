@@ -26,7 +26,7 @@ import (
 // [*ir.File].
 func DescriptorProto(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
 	var g generator
-	g.Apply(options...)
+	g.init(options...)
 
 	if g.exclude != nil && g.exclude.Exclude(file) {
 		return nil, nil
@@ -44,7 +44,7 @@ func DescriptorProto(file *ir.File, options ...DescriptorOption) (*descriptorpb.
 // the WKTs, and all names are fully-qualified.
 func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	g.Apply(options...)
+	g.init(options...)
 
 	fds := new(descriptorpb.FileDescriptorSet)
 	g.files(files, fds)
@@ -57,7 +57,7 @@ func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, 
 // The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
 func DescriptorProtoBytes(file *ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	g.Apply(options...)
+	g.init(options...)
 
 	fdp := new(descriptorpb.FileDescriptorProto)
 	g.file(file, fdp)
@@ -70,12 +70,11 @@ type DescriptorOption interface {
 	apply(*Options)
 }
 
+// This lets us use arbitrary closures as a DescriptorOption. We use this in
+// [IncludeSourceCodeInfo], [GenerateExtraOptionLocations], and [ExcludeFiles].
 type descriptorOption func(*Options)
 
 // [DescriptorOption] instance for [descriptorOption].
-//
-// This lets us use arbitrary closures as a DescriptorOption. We use this in
-// [IncludeSourceCodeInfo], [GenerateExtraOptionLocations], and [ExcludeFiles].
 func (dopt descriptorOption) apply(o *Options) {
 	dopt(o)
 }
@@ -87,7 +86,7 @@ func (o *Options) apply(that *Options) {
 	*that = *o
 }
 
-// Apply applies the given [DescriptorOption] to this [Options].
+// Apply applies the given [DescriptorOption] to this [*Options].
 //
 // Nil values are ignored; does nothing if opt is nil.
 func (o *Options) Apply(options ...DescriptorOption) *Options {
@@ -101,15 +100,21 @@ func (o *Options) Apply(options ...DescriptorOption) *Options {
 	return o
 }
 
+// apply applies the given [DescriptorOption] to this [*generator] and initializes some of its fields.
+func (g *generator) init(options ...DescriptorOption) {
+	g.Apply(options...)
+	if g.includeSourceCodeInfo {
+		g.debug = new(debug)
+	} else {
+		g.debug = nil
+	}
+}
+
 // IncludeSourceCodeInfo sets whether or not to include google.protobuf.SourceCodeInfo in
 // the output.
 func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 	return descriptorOption(func(o *Options) {
-		if flag {
-			o.debug = new(debug)
-		} else {
-			o.debug = nil
-		}
+		o.includeSourceCodeInfo = flag
 	})
 }
 

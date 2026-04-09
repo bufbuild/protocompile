@@ -43,7 +43,7 @@ import (
 //
 // This type is intended for making options comparable, such as for use in queries.
 type Options struct {
-	debug                        *debug
+	includeSourceCodeInfo        bool
 	generateExtraOptionLocations bool
 	exclude                      Excluder
 }
@@ -51,6 +51,7 @@ type Options struct {
 type generator struct {
 	currentFile *ir.File
 	Options
+	debug *debug
 }
 
 func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet) {

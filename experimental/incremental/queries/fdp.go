@@ -28,8 +28,8 @@ import (
 // FDP queries with different File and Options are considered distinct.
 // The File field must not be edited between different FDP queries!
 type FDP struct {
-	*ir.File    // Must be comparable.
-	fdp.Options // Must be comparable
+	*ir.File // Must be comparable.
+	fdp.Options
 }
 
 var _ incremental.Query[*descriptorpb.FileDescriptorProto] = FDP{}

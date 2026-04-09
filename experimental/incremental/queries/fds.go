@@ -36,7 +36,7 @@ type FDS struct {
 	source.Opener // Must be comparable.
 	*ir.Session
 	source.Workspace // Must be comparable
-	fdp.Options      // Must be comparable
+	fdp.Options
 }
 
 var _ incremental.Query[*descriptorpb.FileDescriptorSet] = FDS{}
