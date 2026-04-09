@@ -17,7 +17,6 @@ package keyword
 import (
 	"iter"
 
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/trie"
 )
 
@@ -41,7 +40,13 @@ func Prefix(text string) Keyword {
 // Prefix returns an iterator over the keywords that can be returned by [Lookup]
 // which are prefixes of text, in ascending order of length.
 func Prefixes(text string) iter.Seq[Keyword] {
-	return iterx.Right(kwTrie.Prefixes(text))
+	return func(yield func(Keyword) bool) {
+		for _, kw := range kwTrie.Prefixes(text) {
+			if !yield(kw) {
+				return
+			}
+		}
+	}
 }
 
 // Brackets returns the open and close brackets if k is a bracket keyword.

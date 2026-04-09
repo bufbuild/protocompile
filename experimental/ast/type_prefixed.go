@@ -98,5 +98,5 @@ func (t TypePrefixed) Span() source.Span {
 		return source.Span{}
 	}
 
-	return source.Join(t.PrefixToken(), t.Type())
+	return source.JoinSpans(t.PrefixToken().Span(), t.Type().Span())
 }

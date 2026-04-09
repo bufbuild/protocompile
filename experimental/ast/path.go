@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -83,7 +84,7 @@ func (p Path) ID() PathID {
 
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
-	first, ok := iterx.First(p.Components)
+	first, ok := iterx.First(p.Components())
 	return ok && !first.Separator().IsZero()
 }
 
@@ -98,7 +99,7 @@ func (p Path) IsSynthetic() bool {
 //
 // If called on zero or a relative path, returns p.
 func (p Path) ToRelative() Path {
-	for pc := range p.Components {
+	for pc := range p.Components() {
 		if !pc.IsEmpty() {
 			p.raw.start = pc.name
 			break
@@ -110,11 +111,15 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	first, _ := iterx.OnlyOne(p.Components)
-	if !first.Separator().IsZero() {
+	if p.raw.start != p.raw.end {
 		return token.Zero
 	}
-	return first.AsIdent()
+
+	tok := id.Wrap(p.Context().Stream(), p.raw.start)
+	if tok.Kind() != token.Ident {
+		return token.Zero
+	}
+	return tok
 }
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
@@ -133,7 +138,7 @@ func (p Path) AsKeyword() keyword.Keyword {
 
 // IsIdents returns whether p is a sequence of exactly the given identifiers.
 func (p Path) IsIdents(idents ...string) bool {
-	for i, pc := range iterx.Enumerate(p.Components) {
+	for i, pc := range iterx.Enumerate(p.Components()) {
 		if i >= len(idents) || pc.AsIdent().Text() != idents[i] {
 			break
 		}
@@ -149,56 +154,58 @@ func (p Path) IsIdents(idents ...string) bool {
 func (p Path) Span() source.Span {
 	// No need to check for zero here, if p is zero both start and end will be
 	// zero tokens.
-	return source.Join(
-		id.Wrap(p.Context().Stream(), p.raw.start),
-		id.Wrap(p.Context().Stream(), p.raw.end),
+	return source.JoinSpans(
+		id.Wrap(p.Context().Stream(), p.raw.start).Span(),
+		id.Wrap(p.Context().Stream(), p.raw.end).Span(),
 	)
 }
 
 // Components is an [iter.Seq] that ranges over each component in this path.
 // Specifically, it yields the (possibly zero) dot that precedes the component,
 // and the identifier token.
-func (p Path) Components(yield func(PathComponent) bool) {
-	if p.IsZero() {
-		return
-	}
-
-	var cursor *token.Cursor
-	first := id.Wrap(p.Context().Stream(), p.raw.start)
-	if p.IsSynthetic() {
-		cursor = first.SyntheticChildren(p.raw.synthRange())
-	} else {
-		cursor = token.NewCursorAt(first)
-	}
-
-	var sep token.Token
-	var idx uint32
-	for tok := range cursor.Rest() {
-		if !p.IsSynthetic() && tok.ID() > p.raw.end {
-			// We've reached the end of the path.
-			break
-		}
-
-		if tok.Text() == "." || tok.Text() == "/" {
-			if !sep.IsZero() {
-				// Uh-oh, empty path component!
-				if !yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx}) {
-					return
-				}
-				idx++
-			}
-			sep = tok
-			continue
-		}
-
-		if !yield(PathComponent{p.withContext, p.raw, sep.ID(), tok.ID(), idx}) {
+func (p Path) Components() iter.Seq[PathComponent] {
+	return func(yield func(PathComponent) bool) {
+		if p.IsZero() {
 			return
 		}
-		idx++
-		sep = token.Zero
-	}
-	if !sep.IsZero() {
-		yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx})
+
+		var cursor *token.Cursor
+		first := id.Wrap(p.Context().Stream(), p.raw.start)
+		if p.IsSynthetic() {
+			cursor = first.SyntheticChildren(p.raw.synthRange())
+		} else {
+			cursor = token.NewCursorAt(first)
+		}
+
+		var sep token.Token
+		var idx uint32
+		for tok := range cursor.Rest() {
+			if !p.IsSynthetic() && tok.ID() > p.raw.end {
+				// We've reached the end of the path.
+				break
+			}
+
+			if tok.Text() == "." || tok.Text() == "/" {
+				if !sep.IsZero() {
+					// Uh-oh, empty path component!
+					if !yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx}) {
+						return
+					}
+					idx++
+				}
+				sep = tok
+				continue
+			}
+
+			if !yield(PathComponent{p.withContext, p.raw, sep.ID(), tok.ID(), idx}) {
+				return
+			}
+			idx++
+			sep = token.Zero
+		}
+		if !sep.IsZero() {
+			yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx})
+		}
 	}
 }
 
@@ -223,7 +230,7 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 	var i int
 	var prev PathComponent
 	var found bool
-	for pc := range p.Components {
+	for pc := range p.Components() {
 		if n > 0 {
 			prev = pc
 			n--
@@ -293,7 +300,7 @@ func (p Path) Canonicalized() string {
 }
 
 func (p Path) canonicalized(out *strings.Builder) {
-	for i, pc := range iterx.Enumerate(p.Components) {
+	for i, pc := range iterx.Enumerate(p.Components()) {
 		if pc.Name().IsZero() {
 			continue
 		}
@@ -313,7 +320,7 @@ func (p Path) canonicalized(out *strings.Builder) {
 
 func (p Path) isCanonical() bool {
 	var prev PathComponent
-	for pc := range p.Components {
+	for pc := range p.Components() {
 		sep := pc.Separator()
 		name := pc.Name()
 
@@ -510,7 +517,7 @@ func (p PathComponent) IsEmpty() bool {
 // Next returns the next path component after this one, if there is one.
 func (p PathComponent) Next() PathComponent {
 	_, after := p.SplitAfter()
-	next, _ := iterx.First(after.Components)
+	next, _ := iterx.First(after.Components())
 	return next
 }
 
@@ -557,7 +564,7 @@ func (p PathComponent) AsIdent() token.Token {
 
 // Span implements [source.Spanner].
 func (p PathComponent) Span() source.Span {
-	return source.Join(p.Separator(), p.Name())
+	return source.JoinSpans(p.Separator().Span(), p.Name().Span())
 }
 
 func (p PathID) synthRange() (start, end int) {

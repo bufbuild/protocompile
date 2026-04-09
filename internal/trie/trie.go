@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // Trie implements a map from strings to V, except lookups return the key
@@ -28,6 +27,8 @@ import (
 // The zero value is empty and ready to use.
 type Trie[V any] struct {
 	impl interface {
+		step(key string, s searcher) searcher
+
 		search(key string, yield func(string, int) bool)
 		insert(key string) int
 
@@ -55,14 +56,19 @@ func (t *Trie[V]) Prefixes(key string) iter.Seq2[string, V] {
 			return
 		}
 
-		adapt := func(prefix string, index int) bool {
-			return yield(prefix, t.values[index])
-		}
+		var s searcher
+		for {
+			s = t.impl.step(key, s)
+			if s.n == -1 {
+				break
+			}
 
-		// No implementation of impl will ever cause adapt to escape. This
-		// avoids a heap allocation.
-		adapt = *unsafex.NoEscape(&adapt)
-		t.impl.search(key, adapt)
+			prefix := key[:s.i-1]
+			entry := t.values[s.n]
+			if !yield(prefix, entry) {
+				return
+			}
+		}
 	}
 }
 

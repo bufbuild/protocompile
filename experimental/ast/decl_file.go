@@ -323,7 +323,7 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	return seq.NewSliceInserter(&d.Raw().modifiers,
 		func(_ int, e token.ID) token.Token { return id.Wrap(d.Context().Stream(), e) },
 		func(_ int, t token.Token) token.ID {
-			d.Context().Nodes().panicIfNotOurs(t)
+			d.Context().Nodes().panicIfNotOurs(t.Context())
 			return t.ID()
 		},
 	)
