@@ -97,7 +97,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 	case 1:
 		w := w[0]
 		v = float64(w)
-		exact = w < maxMant64
+		exact = uint64(w) < maxMant64
 
 		// No exponent, so we're done.
 		exp := int(z.exp) - z.digits()
@@ -162,7 +162,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 
 // SetFloat64 sets this decimal's value to x.
 func (z *Decimal) SetFloat64(x float64) *Decimal {
-	z.Clear()
+	z.SetZero()
 
 	if math.Signbit(x) {
 		z.flags |= sign
@@ -236,7 +236,7 @@ func (z *Decimal) float(x *big.Float) *big.Float {
 
 func nanPayload(sign bool, x uint64) float64 {
 	nan := uint64(0x7FF8000000000000)
-	nan |= x & mantBits64
+	nan |= x & mantMask64
 	if sign {
 		nan |= 1 << 63
 	}

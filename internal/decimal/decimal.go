@@ -18,7 +18,6 @@
 package decimal
 
 import (
-	"math"
 	"math/big"
 	"unsafe"
 
@@ -27,9 +26,12 @@ import (
 )
 
 const (
-	mantBits64 = 52 // Mantissa bits in a binary64.
-	mantMask64 = 1<<mantBits64 - 1
-	maxMant64  = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
+	mantBits64        = 52 // Mantissa bits in a binary64.
+	mantMask64 uint64 = 1<<mantBits64 - 1
+	maxMant64  uint64 = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
+
+	quietBit    = 1 << (mantBits64 - 1)
+	payloadMask = quietBit - 1
 )
 
 var (
@@ -92,28 +94,18 @@ func (z *Decimal) IsZero() bool {
 	return len(z.get()) == 0
 }
 
-// IsFinite returns whether this value is finite.
-func (z *Decimal) IsFinite() bool {
-	return z.flags&nonfinite == 0
-}
+// SetZero resets this decimal value to zero.
+func (z *Decimal) SetZero() *Decimal {
+	z.exp = 0
+	z.flags = 0
 
-// IsInf returns whether this value is an infinity.
-func (z *Decimal) IsInf() bool {
-	return z.flags&inf != 0
-}
-
-// IsNaN returns whether this value is a NaN.
-func (z *Decimal) IsNaN() bool {
-	return z.flags&nan != 0
-}
-
-// NaN returns the NaN payload within this value, or -1 if it is
-// not a NaN.
-func (z *Decimal) NaN() int64 {
-	if !z.IsNaN() {
-		return -1
+	if z.raw.data == nil {
+		z.raw.data = &z.raw.small[0]
 	}
-	return int64(bigx.Uint64(z.get())) & mantMask64
+
+	z.raw.small[0] = 0
+	z.raw.small[1] = 0
+	return z
 }
 
 // Negative returns whether this value's sign bit is set.
@@ -131,22 +123,19 @@ func (z *Decimal) SetNegative(neg bool) *Decimal {
 	return z
 }
 
-// Clear resets this decimal value to zero.
-func (z *Decimal) Clear() {
-	z.exp = 0
-	z.flags = 0
+// IsFinite returns whether this value is finite.
+func (z *Decimal) IsFinite() bool {
+	return z.flags&nonfinite == 0
+}
 
-	if z.raw.data == nil {
-		z.raw.data = &z.raw.small[0]
-	}
-
-	z.raw.small[0] = 0
-	z.raw.small[1] = 0
+// IsInf returns whether this value is an infinity.
+func (z *Decimal) IsInf() bool {
+	return z.flags&inf != 0
 }
 
 // SetInf sets z to +Infinity or -Infinity.
 func (z *Decimal) SetInf(neg bool) *Decimal {
-	z.Clear()
+	z.SetZero()
 	z.flags |= inf
 	if neg {
 		z.flags |= sign
@@ -154,99 +143,58 @@ func (z *Decimal) SetInf(neg bool) *Decimal {
 	return z
 }
 
-// SetNaN sets this value to a quiet NaN with zero payload.
-func (z *Decimal) SetNaN(neg bool) *Decimal {
-	return z.SetNaNPayload(neg, 0)
+// IsNaN returns whether this value is a NaN.
+func (z *Decimal) IsNaN() bool {
+	return z.flags&nan != 0
+}
+
+// IsQuietNaN returns whether this value is a qNaN.
+func (z *Decimal) IsQuietNaN() bool {
+	return z.IsNaN() && bigx.Uint64(z.get())&quietBit != 0
+}
+
+// IsQuietNaN returns whether this value is a sNaN.
+func (z *Decimal) IsSignalingNaN() bool {
+	return z.IsNaN() && bigx.Uint64(z.get())&quietBit == 0
+}
+
+// NaN returns the NaN payload within this value, or -1 if it is
+// not a NaN.
+//
+// The NaN payload is 51 bits, corresponding to the 52 mantissa bits of an
+// IEEE745 binary64 except the highest bit, which is used as the quiet bit.
+func (z *Decimal) NaN() int64 {
+	if !z.IsNaN() {
+		return -1
+	}
+	return int64(bigx.Uint64(z.get()) & payloadMask)
+}
+
+// SetNaN sets this value to a NaN.
+//
+// This sets the "standard" NaN that most programming languages default to
+// (not the one math.NaN() produces -- Go is kinda weird here). This yields a
+// quiet NaN whose payload is 0.
+func (z *Decimal) SetNaN() *Decimal {
+	return z.SetNaNPayload(false, true, 0)
 }
 
 // SetNaNPayload sets this value to a NaN with arbitrary payload.
-func (z *Decimal) SetNaNPayload(neg bool, payload uint64) *Decimal {
-	z.Clear()
+//
+// Only the low 51 bits of the payload are kept; the 52th bit is the quiet
+// bit, set by the quiet argument to this function. See [Decimal.NaN].
+func (z *Decimal) SetNaNPayload(neg bool, quiet bool, payload uint64) *Decimal {
+	payload &= payloadMask
+	if quiet {
+		payload |= quietBit
+	}
+
+	z.SetZero()
 	z.flags |= nan
 	if neg {
 		z.flags |= sign
 	}
-	z.set(bigx.SetUint64(z.get(), payload&mantBits64))
-	return z
-}
-
-// IsInt returns whether this value is an integer.
-func (z *Decimal) IsInt() bool {
-	return z.IsZero() || int(z.exp) >= z.digits()
-}
-
-// Int sets x to the nearest integer to z.
-func (z *Decimal) Int(x *big.Int) *big.Int {
-	if x == nil {
-		x = new(big.Int)
-	}
-
-	n := int(z.exp) - z.digits()
-	if n < 0 {
-		return x.SetUint64(0)
-	}
-
-	w := x.Bits()
-	if z.base2() {
-		w = bigx.Scale2(w, z.get(), uint(n))
-	} else {
-		w = bigx.Scale10(w, z.get(), uint(n))
-	}
-
-	return x.SetBits(w)
-}
-
-// SetUint64 sets this decimal's value to x.
-func (z *Decimal) SetUint64(x uint64) *Decimal {
-	// Doing it this way gives us a good shot to get this slice to allocate
-	// on the stack.
-	xb := new(big.Int).SetBits(bigx.SetUint64(make([]big.Word, 0, 2), x))
-	return z.setInt(xb, false)
-}
-
-// SetInt sets this decimal's value to x.
-func (z *Decimal) SetInt(x *big.Int) *Decimal {
-	return z.setInt(x, false)
-}
-
-// ReuseInt sets this decimal's value to x, consuming x's storage in the
-// process.
-func (z *Decimal) ReuseInt(x *big.Int) *Decimal {
-	return z.setInt(x, true)
-}
-
-func (z *Decimal) setInt(x *big.Int, reuse bool) *Decimal {
-	z.Clear()
-
-	if x.Sign() < 0 {
-		z.flags |= sign
-	}
-
-	exp := x.BitLen()
-	if exp > math.MaxInt32 || exp < math.MinInt32 {
-		z.flags |= inf
-		return z
-	}
-
-	// Because this is an integer, we can use a power of 2 exponent.
-	// This simplifies the task of calculating an exponent, punting the
-	// "convert to base 10" problem to later, if necessary at all.
-	z.flags |= base2
-
-	w := x.Bits()
-	if !reuse || cap(w) < cap(z.get()) {
-		w = append(z.get()[:0], w...)
-	}
-
-	// Knock off any trailing zeros. Because of the representation we've chosen,
-	// trailing zeros are never part of the final value.
-	//
-	// Because we're putting this in 0.bbbbb * 2^e form, if there are trailing
-	// zeros before the binary point, they are automatically filled by the
-	// << implied by the 2^e.
-	z.set(bigx.Shr(w, w, x.TrailingZeroBits()))
-	z.exp = int32(exp)
-
+	z.set(bigx.SetUint64(z.get(), payload))
 	return z
 }
 

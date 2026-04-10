@@ -48,7 +48,7 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 		return z, syntaxf("empty input")
 	}
 
-	z.Clear()
+	z.SetZero()
 
 	i := 0
 	switch s[0] {
@@ -218,7 +218,7 @@ mant:
 	exp = bitsx.AddSaturate(exp, int(z.exp))
 	if exp > math.MaxInt32 || exp < math.MinInt32 {
 		neg := z.flags & sign
-		z.Clear()
+		z.SetZero()
 		if exp > 0 {
 			z.flags |= inf
 		}
