@@ -70,7 +70,7 @@ func (z *Decimal) IsFloat() bool {
 	return len(rem) == 0
 }
 
-// Float calculates the closest 64-bit floating-point value to this decimal.
+// Float64 calculates the closest 64-bit floating-point value to this decimal.
 //
 // Returns whether or not the resulting value is exact.
 func (z *Decimal) Float64() (v float64, exact bool) {

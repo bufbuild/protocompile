@@ -118,7 +118,7 @@ func Shl(z, x []big.Word, y uint) []big.Word {
 	return bz.Lsh(bx, y).Bits()
 }
 
-// Shl computes z = x >> y.
+// Shr computes z = x >> y.
 func Shr(z, x []big.Word, y uint) []big.Word {
 	bz := new(big.Int).SetBits(z)
 	bx := new(big.Int).SetBits(x)

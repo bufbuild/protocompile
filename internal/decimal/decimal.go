@@ -71,6 +71,9 @@ type Decimal struct {
 	// Mantissa digits are of the form d.dddd in whatever base this value uses
 	// (either 10 or 2 depending on base2).
 	//
+	// TODO: The mantissa itself is currently encoded in base 2, but it may be
+	// wise to consider a binary coded decimal representation for arithmetic.
+	//
 	// Note that we *do not* use big.Int because it does not believe in -0.0.
 	raw struct {
 		// data may point to small for the purposes of holding particularly
@@ -94,12 +97,12 @@ func (z *Decimal) IsFinite() bool {
 	return z.flags&nonfinite == 0
 }
 
-// IsFinite returns whether this value is an infinity.
+// IsInf returns whether this value is an infinity.
 func (z *Decimal) IsInf() bool {
 	return z.flags&inf != 0
 }
 
-// IsFinite returns whether this value is a NaN.
+// IsNaN returns whether this value is a NaN.
 func (z *Decimal) IsNaN() bool {
 	return z.flags&nan != 0
 }
@@ -156,7 +159,7 @@ func (z *Decimal) SetNaN(neg bool) *Decimal {
 	return z.SetNaNPayload(neg, 0)
 }
 
-// SetNaN sets this value to a NaN with arbitrary payload.
+// SetNaNPayload sets this value to a NaN with arbitrary payload.
 func (z *Decimal) SetNaNPayload(neg bool, payload uint64) *Decimal {
 	z.Clear()
 	z.flags |= nan
@@ -193,17 +196,17 @@ func (z *Decimal) Int(x *big.Int) *big.Int {
 	return x.SetBits(w)
 }
 
-// SetInt sets this decimal's value to x.
-func (z *Decimal) SetInt(x *big.Int) *Decimal {
-	return z.setInt(x, false)
-}
-
-// SetInt sets this decimal's value to x.
+// SetUint64 sets this decimal's value to x.
 func (z *Decimal) SetUint64(x uint64) *Decimal {
 	// Doing it this way gives us a good shot to get this slice to allocate
 	// on the stack.
 	xb := new(big.Int).SetBits(bigx.SetUint64(make([]big.Word, 0, 2), x))
 	return z.setInt(xb, false)
+}
+
+// SetInt sets this decimal's value to x.
+func (z *Decimal) SetInt(x *big.Int) *Decimal {
+	return z.setInt(x, false)
 }
 
 // ReuseInt sets this decimal's value to x, consuming x's storage in the
