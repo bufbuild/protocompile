@@ -94,9 +94,9 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 		// Look for a separator, and use that instead. We can't "just" pick out
 		// the first separator, because def.Name might be a one-component
 		// extension path, e.g. (a.b.c).
-		def.Name().Components(func(pc ast.PathComponent) bool {
+		for pc := range def.Name().Components() {
 			if pc.Separator().IsZero() {
-				return true
+				continue
 			}
 
 			err = errtoken.Unexpected{
@@ -105,8 +105,9 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 				RepeatUnexpected: true,
 			}
-			return false
-		})
+
+			break
+		}
 
 		p.Error(err).Apply(
 			report.Notef("the name of a %s must be a single identifier", what),

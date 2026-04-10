@@ -333,7 +333,7 @@ func validateExtend(extend Extend, r *report.Report) {
 	}).Apply(
 		report.PageBreak,
 		report.Snippetf(extend.Context().AST().Syntax().Value(), "\"proto3\" specified here"),
-		report.Helpf("extendees in \"proto3\" files are restricted to an `google.protobuf.*Options` message types", taxa.Extend),
+		report.Helpf("extendees in \"proto3\" files are restricted to extending `google.protobuf.*Options` message types"),
 	)
 }
 

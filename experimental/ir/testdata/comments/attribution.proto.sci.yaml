@@ -8,14 +8,16 @@
 - path: ".package"
   start: { line: 19, column: 0 }
   end: { line: 19, column: 17 }
-  leading: " This is still a trailing comment for the package.\n"
+  leading: " This is a leading comment for the package.\n"
+  trailing: " This is still a trailing comment for the package.\n"
 - path: ".options"
   start: { line: 24, column: 0 }
   end: { line: 24, column: 47 }
 - path: ".options.java_package"
   start: { line: 24, column: 0 }
   end: { line: 24, column: 47 }
-  leading: " Similarly, this is a trailing comment."
+  leading: " This is a leading comment for the java_package option source code info, but not the\n top-level option source code info.\n"
+  trailing: " Similarly, this is a trailing comment."
 - path: ".options"
   start: { line: 25, column: 0 }
   end: { line: 25, column: 34 }
@@ -25,14 +27,16 @@
 - path: ".dependency.0"
   start: { line: 29, column: 0 }
   end: { line: 29, column: 49 }
-  leading: " Same with this trailing comment."
+  leading: " This is a leading comment for the import source code info, but not for the corresponding\n public import source code info.\n"
+  trailing: " Same with this trailing comment."
 - path: ".public_dependency.0"
   start: { line: 29, column: 7 }
   end: { line: 29, column: 13 }
 - path: ".message_type[Foo]"
   start: { line: 32, column: 0 }
   end: { line: 58, column: 1 }
-  leading: " This is the TRAILING comment for Foo. (It is NOT\n a detached comment for baz.)\n"
+  leading: " This, as expected, is a leading comment for Foo.\n"
+  trailing: " This is the TRAILING comment for Foo. (It is NOT\n a detached comment for baz.)\n"
 - path: ".message_type[Foo].name"
   start: { line: 32, column: 32 }
   end: { line: 32, column: 35 }
@@ -49,14 +53,15 @@
 - path: ".message_type[Foo].options.0.message_set_wire_format"
   start: { line: 38, column: 2 }
   end: { line: 38, column: 18 }
-  leading: " Trailing comment for the second message option"
+  trailing: " Trailing comment for the second message option"
 - path: ".message_type[Foo].field[baz].type"
   start: { line: 41, column: 2 }
   end: { line: 41, column: 8 }
 - path: ".message_type[Foo].field[baz]"
   start: { line: 41, column: 2 }
   end: { line: 41, column: 46 }
-  leading: " This is a trailing comment for baz.\n"
+  leading: " This is a leading comment for baz.\n"
+  trailing: " This is a trailing comment for baz.\n"
 - path: ".message_type[Foo].field[baz].name"
   start: { line: 41, column: 38 }
   end: { line: 41, column: 41 }
@@ -66,7 +71,8 @@
 - path: ".message_type[Foo].reserved_range"
   start: { line: 45, column: 2 }
   end: { line: 45, column: 74 }
-  leading: " This is a trailing comment for the reserved range."
+  leading: " This is a leading comment for the reserved range.\n"
+  trailing: " This is a trailing comment for the reserved range."
 - path: ".message_type[Foo].reserved_range[0]"
   start: { line: 45, column: 11 }
   end: { line: 45, column: 12 }
@@ -97,7 +103,8 @@
 - path: ".message_type[Foo].reserved_name"
   start: { line: 48, column: 2 }
   end: { line: 48, column: 42 }
-  leading: " This is a trailing comment for the reserved range."
+  leading: " This is a leading comment for the reserved names declaration.\n"
+  trailing: " This is a trailing comment for the reserved range."
 - path: ".message_type[Foo].reserved_name.0"
   start: { line: 48, column: 11 }
   end: { line: 48, column: 14 }
@@ -170,7 +177,8 @@
 - path: ".enum_type[Baz]"
   start: { line: 82, column: 0 }
   end: { line: 84, column: 1 }
-  leading: " This is a trailing comment for enum Baz."
+  leading: " This is the leading comment for enum Baz.\n"
+  trailing: " This is a trailing comment for enum Baz."
 - path: ".enum_type[Baz].name"
   start: { line: 82, column: 5 }
   end: { line: 82, column: 8 }
@@ -186,14 +194,16 @@
 - path: ".service[FooService]"
   start: { line: 87, column: 0 }
   end: { line: 94, column: 1 }
-  leading: " This is a trailing comment for service FooService."
+  leading: " This is the leading comment for service FooService.\n"
+  trailing: " This is a trailing comment for service FooService."
 - path: ".service[FooService].name"
   start: { line: 87, column: 8 }
   end: { line: 87, column: 18 }
 - path: ".service[FooService].method[FooForBar]"
   start: { line: 89, column: 2 }
   end: { line: 89, column: 35 }
-  leading: " Trailing comment for FooForBar."
+  leading: " Leading comment for method FooForBar.\n"
+  trailing: " Trailing comment for FooForBar."
 - path: ".service[FooService].method[FooForBar].name"
   start: { line: 89, column: 6 }
   end: { line: 89, column: 15 }
@@ -206,7 +216,8 @@
 - path: ".service[FooService].method[BarForBar]"
   start: { line: 92, column: 2 }
   end: { line: 93, column: 3 }
-  leading: " Trailing comment for BarForBar."
+  leading: " Leading comment for method BarForBar.\n"
+  trailing: " Trailing comment for BarForBar."
 - path: ".service[FooService].method[BarForBar].name"
   start: { line: 92, column: 6 }
   end: { line: 92, column: 15 }

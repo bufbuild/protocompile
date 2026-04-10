@@ -114,6 +114,17 @@ func (f *File) AST() *ast.File {
 	return f.ast
 }
 
+// Lowered returns whether or not the file has completed lowering. If the builtins are
+// invalid (failed to resolve from descriptor.proto), then we bail out of the rest of the
+// steps for lowering, other than for descriptor.proto itself, and the file is not
+// considered lowered.
+func (f *File) Lowered() bool {
+	if f == nil {
+		return false
+	}
+	return f.builtins().valid || f.IsDescriptorProto()
+}
+
 // Syntax returns the syntax pragma that applies to this file.
 func (f *File) Syntax() syntax.Syntax {
 	if f == nil {
@@ -358,7 +369,7 @@ func (f *File) Deprecated() Value {
 // imported by the file. The symbols are returned in an arbitrary but fixed
 // order.
 func (f *File) Symbols() seq.Indexer[Symbol] {
-	var symbols []Ref[Symbol]
+	var symbols []symbol
 	if f != nil {
 		symbols = f.imported
 	}
@@ -375,7 +386,7 @@ func (f *File) FindSymbol(fqn FullName) Symbol {
 
 // ExportedSymbols returns this file's exported symbols.
 func (f *File) ExportedSymbols() seq.Indexer[Symbol] {
-	var symbols []Ref[Symbol]
+	var symbols []symbol
 	if f != nil {
 		symbols = f.exported
 	}
@@ -385,8 +396,8 @@ func (f *File) ExportedSymbols() seq.Indexer[Symbol] {
 func (f *File) symbols(symtab symtab) seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
 		symtab,
-		func(_ int, r Ref[Symbol]) Symbol {
-			return GetRef(f, r)
+		func(_ int, r symbol) Symbol {
+			return GetRef(f, r.ref)
 		},
 	)
 }

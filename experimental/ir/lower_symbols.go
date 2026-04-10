@@ -39,7 +39,9 @@ func buildLocalSymbols(file *File) {
 		kind: SymbolKindPackage,
 		fqn:  file.InternedPackage(),
 	})
-	file.exported = append(file.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	file.exported = append(file.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 
 	for ty := range seq.Values(file.AllTypes()) {
 		newTypeSymbol(ty)
@@ -77,7 +79,9 @@ func newTypeSymbol(ty Type) {
 		fqn:  ty.InternedFullName(),
 		data: arena.Untyped(c.arenas.types.Compress(ty.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newFieldSymbol(f Member) {
@@ -93,7 +97,9 @@ func newFieldSymbol(f Member) {
 		fqn:  f.InternedFullName(),
 		data: arena.Untyped(c.arenas.members.Compress(f.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newOneofSymbol(o Oneof) {
@@ -103,7 +109,9 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newServiceSymbol(s Service) {
@@ -113,7 +121,9 @@ func newServiceSymbol(s Service) {
 		fqn:  s.InternedFullName(),
 		data: arena.Untyped(c.arenas.services.Compress(s.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newMethodSymbol(m Method) {
@@ -123,7 +133,9 @@ func newMethodSymbol(m Method) {
 		fqn:  m.InternedFullName(),
 		data: arena.Untyped(c.arenas.methods.Compress(m.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
@@ -201,14 +213,14 @@ func mergeImportedSymbolTables(file *File, r *report.Report) {
 func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
-		func(r Ref[Symbol]) intern.ID { return GetRef(file, r).InternedFullName() },
-		func(refs []Ref[Symbol]) Ref[Symbol] {
+		func(r symbol) intern.ID { return r.fqn },
+		func(refs []symbol) symbol {
 			if len(refs) == 1 {
 				return refs[0]
 			}
 
 			slices.SortFunc(refs, cmpx.Map(
-				func(r Ref[Symbol]) Symbol { return GetRef(file, r) },
+				func(r symbol) Symbol { return GetRef(file, r.ref) },
 				cmpx.Key(Symbol.Kind), // Packages sort first, reserved names sort last.
 				cmpx.Key(func(s Symbol) string {
 					// NOTE: we do not choose a winner based on the path's intern
@@ -219,14 +231,14 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r Ref[Symbol]) (ast.DeclDef, bool) {
-				s := GetRef(file, r)
+			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r symbol) (ast.DeclDef, bool) {
+				s := GetRef(file, r.ref)
 				ty := s.AsType()
 				return ty.AST(), !ty.IsZero()
 			}))
 			isFirst := true
-			refs = slices.DeleteFunc(refs, func(r Ref[Symbol]) bool {
-				s := GetRef(file, r)
+			refs = slices.DeleteFunc(refs, func(r symbol) bool {
+				s := GetRef(file, r.ref)
 				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
 					// Ignore all symbols that are map entry fields, because those
 					// can only be duplicated when two map entry messages' names
@@ -253,8 +265,8 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 			refs = slicesx.Dedup(refs)
 			if len(refs) > 1 && r != nil {
 				r.Error(errDuplicates{
-					symbols: slices.Collect(slicesx.Map(refs, func(r Ref[Symbol]) Symbol {
-						return GetRef(file, r)
+					symbols: slices.Collect(slicesx.Map(refs, func(r symbol) Symbol {
+						return GetRef(file, r.ref)
 					})),
 				})
 			}

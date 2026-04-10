@@ -572,7 +572,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			splitURL := func(path ast.Path) (before, after ast.Path) {
 				// Figure out what part of the key expression actually contains
 				// the domain. Look for the last component whose separator is a /.
-				pc, _ := iterx.Last(iterx.Filter(path.Components, func(pc ast.PathComponent) bool {
+				pc, _ := iterx.Last(iterx.Filter(path.Components(), func(pc ast.PathComponent) bool {
 					return pc.Separator().Text() == "/"
 				}))
 				hostSpan := path.Span()
