@@ -332,7 +332,6 @@ func (r *result) createImports() fileImports {
 		imps[int(publicIndex)].IsPublic = true
 	}
 	for _, weakIndex := range fd.WeakDependency {
-		//nolint:staticcheck // yes, is_weak is deprecated; but we still have to set it to compile the file
 		imps[int(weakIndex)].IsWeak = true
 	}
 	return fileImports{files: imps}
@@ -1204,7 +1203,7 @@ func (f *fldDescriptor) HasOptionalKeyword() bool {
 }
 
 func (f *fldDescriptor) IsWeak() bool {
-	return f.proto.Options.GetWeak() //nolint:staticcheck // yes, is_weak is deprecated; but we still have to query it to implement this interface
+	return f.proto.Options.GetWeak()
 }
 
 func (f *fldDescriptor) IsPacked() bool {

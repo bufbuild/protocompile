@@ -97,8 +97,8 @@ func TestDualCompiler_ParseFilesWithImportsNoImportPath(t *testing.T) {
 			newResult, err = newCompiler.Compile(t.Context(), relFilePaths...)
 			require.NoError(t, err)
 
-			assert.Equal(t, len(relFilePaths), len(oldResult.Files()))
-			assert.Equal(t, len(relFilePaths), len(newResult.Files()))
+			assert.Len(t, oldResult.Files(), len(relFilePaths))
+			assert.Len(t, newResult.Files(), len(relFilePaths))
 
 			return oldResult, newResult
 		},

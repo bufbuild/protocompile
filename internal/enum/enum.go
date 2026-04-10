@@ -147,7 +147,7 @@ type Range struct{ Start, End int }
 
 // Returns the ranges (exclusive) of values not skipped by this method.
 func (m Method) Ranges() []Range {
-	var out []Range //nolint:prealloc // This lint is completely wrong here.
+	var out []Range
 	var aliases int
 	for i, v := range m.Parent.Values {
 		if v.Alias != "" {

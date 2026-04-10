@@ -116,8 +116,7 @@ func writeFileToDisk(files map[string]string) (string, error) {
 }
 
 func invokeProtoc(protoPath string, fileNames []string) (stdout []byte, err error) {
-	args := []string{"-I", protoPath, "-o", os.DevNull}
-	args = append(args, fileNames...)
+	args := append([]string{"-I", protoPath, "-o", os.DevNull}, fileNames...)
 	protocPath, err := BinaryPath("../")
 	if err != nil {
 		return nil, err

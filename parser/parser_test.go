@@ -834,14 +834,14 @@ func TestSimpleParse(t *testing.T) {
 	require.NoError(t, err)
 	fd = res.FileDescriptorProto()
 	assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg.proto", fd.GetName())
-	assert.Equal(t, "", fd.GetPackage())
+	assert.Empty(t, fd.GetPackage())
 	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/nopkg/desc_test_nopkg_new.proto")
 	require.NoError(t, err)
 	fd = res.FileDescriptorProto()
 	assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg_new.proto", fd.GetName())
-	assert.Equal(t, "", fd.GetPackage())
+	assert.Empty(t, fd.GetPackage())
 	assert.True(t, hasMessage(fd, "TopLevel"))
 	protos[fd.GetName()] = res
 

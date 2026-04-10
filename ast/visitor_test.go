@@ -545,7 +545,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 		call = ""
 		v.DoVisitNode = nil
 		_ = Visit(n, v)
-		assert.Equal(t, "", call)
+		assert.Empty(t, call)
 	})
 	t.Run("CompoundStringLiteralNode", func(t *testing.T) {
 		t.Parallel()
@@ -571,7 +571,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 		call = ""
 		v.DoVisitNode = nil
 		_ = Visit(n, v)
-		assert.Equal(t, "", call)
+		assert.Empty(t, call)
 	})
 	t.Run("UintLiteralNode", func(t *testing.T) {
 		t.Parallel()
@@ -601,7 +601,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 		call = ""
 		v.DoVisitNode = nil
 		_ = Visit(n, v)
-		assert.Equal(t, "", call)
+		assert.Empty(t, call)
 	})
 	t.Run("GroupNode", func(t *testing.T) {
 		t.Parallel()
@@ -623,7 +623,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 		call = ""
 		v.DoVisitNode = nil
 		_ = Visit(n, v)
-		assert.Equal(t, "", call)
+		assert.Empty(t, call)
 	})
 	t.Run("MapFieldNode", func(t *testing.T) {
 		t.Parallel()
@@ -645,7 +645,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 		call = ""
 		v.DoVisitNode = nil
 		_ = Visit(n, v)
-		assert.Equal(t, "", call)
+		assert.Empty(t, call)
 	})
 }
 

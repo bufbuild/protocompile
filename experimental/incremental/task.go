@@ -105,14 +105,14 @@ func (t *Task) acquire() bool {
 	}
 
 	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
-	t.log("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.underlying())
+	t.logf("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.underlying())
 
 	return t.holding
 }
 
 // release releases a hold on the global semaphore.
 func (t *Task) release() {
-	t.log("release", "%[1]T/%[1]v", t.task.underlying())
+	t.logf("release", "%[1]T/%[1]v", t.task.underlying())
 
 	if !t.holding {
 		if context.Cause(t.ctx) != nil {
@@ -136,13 +136,13 @@ func (t *Task) transferFrom(that *Task) {
 
 	t.holding, that.holding = that.holding, t.holding
 
-	t.log("acquireFrom", "%[1]T/%[1]v -> %[2]T/%[2]v",
+	t.logf("acquireFrom", "%[1]T/%[1]v -> %[2]T/%[2]v",
 		that.task.underlying(),
 		t.task.underlying())
 }
 
-// log is used for printf debugging in the task scheduling code.
-func (t *Task) log(what string, format string, args ...any) {
+// logf is used for printf debugging in the task scheduling code.
+func (t *Task) logf(what string, format string, args ...any) {
 	internal.DebugLog(
 		[]any{"%p/%d", t.exec, t.runID},
 		what, format, args...)
@@ -166,7 +166,7 @@ func (e *errAbort) Error() string {
 //
 // This will cause the outer call to Run() to immediately wake up and panic.
 func (t *Task) abort(err error) {
-	t.log("abort", "%[1]T/%[1]v, %[2]v", t.task.underlying(), err)
+	t.logf("abort", "%[1]T/%[1]v, %[2]v", t.task.underlying(), err)
 
 	if prev := t.aborted(); prev != nil {
 		// Prevent multiple errors from cascading and getting spammed all over
@@ -408,7 +408,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
-		caller.log("cache hit", "%[1]T/%[1]v", q.Underlying())
+		caller.logf("cache hit", "%[1]T/%[1]v", q.Underlying())
 		caller.timer.record(q.Key(), 0)
 		done(r)
 		return false
@@ -509,7 +509,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	defer func() {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
-				caller.log("panic", "%[1]T/%[1]v, %[2]v", q.Underlying(), panicked)
+				caller.logf("panic", "%[1]T/%[1]v, %[2]v", q.Underlying(), panicked)
 
 				t.result.CompareAndSwap(output, nil)
 				output = nil
@@ -537,7 +537,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 
 		if output != nil && !closed(output.done) {
-			callee.log("done", "%[1]T/%[1]v", q.Underlying())
+			callee.logf("done", "%[1]T/%[1]v", q.Underlying())
 			close(output.done)
 		}
 	}()
@@ -554,13 +554,13 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		defer caller.transferFrom(callee)
 	}
 
-	callee.log("executing", "%[1]T/%[1]v", q.Underlying())
+	callee.logf("executing", "%[1]T/%[1]v", q.Underlying())
 	callee.stopwatch.Start()
 	output.Value, output.Fatal = t.query.Execute(callee)
 	output.Elapsed = callee.stopwatch.Stop()
 	output.runID = callee.runID
 	callee.timer.record(q.Key(), output.Elapsed)
-	callee.log("returning", "%[1]T/%[1]v, took %v", q.Underlying(), output.Elapsed)
+	callee.logf("returning", "%[1]T/%[1]v, took %v", q.Underlying(), output.Elapsed)
 
 	return output
 }
