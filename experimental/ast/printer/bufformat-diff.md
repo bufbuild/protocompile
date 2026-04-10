@@ -29,40 +29,7 @@ else in our output.
 
 ## Remaining Failing Tests
 
-### 1. package.proto -- Space after block comments in paths
-
-```
-golden:  header/*...*/./*...*/v1
-ours:    header/*...*/ ./*...*/ v1
-```
-
-**Cause:** Our `gapGlue` context inserts a space after block comments
-(`afterGap = gapSpace`) so that `*/` is never fused to the next identifier.
-The golden glues `*/` directly to the next token.
-
-**Rationale:** `*/v1` is harder to read than `*/ v1`. The space after a block
-comment is a consistent rule applied everywhere in our formatter. The golden's
-behavior is an artifact of treating block comments as invisible for spacing
-purposes.
-
-### 2. option_compound_name.proto -- Space around block comments in paths
-
-```
-golden:  (custom /* One */ . /* Two */ file_thing_option). /* Three */ foo
-ours:    (custom/* One */ ./* Two */ file_thing_option)./* Three */ foo
-```
-
-**Cause:** Same `gapGlue` afterGap as above (space after block comments), but
-we do not add a space *before* the first block comment in a glued context. The
-golden has spaces on both sides.
-
-**Rationale:** Our formatter consistently adds space after block comments but
-not before them in glued contexts. Adding space before would require changing
-`firstGap` for `gapGlue`, which affects all bracket/path contexts. The current
-behavior is readable and internally consistent. This is a minor stylistic
-difference.
-
-### 3. compound_string.proto -- Compound string indentation inside arrays
+### 1. compound_string.proto -- Compound string indentation inside arrays
 
 ```
 golden:        // First element.
@@ -79,7 +46,7 @@ parts belong to a single compound value, not separate array elements. This is
 consistent with how compound strings are indented in other contexts (e.g.,
 `option ... = \n  "One"\n  "Two"`).
 
-### 4. option_complex_array_literal.proto -- Compound string indentation + blank lines
+### 2. option_complex_array_literal.proto -- Compound string indentation + blank lines
 
 Same compound string indentation issue as above. Also has minor blank line
 differences between array elements.
@@ -88,7 +55,7 @@ differences between array elements.
 our slot-based trivia handling which normalizes blank lines between elements
 consistently.
 
-### 5. option_message_field.proto -- Extension key bracket expansion + blank lines
+### 3. option_message_field.proto -- Extension key bracket expansion + blank lines
 
 ```
 golden:  [/* One */ foo.bar..._garblez /* Two */] /* Three */ : "boo"
@@ -110,7 +77,7 @@ is dense and harder to read.
 Also has blank line differences between declarations in message literal
 contexts, same cause as other blank line diffs.
 
-### 6. message_options.proto -- Block comment placement + bracket expansion
+### 4. message_options.proto -- Block comment placement + bracket expansion
 
 Multiple differences:
 
@@ -151,7 +118,7 @@ keeps them compact.
 bracketed expressions. Our formatter consistently expands when content could
 benefit from vertical space.
 
-### 7. literal_comments.proto -- Trailing comment format after close braces
+### 5. literal_comments.proto -- Trailing comment format after close braces
 
 ```
 golden:  } /* Trailing */
@@ -177,7 +144,6 @@ broken, and formatting is idempotent for all passing tests. The categories are:
 
 | Category | Tests affected | Our choice |
 |----------|---------------|------------|
-| Space after block comments in gapGlue | package, option_compound_name | Always space after `*/` before identifiers |
 | Compound string indentation in arrays | compound_string, option_complex_array_literal | Extra indent level for clarity |
 | Bracket expansion with comments | option_message_field, message_options, literal_comments | Expand when interior has comments |
 | Block comment trailing attachment | message_options | Attach to preceding value when no blank line |

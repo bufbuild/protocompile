@@ -207,13 +207,13 @@ func (p *printer) printSignature(sig ast.Signature) {
 		p.withGroup(func(p *printer) {
 			openTok, closeTok := inputs.Brackets().StartEnd()
 			slots := p.trivia.scopeTrivia(inputs.Brackets().ID())
-			p.printToken(openTok, gapGlue)
+			p.printToken(openTok, gapPreserve)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.printTypeListContents(inputs, slots)
 				p.push(dom.TextIf(dom.Broken, "\n"))
 			})
-			p.printToken(closeTok, gapGlue)
+			p.printToken(closeTok, gapPreserve)
 		})
 	}
 
@@ -230,14 +230,14 @@ func (p *printer) printSignature(sig ast.Signature) {
 					indented.printTypeListContents(outputs, slots)
 					p.push(dom.TextIf(dom.Broken, "\n"))
 				})
-				p.printToken(closeTok, gapGlue)
+				p.printToken(closeTok, gapPreserve)
 			})
 		}
 	}
 }
 
 func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia) {
-	gap := gapGlue
+	gap := gapPreserve
 	for i := range list.Len() {
 		p.emitTriviaSlot(trivia, i)
 		if i > 0 {

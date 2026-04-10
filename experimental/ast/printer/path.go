@@ -22,8 +22,8 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 		return
 	}
 
-	// Path components are glued inline (gapGlue), so a trailing //
-	// comment on any component would eat subsequent components.
+	// Path components are bound tightly (gapPreserve), so a trailing
+	// // comment on any component would eat subsequent components.
 	// Convert to /* */ to keep the path intact.
 	saved := p.convertLineToBlock
 	p.convertLineToBlock = true
@@ -34,8 +34,8 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 		// Print separator (dot or slash) if present.
 		// The first separator uses the caller's gap (e.g., gapSpace
 		// after "extend" for fully-qualified paths like ".google").
-		// Subsequent separators use gapGlue for tight binding.
-		sepGap := gapGlue
+		// Subsequent separators use gapPreserve for tight binding.
+		sepGap := gapPreserve
 		if first && !pc.Separator().IsZero() {
 			sepGap = gap
 		}
@@ -45,7 +45,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 
 		// Print the name component
 		if !pc.Name().IsZero() {
-			componentGap := gapGlue
+			componentGap := gapPreserve
 			if first && pc.Separator().IsZero() {
 				// Only use the caller's gap for the first NAME if
 				// there was no separator before it.
@@ -62,9 +62,11 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 
 				p.printToken(openTok, componentGap)
 				p.emitTriviaSlot(trivia, 0)
-				p.printPath(extn, gapGlue)
+				p.tightPreserve = true
+				p.printPath(extn, gapPreserve)
+				p.tightPreserve = false
 				p.emitTriviaSlot(trivia, 1)
-				p.printToken(closeTok, gapGlue)
+				p.printToken(closeTok, gapPreserve)
 			} else {
 				// Simple identifier
 				p.printToken(pc.Name(), componentGap)

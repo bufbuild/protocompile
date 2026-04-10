@@ -55,10 +55,10 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 	openTok, closeTok := brackets.StartEnd()
 	trivia := p.trivia.scopeTrivia(brackets.ID())
 
-	p.printToken(openTok, gapGlue)
+	p.printToken(openTok, gapPreserve)
 	for i := range args.Len() {
 		p.emitTriviaSlot(trivia, i)
-		argGap := gapGlue
+		argGap := gapPreserve
 		if i > 0 {
 			p.printToken(args.Comma(i-1), p.semiGap())
 			argGap = gapSpace
@@ -66,5 +66,5 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 		p.printType(args.At(i), argGap)
 	}
 	p.emitRemainingTrivia(trivia, args.Len())
-	p.printToken(closeTok, gapGlue)
+	p.printToken(closeTok, gapPreserve)
 }

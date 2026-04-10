@@ -33,7 +33,7 @@ const (
 	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
 	gapBlankline // gapBlankline inserts two newline characters
 	gapInline    // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
-	gapGlue      // gapGlue is like gapNone but comments are glued with no surrounding spaces (for path separators)
+	gapPreserve   // gapPreserve is like gapNone but inherits the source's spacing around comments
 )
 
 // scopeKind distinguishes file-level scopes from body-level scopes,
@@ -100,6 +100,13 @@ type printer struct {
 	// (paths, compact options, option values before `;`) so that
 	// a trailing // comment doesn't eat the next token.
 	convertLineToBlock bool
+
+	// tightPreserve, when true, forces the next gapPreserve emitTrivia
+	// call to suppress the inherited space before the first comment.
+	// This is used after open brackets so that "(/* comment */" is
+	// tight, while still allowing spaces between identifiers and
+	// comments elsewhere in the path.
+	tightPreserve bool
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -237,18 +244,8 @@ func (p *printer) emitCommaTrivia(comma token.Token) {
 	p.emitTrailing(att.trailing)
 }
 
-// appendPending buffers trivia tokens, filtering non-newline whitespace
-// in format mode.
+// appendPending buffers trivia tokens for later processing by emitTrivia.
 func (p *printer) appendPending(tokens []token.Token) {
-	if p.options.Format {
-		for _, tok := range tokens {
-			if tok.Kind() == token.Space && tok.Text() != "\n" {
-				continue
-			}
-			p.pending = append(p.pending, tok)
-		}
-		return
-	}
 	p.pending = append(p.pending, tokens...)
 }
 
@@ -373,8 +370,8 @@ func (p *printer) emitGap(gap gapStyle) {
 	case gapInline:
 		// gapInline emits nothing when there are no comments.
 		// Comment handling is done in emitTrivia.
-	case gapGlue:
-		// gapGlue emits nothing (like gapNone).
+	case gapPreserve:
+		// gapPreserve emits nothing when no comments are present.
 	}
 }
 
@@ -409,11 +406,10 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	switch gap {
 	case gapSpace:
 		afterGap = gapSpace
-	case gapGlue:
-		// When comments are present in a glued context, the
-		// post-comment gap needs a space (e.g., /* comment */ stream).
-		// Without comments, gapGlue still emits nothing.
-		afterGap = gapSpace
+	case gapPreserve:
+		// gapPreserve: afterGap is determined dynamically per gap
+		// point based on whether the source had whitespace.
+		afterGap = gapNone
 	case gapInline:
 		// gapInline is used for punctuation tokens (`;`, `,`) where
 		// comments should have a space before the first and no gap after
@@ -426,24 +422,51 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		firstGap = gapSpace
 	}
 
+	// Capture and consume tightPreserve so it doesn't leak.
+	tightPreserve := p.tightPreserve
+	p.tightPreserve = false
+
+	// inheritGap promotes base to gapSpace when the source had
+	// non-newline whitespace in a gapPreserve context.
+	inheritGap := func(base gapStyle, hasSpace bool) gapStyle {
+		if gap == gapPreserve && hasSpace {
+			return gapSpace
+		}
+		return base
+	}
+
 	hasComment := false
 	prevIsLine := false
 	newlineRun := 0
+	hasNonNewlineSpace := false
 	for _, tok := range p.pending {
 		if tok.Kind() == token.Space {
 			if tok.Text() == "\n" {
 				newlineRun++
+			} else {
+				hasNonNewlineSpace = true
 			}
 			continue
 		}
 		if tok.Kind() != token.Comment {
 			continue
 		}
-		if !hasComment {
-			p.emitGap(firstGap)
-		} else {
-			p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
+
+		fg := inheritGap(firstGap, hasNonNewlineSpace)
+		ag := inheritGap(afterGap, hasNonNewlineSpace)
+
+		// Suppress the inherited space before the first comment
+		// when tightPreserve is set (right after an open bracket).
+		if tightPreserve && !hasComment {
+			fg = firstGap
 		}
+
+		if !hasComment {
+			p.emitGap(fg)
+		} else {
+			p.emitGap(commentGap(ag, prevIsLine, newlineRun))
+		}
+		hasNonNewlineSpace = false
 		newlineRun = 0
 		text := strings.TrimRight(tok.Text(), " \t")
 		isLine := strings.HasPrefix(text, "//")
@@ -461,7 +484,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		// Use the actual newlineRun from trailing tokens after the last
 		// comment. When the source had a blank line (2+ newlines) after
 		// the last comment, this preserves it.
-		p.emitGap(commentGap(afterGap, prevIsLine, newlineRun))
+		p.emitGap(commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, newlineRun))
 		return
 	}
 	p.emitGap(gap)
