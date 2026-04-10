@@ -373,14 +373,15 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		// In format mode, compact options layout is deterministic:
 		// - 1 option: inline [key = value]
 		// - 2+ options: expanded one-per-line
-		// Force multi-line if the open bracket has trailing comments
-		// or if slots contain comments, since inline // comments
-		// would eat the closing bracket.
+		// Force multi-line if the brackets contain comments that
+		// would break inline formatting. Line comments (//) in
+		// leading trivia eat the rest of the line and cannot be
+		// converted to block comments (convertLineToBlock only
+		// affects trailing trivia).
 		openTrailing := p.extractOpenTrailing(openTok)
-		forceExpand := len(openTrailing) > 0
-		if !forceExpand {
-			forceExpand = triviaHasComments(slots)
-		}
+		forceExpand := len(openTrailing) > 0 ||
+			triviaHasComments(slots) ||
+			p.scopeHasLeadingLineComments(brackets)
 		if entries.Len() == 1 && !forceExpand {
 			// Single option: stays inline. No group wrapping, so
 			// message literal values expand naturally while keeping

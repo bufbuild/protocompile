@@ -570,6 +570,33 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 	return false
 }
 
+// scopeHasLeadingLineComments checks whether any interior token in a fused
+// scope has a line comment (//) in its leading trivia. Line comments in
+// leading trivia cannot be converted to block comments by convertLineToBlock
+// (which only affects trailing trivia), so they would eat the rest of the
+// line if the scope were formatted inline.
+func (p *printer) scopeHasLeadingLineComments(fused token.Token) bool {
+	if p.trivia == nil {
+		return false
+	}
+	cursor := fused.Children()
+	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok.Kind().IsSkippable() {
+			continue
+		}
+		att, ok := p.trivia.tokenTrivia(tok.ID())
+		if !ok {
+			continue
+		}
+		for _, t := range att.leading {
+			if t.Kind() == token.Comment && strings.HasPrefix(t.Text(), "//") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // semiGap returns the gap to use before a semicolon or comma.
 // In format mode, uses gapInline to keep comments on the same line as
 // the preceding token. In non-format mode, uses gapNone.
