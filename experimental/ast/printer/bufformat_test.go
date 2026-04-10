@@ -121,10 +121,15 @@ func TestBufFormat(t *testing.T) {
 				t.Errorf("output mismatch:\n%s", diff)
 			}
 
-			// Also verify idempotency: formatting the formatted output
-			// should produce the same result.
+			// Verify the formatted output is valid protobuf and that
+			// formatting is idempotent.
 			errs2 := &report.Report{}
 			file2, _ := parser.Parse(relPath, source.NewFile(relPath, got), errs2)
+			for _, diagnostic := range errs2.Diagnostics {
+				if diagnostic.Level() <= report.Error {
+					t.Errorf("formatted output does not re-parse: %v", diagnostic)
+				}
+			}
 			got2 := printer.PrintFile(printer.Options{Format: true}, file2)
 			if got2 != got {
 				t.Errorf("formatting is not idempotent")

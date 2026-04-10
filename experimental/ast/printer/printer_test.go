@@ -62,8 +62,14 @@ func TestPrinter(t *testing.T) {
 		// Parse the source
 		errs := &report.Report{}
 		file, _ := parser.Parse(path, source.NewFile(path, testCase.Source), errs)
-		for diagnostic := range errs.Diagnostics {
-			t.Logf("parse error: %q", diagnostic)
+		hasParseErrors := false
+		for _, d := range errs.Diagnostics {
+			if d.Level() <= report.Error {
+				hasParseErrors = true
+			}
+			if d.Level() <= report.Warning {
+				t.Logf("parse warning: %q", d)
+			}
 		}
 
 		// Apply edits if any
@@ -77,7 +83,31 @@ func TestPrinter(t *testing.T) {
 			Format:       testCase.Format,
 			TabstopWidth: testCase.TabstopWidth,
 		}
-		outputs[0] = printer.PrintFile(options, file)
+		got := printer.PrintFile(options, file)
+		outputs[0] = got
+
+		// Skip validity and idempotency checks when the source had
+		// parse errors (e.g., partial_message tests) or has edits
+		// (synthetic AST nodes may not round-trip).
+		if hasParseErrors || len(testCase.Edits) > 0 || !testCase.Format {
+			return
+		}
+
+		// Verify the output is valid protobuf by re-parsing it.
+		errs2 := &report.Report{}
+		file2, _ := parser.Parse(path, source.NewFile(path, got), errs2)
+		for _, d := range errs2.Diagnostics {
+			if d.Level() <= report.Error {
+				t.Errorf("formatted output does not re-parse: %v", d)
+			}
+		}
+
+		// Verify idempotency: formatting the re-parsed output should
+		// produce the same result.
+		got2 := printer.PrintFile(options, file2)
+		if got2 != got {
+			t.Errorf("formatting is not idempotent")
+		}
 	})
 }
 
