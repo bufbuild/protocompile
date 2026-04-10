@@ -22,6 +22,21 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
+// DescriptorProto generates a single [*descriptorpb.FileDescriptorProto] for the given
+// [*ir.File].
+func DescriptorProto(file *ir.File, options ...DescriptorOption) (*descriptorpb.FileDescriptorProto, error) {
+	var g generator
+	g.init(options...)
+
+	if g.exclude != nil && g.exclude.Exclude(file) {
+		return nil, nil
+	}
+
+	fdp := new(descriptorpb.FileDescriptorProto)
+	g.file(file, fdp)
+	return fdp, nil
+}
+
 // DescriptorSetBytes generates a FileDescriptorSet for the given files, and returns the
 // result as an encoded byte slice.
 //
@@ -29,11 +44,7 @@ import (
 // the WKTs, and all names are fully-qualified.
 func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	for _, opt := range options {
-		if opt != nil {
-			opt(&g)
-		}
-	}
+	g.init(options...)
 
 	fds := new(descriptorpb.FileDescriptorSet)
 	g.files(files, fds)
@@ -46,44 +57,88 @@ func DescriptorSetBytes(files []*ir.File, options ...DescriptorOption) ([]byte, 
 // The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
 func DescriptorProtoBytes(file *ir.File, options ...DescriptorOption) ([]byte, error) {
 	var g generator
-	for _, opt := range options {
-		if opt != nil {
-			opt(&g)
-		}
-	}
+	g.init(options...)
 
 	fdp := new(descriptorpb.FileDescriptorProto)
 	g.file(file, fdp)
 	return proto.Marshal(fdp)
 }
 
-// DescriptorOption is an option to pass to [DescriptorSetBytes] or [DescriptorProtoBytes].
-type DescriptorOption func(*generator)
+// DescriptorOption is an option to pass to [DescriptorSetBytes], [DescriptorProtoBytes],
+// or DescriptorProto.
+type DescriptorOption interface {
+	apply(*Options)
+}
+
+// This lets us use arbitrary closures as a DescriptorOption. We use this in
+// [IncludeSourceCodeInfo], [GenerateExtraOptionLocations], and [ExcludeFiles].
+type descriptorOption func(*Options)
+
+// [DescriptorOption] instance for [descriptorOption].
+func (dopt descriptorOption) apply(o *Options) {
+	dopt(o)
+}
+
+// [DescriptorOption] instance for [Options].
+//
+// This allows us for example to pass a value of [Options] to [DescriptorProto].
+func (o *Options) apply(that *Options) {
+	*that = *o
+}
+
+// Apply applies the given [DescriptorOption] to this [*Options].
+//
+// Nil values are ignored; does nothing if opt is nil.
+func (o *Options) Apply(options ...DescriptorOption) *Options {
+	if o != nil {
+		for _, option := range options {
+			if option != nil {
+				option.apply(o)
+			}
+		}
+	}
+	return o
+}
+
+// apply applies the given [DescriptorOption] to this [*generator] and initializes some of its fields.
+func (g *generator) init(options ...DescriptorOption) {
+	g.Apply(options...)
+	if g.includeSourceCodeInfo {
+		g.debug = new(debug)
+	} else {
+		g.debug = nil
+	}
+}
 
 // IncludeSourceCodeInfo sets whether or not to include google.protobuf.SourceCodeInfo in
 // the output.
 func IncludeSourceCodeInfo(flag bool) DescriptorOption {
-	return func(g *generator) {
-		if flag {
-			g.debug = new(debug)
-		} else {
-			g.debug = nil
-		}
-	}
-}
-
-// ExcludeFiles excludes the given files from the output of [DescriptorSetBytes].
-func ExcludeFiles(exclude func(*ir.File) bool) DescriptorOption {
-	return func(g *generator) {
-		g.exclude = exclude
-	}
+	return descriptorOption(func(o *Options) {
+		o.includeSourceCodeInfo = flag
+	})
 }
 
 // GenerateExtraOptionLocations set whether or not to generate additional locations for
 // elements inside of message literals in option values. This option is a no-op if
 // [IncludeSourceCodeInfo] is not set.
 func GenerateExtraOptionLocations(flag bool) DescriptorOption {
-	return func(g *generator) {
-		g.generateExtraOptionLocations = flag
-	}
+	return descriptorOption(func(o *Options) {
+		o.generateExtraOptionLocations = flag
+	})
+}
+
+// Excluder is used with [ExcludeFiles].
+//
+// This is an interface, rather than a function, so that implementations can be comparable for
+// use in queries.
+type Excluder interface {
+	Exclude(*ir.File) bool
+}
+
+// ExcludeFiles excludes the given files from the output of [DescriptorSetBytes] and
+// [DescriptorProto].
+func ExcludeFiles(exclude Excluder) DescriptorOption {
+	return descriptorOption(func(o *Options) {
+		o.exclude = exclude
+	})
 }

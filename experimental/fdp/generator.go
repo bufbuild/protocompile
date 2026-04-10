@@ -39,11 +39,18 @@ import (
 	"github.com/bufbuild/protocompile/internal/tags"
 )
 
-type generator struct {
-	currentFile                  *ir.File
+// Options records a set of [DescriptorOptions].
+//
+// This type is intended for making options comparable, such as for use in queries.
+type Options struct {
+	includeSourceCodeInfo        bool
 	generateExtraOptionLocations bool
-	exclude                      func(*ir.File) bool
+	exclude                      Excluder
+}
 
+type generator struct {
+	currentFile *ir.File
+	Options
 	debug *debug
 }
 
@@ -52,7 +59,7 @@ func (g *generator) files(files []*ir.File, fds *descriptorpb.FileDescriptorSet)
 	// imports for each file because we want the result to be sorted
 	// topologically.
 	for file := range ir.TopoSort(files) {
-		if g.exclude != nil && g.exclude(file) {
+		if g.exclude != nil && g.exclude.Exclude(file) {
 			continue
 		}
 
