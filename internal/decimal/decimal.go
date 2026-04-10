@@ -30,6 +30,9 @@ const (
 	mantBits64        = 52 // Mantissa bits in a binary64.
 	mantMask64 uint64 = 1<<mantBits64 - 1
 	maxMant64  uint64 = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
+
+	quietBit    = 1 << (mantBits64 - 1)
+	payloadMask = quietBit - 1
 )
 
 var (
@@ -107,13 +110,26 @@ func (z *Decimal) IsNaN() bool {
 	return z.flags&nan != 0
 }
 
+// IsQuietNaN returns whether this value is a qNaN.
+func (z *Decimal) IsQuietNaN() bool {
+	return z.IsNaN() && bigx.Uint64(z.get())&quietBit != 0
+}
+
+// IsQuietNaN returns whether this value is a sNaN.
+func (z *Decimal) IsSignalingNaN() bool {
+	return z.IsNaN() && bigx.Uint64(z.get())&quietBit == 0
+}
+
 // NaN returns the NaN payload within this value, or -1 if it is
 // not a NaN.
+//
+// The NaN payload is 51 bits, corresponding to the 52 mantissa bits of an
+// IEEE745 binary64 except the highest bit, which is used as the quiet bit.
 func (z *Decimal) NaN() int64 {
 	if !z.IsNaN() {
 		return -1
 	}
-	return int64(bigx.Uint64(z.get()) & mantMask64)
+	return int64(bigx.Uint64(z.get()) & payloadMask)
 }
 
 // Negative returns whether this value's sign bit is set.
@@ -154,19 +170,31 @@ func (z *Decimal) SetInf(neg bool) *Decimal {
 	return z
 }
 
-// SetNaN sets this value to a quiet NaN with zero payload.
-func (z *Decimal) SetNaN(neg bool) *Decimal {
-	return z.SetNaNPayload(neg, 0)
+// SetNaN sets this value to a NaN.
+//
+// This sets the "standard" NaN that most programming languages default to
+// (not the one math.NaN() produces -- Go is kinda weird here). This yields a
+// quiet NaN whose payload is 0.
+func (z *Decimal) SetNaN() *Decimal {
+	return z.SetNaNPayload(false, true, 0)
 }
 
 // SetNaNPayload sets this value to a NaN with arbitrary payload.
-func (z *Decimal) SetNaNPayload(neg bool, payload uint64) *Decimal {
+//
+// Only the low 51 bits of the payload are kept; the 52th bit is the quiet
+// bit, set by the quiet argument to this function. See [Decimal.NaN].
+func (z *Decimal) SetNaNPayload(neg bool, quiet bool, payload uint64) *Decimal {
+	payload &= payloadMask
+	if quiet {
+		payload |= quietBit
+	}
+
 	z.Clear()
 	z.flags |= nan
 	if neg {
 		z.flags |= sign
 	}
-	z.set(bigx.SetUint64(z.get(), payload&mantBits64))
+	z.set(bigx.SetUint64(z.get(), payload))
 	return z
 }
 
@@ -176,7 +204,13 @@ func (z *Decimal) IsInt() bool {
 }
 
 // Int sets x to the nearest integer to z.
+//
+// If z is non-finite, returns nil and leaves x unchanged.
 func (z *Decimal) Int(x *big.Int) *big.Int {
+	if !z.IsFinite() {
+		return nil
+	}
+
 	if x == nil {
 		x = new(big.Int)
 	}

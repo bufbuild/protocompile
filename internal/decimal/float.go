@@ -236,7 +236,7 @@ func (z *Decimal) float(x *big.Float) *big.Float {
 
 func nanPayload(sign bool, x uint64) float64 {
 	nan := uint64(0x7FF8000000000000)
-	nan |= x & mantBits64
+	nan |= x & mantMask64
 	if sign {
 		nan |= 1 << 63
 	}
