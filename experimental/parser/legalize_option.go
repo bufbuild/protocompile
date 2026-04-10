@@ -315,7 +315,7 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 			if what == taxa.Int {
 				switch base {
 				case 2:
-					v, _ := n.Value().Int(nil)
+					v := n.Value().Int(nil)
 					d.Apply(
 						report.SuggestEdits(value, "use a hexadecimal literal instead", report.Edit{
 							Start:   0,

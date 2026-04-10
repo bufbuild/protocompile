@@ -16,13 +16,13 @@ package token
 
 import (
 	"math"
-	"math/big"
 	"strconv"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/internal/decimal"
 )
 
 // NumberToken provides access to detailed information about a [Number].
@@ -148,12 +148,15 @@ func (n NumberToken) Int() (v uint64, exact bool) {
 
 	switch {
 	case n.Raw().Big != nil:
-		v, acc := n.Raw().Big.Uint64()
-		return v, acc == big.Exact && n.Raw().Big.IsInt()
+		k := n.Raw().Big.Int(nil) // TODO: get rid of this allocation.
+		if k.IsUint64() {
+			return k.Uint64(), n.Raw().Big.IsInt()
+		}
+		return math.MaxUint64, false
 	case n.Raw().IsFloat:
 		f := math.Float64frombits(n.Raw().Word)
-		n := uint64(f)
-		return n, f == float64(n)
+		k := uint64(f)
+		return k, f == float64(k)
 	default:
 		return n.Raw().Word, true
 	}
@@ -171,8 +174,7 @@ func (n NumberToken) Float() (v float64, exact bool) {
 
 	switch {
 	case n.Raw().Big != nil:
-		v, acc := n.Raw().Big.Float64()
-		return v, acc == big.Exact
+		return n.Raw().Big.Float64()
 	case n.Raw().IsFloat:
 		f := math.Float64frombits(n.Raw().Word)
 		return f, true
@@ -183,11 +185,11 @@ func (n NumberToken) Float() (v float64, exact bool) {
 }
 
 // Value returns the underlying arbitrary-precision numeric value.
-func (n NumberToken) Value() *big.Float {
+func (n NumberToken) Value() *decimal.Decimal {
 	if n.Raw() == nil {
 		// This is a decimal integer, so we just parse on the fly.
 		v, _ := strconv.ParseUint(n.Token().Text(), 10, 64)
-		return new(big.Float).SetUint64(v)
+		return new(decimal.Decimal).SetUint64(v)
 	}
 
 	switch {
@@ -195,9 +197,9 @@ func (n NumberToken) Value() *big.Float {
 		return n.Raw().Big
 	case n.Raw().IsFloat:
 		f := math.Float64frombits(n.Raw().Word)
-		return new(big.Float).SetFloat64(f)
+		return new(decimal.Decimal).SetFloat64(f)
 	default:
 		v := n.Raw().Word
-		return new(big.Float).SetUint64(v)
+		return new(decimal.Decimal).SetUint64(v)
 	}
 }

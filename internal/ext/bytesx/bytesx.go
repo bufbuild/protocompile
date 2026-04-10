@@ -12,37 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package unicodex
+package bytesx
 
-var hexTable = func() [128]byte {
-	var table [128]byte
-	for d := range table {
-		d := byte(d)
-		var v byte
-		switch {
-		case d >= '0' && d <= '9':
-			v = d - '0'
+import "github.com/bufbuild/protocompile/internal/ext/unicodex"
 
-		case d >= 'a' && d <= 'z':
-			v = d - 'a' + 10
-
-		case d >= 'A' && d <= 'Z':
-			v = d - 'A' + 10
-
-		default:
-			v = 0xff
-		}
-
-		table[d] = v
+// MakeASCIILower uppercases every ASCII letter in buf in-place. Works for any
+// UTF-8 string.
+func MakeASCIILower(buf []byte) {
+	for i := range buf {
+		buf[i] = unicodex.ToASCIILower(buf[i])
 	}
-	return table
-}()
+}
 
-// Digit parses a digit in the given base, up to base 36.
-func Digit(d rune, base byte) (value byte, ok bool) {
-	if d > 0x7f {
-		return 0xff, false
+// MakeASCIIUpper uppercases every ASCII letter in buf in-place. Works for any
+// UTF-8 string.
+func MakeASCIIUpper(buf []byte) {
+	for i := range buf {
+		buf[i] = unicodex.ToASCIIUpper(buf[i])
 	}
-	value = hexTable[d]
-	return value, value < base
 }

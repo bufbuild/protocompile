@@ -17,7 +17,7 @@
 package tokenmeta
 
 import (
-	"math/big"
+	"github.com/bufbuild/protocompile/internal/decimal"
 )
 
 // Meta is a type defined in this package.
@@ -26,10 +26,7 @@ type Meta interface{ meta() }
 type Number struct {
 	// Inlined storage for small int/float values.
 	Word uint64
-
-	// big.Float can represent any uint64 or float64 (except NaN), and any
-	// *big.Int, too.
-	Big *big.Float
+	Big  *decimal.Decimal
 
 	// Length of a prefix or suffix on this integer.
 	// The prefix is the base prefix; the suffix is any identifier
