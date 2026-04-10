@@ -18,7 +18,6 @@
 package decimal
 
 import (
-	"math"
 	"math/big"
 	"unsafe"
 
@@ -95,6 +94,35 @@ func (z *Decimal) IsZero() bool {
 	return len(z.get()) == 0
 }
 
+// SetZero resets this decimal value to zero.
+func (z *Decimal) SetZero() *Decimal {
+	z.exp = 0
+	z.flags = 0
+
+	if z.raw.data == nil {
+		z.raw.data = &z.raw.small[0]
+	}
+
+	z.raw.small[0] = 0
+	z.raw.small[1] = 0
+	return z
+}
+
+// Negative returns whether this value's sign bit is set.
+func (z *Decimal) Negative() bool {
+	return z.flags&sign != 0
+}
+
+// SetNegative sets whether this value's sign bit is set.
+func (z *Decimal) SetNegative(neg bool) *Decimal {
+	if neg {
+		z.flags |= sign
+	} else {
+		z.flags &^= sign
+	}
+	return z
+}
+
 // IsFinite returns whether this value is finite.
 func (z *Decimal) IsFinite() bool {
 	return z.flags&nonfinite == 0
@@ -103,6 +131,16 @@ func (z *Decimal) IsFinite() bool {
 // IsInf returns whether this value is an infinity.
 func (z *Decimal) IsInf() bool {
 	return z.flags&inf != 0
+}
+
+// SetInf sets z to +Infinity or -Infinity.
+func (z *Decimal) SetInf(neg bool) *Decimal {
+	z.SetZero()
+	z.flags |= inf
+	if neg {
+		z.flags |= sign
+	}
+	return z
 }
 
 // IsNaN returns whether this value is a NaN.
@@ -132,44 +170,6 @@ func (z *Decimal) NaN() int64 {
 	return int64(bigx.Uint64(z.get()) & payloadMask)
 }
 
-// Negative returns whether this value's sign bit is set.
-func (z *Decimal) Negative() bool {
-	return z.flags&sign != 0
-}
-
-// SetNegative sets whether this value's sign bit is set.
-func (z *Decimal) SetNegative(neg bool) *Decimal {
-	if neg {
-		z.flags |= sign
-	} else {
-		z.flags &^= sign
-	}
-	return z
-}
-
-// Clear resets this decimal value to zero.
-func (z *Decimal) Clear() {
-	z.exp = 0
-	z.flags = 0
-
-	if z.raw.data == nil {
-		z.raw.data = &z.raw.small[0]
-	}
-
-	z.raw.small[0] = 0
-	z.raw.small[1] = 0
-}
-
-// SetInf sets z to +Infinity or -Infinity.
-func (z *Decimal) SetInf(neg bool) *Decimal {
-	z.Clear()
-	z.flags |= inf
-	if neg {
-		z.flags |= sign
-	}
-	return z
-}
-
 // SetNaN sets this value to a NaN.
 //
 // This sets the "standard" NaN that most programming languages default to
@@ -189,98 +189,12 @@ func (z *Decimal) SetNaNPayload(neg bool, quiet bool, payload uint64) *Decimal {
 		payload |= quietBit
 	}
 
-	z.Clear()
+	z.SetZero()
 	z.flags |= nan
 	if neg {
 		z.flags |= sign
 	}
 	z.set(bigx.SetUint64(z.get(), payload))
-	return z
-}
-
-// IsInt returns whether this value is an integer.
-func (z *Decimal) IsInt() bool {
-	return z.IsZero() || int(z.exp) >= z.digits()
-}
-
-// Int sets x to the nearest integer to z.
-//
-// If z is non-finite, returns nil and leaves x unchanged.
-func (z *Decimal) Int(x *big.Int) *big.Int {
-	if !z.IsFinite() {
-		return nil
-	}
-
-	if x == nil {
-		x = new(big.Int)
-	}
-
-	n := int(z.exp) - z.digits()
-	if n < 0 {
-		return x.SetUint64(0)
-	}
-
-	w := x.Bits()
-	if z.base2() {
-		w = bigx.Scale2(w, z.get(), uint(n))
-	} else {
-		w = bigx.Scale10(w, z.get(), uint(n))
-	}
-
-	return x.SetBits(w)
-}
-
-// SetUint64 sets this decimal's value to x.
-func (z *Decimal) SetUint64(x uint64) *Decimal {
-	// Doing it this way gives us a good shot to get this slice to allocate
-	// on the stack.
-	xb := new(big.Int).SetBits(bigx.SetUint64(make([]big.Word, 0, 2), x))
-	return z.setInt(xb, false)
-}
-
-// SetInt sets this decimal's value to x.
-func (z *Decimal) SetInt(x *big.Int) *Decimal {
-	return z.setInt(x, false)
-}
-
-// ReuseInt sets this decimal's value to x, consuming x's storage in the
-// process.
-func (z *Decimal) ReuseInt(x *big.Int) *Decimal {
-	return z.setInt(x, true)
-}
-
-func (z *Decimal) setInt(x *big.Int, reuse bool) *Decimal {
-	z.Clear()
-
-	if x.Sign() < 0 {
-		z.flags |= sign
-	}
-
-	exp := x.BitLen()
-	if exp > math.MaxInt32 || exp < math.MinInt32 {
-		z.flags |= inf
-		return z
-	}
-
-	// Because this is an integer, we can use a power of 2 exponent.
-	// This simplifies the task of calculating an exponent, punting the
-	// "convert to base 10" problem to later, if necessary at all.
-	z.flags |= base2
-
-	w := x.Bits()
-	if !reuse || cap(w) < cap(z.get()) {
-		w = append(z.get()[:0], w...)
-	}
-
-	// Knock off any trailing zeros. Because of the representation we've chosen,
-	// trailing zeros are never part of the final value.
-	//
-	// Because we're putting this in 0.bbbbb * 2^e form, if there are trailing
-	// zeros before the binary point, they are automatically filled by the
-	// << implied by the 2^e.
-	z.set(bigx.Shr(w, w, x.TrailingZeroBits()))
-	z.exp = int32(exp)
-
 	return z
 }
 

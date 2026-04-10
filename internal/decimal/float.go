@@ -162,7 +162,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 
 // SetFloat64 sets this decimal's value to x.
 func (z *Decimal) SetFloat64(x float64) *Decimal {
-	z.Clear()
+	z.SetZero()
 
 	if math.Signbit(x) {
 		z.flags |= sign
