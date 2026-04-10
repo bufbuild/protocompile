@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	mantBits64 = 52 // Mantissa bits in a binary64.
-	mantMask64 = 1<<mantBits64 - 1
-	maxMant64  = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
+	mantBits64        = 52 // Mantissa bits in a binary64.
+	mantMask64 uint64 = 1<<mantBits64 - 1
+	maxMant64  uint64 = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
 )
 
 var (
@@ -113,7 +113,7 @@ func (z *Decimal) NaN() int64 {
 	if !z.IsNaN() {
 		return -1
 	}
-	return int64(bigx.Uint64(z.get())) & mantMask64
+	return int64(bigx.Uint64(z.get()) & mantMask64)
 }
 
 // Negative returns whether this value's sign bit is set.

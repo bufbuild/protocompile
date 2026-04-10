@@ -97,7 +97,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 	case 1:
 		w := w[0]
 		v = float64(w)
-		exact = w < maxMant64
+		exact = uint64(w) < maxMant64
 
 		// No exponent, so we're done.
 		exp := int(z.exp) - z.digits()
