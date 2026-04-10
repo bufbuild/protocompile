@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+message Foo {
+  optional group Bar = 1 {}
+}
+
+message Bar {
+  optional group Baz = 2 {
+    /* Comment inside the empty group */
+  }
+}

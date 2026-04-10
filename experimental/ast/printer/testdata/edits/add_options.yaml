@@ -1,0 +1,98 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Tests for adding options:
+# - Add option to message
+# - Add option to message that already has options
+# - Add option to nested message
+# - Add compact option to field
+# - Add compact option to enum value
+# - Add compact option to field that already has options (single line)
+# - Add compact option to field that already has options (multi-line)
+
+source: |
+  syntax = "proto3";
+  package test;
+  message Simple {
+    string name = 1;
+    int32 age = 2;
+  }
+  message WithExisting {
+    option deprecated = true;
+    string value = 1;
+  }
+  message Outer {
+    string outer_field = 1;
+    message Inner {
+      string inner_field = 1;
+    }
+  }
+  enum Status {
+    UNKNOWN = 0;
+    ACTIVE = 1;
+    INACTIVE = 2 [debug_redact = true];
+  }
+  message MultiLineOptions {
+    string field = 1 [
+      debug_redact = true
+    ];
+  }
+  message TrailingComma {
+    string field = 1 [debug_redact = true,];
+  }
+
+edits:
+  # Add option to simple message
+  - kind: add_option
+    target: Simple
+    option: deprecated
+    value: "true"
+  # Add option to message with existing options
+  - kind: add_option
+    target: WithExisting
+    option: map_entry
+    value: "true"
+  # Add options to outer and nested messages
+  - kind: add_option
+    target: Outer
+    option: deprecated
+    value: "true"
+  - kind: add_option
+    target: Outer.Inner
+    option: deprecated
+    value: "true"
+  # Add compact options to fields
+  - kind: add_compact_option
+    target: Simple.name
+    option: deprecated
+    value: "true"
+  - kind: add_compact_option
+    target: Simple.age
+    option: deprecated
+    value: "true"
+  # Add compact option to enum value that already has an option
+  - kind: add_compact_option
+    target: Status.INACTIVE
+    option: deprecated
+    value: "true"
+  # Add compact option to field with multi-line options
+  - kind: add_compact_option
+    target: MultiLineOptions.field
+    option: deprecated
+    value: "true"
+  # Add compact option to field with trailing comma
+  - kind: add_compact_option
+    target: TrailingComma.field
+    option: deprecated
+    value: "true"

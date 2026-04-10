@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message Message {}
+
+message Empty {}
+
+message Foo {
+  /* C-style comment in the middle */
+}
+
+message Bar {
+  // Normal comment in the middle
+}
+
+message Baz {
+  // Body comment.
+}

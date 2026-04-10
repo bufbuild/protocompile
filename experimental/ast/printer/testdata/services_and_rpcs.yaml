@@ -1,0 +1,23 @@
+source: |
+  syntax = "proto3";
+
+  package grpc.example;
+
+  message Request {
+    string id = 1;
+  }
+
+  message Response {
+    string data = 1;
+  }
+
+  service ExampleService {
+    rpc GetItem(Request) returns (Response);
+    rpc ListItems(Request) returns (stream Response);
+    rpc CreateItems(stream Request) returns (Response);
+    rpc Chat(stream Request) returns (stream Response);
+
+    rpc GetWithOptions(Request) returns (Response) {
+      option deprecated = true;
+    }
+  }
