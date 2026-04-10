@@ -36,12 +36,14 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-protocompile-ci-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-protocompile-ci-
-      - name: Test
+      - name: Test (64-bit)
         run: make test
       - name: Benchmarks
         # no need to run benchmarks for every Go version
         if: matrix.go-version.name == 'latest'
         run: make benchmarks
+      - name: Test (32-bit)
+        run: GOOS=386 make test
       - name: Lint
         # Often, lint & gofmt guidelines depend on the Go version. To prevent
         # conflicting guidance, run only on the most recent supported version.
