@@ -62,7 +62,7 @@ test: build ## Run unit tests
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks
-	$(GO) test -bench -benchmem -v ./experimental/benchmark
+	$(GO) test -bench=. -benchmem -v ./experimental/benchmark
 	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
 
 .PHONY: build

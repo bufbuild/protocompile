@@ -124,8 +124,8 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 			// we get the correct rounding when converting to float64.
 
 			bits := mantBits64 + 1
-			w := bigx.MSBs(make([]big.Word, 0, 1), z.get(), uint(bits))[0]
-			v = float64(w)
+			w := bigx.MSBs(make([]big.Word, 0, 1), z.get(), uint(bits))
+			v = float64(bigx.Uint64(w))
 
 			// If w is d.dddd * 2^e, w is d.dddd * 2^53. We need to multiply
 			// by 2^(e-53).
