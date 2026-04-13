@@ -1,5 +1,12 @@
 syntax = "proto3";
 
+// Single-element dicts inside arrays should stay inline.
+option (custom.array_of_dicts) = {
+  things: [
+    {foo: 99},
+    {foo: 98}
+  ]
+};
 // Issue 9: Message literal with inline block comments should expand
 // to multi-line.
 option (custom.commented_option) = {

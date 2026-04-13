@@ -308,8 +308,11 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 
 	if elements.Len() == 1 && !hasComments {
+		// Emit the open brace with the caller's gap outside the
+		// group so that a gapNewline (e.g. from an array context)
+		// doesn't force the group to break.
+		p.printTokenAs(openTok, gap, openText)
 		p.withGroup(func(p *printer) {
-			p.printTokenAs(openTok, gap, openText)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.emitTriviaSlot(trivia, 0)
@@ -318,8 +321,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				indented.emitTriviaSlot(trivia, 1)
 			})
 			p.push(dom.TextIf(dom.Broken, "\n"))
-			p.printTokenAs(closeTok, gapNone, closeText)
 		})
+		p.printTokenAs(closeTok, gapNone, closeText)
 		return
 	}
 

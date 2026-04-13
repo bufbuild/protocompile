@@ -104,19 +104,14 @@ ours:    repeated int64 values = 2 [/* leading comment */
 Single compact option with comments stays inline in our formatter because the
 option count is 1. The golden expands it due to the comments.
 
-**c) Single-element dict expansion:**
-```
-golden:  {foo: 99},
-ours:    {
-           foo: 99
-         },
-```
-Our formatter expands single-element message literals to multi-line. The golden
-keeps them compact.
+**c) Single-element dict expansion:** FIXED. Single-element dicts now stay
+inline when they fit: `{foo: 99}`. The bug was that the caller's gap (e.g.
+`gapNewline` from a multi-element array) was emitted inside the `dom.Group`,
+causing the group to always break.
 
-**Rationale:** These are all stylistic choices about when to expand vs collapse
-bracketed expressions. Our formatter consistently expands when content could
-benefit from vertical space.
+**Rationale:** (a) and (b) are stylistic choices about when to expand vs
+collapse bracketed expressions. Our formatter consistently expands when content
+could benefit from vertical space.
 
 ### 5. literal_comments.proto -- Trailing comment format after close braces
 
