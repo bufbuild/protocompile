@@ -24,4 +24,6 @@ const (
 	stageAST
 	stageIR
 	stageLink
+	stageFDP
+	stageFDS
 )
