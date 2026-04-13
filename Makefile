@@ -57,12 +57,12 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
-	$(GO) test -race -cover ./...
+	$(GO) test $(if $(filter 386,$(GOARCH)),,-race) -cover ./...
 	$(GO) test -tags protolegacy ./...
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks
-	$(GO) test -bench -benchmem -v ./experimental/benchmark
+	$(GO) test -bench=. -benchmem -v ./experimental/benchmark
 	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
 
 .PHONY: build

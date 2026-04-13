@@ -742,6 +742,11 @@ func TestParse(t *testing.T) {
 		},
 
 		{
+			in:   "1.7976931348623157E+308",
+			f64s: m{"%g": "1.7976931348623157e+308"},
+		},
+
+		{
 			in:   "2.2250738585072014E-308",
 			want: m{"%g": "2.2250738585072014e-308"},
 			ints: m{"%v": "0"},
@@ -901,4 +906,92 @@ func TestSetFloat(t *testing.T) {
 			assert.Equal(t, tt.want, fmt.Sprint(z))
 		})
 	}
+}
+
+func TestNonFinite(t *testing.T) {
+	t.Parallel()
+
+	n := new(Decimal)
+	f, _ := n.Float64()
+	assert.True(t, n.IsFinite())
+	assert.False(t, n.IsInf())
+	assert.False(t, n.IsNaN())
+	assert.False(t, n.IsQuietNaN())
+	assert.False(t, n.IsSignalingNaN())
+	assert.False(t, math.IsInf(f, 0))
+	assert.False(t, math.IsNaN(f))
+	assert.Equal(t, int64(0), n.Int(nil).Int64())
+	assert.Equal(t, int64(-1), n.NaN())
+
+	n = new(Decimal).SetInf(false)
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.True(t, n.IsInf())
+	assert.False(t, n.IsNaN())
+	assert.False(t, n.IsQuietNaN())
+	assert.False(t, n.IsSignalingNaN())
+	assert.True(t, math.IsInf(f, 1))
+	assert.False(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(-1), n.NaN())
+
+	n = new(Decimal).SetInf(true)
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.True(t, n.IsInf())
+	assert.False(t, n.IsNaN())
+	assert.False(t, n.IsQuietNaN())
+	assert.False(t, n.IsSignalingNaN())
+	assert.True(t, math.IsInf(f, -1))
+	assert.False(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(-1), n.NaN())
+
+	n = new(Decimal).SetNaN()
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.False(t, n.IsInf())
+	assert.True(t, n.IsNaN())
+	assert.True(t, n.IsQuietNaN())
+	assert.False(t, n.IsSignalingNaN())
+	assert.False(t, math.IsInf(f, 0))
+	assert.True(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(0x0_0000_0000_0000), n.NaN())
+
+	n = new(Decimal).SetNaNPayload(false, false, 0)
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.False(t, n.IsInf())
+	assert.True(t, n.IsNaN())
+	assert.False(t, n.IsQuietNaN())
+	assert.True(t, n.IsSignalingNaN())
+	assert.False(t, math.IsInf(f, 0))
+	assert.True(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(0x0_0000_0000_0000), n.NaN())
+
+	n = new(Decimal).SetNaNPayload(false, false, math.MaxUint64)
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.False(t, n.IsInf())
+	assert.True(t, n.IsNaN())
+	assert.False(t, n.IsQuietNaN())
+	assert.True(t, n.IsSignalingNaN())
+	assert.False(t, math.IsInf(f, 0))
+	assert.True(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(0x7_ffff_ffff_ffff), n.NaN())
+
+	n = new(Decimal).SetNaNPayload(false, true, math.MaxUint64)
+	f, _ = n.Float64()
+	assert.False(t, n.IsFinite())
+	assert.False(t, n.IsInf())
+	assert.True(t, n.IsNaN())
+	assert.True(t, n.IsQuietNaN())
+	assert.False(t, n.IsSignalingNaN())
+	assert.False(t, math.IsInf(f, 0))
+	assert.True(t, math.IsNaN(f))
+	assert.Nil(t, n.Int(nil))
+	assert.Equal(t, int64(0x7_ffff_ffff_ffff), n.NaN())
 }

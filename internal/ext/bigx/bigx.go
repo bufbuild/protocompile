@@ -141,6 +141,11 @@ func Cmp(x, y []big.Word) int {
 	return bx.Cmp(by)
 }
 
+// Returns whether z can fit into a uint64.
+func IsUint64(z []big.Word) bool {
+	return len(z) <= 64/WordBits
+}
+
 // Uint64 returns the low 64 bits of z.
 func Uint64(z []big.Word) uint64 {
 	switch len(z) {
