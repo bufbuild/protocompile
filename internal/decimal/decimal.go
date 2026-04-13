@@ -28,7 +28,7 @@ import (
 const (
 	mantBits64        = 52 // Mantissa bits in a binary64.
 	mantMask64 uint64 = 1<<mantBits64 - 1
-	maxMant64  uint64 = 1<<(mantBits64+1) + 1 // Largest possible exact binary64 integer value.
+	maxMant64  uint64 = 1 << (mantBits64 + 1) // Bound on largest possible exact binary64 integer value.
 
 	quietBit    = 1 << (mantBits64 - 1)
 	payloadMask = quietBit - 1
@@ -153,7 +153,7 @@ func (z *Decimal) IsQuietNaN() bool {
 	return z.IsNaN() && bigx.Uint64(z.get())&quietBit != 0
 }
 
-// IsQuietNaN returns whether this value is a sNaN.
+// IsSignalingNaN returns whether this value is a sNaN.
 func (z *Decimal) IsSignalingNaN() bool {
 	return z.IsNaN() && bigx.Uint64(z.get())&quietBit == 0
 }

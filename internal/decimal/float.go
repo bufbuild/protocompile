@@ -90,31 +90,39 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 	// are small enough (common case), we can do the arithmetic ourselves.
 
 	w := z.get()
-	switch len(w) {
-	case 0:
+	switch {
+	case len(w) == 0:
 		exact = true
 
-	case 1:
-		w := w[0]
+	case bigx.IsUint64(w):
+		w := bigx.Uint64(w)
 		v = float64(w)
-		exact = uint64(w) < maxMant64
+		exact = uint64(w) <= maxMant64
 
-		// No exponent, so we're done.
 		exp := int(z.exp) - z.digits()
 		if exp == 0 {
-			exact = exact || (w&(w-1)) == 0
+			// No exponent, so we're done.
 			break
 		}
 
-		// Need to divide out by the large power of five hiding inside this
-		// value.
-		if z.base10() {
-			v = pow5(v, exp)
+		if exact {
+			// Need to divide out by the large power of five hiding inside this
+			// value.
+			if z.base10() {
+				v = pow5(v, exp)
+			}
+
+			// Directly update the exponent to add the missing power of 5.
+			v = math.Ldexp(v, exp)
+
+			break
 		}
 
-		// Directly update the exponent to add the missing power of 5.
-		v = math.Ldexp(v, exp)
-
+		// We may lose precision by going through the above in some cases. For
+		// example, when the target value is very close to the dynamic range
+		// limits, converting the mantissa to float may lose precision before
+		// we even multiply by 5^e.
+		fallthrough
 	default:
 		if z.base2() {
 			// We can do direct conversion, but rounding will always occur.
