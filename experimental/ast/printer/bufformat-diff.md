@@ -141,6 +141,6 @@ broken, and formatting is idempotent for all passing tests. The categories are:
 |----------|---------------|------------|
 | Compound string indentation in arrays | compound_string, option_complex_array_literal | Extra indent level for clarity |
 | Bracket expansion with comments | option_message_field, message_options, literal_comments | Expand when interior has comments |
-| Block comment trailing attachment | message_options | Attach to preceding value when no blank line |
+| Block comment trailing attachment | message_options, literal_comments | Attach to preceding value when no blank line |
 | `//` vs `/* */` after `}` | literal_comments | Keep `//` (safe at end of line) |
 | Blank lines between declarations | option_message_field, message_options, option_complex_array_literal | Normalized by slot-based trivia |
