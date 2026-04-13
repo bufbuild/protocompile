@@ -97,7 +97,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 	case bigx.IsUint64(w):
 		w := bigx.Uint64(w)
 		v = float64(w)
-		exact = uint64(w) <= maxMant64
+		exact = w <= maxMant64
 
 		exp := int(z.exp) - z.digits()
 		if exp == 0 {
