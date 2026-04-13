@@ -109,7 +109,7 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
 		// since the `;` follows on the same line and a line comment
 		// would consume it.
 		p.withLineToBlock(true, func() {
-			p.printExpr(opt.Value, gapSpace)
+			p.printExpr(opt.Value, gapSpace, true)
 		})
 	}
 	p.printToken(opt.Semicolon, p.semiGap())
@@ -394,7 +394,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 				p.printPath(opt.Path, gapNone)
 				if !opt.Equals.IsZero() {
 					p.printToken(opt.Equals, gapSpace)
-					p.printExpr(opt.Value, gapSpace)
+					p.printExpr(opt.Value, gapSpace, true)
 				}
 				p.emitTriviaSlot(slots, 1)
 				p.emitTrivia(gapNone)
@@ -433,7 +433,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					indented.printPath(opt.Path, gapNewline)
 					if !opt.Equals.IsZero() {
 						indented.printToken(opt.Equals, gapSpace)
-						indented.printExpr(opt.Value, gapSpace)
+						indented.printExpr(opt.Value, gapSpace, true)
 					}
 				}
 				indented.emitTriviaSlot(slots, entries.Len())

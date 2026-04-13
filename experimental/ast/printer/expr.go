@@ -22,7 +22,9 @@ import (
 )
 
 // printExpr prints an expression with the specified leading gap.
-func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
+// When indent is true, compound strings indent their parts one level
+// (used after `=` or `:`). Containers like arrays ignore indent.
+func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, indent ...bool) {
 	if expr.IsZero() {
 		return
 	}
@@ -31,7 +33,7 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
 	case ast.ExprKindLiteral:
 		tok := expr.AsLiteral().Token
 		if !tok.IsLeaf() {
-			p.printCompoundString(tok, gap)
+			p.printCompoundString(tok, gap, len(indent) > 0 && indent[0])
 		} else {
 			p.printToken(tok, gap)
 		}
@@ -51,8 +53,9 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle) {
 }
 
 // printCompoundString prints a fused compound string token (e.g. "a" "b" "c").
-// Each string part is printed on its own line in format mode.
-func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
+// Each string part is printed on its own line in format mode. When indent is
+// true, parts are indented one level (used after `=` or `:`).
+func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool) {
 	openTok, closeTok := tok.StartEnd()
 	trivia := p.trivia.scopeTrivia(tok.ID())
 
@@ -77,7 +80,7 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 		return
 	}
 
-	// In format mode, all parts go on their own indented lines.
+	// In format mode, all parts go on their own lines.
 	// Clear convertLineToBlock: intermediate // comments between
 	// string parts are on their own lines and are safe as-is.
 	// Restore the caller's value for the last part's trailing,
@@ -87,29 +90,41 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	p.convertLineToBlock = false
 	defer func() { p.convertLineToBlock = saved }()
 
-	p.withIndent(func(indented *printer) {
-		indented.printTokenAs(tok, gapNewline, openTok.Text())
+	printParts := func(pp *printer) {
+		pp.printTokenAs(tok, gapNewline, openTok.Text())
 		for i, part := range parts {
-			indented.emitTriviaSlot(trivia, i)
-			indented.printToken(part, gapNewline)
+			pp.emitTriviaSlot(trivia, i)
+			pp.printToken(part, gapNewline)
 		}
-		indented.emitRemainingTrivia(trivia, len(parts))
+		pp.emitRemainingTrivia(trivia, len(parts))
 
 		// Emit the last part's leading trivia with conversion off,
 		// then restore the caller's value for trailing only.
-		att, hasTrivia := indented.trivia.tokenTrivia(closeTok.ID())
+		att, hasTrivia := pp.trivia.tokenTrivia(closeTok.ID())
 		if hasTrivia {
-			indented.appendPending(att.leading)
-			indented.emitTrivia(gapNewline)
+			pp.appendPending(att.leading)
+			pp.emitTrivia(gapNewline)
 		} else {
-			indented.emitGap(gapNewline)
+			pp.emitGap(gapNewline)
 		}
-		indented.push(dom.Text(closeTok.Text()))
-		indented.convertLineToBlock = saved
+		pp.push(dom.Text(closeTok.Text()))
+		pp.convertLineToBlock = saved
 		if hasTrivia {
-			indented.emitTrailing(att.trailing)
+			pp.emitTrailing(att.trailing)
 		}
-	})
+	}
+
+	if indent {
+		// After `=` or `:`. Indent parts one level so they break
+		// under the assignment.
+		p.withIndent(func(indented *printer) {
+			printParts(indented)
+		})
+	} else {
+		// Already in an indented context (e.g., array elements).
+		// Parts go at the current indent level.
+		printParts(p)
+	}
 }
 
 func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
@@ -369,6 +384,6 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		if first {
 			valueGap = gap
 		}
-		p.printExpr(expr.Value(), valueGap)
+		p.printExpr(expr.Value(), valueGap, true)
 	}
 }

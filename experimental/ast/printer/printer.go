@@ -107,6 +107,7 @@ type printer struct {
 	// tight, while still allowing spaces between identifiers and
 	// comments elsewhere in the path.
 	tightPreserve bool
+
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
