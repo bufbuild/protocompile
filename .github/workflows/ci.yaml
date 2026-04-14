@@ -11,8 +11,8 @@ on:
 permissions:
   contents: read
 jobs:
-  ci:
-    name: ci (go:${{ matrix.go-version.name }})
+  test:
+    name: test (go:${{ matrix.go-version.name }}, ${{ matrix.goarch }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,6 +21,7 @@ jobs:
             version: 1.26.x
           - name: previous
             version: 1.25.x
+        goarch: [amd64, 386]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -30,18 +31,47 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version.version }}
-      - name: Test (64-bit)
-        run: make test
+      - name: Test
+        run: go test ${{ matrix.goarch == 'amd64' && '-race' || '' }} -cover ./...
+        env:
+          GOARCH: ${{ matrix.goarch }}
+      - name: Test (protolegacy)
+        run: go test -tags protolegacy ./...
+        env:
+          GOARCH: ${{ matrix.goarch }}
+  benchmarks:
+    name: benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.x
       - name: Benchmarks
-        # no need to run benchmarks for every Go version
-        if: matrix.go-version.name == 'latest'
-        run: make benchmarks
-      - name: Test (32-bit)
-        run: GOARCH=386 make test
+        run: |
+          go test -bench=. -benchmem -v ./experimental/benchmark
+          cd internal/benchmarks && go test -bench=. -benchmem -v ./...
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.x
+      # Lint & gofmt guidelines depend on the Go version. Only check generated
+      # code and lint on the most recent supported version.
+      - name: Generate
+        run: make generate
+      - name: Check generate
+        run: make checkgenerate
       - name: Lint
-        # Often, lint & gofmt guidelines depend on the Go version. To prevent
-        # conflicting guidance, run only on the most recent supported version.
-        # For the same reason, only check generated code on the most recent
-        # supported version.
-        if: matrix.go-version.name == 'latest'
-        run: make checkgenerate lint
+        run: make lint
