@@ -18,10 +18,10 @@ tables:
     - { extn: "buf.test.f", name: "f", value: "true" }
     - { extn: "buf.test.f", name: "g", value: "A" }
     symbols:
-    - fqn: "buf.test"
+    - fqn: "buf"
       kind: KIND_PACKAGE
       file: "testdata/editions/incomplete_feature.proto"
-    - fqn: "buf"
+    - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/incomplete_feature.proto"
     - fqn: "buf.test.Features"

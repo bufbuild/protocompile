@@ -1,10 +1,10 @@
 tables:
   "testdata/editions/naming_style_2024_ok.proto":
     symbols:
-    - fqn: "buf.test"
+    - fqn: "buf"
       kind: KIND_PACKAGE
       file: "testdata/editions/naming_style_2024_ok.proto"
-    - fqn: "buf"
+    - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/naming_style_2024_ok.proto"
     - fqn: "buf.test.MyMessage"

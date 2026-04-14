@@ -433,7 +433,7 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 				Features:   dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})
 		}
-		slices.SortFunc(symtab.Symbols,
+		slices.SortStableFunc(symtab.Symbols,
 			cmpx.Join(
 				cmpx.Key(func(x *compilerpb.Symbol) string { return x.File }),
 				cmpx.Key(func(x *compilerpb.Symbol) compilerpb.Symbol_Kind { return x.Kind }),
