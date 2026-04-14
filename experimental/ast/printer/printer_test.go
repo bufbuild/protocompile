@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pmezard/go-difflib/difflib"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -106,7 +107,14 @@ func TestPrinter(t *testing.T) {
 		// produce the same result.
 		got2 := printer.PrintFile(options, file2)
 		if got2 != got {
-			t.Errorf("formatting is not idempotent")
+			diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(got),
+				B:        difflib.SplitLines(got2),
+				FromFile: "format(source)",
+				ToFile:   "format(format(source))",
+				Context:  3,
+			})
+			t.Errorf("formatting is not idempotent:\n%s", diff)
 		}
 	})
 }

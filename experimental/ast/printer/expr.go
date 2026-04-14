@@ -218,8 +218,11 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	}
 
 	if elements.Len() == 1 && !hasComments {
+		// Emit the open bracket with the caller's gap outside the
+		// group so that a gapNewline (e.g. from a dict field context)
+		// doesn't force the group to break.
+		p.printToken(openTok, gap)
 		p.withGroup(func(p *printer) {
-			p.printToken(openTok, gap)
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.emitTriviaSlot(slots, 0)
@@ -227,8 +230,8 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 				indented.emitTriviaSlot(slots, 1)
 			})
 			p.push(dom.TextIf(dom.Broken, "\n"))
-			p.printToken(closeTok, gapNone)
 		})
+		p.printToken(closeTok, gapNone)
 		return
 	}
 
@@ -377,7 +380,12 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		first = false
 	}
 	if !expr.Colon().IsZero() {
-		p.printToken(expr.Colon(), gapNone)
+		// gapInline ensures comments between the key and colon get a
+		// space before them but the colon follows immediately after the
+		// last comment with no gap. This prevents an idempotency issue
+		// where trivia between ] and : gets assigned differently on
+		// reparse (leading vs trailing) depending on line breaks.
+		p.printToken(expr.Colon(), gapInline)
 	} else if p.options.Format && !expr.Key().IsZero() && !expr.Value().IsZero() {
 		// Insert colon in format mode when missing (e.g. "e []" -> "e: []").
 		p.push(dom.Text(":"))
