@@ -159,3 +159,50 @@ file:
       type_name: ".buf.test.E"
       json_name: "e"
   syntax: "proto3"
+- name: "a7.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A7"
+    field:
+    - name: "b"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.B"
+      json_name: "b"
+    - name: "c"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.C"
+      json_name: "c"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+      json_name: "d"
+  syntax: "proto3"
+- name: "a8.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A8"
+    field:
+    - name: "b"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.B"
+      json_name: "b"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+      json_name: "d"
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [1]
+  syntax: "proto3"
