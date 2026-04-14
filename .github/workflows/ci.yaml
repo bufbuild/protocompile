@@ -30,12 +30,6 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version.version }}
-      - name: Cache
-        uses: actions/cache@v5
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-protocompile-ci-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-protocompile-ci-
       - name: Test (64-bit)
         run: make test
       - name: Benchmarks
