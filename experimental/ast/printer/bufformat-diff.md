@@ -27,35 +27,16 @@ Our formatter always inserts a space before trailing block comments:
 trailing comments is more readable and matches the convention used everywhere
 else in our output.
 
-## Remaining Failing Tests
+## Remaining Failing Tests (4)
 
-### 1. compound_string.proto -- Compound string indentation inside arrays
+### 1. option_complex_array_literal.proto -- Blank lines between array elements
 
-```
-golden:        // First element.
-golden:        "this"
-ours:            // First element.
-ours:            "this"
-```
+Minor blank line differences between array elements.
 
-**Cause:** Compound strings inside arrays receive an extra level of indentation
-from `printCompoundString`'s `withIndent` on top of the array's own indent.
+**Rationale:** Differences come from our slot-based trivia handling which
+normalizes blank lines between elements consistently.
 
-**Rationale:** The extra indentation makes it visually clear that the string
-parts belong to a single compound value, not separate array elements. This is
-consistent with how compound strings are indented in other contexts (e.g.,
-`option ... = \n  "One"\n  "Two"`).
-
-### 2. option_complex_array_literal.proto -- Compound string indentation + blank lines
-
-Same compound string indentation issue as above. Also has minor blank line
-differences between array elements.
-
-**Rationale:** Same as above for indentation. Blank line differences come from
-our slot-based trivia handling which normalizes blank lines between elements
-consistently.
-
-### 3. option_message_field.proto -- Extension key bracket expansion + blank lines
+### 2. option_message_field.proto -- Extension key bracket expansion + blank lines
 
 ```
 golden:  [/* One */ foo.bar..._garblez /* Two */] /* Three */ : "boo"
@@ -77,7 +58,7 @@ is dense and harder to read.
 Also has blank line differences between declarations in message literal
 contexts, same cause as other blank line diffs.
 
-### 4. message_options.proto -- Block comment placement + bracket expansion
+### 3. message_options.proto -- Block comment placement + bracket expansion
 
 Multiple differences:
 
@@ -113,7 +94,7 @@ causing the group to always break.
 collapse bracketed expressions. Our formatter consistently expands when content
 could benefit from vertical space.
 
-### 5. literal_comments.proto -- Trailing comment format after close braces
+### 4. literal_comments.proto -- Trailing comment format after close braces
 
 ```
 golden:  } /* Trailing */
@@ -139,7 +120,6 @@ broken, and formatting is idempotent for all passing tests. The categories are:
 
 | Category | Tests affected | Our choice |
 |----------|---------------|------------|
-| Compound string indentation in arrays | compound_string, option_complex_array_literal | Extra indent level for clarity |
 | Bracket expansion with comments | option_message_field, message_options, literal_comments | Expand when interior has comments |
 | Block comment trailing attachment | message_options, literal_comments | Attach to preceding value when no blank line |
 | `//` vs `/* */` after `}` | literal_comments | Keep `//` (safe at end of line) |

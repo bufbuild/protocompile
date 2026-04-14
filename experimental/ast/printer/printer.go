@@ -46,17 +46,19 @@ const (
 	scopeBody
 )
 
-// printCtx carries immutable formatting context down the print call
-// stack. It is passed by value so that modifications only affect the
-// current stack frame and its children.
+// printCtx carries formatting context down the print call stack. It
+// is passed by value so that modifications only affect the current
+// stack frame and its children. Fields only take effect in format mode.
 type printCtx struct {
-	// lineToBlock, when true, causes emitTrailing to convert line
-	// comments (// ...) to block comments (/* ... */). This only
-	// affects trailing trivia, not leading. It is set in contexts
+	// lineToBlock converts trailing // comments to /* */ in contexts
 	// where inline tokens follow without a newline break (paths,
-	// compact options, option values before `;`) so that a trailing
-	// // comment doesn't eat the next token.
+	// compact options, option values before `;`).
 	lineToBlock bool
+
+	// indentExpr indents compound string parts one level. Set in
+	// value contexts after `=` or `:` so multi-part strings break
+	// under the assignment.
+	indentExpr bool
 }
 
 // PrintFile renders an AST file to protobuf source text.
@@ -403,9 +405,8 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	case gapSpace:
 		afterGap = gapSpace
 	case gapPreserve, gapPreserveTight:
-		// gapPreserve/gapPreserveTight: afterGap is determined
-		// dynamically per gap point based on whether the source had
-		// whitespace.
+		// afterGap is determined dynamically per gap point based on
+		// whether the source had whitespace.
 		afterGap = gapNone
 	case gapInline:
 		// gapInline is used for punctuation tokens (`;`, `,`) where

@@ -16,23 +16,23 @@ package printer
 
 import "github.com/bufbuild/protocompile/experimental/dom"
 
-// Named tag helpers for common whitespace patterns. These centralize
-// the dom primitives so call sites express intent rather than
-// mechanics.
+// Named tag helpers for common whitespace patterns. Single-tag helpers
+// are package-level vars (allocated once). Multi-tag helpers are
+// functions that push pre-cached vars into a sink.
 
 var (
-	tagSpace     = dom.Text(" ")
-	tagNewline   = dom.Text("\n")
-	tagSoftbreak = dom.TextIf(dom.Broken, "\n")
+	tagSpace         = dom.Text(" ")
+	tagNewline       = dom.Text("\n")
+	tagSoftbreak     = dom.TextIf(dom.Broken, "\n")
+	tagSoftlineFlat  = dom.TextIf(dom.Flat, " ")
 )
 
-// softline pushes a space-if-flat, newline-if-broken pair into the
-// given sink.
+// softline pushes a space-if-flat, newline-if-broken pair.
 func softline(push dom.Sink) {
-	push(dom.TextIf(dom.Flat, " "), dom.TextIf(dom.Broken, "\n"))
+	push(tagSoftlineFlat, tagSoftbreak)
 }
 
-// blankline pushes two newlines (one blank line) into the given sink.
+// blankline pushes two newlines (one blank line).
 func blankline(push dom.Sink) {
-	push(dom.Text("\n"), dom.Text("\n"))
+	push(tagNewline, tagNewline)
 }

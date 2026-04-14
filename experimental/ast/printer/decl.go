@@ -110,7 +110,8 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle, ctx printCtx) {
 		// would consume it.
 		valueCtx := ctx
 		valueCtx.lineToBlock = true
-		p.printExpr(opt.Value, gapSpace, valueCtx, true)
+		valueCtx.indentExpr = true
+		p.printExpr(opt.Value, gapSpace, valueCtx)
 	}
 	p.printToken(opt.Semicolon, p.semiGap(), ctx)
 }
@@ -253,8 +254,7 @@ func (p *printer) printBody(body ast.DeclBody, ctx printCtx) {
 	if body.IsZero() || body.Braces().IsZero() {
 		return
 	}
-	// Entering a nested scope: clear lineToBlock since // comments
-	// on their own lines inside bodies are fine.
+	// Line comments are safe on their own lines inside bodies.
 	ctx.lineToBlock = false
 
 	openTok, closeTok := body.Braces().StartEnd()
@@ -393,7 +393,9 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 			p.printPath(opt.Path, gapNone, singleCtx)
 			if !opt.Equals.IsZero() {
 				p.printToken(opt.Equals, gapSpace, singleCtx)
-				p.printExpr(opt.Value, gapSpace, singleCtx, true)
+				valueCtx := singleCtx
+				valueCtx.indentExpr = true
+				p.printExpr(opt.Value, gapSpace, valueCtx)
 			}
 			p.emitTriviaSlot(slots, 1)
 			p.emitTrivia(gapNone)
@@ -431,7 +433,9 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 					indented.printPath(opt.Path, gapNewline, ctx)
 					if !opt.Equals.IsZero() {
 						indented.printToken(opt.Equals, gapSpace, ctx)
-						indented.printExpr(opt.Value, gapSpace, ctx, true)
+						valueCtx := ctx
+						valueCtx.indentExpr = true
+						indented.printExpr(opt.Value, gapSpace, valueCtx)
 					}
 				}
 				indented.emitTriviaSlot(slots, entries.Len())

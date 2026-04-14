@@ -22,9 +22,7 @@ import (
 )
 
 // printExpr prints an expression with the specified leading gap.
-// When indent is true, compound strings indent their parts one level
-// (used after `=` or `:`). Containers like arrays ignore indent.
-func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, ctx printCtx, indent ...bool) {
+func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
@@ -33,7 +31,7 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, ctx printCtx, indent
 	case ast.ExprKindLiteral:
 		tok := expr.AsLiteral().Token
 		if !tok.IsLeaf() {
-			p.printCompoundString(tok, gap, len(indent) > 0 && indent[0], ctx)
+			p.printCompoundString(tok, gap, ctx)
 		} else {
 			p.printToken(tok, gap, ctx)
 		}
@@ -53,9 +51,8 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, ctx printCtx, indent
 }
 
 // printCompoundString prints a fused compound string token (e.g. "a" "b" "c").
-// Each string part is printed on its own line in format mode. When indent is
-// true, parts are indented one level (used after `=` or `:`).
-func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool, ctx printCtx) {
+// Each string part is printed on its own line in format mode.
+func (p *printer) printCompoundString(tok token.Token, gap gapStyle, ctx printCtx) {
 	openTok, closeTok := tok.StartEnd()
 	trivia := p.trivia.scopeTrivia(tok.ID())
 
@@ -112,7 +109,7 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool
 		}
 	}
 
-	if indent {
+	if ctx.indentExpr {
 		// After `=` or `:`. Indent parts one level so they break
 		// under the assignment.
 		p.withIndent(func(indented *printer) {
@@ -181,9 +178,9 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle, ctx printCtx) {
 		return
 	}
 
-	// Entering a nested scope: clear lineToBlock since // comments
-	// on their own lines inside arrays are fine.
+	// Containers manage their own indentation.
 	ctx.lineToBlock = false
+	ctx.indentExpr = false
 
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
@@ -255,9 +252,9 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
-	// Entering a nested scope: clear lineToBlock since // comments
-	// on their own lines inside dicts are fine.
+	// Containers manage their own indentation.
 	ctx.lineToBlock = false
+	ctx.indentExpr = false
 
 	braces := expr.Braces()
 	if braces.IsZero() {
@@ -389,6 +386,8 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle, ctx printCtx)
 		if first {
 			valueGap = gap
 		}
-		p.printExpr(expr.Value(), valueGap, ctx, true)
+		valueCtx := ctx
+		valueCtx.indentExpr = true
+		p.printExpr(expr.Value(), valueGap, valueCtx)
 	}
 }
