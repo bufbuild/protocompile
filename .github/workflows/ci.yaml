@@ -32,11 +32,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version.version }}
       - name: Test
-        run: go test ${{ matrix.goarch == 'amd64' && '-race' || '' }} -cover ./...
-        env:
-          GOARCH: ${{ matrix.goarch }}
-      - name: Test (protolegacy)
-        run: go test -tags protolegacy ./...
+        run: make test
         env:
           GOARCH: ${{ matrix.goarch }}
   benchmarks:
@@ -52,9 +48,7 @@ jobs:
         with:
           go-version: 1.26.x
       - name: Benchmarks
-        run: |
-          go test -bench=. -benchmem -v ./experimental/benchmark
-          cd internal/benchmarks && go test -bench=. -benchmem -v ./...
+        run: make benchmarks
   lint:
     name: lint
     runs-on: ubuntu-latest
