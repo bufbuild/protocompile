@@ -70,7 +70,7 @@ func Classify(node source.Spanner) Noun {
 	case *ast.File:
 		return TopLevel
 	case ast.Path:
-		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {
+		if first, ok := iterx.OnlyOne(node.Components()); ok && first.Separator().IsZero() {
 			if id := first.AsIdent(); !id.IsZero() {
 				return Classify(id)
 			}
@@ -157,11 +157,7 @@ func Classify(node source.Spanner) Noun {
 	case ast.DefExtend:
 		return Extend
 	case ast.DefOption:
-		var first ast.PathComponent
-		node.Path.Components(func(pc ast.PathComponent) bool {
-			first = pc
-			return false
-		})
+		first, _ := iterx.First(node.Path.Components())
 		if !first.AsExtension().IsZero() {
 			return CustomOption
 		}

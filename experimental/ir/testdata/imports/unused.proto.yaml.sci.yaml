@@ -1,0 +1,366 @@
+"a1.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 11, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 17 }
+- path: ".message_type[A1]"
+  start: { line: 7, column: 0 }
+  end: { line: 11, column: 1 }
+- path: ".message_type[A1].name"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 10 }
+- path: ".message_type[A1].field[b].type_name"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 3 }
+- path: ".message_type[A1].field[b]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 10 }
+- path: ".message_type[A1].field[b].name"
+  start: { line: 8, column: 4 }
+  end: { line: 8, column: 5 }
+- path: ".message_type[A1].field[b].number"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 9 }
+- path: ".message_type[A1].field[c].type_name"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 3 }
+- path: ".message_type[A1].field[c]"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 10 }
+- path: ".message_type[A1].field[c].name"
+  start: { line: 9, column: 4 }
+  end: { line: 9, column: 5 }
+- path: ".message_type[A1].field[c].number"
+  start: { line: 9, column: 8 }
+  end: { line: 9, column: 9 }
+- path: ".message_type[A1].field[d].type_name"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 3 }
+- path: ".message_type[A1].field[d]"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 10 }
+- path: ".message_type[A1].field[d].name"
+  start: { line: 10, column: 4 }
+  end: { line: 10, column: 5 }
+- path: ".message_type[A1].field[d].number"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+"a2.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 8, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 17 }
+- path: ".message_type[A2]"
+  start: { line: 7, column: 0 }
+  end: { line: 8, column: 1 }
+- path: ".message_type[A2].name"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 10 }
+"a3.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 10, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 17 }
+- path: ".message_type[A3]"
+  start: { line: 7, column: 0 }
+  end: { line: 10, column: 1 }
+- path: ".message_type[A3].name"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 10 }
+- path: ".message_type[A3].field[p].type_name"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 3 }
+- path: ".message_type[A3].field[p]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 10 }
+- path: ".message_type[A3].field[p].name"
+  start: { line: 8, column: 4 }
+  end: { line: 8, column: 5 }
+- path: ".message_type[A3].field[p].number"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 9 }
+- path: ".message_type[A3].field[d].type_name"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 3 }
+- path: ".message_type[A3].field[d]"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 10 }
+- path: ".message_type[A3].field[d].name"
+  start: { line: 9, column: 4 }
+  end: { line: 9, column: 5 }
+- path: ".message_type[A3].field[d].number"
+  start: { line: 9, column: 8 }
+  end: { line: 9, column: 9 }
+"a4.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 11, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 17 }
+- path: ".message_type[A4]"
+  start: { line: 7, column: 0 }
+  end: { line: 11, column: 1 }
+- path: ".message_type[A4].name"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 10 }
+- path: ".message_type[A4].field[b].type_name"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 3 }
+- path: ".message_type[A4].field[b]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 10 }
+- path: ".message_type[A4].field[b].name"
+  start: { line: 8, column: 4 }
+  end: { line: 8, column: 5 }
+- path: ".message_type[A4].field[b].number"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 9 }
+- path: ".message_type[A4].field[p].type_name"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 3 }
+- path: ".message_type[A4].field[p]"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 10 }
+- path: ".message_type[A4].field[p].name"
+  start: { line: 9, column: 4 }
+  end: { line: 9, column: 5 }
+- path: ".message_type[A4].field[p].number"
+  start: { line: 9, column: 8 }
+  end: { line: 9, column: 9 }
+- path: ".message_type[A4].field[d].type_name"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 3 }
+- path: ".message_type[A4].field[d]"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 10 }
+- path: ".message_type[A4].field[d].name"
+  start: { line: 10, column: 4 }
+  end: { line: 10, column: 5 }
+- path: ".message_type[A4].field[d].number"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+"a5.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 11, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 17 }
+- path: ".message_type[A5]"
+  start: { line: 7, column: 0 }
+  end: { line: 11, column: 1 }
+- path: ".message_type[A5].name"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 10 }
+- path: ".message_type[A5].field[c].type_name"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 3 }
+- path: ".message_type[A5].field[c]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 10 }
+- path: ".message_type[A5].field[c].name"
+  start: { line: 8, column: 4 }
+  end: { line: 8, column: 5 }
+- path: ".message_type[A5].field[c].number"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 9 }
+- path: ".message_type[A5].field[p].type_name"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 3 }
+- path: ".message_type[A5].field[p]"
+  start: { line: 9, column: 2 }
+  end: { line: 9, column: 10 }
+- path: ".message_type[A5].field[p].name"
+  start: { line: 9, column: 4 }
+  end: { line: 9, column: 5 }
+- path: ".message_type[A5].field[p].number"
+  start: { line: 9, column: 8 }
+  end: { line: 9, column: 9 }
+- path: ".message_type[A5].field[d].type_name"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 3 }
+- path: ".message_type[A5].field[d]"
+  start: { line: 10, column: 2 }
+  end: { line: 10, column: 10 }
+- path: ".message_type[A5].field[d].name"
+  start: { line: 10, column: 4 }
+  end: { line: 10, column: 5 }
+- path: ".message_type[A5].field[d].number"
+  start: { line: 10, column: 8 }
+  end: { line: 10, column: 9 }
+"a6.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 9, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".dependency.0"
+  start: { line: 4, column: 0 }
+  end: { line: 4, column: 17 }
+- path: ".message_type[A6]"
+  start: { line: 6, column: 0 }
+  end: { line: 9, column: 1 }
+- path: ".message_type[A6].name"
+  start: { line: 6, column: 8 }
+  end: { line: 6, column: 10 }
+- path: ".message_type[A6].field[d].type_name"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 3 }
+- path: ".message_type[A6].field[d]"
+  start: { line: 7, column: 2 }
+  end: { line: 7, column: 10 }
+- path: ".message_type[A6].field[d].name"
+  start: { line: 7, column: 4 }
+  end: { line: 7, column: 5 }
+- path: ".message_type[A6].field[d].number"
+  start: { line: 7, column: 8 }
+  end: { line: 7, column: 9 }
+- path: ".message_type[A6].field[e].type_name"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 3 }
+- path: ".message_type[A6].field[e]"
+  start: { line: 8, column: 2 }
+  end: { line: 8, column: 10 }
+- path: ".message_type[A6].field[e].name"
+  start: { line: 8, column: 4 }
+  end: { line: 8, column: 5 }
+- path: ".message_type[A6].field[e].number"
+  start: { line: 8, column: 8 }
+  end: { line: 8, column: 9 }
+"b.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 5, column: 24 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".message_type[B]"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 12 }
+- path: ".message_type[B].name"
+  start: { line: 3, column: 8 }
+  end: { line: 3, column: 9 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 24 }
+- path: ".public_dependency.0"
+  start: { line: 5, column: 7 }
+  end: { line: 5, column: 13 }
+"c.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 5, column: 24 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".message_type[C]"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 12 }
+- path: ".message_type[C].name"
+  start: { line: 3, column: 8 }
+  end: { line: 3, column: 9 }
+- path: ".dependency.0"
+  start: { line: 5, column: 0 }
+  end: { line: 5, column: 24 }
+- path: ".public_dependency.0"
+  start: { line: 5, column: 7 }
+  end: { line: 5, column: 13 }
+"d.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 3, column: 12 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".message_type[D]"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 12 }
+- path: ".message_type[D].name"
+  start: { line: 3, column: 8 }
+  end: { line: 3, column: 9 }
+"e.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 7, column: 1 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".dependency.0"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 17 }
+- path: ".message_type[E]"
+  start: { line: 5, column: 0 }
+  end: { line: 7, column: 1 }
+- path: ".message_type[E].name"
+  start: { line: 5, column: 8 }
+  end: { line: 5, column: 9 }
+- path: ".message_type[E].field[d].type_name"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 3 }
+- path: ".message_type[E].field[d]"
+  start: { line: 6, column: 2 }
+  end: { line: 6, column: 10 }
+- path: ".message_type[E].field[d].name"
+  start: { line: 6, column: 4 }
+  end: { line: 6, column: 5 }
+- path: ".message_type[E].field[d].number"
+  start: { line: 6, column: 8 }
+  end: { line: 6, column: 9 }
+"p.proto":
+- { path: "", start: { line: 0, column: 0 }, end: { line: 3, column: 12 } }
+- { path: ".syntax", start: { line: 0, column: 0 }, end: { line: 0, column: 18 } }
+- path: ".package"
+  start: { line: 1, column: 0 }
+  end: { line: 1, column: 17 }
+- path: ".message_type[P]"
+  start: { line: 3, column: 0 }
+  end: { line: 3, column: 12 }
+- path: ".message_type[P].name"
+  start: { line: 3, column: 8 }
+  end: { line: 3, column: 9 }

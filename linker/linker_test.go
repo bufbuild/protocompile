@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -3899,10 +3900,7 @@ func TestLinkerValidation(t *testing.T) {
 					})
 				}
 				assert.Len(t, errs, len(expectedErrs), "wrong number of errors reported")
-				limit := len(expectedErrs)
-				if limit > len(errs) {
-					limit = len(errs)
-				}
+				limit := min(len(expectedErrs), len(errs))
 				for i := range limit {
 					err := errs[i]
 					var panicErr protocompile.PanicError
@@ -4479,13 +4477,7 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 		if tc.warning == "" && len(warnings) > 0 {
 			t.Errorf("case %d: expecting no warnings; instead got: %v", i, warnings)
 		} else if tc.warning != "" {
-			found := false
-			for _, w := range warnings {
-				if w == tc.warning {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(warnings, tc.warning)
 			if !found {
 				t.Errorf("case %d: expecting warning %q; instead got: %v", i, tc.warning, warnings)
 			}

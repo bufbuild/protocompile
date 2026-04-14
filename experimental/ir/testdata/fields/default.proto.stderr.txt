@@ -109,18 +109,18 @@ warning: redundant custom default
            making this option redundant
 
 warning: redundant custom default
-  --> testdata/fields/default.proto:53:26
+  --> testdata/fields/default.proto:55:26
    |
-53 |     E e3 = 43 [default = E0];
+55 |     E e3 = 43 [default = E0];
    |                          ^^ this is the zero value for `buf.test.M.E`
    |
    = help: fields without a custom default will default to the zero value,
            making this option redundant
 
 error: expected singular scalar- or enum-typed field, found scalar type `int32`
-  --> testdata/fields/default.proto:55:14
+  --> testdata/fields/default.proto:57:14
    |
-55 |     repeated int32 w1 = 101 [default = 1, default = 2];
+57 |     repeated int32 w1 = 101 [default = 1, default = 2];
    |              ^^^^^           ------- custom default specified here
    |
    = help: custom defaults are only for non-repeated fields that have a
@@ -128,9 +128,9 @@ error: expected singular scalar- or enum-typed field, found scalar type `int32`
 
 error: expected singular scalar- or enum-typed field, found message type
        `buf.test.M`
-  --> testdata/fields/default.proto:56:5
+  --> testdata/fields/default.proto:58:5
    |
-56 |     M w2 = 102 [default = {
+58 |     M w2 = 102 [default = {
    |     ^           ------- custom default specified here
    |
    = help: custom defaults are only for non-repeated fields that have a
@@ -138,11 +138,11 @@ error: expected singular scalar- or enum-typed field, found message type
 
 error: expected singular scalar- or enum-typed field, found message type
        `buf.test.M`
-  --> testdata/fields/default.proto:60:5
+  --> testdata/fields/default.proto:62:5
    |
-60 |     M w3 = 103 [
+62 |     M w3 = 103 [
    |     ^
-61 |         default.i1 = 42,
+63 |         default.i1 = 42,
    |         ------- custom default specified here
    |
    = help: custom defaults are only for non-repeated fields that have a

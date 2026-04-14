@@ -40,4 +40,11 @@ error: group names must start with an uppercase letter
 33 |     required group lowercase = 4 {}
    |                    ^^^^^^^^^
 
-encountered 1 error and 5 warnings
+warning: group syntax is deprecated
+  --> testdata/parser/field/group.proto:36:9
+   |
+36 |         group Baz = 5 {}
+   |         ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+encountered 1 error and 6 warnings

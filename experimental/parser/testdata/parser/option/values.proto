@@ -70,6 +70,20 @@ option x = {
     x: <a: 42>
     x: <a: <a: 42>>
 
+    x {}
+    x {a: 42}
+    x <a: 42>
+    x <a: 42, b: 43>
+
+    x1: 55 to {}
+    x2: {} to {}
+    x3 17 to {}
+    x4 {} to 91
+    x1: to
+
+    reserved: true
+    to: true
+
     "ident": 42
     "???": 42
     42: 42

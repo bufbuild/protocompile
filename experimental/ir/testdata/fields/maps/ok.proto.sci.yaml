@@ -1,0 +1,64 @@
+"testdata/fields/maps/ok.proto":
+- { path: "", start: { line: 16, column: 0 }, end: { line: 26, column: 1 } }
+- path: ".syntax"
+  start: { line: 16, column: 0 }
+  end: { line: 16, column: 18 }
+  leading: "% descriptor: true\n% source_code_info: true\n"
+  detached: {}
+- path: ".package"
+  start: { line: 18, column: 0 }
+  end: { line: 18, column: 13 }
+- path: ".message_type[Foo]"
+  start: { line: 20, column: 0 }
+  end: { line: 26, column: 1 }
+- path: ".message_type[Foo].name"
+  start: { line: 20, column: 8 }
+  end: { line: 20, column: 11 }
+- path: ".message_type[Foo].field[foo].type_name"
+  start: { line: 21, column: 4 }
+  end: { line: 21, column: 21 }
+- path: ".message_type[Foo].field[foo]"
+  start: { line: 21, column: 4 }
+  end: { line: 21, column: 30 }
+- path: ".message_type[Foo].field[foo].name"
+  start: { line: 21, column: 22 }
+  end: { line: 21, column: 25 }
+- path: ".message_type[Foo].field[foo].number"
+  start: { line: 21, column: 28 }
+  end: { line: 21, column: 29 }
+- path: ".message_type[Foo].field[bar].type_name"
+  start: { line: 22, column: 4 }
+  end: { line: 22, column: 20 }
+- path: ".message_type[Foo].field[bar]"
+  start: { line: 22, column: 4 }
+  end: { line: 22, column: 29 }
+- path: ".message_type[Foo].field[bar].name"
+  start: { line: 22, column: 21 }
+  end: { line: 22, column: 24 }
+- path: ".message_type[Foo].field[bar].number"
+  start: { line: 22, column: 27 }
+  end: { line: 22, column: 28 }
+- path: ".message_type[Foo].field[__foo2__].type_name"
+  start: { line: 24, column: 4 }
+  end: { line: 24, column: 21 }
+- path: ".message_type[Foo].field[__foo2__]"
+  start: { line: 24, column: 4 }
+  end: { line: 24, column: 35 }
+- path: ".message_type[Foo].field[__foo2__].name"
+  start: { line: 24, column: 22 }
+  end: { line: 24, column: 30 }
+- path: ".message_type[Foo].field[__foo2__].number"
+  start: { line: 24, column: 33 }
+  end: { line: 24, column: 34 }
+- path: ".message_type[Foo].field[__foo_3__].type_name"
+  start: { line: 25, column: 4 }
+  end: { line: 25, column: 21 }
+- path: ".message_type[Foo].field[__foo_3__]"
+  start: { line: 25, column: 4 }
+  end: { line: 25, column: 36 }
+- path: ".message_type[Foo].field[__foo_3__].name"
+  start: { line: 25, column: 22 }
+  end: { line: 25, column: 31 }
+- path: ".message_type[Foo].field[__foo_3__].number"
+  start: { line: 25, column: 34 }
+  end: { line: 25, column: 35 }

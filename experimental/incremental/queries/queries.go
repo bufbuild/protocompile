@@ -23,4 +23,7 @@ const (
 	stageFile int = iota * 10
 	stageAST
 	stageIR
+	stageLink
+	stageFDP
+	stageFDS
 )

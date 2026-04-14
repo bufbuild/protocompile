@@ -32,7 +32,7 @@ file:
         json_name: "x"
       - name: "x_y_z"
         number: 2
-        label: LABEL_OPTIONAL
+        label: LABEL_REPEATED
         type: TYPE_GROUP
         type_name: ".test.Foo.FooBar.X_Y_Z"
         json_name: "xYZ"
@@ -42,7 +42,7 @@ file:
         field:
         - name: "baz"
           number: 3
-          label: LABEL_OPTIONAL
+          label: LABEL_REQUIRED
           type: TYPE_GROUP
           type_name: ".test.Foo.FooBar.X_Y_Z.Baz"
           json_name: "baz"

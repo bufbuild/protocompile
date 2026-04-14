@@ -1,0 +1,18 @@
+file:
+- name: "dep.proto"
+  package: "a.b.v1"
+  message_type: [{ name: "Msg" }]
+  syntax: "proto3"
+- name: "main.proto"
+  package: "a.b.c.v1"
+  dependency: ["dep.proto"]
+  message_type:
+  - name: "Use"
+    field:
+    - name: "m"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".a.b.v1.Msg"
+      json_name: "m"
+  syntax: "proto3"

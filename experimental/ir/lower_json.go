@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 func populateJSONNames(file *File, r *report.Report) {
@@ -33,7 +34,7 @@ func populateJSONNames(file *File, r *report.Report) {
 		clear(names)
 
 		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
-		strict := jsonFormat == 1
+		strict := jsonFormat == tags.FeatureSet_JsonFormat_Allow
 
 		// First, populate the default names, and check for collisions among
 		// them.

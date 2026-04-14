@@ -13,7 +13,7 @@
 # limitations under the License.
 
 symtab: true
-exclude: "unused imports"
+exclude: "unused import"
 files:
 - path: "main.proto"
   text: |
@@ -26,7 +26,7 @@ files:
     message Main {
       optional int32 x = 1;
     }
-    
+
     message Foo {
       enum BAR {
         BAR = 0;

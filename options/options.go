@@ -26,10 +26,10 @@
 package options
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/encoding/prototext"
@@ -42,6 +42,7 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/messageset"
+	"github.com/bufbuild/protocompile/internal/tags"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
@@ -411,7 +412,7 @@ func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descript
 		}
 		// attribute source code info
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, internal.FieldJSONNameTag}}
+			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, tags.Field_JsonName}}
 		}
 		uo = internal.RemoveOption(uo, index)
 		if strings.HasPrefix(jsonName, "[") && strings.HasSuffix(jsonName, "]") {
@@ -427,7 +428,7 @@ func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descript
 		// attribute source code info
 		optNode := interp.file.OptionNode(uo[index])
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, internal.FieldDefaultTag}}
+			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, tags.Field_DefaultValue}}
 		}
 		uo = internal.RemoveOption(uo, index)
 	}
@@ -472,7 +473,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	if str, ok := v.(string); ok {
 		fld.DefaultValue = proto.String(str)
 	} else if b, ok := v.([]byte); ok {
-		fld.DefaultValue = proto.String(encodeDefaultBytes(b))
+		fld.DefaultValue = proto.String(internal.EscapeBytes(b))
 	} else {
 		var flt float64
 		var ok bool
@@ -534,12 +535,6 @@ func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fl
 		return string(name), nil
 	}
 	return interp.scalarFieldValueFromProto(mc, fld.GetType(), opt, node)
-}
-
-func encodeDefaultBytes(b []byte) string {
-	var buf bytes.Buffer
-	internal.WriteEscapedBytes(&buf, b)
-	return buf.String()
 }
 
 func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.EnumDescriptorProto, customOpts bool) error {
@@ -748,10 +743,8 @@ func (interp *interpreter) checkFieldUsage(
 	if len(targetTypes) == 0 {
 		return nil
 	}
-	for _, allowedType := range targetTypes {
-		if allowedType == targetType {
-			return nil
-		}
+	if slices.Contains(targetTypes, targetType) {
+		return nil
 	}
 	allowedTypes := make([]string, len(targetTypes))
 	for i, t := range targetTypes {
@@ -1079,10 +1072,7 @@ func (r fieldRanger) Range(f func(*ast.MessageFieldNode, ast.ValueNode) bool) {
 }
 
 func isPathMatch(a, b []int32) bool {
-	length := len(a)
-	if len(b) < length {
-		length = len(b)
-	}
+	length := min(len(b), len(a))
 	for i := range length {
 		if a[i] != b[i] {
 			return false
@@ -2075,15 +2065,15 @@ func (interp *interpreter) messageLiteralValue(
 				hadError = true
 				continue
 			}
-			typeURLDescriptor := fmd.Fields().ByNumber(internal.AnyTypeURLTag)
+			typeURLDescriptor := fmd.Fields().ByNumber(tags.Any_TypeUrl)
 			var err error
 			switch {
 			case typeURLDescriptor == nil:
-				err = fmt.Errorf("message schema is missing type_url field (number %d)", internal.AnyTypeURLTag)
+				err = fmt.Errorf("message schema is missing type_url field (number %d)", tags.Any_TypeUrl)
 			case typeURLDescriptor.IsList():
-				err = fmt.Errorf("message schema has type_url field (number %d) that is a list but should be singular", internal.AnyTypeURLTag)
+				err = fmt.Errorf("message schema has type_url field (number %d) that is a list but should be singular", tags.Any_TypeUrl)
 			case typeURLDescriptor.Kind() != protoreflect.StringKind:
-				err = fmt.Errorf("message schema has type_url field (number %d) that is %s but should be string", internal.AnyTypeURLTag, typeURLDescriptor.Kind())
+				err = fmt.Errorf("message schema has type_url field (number %d) that is %s but should be string", tags.Any_TypeUrl, typeURLDescriptor.Kind())
 			}
 			if err != nil {
 				err := interp.handleErrorf(interp.nodeInfo(fieldNode.Name), "%v%w", mc, err)
@@ -2093,14 +2083,14 @@ func (interp *interpreter) messageLiteralValue(
 				hadError = true
 				continue
 			}
-			valueDescriptor := fmd.Fields().ByNumber(internal.AnyValueTag)
+			valueDescriptor := fmd.Fields().ByNumber(tags.Any_Value)
 			switch {
 			case valueDescriptor == nil:
-				err = fmt.Errorf("message schema is missing value field (number %d)", internal.AnyValueTag)
+				err = fmt.Errorf("message schema is missing value field (number %d)", tags.Any_Value)
 			case valueDescriptor.IsList():
-				err = fmt.Errorf("message schema has value field (number %d) that is a list but should be singular", internal.AnyValueTag)
+				err = fmt.Errorf("message schema has value field (number %d) that is a list but should be singular", tags.Any_Value)
 			case valueDescriptor.Kind() != protoreflect.BytesKind:
-				err = fmt.Errorf("message schema has value field (number %d) that is %s but should be bytes", internal.AnyValueTag, valueDescriptor.Kind())
+				err = fmt.Errorf("message schema has value field (number %d) that is %s but should be bytes", tags.Any_Value, valueDescriptor.Kind())
 			}
 			if err != nil {
 				err := interp.handleErrorf(interp.nodeInfo(fieldNode.Name), "%v%w", mc, err)
@@ -2148,7 +2138,7 @@ func (interp *interpreter) messageLiteralValue(
 				continue
 			}
 			// parse the message value
-			msgVal, valueSrcInfo, err := interp.messageLiteralValue(targetType, mc, anyFields, dynamicpb.NewMessage(anyMd), append(pathPrefix, internal.AnyValueTag))
+			msgVal, valueSrcInfo, err := interp.messageLiteralValue(targetType, mc, anyFields, dynamicpb.NewMessage(anyMd), append(pathPrefix, tags.Any_Value))
 			if err != nil {
 				return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 			} else if !msgVal.IsValid() {
@@ -2261,7 +2251,7 @@ func (interp *interpreter) messageLiteralValue(
 
 func newSrcInfo(path []int32, children sourceinfo.OptionChildrenSourceInfo) sourceinfo.OptionSourceInfo {
 	return sourceinfo.OptionSourceInfo{
-		Path:     internal.ClonePath(path),
+		Path:     slices.Clone(path),
 		Children: children,
 	}
 }

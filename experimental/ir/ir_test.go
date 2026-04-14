@@ -37,6 +37,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
+	"github.com/bufbuild/protocompile/experimental/ir/sourceinfo"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -77,6 +78,9 @@ type Test struct {
 	Descriptor bool `yaml:"descriptor"`
 	// Whether the descriptor should include SourceCodeInfo
 	SourceCodeInfo bool `yaml:"source_code_info"`
+	// Whether the descriptor should be generated with extra SourceCodeInfo locations for
+	// elements of message literals.
+	GenerateExtraOptionLocations bool `yaml:"generate_extra_option_locations"`
 
 	// Whether to output a symbol table. Useful for tests that build symbol
 	// tables.
@@ -126,6 +130,15 @@ func (l *List[T]) UnmarshalYAML(value *yaml.Node) error {
 	return value.Decode((*[]T)(l))
 }
 
+// An implementation of [Excluder].
+//
+// We exclude files for which IsDescriptorProto() returns true.
+type IRExcluder struct{}
+
+func (IRExcluder) Exclude(file *ir.File) bool {
+	return file.IsDescriptorProto()
+}
+
 func TestIR(t *testing.T) {
 	t.Parallel()
 
@@ -136,6 +149,7 @@ func TestIR(t *testing.T) {
 		Outputs: []golden.Output{
 			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
+			{Extension: "sci.yaml"},
 			{Extension: "symtab.yaml"},
 		},
 	}
@@ -160,23 +174,26 @@ func TestIR(t *testing.T) {
 			incremental.WithReportOptions(report.Options{Tracing: *tracing}),
 		)
 
-		session := new(ir.Session)
-		queries := slices.Collect(iterx.FilterMap(
+		workspace := source.NewWorkspace(slices.Collect(iterx.FilterMap(
 			slices.Values(test.Files),
-			func(f File) (incremental.Query[*ir.File], bool) {
+			func(f File) (string, bool) {
 				if f.Import {
-					return nil, false
+					return "", false
 				}
-				return queries.IR{
-					Opener:  files,
-					Session: session,
-					Path:    f.Path,
-				}, true
+				return f.Path, true
 			},
-		))
-
-		results, r, err := incremental.Run(t.Context(), exec, queries...)
+		))...)
+		session := new(ir.Session)
+		// We keep this for symtab later
+		linkResult, r, err := incremental.Run(t.Context(), exec, queries.Link{
+			Opener:    files,
+			Session:   session,
+			Workspace: workspace,
+		})
 		require.NoError(t, err)
+		require.NotNil(t, r)
+		irs := linkResult[0].Value
+		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
 			matches := func(r *regexp.Regexp) bool {
@@ -199,19 +216,72 @@ func TestIR(t *testing.T) {
 			return
 		}
 
-		irs := slicesx.Transform(results, func(r incremental.Result[*ir.File]) *ir.File { return r.Value })
-		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
-
 		if test.Descriptor {
-			bytes, err := fdp.DescriptorSetBytes(irs,
+			var options fdp.Options
+			options.Apply(
 				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
-				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
+				fdp.GenerateExtraOptionLocations(test.GenerateExtraOptionLocations),
+				fdp.ExcludeFiles(IRExcluder{}),
 			)
+
+			FDSresult, r, err := incremental.Run(t.Context(), exec, queries.FDS{
+				Opener:    files,
+				Session:   session,
+				Workspace: workspace,
+				Options:   options,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			require.Len(t, FDSresult, 1)
+			fds := FDSresult[0].Value
+			require.NotNil(t, fds)
+
+			bytes, err := proto.Marshal(fds)
 			require.NoError(t, err)
 
-			fds := new(descriptorpb.FileDescriptorSet)
+			fds = new(descriptorpb.FileDescriptorSet)
 			require.NoError(t, proto.Unmarshal(bytes, fds))
 			assert.False(t, iterx.Empty2(fds.ProtoReflect().Range), "empty descriptor")
+
+			if test.SourceCodeInfo {
+				type loc struct {
+					Path              string
+					Start, End        sourceinfo.Position
+					Leading, Trailing *string // Pointer so that if not present it doesn't get printed.
+					Detached          []string
+				}
+				info := make(map[string][]loc)
+				for _, fdp := range fds.File {
+					info[*fdp.Name] = slicesx.Transform(sourceinfo.Decode(fdp), func(entry sourceinfo.Location) loc {
+						loc := loc{
+							Path:     entry.Path.String(),
+							Start:    entry.Start,
+							End:      entry.End,
+							Detached: entry.Detached,
+						}
+						if entry.Leading != "" {
+							loc.Leading = &entry.Leading
+						}
+						if entry.Trailing != "" {
+							loc.Trailing = &entry.Trailing
+						}
+
+						// Delete the copyright notice comment, because it's
+						// noisy.
+						loc.Detached = slices.DeleteFunc(loc.Detached, func(s string) bool {
+							return strings.HasPrefix(s, " Copyright 2020-")
+						})
+
+						return loc
+					})
+
+					fdp.SourceCodeInfo.Location = nil
+					if iterx.Empty2(fdp.SourceCodeInfo.ProtoReflect().Range) {
+						fdp.SourceCodeInfo = nil
+					}
+				}
+				outputs[2] = prototest.ToYAML(info, prototest.ToYAMLOptions{})
+			}
 
 			outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
 		}
@@ -220,7 +290,7 @@ func TestIR(t *testing.T) {
 			symtab := symtabProto(irs)
 			assert.False(t, iterx.Empty2(symtab.ProtoReflect().Range), "empty symtab")
 
-			outputs[2] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
+			outputs[3] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
 		}
 	})
 }
@@ -368,6 +438,7 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 				cmpx.Key(func(x *compilerpb.Symbol) string { return x.File }),
 				cmpx.Key(func(x *compilerpb.Symbol) compilerpb.Symbol_Kind { return x.Kind }),
 				cmpx.Key(func(x *compilerpb.Symbol) uint32 { return x.Index }),
+				cmpx.Key(func(x *compilerpb.Symbol) string { return x.Fqn }),
 			),
 		)
 

@@ -122,14 +122,18 @@ func (t TypeAny) RemovePrefixes() TypeAny {
 
 // source.Span implements [source.Spanner].
 func (t TypeAny) Span() source.Span {
-	// At most one of the below will produce a non-zero type, and that will be
-	// the span selected by source.Join. If all of them are zero, this produces
-	// the zero span.
-	return source.Join(
-		t.AsPath(),
-		t.AsPrefixed(),
-		t.AsGeneric(),
-	)
+	switch t.Kind() {
+	case TypeKindError:
+		return t.AsError().Span()
+	case TypeKindGeneric:
+		return t.AsGeneric().Span()
+	case TypeKindPath:
+		return t.AsPath().Span()
+	case TypeKindPrefixed:
+		return t.AsPrefixed().Span()
+	default:
+		return source.Span{}
+	}
 }
 
 // TypeError represents an unrecoverable parsing error in a type context.

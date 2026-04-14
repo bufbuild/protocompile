@@ -13,6 +13,7 @@
 // limitations under the License.
 
 //% descriptor: true
+//% source_code_info: true
 //% exclude: ["required fields", "group suntax"]
 syntax = "proto2";
 

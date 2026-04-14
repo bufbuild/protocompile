@@ -64,3 +64,13 @@ decls:
           type.path.components: [{ ident: "group" }]
         value.literal.int_value: 4
         body: {}
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "O" }]
+        body.decls:
+        - def:
+            kind: KIND_GROUP
+            name.components: [{ ident: "Baz" }]
+            type.path.components: [{ ident: "group" }]
+            value.literal.int_value: 5
+            body: {}

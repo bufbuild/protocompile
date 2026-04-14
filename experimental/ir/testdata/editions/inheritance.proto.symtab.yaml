@@ -11,6 +11,9 @@ tables:
     - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
     - { extn: "pb.cpp", name: "string_type", value: "STRING" }
     symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/inheritance.proto"
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/inheritance.proto"

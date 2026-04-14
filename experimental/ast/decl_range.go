@@ -93,7 +93,7 @@ func (d DeclRange) Ranges() Commas[ExprAny] {
 				return id.WrapDyn(d.Context(), c.Value)
 			},
 			func(_ int, e ExprAny) withComma[id.Dyn[ExprAny, ExprKind]] {
-				d.Context().Nodes().panicIfNotOurs(e)
+				d.Context().Nodes().panicIfNotOurs(e.Context())
 				return withComma[id.Dyn[ExprAny, ExprKind]]{Value: e.ID()}
 			},
 		),

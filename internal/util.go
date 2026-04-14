@@ -15,7 +15,7 @@
 package internal
 
 import (
-	"bytes"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bufbuild/protocompile/internal/cases"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // JSONName returns the default JSON name for a field with the given name.
@@ -131,11 +132,16 @@ func CreatePrefixList(pkg string) []string {
 	return prefixes
 }
 
-func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
-	// This uses the same algorithm as the protoc C++ code for escaping strings.
-	// The protoc C++ code in turn uses the abseil C++ library's CEscape function:
-	//  https://github.com/abseil/abseil-cpp/blob/934f613818ffcb26c942dff4a80be9a4031c662c/absl/strings/escaping.cc#L406
-	for _, c := range b {
+// EscapeBytes escapes the value of a bytes field for use in a
+// FieldDescriptorProto.default_value.
+//
+// This implements the algorithm in protoc's C++ code, which is a port of
+// absl::CEscape. See
+// https://github.com/abseil/abseil-cpp/blob/934f613818ffcb26c942dff4a80be9a4031c662c/absl/strings/escaping.cc#L406.
+func EscapeBytes[B ~string | ~[]byte](data B) string {
+	buf := new(strings.Builder)
+	for i := range len(data) {
+		c := data[i]
 		switch c {
 		case '\n':
 			buf.WriteString("\\n")
@@ -162,6 +168,7 @@ func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
 			}
 		}
 	}
+	return buf.String()
 }
 
 // IsZeroLocation returns true if the given loc is a zero value
@@ -191,14 +198,15 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 		p := d.Parent()
 		switch d := d.(type) {
 		case protoreflect.FileDescriptor:
-			return reverse(path), true
+			slices.Reverse(path)
+			return path, true
 		case protoreflect.MessageDescriptor:
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, FileMessagesTag)
+				path = append(path, tags.File_MessageType)
 			case protoreflect.MessageDescriptor:
-				path = append(path, MessageNestedMessagesTag)
+				path = append(path, tags.Message_NestedType)
 			default:
 				return nil, false
 			}
@@ -207,15 +215,15 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
 				if d.IsExtension() {
-					path = append(path, FileExtensionsTag)
+					path = append(path, tags.File_Extension)
 				} else {
 					return nil, false
 				}
 			case protoreflect.MessageDescriptor:
 				if d.IsExtension() {
-					path = append(path, MessageExtensionsTag)
+					path = append(path, tags.Message_Extension)
 				} else {
-					path = append(path, MessageFieldsTag)
+					path = append(path, tags.Message_Field)
 				}
 			default:
 				return nil, false
@@ -223,7 +231,7 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 		case protoreflect.OneofDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.MessageDescriptor); ok {
-				path = append(path, MessageOneofsTag)
+				path = append(path, tags.Message_OneofDecl)
 			} else {
 				return nil, false
 			}
@@ -231,30 +239,30 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, FileEnumsTag)
+				path = append(path, tags.File_EnumType)
 			case protoreflect.MessageDescriptor:
-				path = append(path, MessageEnumsTag)
+				path = append(path, tags.Message_EnumType)
 			default:
 				return nil, false
 			}
 		case protoreflect.EnumValueDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.EnumDescriptor); ok {
-				path = append(path, EnumValuesTag)
+				path = append(path, tags.Enum_Value)
 			} else {
 				return nil, false
 			}
 		case protoreflect.ServiceDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.FileDescriptor); ok {
-				path = append(path, FileServicesTag)
+				path = append(path, tags.File_Service)
 			} else {
 				return nil, false
 			}
 		case protoreflect.MethodDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.ServiceDescriptor); ok {
-				path = append(path, ServiceMethodsTag)
+				path = append(path, tags.Service_Method)
 			} else {
 				return nil, false
 			}
@@ -272,17 +280,4 @@ func CanPack(k protoreflect.Kind) bool {
 	default:
 		return true
 	}
-}
-
-func ClonePath(path protoreflect.SourcePath) protoreflect.SourcePath {
-	clone := make(protoreflect.SourcePath, len(path))
-	copy(clone, path)
-	return clone
-}
-
-func reverse(p protoreflect.SourcePath) protoreflect.SourcePath {
-	for i, j := 0, len(p)-1; i < j; i, j = i+1, j-1 {
-		p[i], p[j] = p[j], p[i]
-	}
-	return p
 }

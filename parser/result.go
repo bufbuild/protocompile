@@ -29,6 +29,7 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/editions"
+	"github.com/bufbuild/protocompile/internal/tags"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -277,13 +278,13 @@ func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldD
 		case *ast.FieldNode:
 			count++
 			// use higher limit since we don't know yet whether extendee is messageset wire format
-			fd := r.asFieldDescriptor(decl, internal.MaxTag, syntax, handler)
+			fd := r.asFieldDescriptor(decl, tags.MessageSetMax, syntax, handler)
 			fd.Extendee = proto.String(extendee)
 			*flds = append(*flds, fd)
 		case *ast.GroupNode:
 			count++
 			// ditto: use higher limit right now
-			fd, md := r.asGroupDescriptors(decl, syntax, internal.MaxTag, handler, depth+1)
+			fd, md := r.asGroupDescriptors(decl, syntax, tags.MessageSetMax, handler, depth+1)
 			fd.Extendee = proto.String(extendee)
 			*flds = append(*flds, fd)
 			*msgs = append(*msgs, md)
@@ -596,7 +597,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 
 	// now that we have options, we can see if this uses messageset wire format, which
 	// impacts how we validate tag numbers in any fields in the message
-	maxTag := int32(internal.MaxNormalTag)
+	maxTag := int32(tags.FieldMax)
 	messageSetOpt, err := r.isMessageSetWireFormat("message "+msgd.GetName(), msgd, handler)
 	if err != nil {
 		return
@@ -606,7 +607,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 			nodeInfo := r.file.NodeInfo(node)
 			_ = handler.HandleErrorf(nodeInfo, "messages with message-set wire format are not allowed with proto3 syntax")
 		}
-		maxTag = internal.MaxTag // higher limit for messageset wire format
+		maxTag = tags.MessageSetMax // higher limit for messageset wire format
 	}
 
 	rsvdNames := map[string]ast.SourcePos{}
@@ -774,8 +775,8 @@ func (r *result) checkTag(n ast.Node, v uint64, maxTag int32) error {
 		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d must be greater than zero", v)
 	case v > uint64(maxTag):
 		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
-	case v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd:
-		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
+	case v >= tags.FirstReserved && v <= tags.LastReserved:
+		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d is in disallowed reserved range %d-%d", v, tags.FirstReserved, tags.LastReserved)
 	default:
 		return nil
 	}

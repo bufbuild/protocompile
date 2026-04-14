@@ -73,6 +73,50 @@ func (t *nybbles[N]) search(key string, yield func(string, int) bool) {
 	}
 }
 
+// searcher is used in [nybbles.step].
+type searcher struct {
+	i int // Length of the key examined so far, plus one.
+	n int // Entry being examined.
+}
+
+// step walks a single step along the trie.
+//
+// Unlike search, which takes a func, this function takes state that does not
+// need to be passed by pointer. This avoids an escape analysis failure in
+// functions like [Trie.Prefixes], where the closure (which is passed to an
+// interface implemented by nybbles[T]) and everything it captures escapes.
+func (t *nybbles[N]) step(key string, s searcher) searcher {
+	if s.i == 0 {
+		s.i++
+		if t.has(0) {
+			return s
+		}
+	}
+
+	for ; s.i <= len(key); s.i++ {
+		b := key[s.i-1]
+		lo, hi := b&0xf, b>>4
+
+		if len(t.hi) <= s.n {
+			break
+		}
+		m := int(t.hi[s.n][hi])
+
+		if len(t.lo) <= m {
+			break
+		}
+		s.n = int(t.lo[m][lo])
+
+		if t.has(s.n) {
+			s.i++
+			return s
+		}
+	}
+
+	s.n = -1
+	return s
+}
+
 // insert adds a new key to the trie; returns the index to insert the
 // corresponding value at.
 //

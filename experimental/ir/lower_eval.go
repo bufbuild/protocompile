@@ -30,23 +30,14 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/decimal"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 const (
-	fieldNumberBits = 29
-	fieldNumberMax  = 1<<fieldNumberBits - 1
-	firstReserved   = 19000
-	lastReserved    = 19999
-
-	messageSetNumberBits = 31
-	messageSetNumberMax  = 1<<messageSetNumberBits - 2 // Int32Max is not valid!
-
-	enumNumberBits = 32
-	enumNumberMax  = math.MaxInt32
-
 	// These are the NaN bits used by virtually every language ever: quiet,
 	// positive, and with an all-zeros payload. `protoc`, by nature of being
 	// written in C++, picks up this bitpattern automatically.
@@ -581,7 +572,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			splitURL := func(path ast.Path) (before, after ast.Path) {
 				// Figure out what part of the key expression actually contains
 				// the domain. Look for the last component whose separator is a /.
-				pc, _ := iterx.Last(iterx.Filter(path.Components, func(pc ast.PathComponent) bool {
+				pc, _ := iterx.Last(iterx.Filter(path.Components(), func(pc ast.PathComponent) bool {
 					return pc.Separator().Text() == "/"
 				}))
 				hostSpan := path.Span()
@@ -806,11 +797,11 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		if n, exact := lit.Int(); exact && !lit.IsFloat() {
 			switch args.memberNumber {
 			case enumNumber:
-				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, true, tags.EnumBits, !neg.IsZero(), n)
 			case fieldNumber:
-				return e.checkIntBounds(args, false, fieldNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, false, tags.FieldBits, !neg.IsZero(), n)
 			case messageSetNumber:
-				return e.checkIntBounds(args, false, messageSetNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, false, tags.MessageSetBits, !neg.IsZero(), n)
 			}
 
 			if !scalar.IsNumber() {
@@ -826,11 +817,11 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 
 			switch args.memberNumber {
 			case enumNumber:
-				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, true, tags.EnumBits, !neg.IsZero(), n)
 			case fieldNumber:
-				return e.checkIntBounds(args, false, fieldNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, false, tags.FieldBits, !neg.IsZero(), n)
 			case messageSetNumber:
-				return e.checkIntBounds(args, false, messageSetNumberBits, !neg.IsZero(), n)
+				return e.checkIntBounds(args, false, tags.MessageSetBits, !neg.IsZero(), n)
 			}
 
 			if !scalar.IsNumber() {
@@ -888,7 +879,7 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	switch n := got.(type) {
 	case uint64:
 		v = n
-	case *big.Float:
+	case *decimal.Decimal:
 		// We assume that a big.Float is always larger than a uint64.
 		tooLarge = true
 	default:
@@ -926,8 +917,8 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 		}
 
 		hi := (uint64(1) << bits) - 1
-		if bits == messageSetNumberBits {
-			hi = messageSetNumberMax
+		if bits == tags.MessageSetBits {
+			hi = tags.MessageSetMax
 		}
 
 		if tooLarge || v > hi {
@@ -936,14 +927,14 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 		}
 	}
 
-	if bits == fieldNumberBits {
+	if bits == tags.FieldBits {
 		if v == 0 {
 			err()
 			return 0, false
 		}
 
 		// Check that this is not one of the special reserved numbers.
-		if v >= firstReserved && v <= lastReserved {
+		if v >= tags.FirstReserved && v <= tags.LastReserved {
 			err()
 			return rawValueBits(v), false
 		}
@@ -997,11 +988,11 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 		if ok {
 			switch args.memberNumber {
 			case enumNumber:
-				return enumNumberMax, ok
+				return tags.EnumMax, ok
 			case fieldNumber:
-				return fieldNumberMax, ok
+				return tags.FieldMax, ok
 			case messageSetNumber:
-				return messageSetNumberMax, ok
+				return tags.MessageSetMax, ok
 			}
 		} else {
 			e.Errorf("`max` outside of range end").Apply(
@@ -1278,8 +1269,8 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 		hi = lo - 1
 	} else {
 		hi = (uint64(1) << e.bits) - 1
-		if e.bits == messageSetNumberBits {
-			hi = messageSetNumberMax
+		if e.bits == tags.MessageSetBits {
+			hi = tags.MessageSetMax
 		}
 	}
 
@@ -1309,7 +1300,7 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 		return prefix + strconv.FormatUint(v, base)
 	}
 
-	if e.bits == fieldNumberBits {
+	if e.bits == tags.FieldBits {
 		d.Apply(
 			report.Message("%s out of range", taxa.FieldNumber),
 			report.Snippet(e.expr),
@@ -1318,8 +1309,8 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 				taxa.FieldNumber,
 				itoa(1),
 				itoa(hi),
-				itoa(uint64(firstReserved)),
-				itoa(uint64(lastReserved))),
+				itoa(tags.FirstReserved),
+				itoa(tags.LastReserved)),
 		)
 	} else {
 		d.Apply(

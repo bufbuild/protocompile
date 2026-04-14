@@ -1,0 +1,13 @@
+file:
+- name: "testdata/comments/simple.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "bar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "bar"
+  syntax: "editions"
+  edition: EDITION_2023

@@ -1143,7 +1143,7 @@ func (r *renderer) suggestion(snip snippet) {
 				continue
 			}
 
-			for _, line := range strings.Split(hunk.content, "\n") {
+			for line := range strings.SplitSeq(hunk.content, "\n") {
 				lineno := aLine
 				if hunk.kind == '+' {
 					lineno = bLine

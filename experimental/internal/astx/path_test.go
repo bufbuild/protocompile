@@ -25,5 +25,5 @@ import (
 func TestFakePathLayout(t *testing.T) {
 	t.Parallel()
 
-	prototest.RequireSameLayout(t, reflect.TypeOf(ast.Path{}), reflect.TypeOf(fakePath{}))
+	prototest.RequireSameLayout(t, reflect.TypeFor[ast.Path](), reflect.TypeFor[fakePath]())
 }

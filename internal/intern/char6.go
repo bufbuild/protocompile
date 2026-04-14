@@ -40,6 +40,8 @@ var (
 	}()
 )
 
+type inlined [maxInlined]byte
+
 // encodeChar6 attempts to encoding data using the char6 encoding. Returns
 // whether encoding was successful, and an encoded value.
 func encodeChar6(data string) (ID, bool) {
@@ -79,30 +81,27 @@ func encodeOutlined(data string) (ID, bool) {
 	return value, true
 }
 
-// decodeChar6 decodes id assuming it contains a char6-encoded string.
-func decodeChar6(id ID) string {
-	// The main decoding loop is outlined to promote inlining of decodeChar6,
-	// and thus heap-promotion of the returned string.
-	data, len := decodeOutlined(id) //nolint:predeclared,revive // For `len`.
-	return unsafex.StringAlias(data[:len])
-}
+// decodeChar6 decodes id assuming it contains a char6-encoded string, and
+// writes the result to buf.
+func decodeChar6(id ID, buf *inlined) string {
+	if id == 0 {
+		return ""
+	}
 
-//nolint:predeclared,revive // For `len`.
-func decodeOutlined(id ID) (data [maxInlined]byte, len int) {
-	for i := range data {
-		data[i] = char6ToByte[int(id&077)]
+	for i := range buf {
+		buf[i] = char6ToByte[int(id&077)]
 		id >>= 6
 	}
 
 	// Figure out the length by removing a maximal suffix of
 	// '.' bytes. Note that an all-ones value will decode to "", but encode
 	// will never return that value.
-	len = maxInlined
-	for ; len > 0; len-- {
-		if data[len-1] != '.' {
+	n := maxInlined
+	for ; n > 0; n-- {
+		if buf[n-1] != '.' {
 			break
 		}
 	}
 
-	return data, len
+	return unsafex.StringAlias(buf[:n])
 }

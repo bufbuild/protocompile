@@ -35,11 +35,29 @@ import (
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
 func buildLocalSymbols(file *File) {
-	sym := file.arenas.symbols.NewCompressed(rawSymbol{
-		kind: SymbolKindPackage,
-		fqn:  file.InternedPackage(),
-	})
-	file.exported = append(file.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	// Register a package symbol for the full package name and each intermediate parent.
+	// For example, package a.b.c produces the following symbols:
+	//  - a.b.c
+	//  - a.b
+	//  - a
+	//
+	// This is necessary for supporting the resolution of partial names. As the comment in
+	// [symtab.resolve] explains, protoc does a two phase search for names: searching for the
+	// first component, and then appending the rest of the target.
+	//
+	// For example, to resolve the target c.v1.Foo in package a.b.c.v1, it first searches
+	// for c. This is found in the intermediate scope, a.b, resolving to the intermediate
+	// scope a.b.c, before resolving the rest, a.b.c.v1.Foo. So the intermediate scopes must
+	// be present to resolve the first component, since it may be an intermediate package scope.
+	for pkg := file.Package(); pkg != ""; pkg = pkg.Parent() {
+		sym := file.arenas.symbols.NewCompressed(rawSymbol{
+			kind: SymbolKindPackage,
+			fqn:  file.session.intern.Intern(string(pkg)),
+		})
+		file.exported = append(file.exported, symbol{
+			ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+		})
+	}
 
 	for ty := range seq.Values(file.AllTypes()) {
 		newTypeSymbol(ty)
@@ -77,7 +95,9 @@ func newTypeSymbol(ty Type) {
 		fqn:  ty.InternedFullName(),
 		data: arena.Untyped(c.arenas.types.Compress(ty.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newFieldSymbol(f Member) {
@@ -93,7 +113,9 @@ func newFieldSymbol(f Member) {
 		fqn:  f.InternedFullName(),
 		data: arena.Untyped(c.arenas.members.Compress(f.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newOneofSymbol(o Oneof) {
@@ -103,7 +125,9 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newServiceSymbol(s Service) {
@@ -113,7 +137,9 @@ func newServiceSymbol(s Service) {
 		fqn:  s.InternedFullName(),
 		data: arena.Untyped(c.arenas.services.Compress(s.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 func newMethodSymbol(m Method) {
@@ -123,7 +149,9 @@ func newMethodSymbol(m Method) {
 		fqn:  m.InternedFullName(),
 		data: arena.Untyped(c.arenas.methods.Compress(m.Raw())),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	c.exported = append(c.exported, symbol{
+		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+	})
 }
 
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
@@ -201,14 +229,14 @@ func mergeImportedSymbolTables(file *File, r *report.Report) {
 func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
-		func(r Ref[Symbol]) intern.ID { return GetRef(file, r).InternedFullName() },
-		func(refs []Ref[Symbol]) Ref[Symbol] {
+		func(r symbol) intern.ID { return r.fqn },
+		func(refs []symbol) symbol {
 			if len(refs) == 1 {
 				return refs[0]
 			}
 
 			slices.SortFunc(refs, cmpx.Map(
-				func(r Ref[Symbol]) Symbol { return GetRef(file, r) },
+				func(r symbol) Symbol { return GetRef(file, r.ref) },
 				cmpx.Key(Symbol.Kind), // Packages sort first, reserved names sort last.
 				cmpx.Key(func(s Symbol) string {
 					// NOTE: we do not choose a winner based on the path's intern
@@ -219,14 +247,14 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r Ref[Symbol]) (ast.DeclDef, bool) {
-				s := GetRef(file, r)
+			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r symbol) (ast.DeclDef, bool) {
+				s := GetRef(file, r.ref)
 				ty := s.AsType()
 				return ty.AST(), !ty.IsZero()
 			}))
 			isFirst := true
-			refs = slices.DeleteFunc(refs, func(r Ref[Symbol]) bool {
-				s := GetRef(file, r)
+			refs = slices.DeleteFunc(refs, func(r symbol) bool {
+				s := GetRef(file, r.ref)
 				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
 					// Ignore all symbols that are map entry fields, because those
 					// can only be duplicated when two map entry messages' names
@@ -252,7 +280,11 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 			// Deduplicate references to the same element.
 			refs = slicesx.Dedup(refs)
 			if len(refs) > 1 && r != nil {
-				r.Error(errDuplicates{file, refs})
+				r.Error(errDuplicates{
+					symbols: slices.Collect(slicesx.Map(refs, func(r symbol) Symbol {
+						return GetRef(file, r.ref)
+					})),
+				})
 			}
 
 			return refs[0]
@@ -262,24 +294,19 @@ func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 
 // errDuplicates diagnoses duplicate symbols.
 type errDuplicates struct {
-	*File
-	refs []Ref[Symbol]
-}
-
-func (e errDuplicates) symbol(n int) Symbol {
-	return GetRef(e.File, e.refs[n])
+	symbols []Symbol
 }
 
 func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	var havePkg bool
-	for i := range e.refs {
-		if e.symbol(i).Kind() == SymbolKindPackage {
+	for _, s := range e.symbols {
+		if s.Kind() == SymbolKindPackage {
 			havePkg = true
 			break
 		}
 	}
 
-	first, second := e.symbol(0), e.symbol(1)
+	first, second := e.symbols[0], e.symbols[1]
 
 	name := first.FullName()
 	if !havePkg {
@@ -320,8 +347,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	}
 
 	spans := make(map[source.Span]struct{})
-	for i := range e.refs[2:] {
-		s := e.symbol(i + 2)
+	for i, s := range e.symbols[2:] {
 		next := s.Kind().noun()
 
 		span := s.Definition()
@@ -339,27 +365,36 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 		}
 	}
 
-	// If at least one duplicated symbol is non-visible, explain
-	// that symbol names are global!
-	for i := range e.refs {
-		s := e.symbol(i)
-		if s.Visible(e.File, true) {
+	// For each duplicated symbol, we collect up all the unique files, and then check the
+	// visibility of each symbol against each file. If at least one non-visibile symbol is
+	// found, explain that symbol names are global.
+	seen := make(map[*File]bool)
+
+outer:
+	for _, s := range e.symbols {
+		file := s.Context()
+		if seen[file] {
 			continue
 		}
+		seen[file] = true
+		for _, s := range e.symbols {
+			if s.Visible(file, true) {
+				continue
+			}
 
-		d.Apply(report.Helpf(
-			"symbol names must be unique across all transitive imports; "+
-				"for example, %q declares `%s` but is not directly imported",
-			s.Context().Path(),
-			first.FullName(),
-		))
-		break
+			d.Apply(report.Helpf(
+				"symbol names must be unique across all files; "+
+					"for example, %q declares `%s` but it is not directly imported",
+				s.Context().Path(),
+				first.FullName(),
+			))
+			break outer
+		}
 	}
 
 	// If at least one of them was an enum value, we note the weird language
 	// bug with enum scoping.
-	for i := range e.refs {
-		s := e.symbol(i)
+	for _, s := range e.symbols {
 		v := s.AsMember()
 		if !v.Container().IsEnum() {
 			continue
@@ -383,8 +418,8 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 		))
 	}
 
-	for i := range e.refs {
-		ty := e.symbol(i).AsType()
+	for _, s := range e.symbols {
+		ty := s.AsType()
 		if mf := ty.MapField(); !mf.IsZero() {
 			d.Apply(
 				report.Snippetf(mf.AST().Name(), "implies `repeated %s`", ty.Name()),

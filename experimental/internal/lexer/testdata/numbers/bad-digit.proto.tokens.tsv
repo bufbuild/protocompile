@@ -19,7 +19,7 @@
 17		Space		Unknown		122:123		009:005		"\n"
 18		Number		Unknown		123:125		010:001		"08"		int:0/8/1		pre:"0"
 19		Space		Unknown		125:126		010:003		"\n"
-20		Number		Unknown		126:130		011:001		"08.9"		fp:8.900390625/10/1
+20		Number		Unknown		126:130		011:001		"08.9"		fp:8.9/10/1
 21		Space		Unknown		130:131		011:005		"\n"
 22		Number		Unknown		131:135		012:001		"0x0G"		int:0/16/1		pre:"0x"
 23		Space		Unknown		135:136		012:005		"\n"

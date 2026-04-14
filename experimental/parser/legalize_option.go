@@ -194,7 +194,7 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 
 			case ast.ExprKindPath:
 				path := kv.Key().AsPath()
-				first, _ := iterx.First(path.Components)
+				first, _ := iterx.First(path.Components())
 				if !first.AsExtension().IsZero() {
 					// TODO: move this into ir/lower_eval.go
 					p.Errorf("cannot name extension field using `(...)` in %s", taxa.Dict).Apply(
@@ -225,7 +225,7 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 					break
 				}
 
-				slashIdx, _ := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
+				slashIdx, _ := iterx.Find(path.Components(), func(pc ast.PathComponent) bool {
 					return pc.Separator().Keyword() == keyword.Div
 				})
 				if slashIdx != -1 {
@@ -315,7 +315,7 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 			if what == taxa.Int {
 				switch base {
 				case 2:
-					v, _ := n.Value().Int(nil)
+					v := n.Value().Int(nil)
 					d.Apply(
 						report.SuggestEdits(value, "use a hexadecimal literal instead", report.Edit{
 							Start:   0,

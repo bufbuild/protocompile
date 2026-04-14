@@ -17,6 +17,8 @@ package ir
 import (
 	"iter"
 
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
@@ -25,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum option_target.yaml
@@ -121,7 +124,7 @@ func (m Member) IsPacked() bool {
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
 	value, _ := feature.AsInt()
-	return value == 1 // google.protobuf.FeatureSet.PACKED
+	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
 // IsUnicode returns whether this is a string-typed message field that must
@@ -133,7 +136,7 @@ func (m Member) IsUnicode() bool {
 
 	builtins := m.Context().builtins()
 	utf8Feature, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
-	return utf8Feature == 2 // FeatureSet.VERIFY
+	return utf8Feature == tags.FeatureSet_Utf8Validation_Verify
 }
 
 // AsTagRange wraps this member in a TagRange.
@@ -172,9 +175,9 @@ func (m Member) TypeAST() ast.TypeAny {
 	if !ty.MapField().IsZero() {
 		k, v := ty.AST().Type().RemovePrefixes().AsGeneric().AsMap()
 		switch m.Number() {
-		case 1:
+		case tags.MapEntry_Key:
 			return k
-		case 2:
+		case tags.MapEntry_Value:
 			return v
 		}
 	}
@@ -299,6 +302,22 @@ func (m Member) Element() Type {
 		return Type{}
 	}
 	return GetRef(m.Context(), m.Raw().elem)
+}
+
+// FDPType returns the descriptor type that would be used for this field.
+func (m Member) FDPType() descriptorpb.FieldDescriptorProto_Type {
+	switch {
+	case m.IsZero() || m.IsEnumValue():
+		return 0
+	case m.IsGroup():
+		return descriptorpb.FieldDescriptorProto_TYPE_GROUP
+	case m.Element().IsMessage():
+		return descriptorpb.FieldDescriptorProto_TYPE_MESSAGE
+	case m.Element().IsEnum():
+		return descriptorpb.FieldDescriptorProto_TYPE_ENUM
+	default:
+		return m.Element().Predeclared().FDPType()
+	}
 }
 
 // Container returns the type which contains this member: this is either
@@ -456,6 +475,14 @@ func (m Member) noun() taxa.Noun {
 	default:
 		return taxa.Field
 	}
+}
+
+// numberOk returns true if the member number did not have errors during evaluation.
+func (m Member) numberOK() bool {
+	if m.IsZero() {
+		return false
+	}
+	return m.Raw().numberOk
 }
 
 // toRef returns a ref to this member relative to the given context.

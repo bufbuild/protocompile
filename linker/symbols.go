@@ -22,6 +22,7 @@ import (
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/tags"
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
@@ -296,7 +297,7 @@ func (s *packageSymbols) checkFileLocked(f protoreflect.FileDescriptor, handler 
 }
 
 func sourceSpanForPackage(fd protoreflect.FileDescriptor) ast.SourceSpan {
-	loc := fd.SourceLocations().ByPath([]int32{internal.FilePackageTag})
+	loc := fd.SourceLocations().ByPath([]int32{tags.File_Package})
 	if internal.IsZeroLocation(loc) {
 		return ast.UnknownSpan(fd.Path())
 	}
@@ -329,19 +330,19 @@ func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 	namePath := path
 	switch d.(type) {
 	case protoreflect.FieldDescriptor:
-		namePath = append(namePath, internal.FieldNameTag)
+		namePath = append(namePath, tags.Field_Name)
 	case protoreflect.MessageDescriptor:
-		namePath = append(namePath, internal.MessageNameTag)
+		namePath = append(namePath, tags.Message_Name)
 	case protoreflect.OneofDescriptor:
-		namePath = append(namePath, internal.OneofNameTag)
+		namePath = append(namePath, tags.Oneof_Name)
 	case protoreflect.EnumDescriptor:
-		namePath = append(namePath, internal.EnumNameTag)
+		namePath = append(namePath, tags.Enum_Name)
 	case protoreflect.EnumValueDescriptor:
-		namePath = append(namePath, internal.EnumValNameTag)
+		namePath = append(namePath, tags.EnumValue_Name)
 	case protoreflect.ServiceDescriptor:
-		namePath = append(namePath, internal.ServiceNameTag)
+		namePath = append(namePath, tags.Service_Name)
 	case protoreflect.MethodDescriptor:
-		namePath = append(namePath, internal.MethodNameTag)
+		namePath = append(namePath, tags.Method_Name)
 	default:
 		// NB: shouldn't really happen, but just in case fall back to path to
 		// descriptor, sans name field
@@ -378,7 +379,7 @@ func sourceSpanForNumber(fd protoreflect.FieldDescriptor) ast.SourceSpan {
 		return ast.UnknownSpan(file.Path())
 	}
 	numberPath := path
-	numberPath = append(numberPath, internal.FieldNumberTag)
+	numberPath = append(numberPath, tags.Field_Number)
 	loc := file.SourceLocations().ByPath(numberPath)
 	if internal.IsZeroLocation(loc) {
 		loc = file.SourceLocations().ByPath(path)
