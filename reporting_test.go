@@ -411,8 +411,8 @@ func TestWarningReporting(t *testing.T) {
 			// leading-dot fully-qualified references should count as using the import
 			name: "used import with leading dot cross-package reference",
 			sources: map[string]string{
-				"test.proto":                       `syntax = "proto3"; import "shared/address.proto"; message Foo { .shared.USAddress addr = 1; }`,
-				"shared/address.proto":             `syntax = "proto3"; package shared; message USAddress { string street = 1; }`,
+				"test.proto":           `syntax = "proto3"; import "shared/address.proto"; message Foo { .shared.USAddress addr = 1; }`,
+				"shared/address.proto": `syntax = "proto3"; package shared; message USAddress { string street = 1; }`,
 			},
 		},
 	}
