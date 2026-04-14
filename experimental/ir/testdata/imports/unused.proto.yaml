@@ -99,6 +99,35 @@ files:
       E e = 2;
     }
 
+- path: "a7.proto"
+  text: |
+    syntax = "proto3";
+    package buf.test;
+
+    import "b.proto";
+    import "c.proto";
+    import "d.proto";
+
+    message A7 {
+      .buf.test.B b = 1;
+      .buf.test.C c = 2;
+      .buf.test.D d = 3;
+    }
+
+- path: "a8.proto"
+  text: |
+    syntax = "proto3";
+    package buf.test;
+
+    import "b.proto";
+    import "c.proto";
+    import "d.proto";
+
+    message A8 {
+      .buf.test.B b = 1;
+      .buf.test.D d = 3;
+    }
+
 - path: "b.proto"
   import: true
   text: |
