@@ -118,19 +118,19 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle, ctx printCtx) {
 
 func (p *printer) printMessage(msg ast.DefMessage, gap gapStyle, ctx printCtx) {
 	p.printToken(msg.Keyword, gap, ctx)
-	p.printToken(msg.Name, gapSpace, ctx)
+	p.printPath(msg.Decl.Name(), gapSpace, ctx)
 	p.printBody(msg.Body, ctx)
 }
 
 func (p *printer) printEnum(e ast.DefEnum, gap gapStyle, ctx printCtx) {
 	p.printToken(e.Keyword, gap, ctx)
-	p.printToken(e.Name, gapSpace, ctx)
+	p.printPath(e.Decl.Name(), gapSpace, ctx)
 	p.printBody(e.Body, ctx)
 }
 
 func (p *printer) printService(svc ast.DefService, gap gapStyle, ctx printCtx) {
 	p.printToken(svc.Keyword, gap, ctx)
-	p.printToken(svc.Name, gapSpace, ctx)
+	p.printPath(svc.Decl.Name(), gapSpace, ctx)
 	p.printBody(svc.Body, ctx)
 }
 
@@ -142,7 +142,7 @@ func (p *printer) printExtend(ext ast.DefExtend, gap gapStyle, ctx printCtx) {
 
 func (p *printer) printOneof(o ast.DefOneof, gap gapStyle, ctx printCtx) {
 	p.printToken(o.Keyword, gap, ctx)
-	p.printToken(o.Name, gapSpace, ctx)
+	p.printPath(o.Decl.Name(), gapSpace, ctx)
 	p.printBody(o.Body, ctx)
 }
 
@@ -155,7 +155,7 @@ func (p *printer) printGroup(g ast.DefGroup, gap gapStyle, ctx printCtx) {
 	}
 
 	p.printToken(g.Keyword, gap, ctx)
-	p.printToken(g.Name, gapSpace, ctx)
+	p.printPath(g.Decl.Name(), gapSpace, ctx)
 	if !g.Equals.IsZero() {
 		p.printToken(g.Equals, gapSpace, ctx)
 		p.printExpr(g.Tag, gapSpace, ctx)
@@ -168,7 +168,7 @@ func (p *printer) printGroup(g ast.DefGroup, gap gapStyle, ctx printCtx) {
 
 func (p *printer) printField(f ast.DefField, gap gapStyle, ctx printCtx) {
 	p.printType(f.Type, gap, ctx)
-	p.printToken(f.Name, gapSpace, ctx)
+	p.printPath(f.Decl.Name(), gapSpace, ctx)
 	if !f.Equals.IsZero() {
 		p.printToken(f.Equals, gapSpace, ctx)
 		p.printExpr(f.Tag, gapSpace, ctx)
@@ -178,7 +178,7 @@ func (p *printer) printField(f ast.DefField, gap gapStyle, ctx printCtx) {
 }
 
 func (p *printer) printEnumValue(ev ast.DefEnumValue, gap gapStyle, ctx printCtx) {
-	p.printToken(ev.Name, gap, ctx)
+	p.printPath(ev.Decl.Name(), gap, ctx)
 	if !ev.Equals.IsZero() {
 		p.printToken(ev.Equals, gapSpace, ctx)
 		p.printExpr(ev.Tag, gapSpace, ctx)
@@ -189,7 +189,7 @@ func (p *printer) printEnumValue(ev ast.DefEnumValue, gap gapStyle, ctx printCtx
 
 func (p *printer) printMethod(m ast.DefMethod, gap gapStyle, ctx printCtx) {
 	p.printToken(m.Keyword, gap, ctx)
-	p.printToken(m.Name, gapSpace, ctx)
+	p.printPath(m.Decl.Name(), gapSpace, ctx)
 	p.printSignature(m.Signature, ctx)
 	if !m.Body.IsZero() {
 		p.printBody(m.Body, ctx)

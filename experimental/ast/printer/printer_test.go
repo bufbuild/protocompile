@@ -156,6 +156,25 @@ func applyEdit(file *ast.File, edit Edit) error {
 	}
 }
 
+// defName returns the simple name of a definition, handling both natural
+// paths (where AsIdent works) and synthetic paths (where we must iterate
+// Components). Returns "" if the name cannot be determined.
+func defName(def ast.DeclDef) string {
+	name := def.Name()
+	if name.IsZero() {
+		return ""
+	}
+	if ident := name.AsIdent(); !ident.IsZero() {
+		return ident.Text()
+	}
+	for pc := range name.Components() {
+		if !pc.Name().IsZero() {
+			return pc.Name().Text()
+		}
+	}
+	return ""
+}
+
 // findMessageBody finds a message body by path (e.g., "M" or "M.Inner").
 func findMessageBody(file *ast.File, targetPath string) ast.DeclBody {
 	parts := strings.Split(targetPath, ".")
@@ -175,12 +194,12 @@ func findMessageBody(file *ast.File, targetPath string) ast.DeclBody {
 				continue
 			}
 
-			msg := def.AsMessage()
-			if msg.Name.Text() != parts[depth] {
+			if defName(def) != parts[depth] {
 				continue
 			}
 
 			// Found matching message at this level
+			msg := def.AsMessage()
 			if depth == len(parts)-1 {
 				return msg.Body
 			}
@@ -223,7 +242,7 @@ func findFieldDef(file *ast.File, targetPath string) ast.DeclDef {
 		if def.Classify() != ast.DefKindField {
 			continue
 		}
-		if def.Name().AsIdent().Text() == fieldName {
+		if defName(def) == fieldName {
 			return def
 		}
 	}
@@ -249,17 +268,15 @@ func findEnumBody(file *ast.File, targetPath string) ast.DeclBody {
 
 			// Check for enum at final level
 			if depth == len(parts)-1 && def.Classify() == ast.DefKindEnum {
-				enum := def.AsEnum()
-				if enum.Name.Text() == parts[depth] {
-					return enum.Body
+				if defName(def) == parts[depth] {
+					return def.AsEnum().Body
 				}
 			}
 
 			// Check for message to recurse into
 			if def.Classify() == ast.DefKindMessage {
-				msg := def.AsMessage()
-				if msg.Name.Text() == parts[depth] && !msg.Body.IsZero() {
-					if result := searchDecls(msg.Body.Decls(), depth+1); !result.IsZero() {
+				if defName(def) == parts[depth] && !def.Body().IsZero() {
+					if result := searchDecls(def.Body().Decls(), depth+1); !result.IsZero() {
 						return result
 					}
 				}
@@ -296,7 +313,7 @@ func findEnumValueDef(file *ast.File, targetPath string) ast.DeclDef {
 		if def.Classify() != ast.DefKindEnumValue {
 			continue
 		}
-		if def.Name().AsIdent().Text() == valueName {
+		if defName(def) == valueName {
 			return def
 		}
 	}
@@ -355,7 +372,7 @@ func findOrCreateMethodBody(file *ast.File, targetPath string) ast.DeclBody {
 		if def.IsZero() || def.Classify() != ast.DefKindService {
 			continue
 		}
-		if def.Name().AsIdent().Text() != serviceName {
+		if defName(def) != serviceName {
 			continue
 		}
 
@@ -365,7 +382,7 @@ func findOrCreateMethodBody(file *ast.File, targetPath string) ast.DeclBody {
 			if methodDecl.IsZero() || methodDecl.Classify() != ast.DefKindMethod {
 				continue
 			}
-			if methodDecl.Name().AsIdent().Text() != methodName {
+			if defName(methodDecl) != methodName {
 				continue
 			}
 
@@ -456,9 +473,6 @@ func createOptionDecl(stream *token.Stream, nodes *ast.Nodes, optionName, option
 	valueIdent := stream.NewIdent(optionValue)
 	semi := stream.NewPunct(keyword.Semi.String())
 
-	optionType := ast.TypePath{
-		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, optionKw)),
-	}
 	optionNamePath := nodes.NewPath(
 		nodes.NewPathComponent(token.Zero, nameIdent),
 	)
@@ -466,7 +480,7 @@ func createOptionDecl(stream *token.Stream, nodes *ast.Nodes, optionName, option
 		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, valueIdent)),
 	}
 	return nodes.NewDeclDef(ast.DeclDefArgs{
-		Type:      optionType.AsAny(),
+		Keyword:   optionKw,
 		Name:      optionNamePath,
 		Equals:    equals,
 		Value:     optionValuePath.AsAny(),
@@ -506,17 +520,14 @@ func createMessageDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.
 	stream.NewFused(openBrace, closeBrace)
 	body := nodes.NewDeclBody(openBrace)
 
-	msgType := ast.TypePath{
-		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, msgKw)),
-	}
 	msgNamePath := nodes.NewPath(
 		nodes.NewPathComponent(token.Zero, nameIdent),
 	)
 
 	return nodes.NewDeclDef(ast.DeclDefArgs{
-		Type: msgType.AsAny(),
-		Name: msgNamePath,
-		Body: body,
+		Keyword: msgKw,
+		Name:    msgNamePath,
+		Body:    body,
 	})
 }
 
@@ -594,17 +605,14 @@ func createEnumDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.Dec
 	stream.NewFused(openBrace, closeBrace)
 	body := nodes.NewDeclBody(openBrace)
 
-	enumType := ast.TypePath{
-		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, enumKw)),
-	}
 	enumNamePath := nodes.NewPath(
 		nodes.NewPathComponent(token.Zero, nameIdent),
 	)
 
 	return nodes.NewDeclDef(ast.DeclDefArgs{
-		Type: enumType.AsAny(),
-		Name: enumNamePath,
-		Body: body,
+		Keyword: enumKw,
+		Name:    enumNamePath,
+		Body:    body,
 	})
 }
 
@@ -667,17 +675,14 @@ func createServiceDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.
 	stream.NewFused(openBrace, closeBrace)
 	body := nodes.NewDeclBody(openBrace)
 
-	svcType := ast.TypePath{
-		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, svcKw)),
-	}
 	svcNamePath := nodes.NewPath(
 		nodes.NewPathComponent(token.Zero, nameIdent),
 	)
 
 	return nodes.NewDeclDef(ast.DeclDefArgs{
-		Type: svcType.AsAny(),
-		Name: svcNamePath,
-		Body: body,
+		Keyword: svcKw,
+		Name:    svcNamePath,
+		Body:    body,
 	})
 }
 
@@ -717,11 +722,10 @@ func deleteFromDecls(decls seq.Inserter[ast.DeclAny], name string) error {
 		if def.IsZero() {
 			continue
 		}
-		defName := def.Name()
-		if defName.IsZero() {
+		if def.Name().IsZero() {
 			continue
 		}
-		if defName.AsIdent().Text() == name {
+		if defName(def) == name {
 			decls.Delete(i)
 			return nil
 		}
@@ -742,8 +746,7 @@ func moveDecl(file *ast.File, target, before string) error {
 		if def.IsZero() {
 			continue
 		}
-		name := def.Name()
-		if !name.IsZero() && name.AsIdent().Text() == target {
+		if !def.Name().IsZero() && defName(def) == target {
 			srcIdx = i
 			saved = decls.At(i)
 			break
@@ -763,8 +766,7 @@ func moveDecl(file *ast.File, target, before string) error {
 		if def.IsZero() {
 			continue
 		}
-		name := def.Name()
-		if !name.IsZero() && name.AsIdent().Text() == before {
+		if !def.Name().IsZero() && defName(def) == before {
 			dstIdx = i
 			break
 		}

@@ -165,8 +165,6 @@ func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
 		p.appendPending(att.leading)
-	}
-	if hasTrivia {
 		if !p.options.Format {
 			gap = gapNone
 		}
