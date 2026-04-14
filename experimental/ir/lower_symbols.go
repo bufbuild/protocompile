@@ -35,15 +35,20 @@ import (
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
 func buildLocalSymbols(file *File) {
-	// Register a package symbol for the full package name and each parent. For example,
-	// package a.b.c produces the following symbols:
+	// Register a package symbol for the full package name and each intermediate parent.
+	// For example, package a.b.c produces the following symbols:
 	//  - a.b.c
 	//  - a.b
 	//  - a
 	//
-	// This is necessary for resolving names that use a partial path, for example, b.c.Foo
-	// in package a.b.c. This would be resolved by checking the scope a, and appending the
-	// name b.c.Foo.
+	// This is necessary for supporting the resolution of partial names. As the comment in
+	// [symtab.resolve] explains, protoc does a two phase search for names: searching for the
+	// first component, and then appending the rest of the target.
+	//
+	// For example, to resolve the target c.v1.Foo in package a.b.c.v1, it first searches
+	// for c. This is found in the intermediate scope, a.b, resolving to the intermediate
+	// scope a.b.c, before resolving the rest, a.b.c.v1.Foo. So the intermediate scopes must
+	// be present to resolve the first component, since it may be an intermediate package scope.
 	for pkg := file.Package(); pkg != ""; pkg = pkg.Parent() {
 		sym := file.arenas.symbols.NewCompressed(rawSymbol{
 			kind: SymbolKindPackage,
