@@ -4,6 +4,9 @@ tables:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/naming_style_2024_ok.proto"
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/naming_style_2024_ok.proto"
     - fqn: "buf.test.MyMessage"
       kind: KIND_MESSAGE
       file: "testdata/editions/naming_style_2024_ok.proto"

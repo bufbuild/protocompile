@@ -35,13 +35,24 @@ import (
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
 func buildLocalSymbols(file *File) {
-	sym := file.arenas.symbols.NewCompressed(rawSymbol{
-		kind: SymbolKindPackage,
-		fqn:  file.InternedPackage(),
-	})
-	file.exported = append(file.exported, symbol{
-		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
-	})
+	// Register a package symbol for the full package name and each parent. For example,
+	// package a.b.c produces the following symbols:
+	//  - a.b.c
+	//  - a.b
+	//  - a
+	//
+	// This is necessary for resolving names that use a partial path, for example, b.c.Foo
+	// in package a.b.c. This would be resolved by checking the scope a, and appending the
+	// name b.c.Foo.
+	for pkg := file.Package(); pkg != ""; pkg = pkg.Parent() {
+		sym := file.arenas.symbols.NewCompressed(rawSymbol{
+			kind: SymbolKindPackage,
+			fqn:  file.session.intern.Intern(string(pkg)),
+		})
+		file.exported = append(file.exported, symbol{
+			ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+		})
+	}
 
 	for ty := range seq.Values(file.AllTypes()) {
 		newTypeSymbol(ty)

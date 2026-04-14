@@ -11,6 +11,7 @@ tables:
     - { name: "repeated_field_encoding", value: "EXPANDED" }
     - { name: "utf8_validation", value: "NONE" }
     symbols:
+    - { fqn: "buf", kind: KIND_PACKAGE, file: "testdata/editions/proto2.proto" }
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/proto2.proto"

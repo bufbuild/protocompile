@@ -24,6 +24,9 @@ tables:
       value: "false"
     - { extn: "pb.java", name: "utf8_validation", value: "DEFAULT" }
     symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/ok_2024.proto"
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/ok_2024.proto"
