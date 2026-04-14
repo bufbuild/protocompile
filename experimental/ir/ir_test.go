@@ -438,6 +438,7 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 				cmpx.Key(func(x *compilerpb.Symbol) string { return x.File }),
 				cmpx.Key(func(x *compilerpb.Symbol) compilerpb.Symbol_Kind { return x.Kind }),
 				cmpx.Key(func(x *compilerpb.Symbol) uint32 { return x.Index }),
+				cmpx.Key(func(x *compilerpb.Symbol) string { return x.Fqn }),
 			),
 		)
 

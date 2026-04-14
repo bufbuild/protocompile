@@ -17,6 +17,9 @@ tables:
     - { name: "repeated_field_encoding", value: "PACKED" }
     - { name: "utf8_validation", value: "VERIFY" }
     symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/lifetime.proto"
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/lifetime.proto"
