@@ -553,12 +553,13 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 	return false
 }
 
-// scopeHasLeadingLineComments checks whether any interior token in a fused
-// scope has a line comment (//) in its leading trivia. Line comments in
-// leading trivia cannot be converted to block comments by lineToBlock
-// (which only affects trailing trivia), so they would eat the rest of the
-// line if the scope were formatted inline.
-func (p *printer) scopeHasLeadingLineComments(fused token.Token) bool {
+// scopeHasLeadingComments checks whether any interior token in a fused
+// scope has a comment in its leading trivia. Comments in leading trivia
+// cannot be handled by lineToBlock (which only affects trailing trivia).
+// Line comments (//) would eat the rest of the line; block comments
+// (/* */) produce a softline gap that breaks to a newline outside the
+// compact options indent wrapper, causing wrong indentation.
+func (p *printer) scopeHasLeadingComments(fused token.Token) bool {
 	if p.trivia == nil {
 		return false
 	}
@@ -571,10 +572,8 @@ func (p *printer) scopeHasLeadingLineComments(fused token.Token) bool {
 		if !ok {
 			continue
 		}
-		for _, t := range att.leading {
-			if t.Kind() == token.Comment && strings.HasPrefix(t.Text(), "//") {
-				return true
-			}
+		if sliceHasComment(att.leading) {
+			return true
 		}
 	}
 	return false

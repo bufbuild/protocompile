@@ -380,14 +380,15 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 		// - 1 option: inline [key = value]
 		// - 2+ options: expanded one-per-line
 		// Force multi-line if the brackets contain comments that
-		// would break inline formatting. Line comments (//) in
-		// leading trivia eat the rest of the line and cannot be
-		// converted to block comments (lineToBlock only affects
-		// trailing trivia).
+		// would break inline formatting. Comments in leading trivia
+		// cannot be handled by lineToBlock (which only affects
+		// trailing trivia): line comments eat the rest of the line,
+		// and block comments produce softline gaps that break
+		// outside the indent wrapper.
 		openTrailing := p.extractOpenTrailing(openTok)
 		forceExpand := len(openTrailing) > 0 ||
 			triviaHasComments(slots) ||
-			p.scopeHasLeadingLineComments(brackets)
+			p.scopeHasLeadingComments(brackets)
 		if entries.Len() == 1 && !forceExpand {
 			// Single option: stays inline. No group wrapping, so
 			// message literal values expand naturally while keeping

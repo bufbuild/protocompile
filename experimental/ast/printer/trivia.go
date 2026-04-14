@@ -268,7 +268,16 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		// and must not split it. Splitting at parens would cause the cursor
 		// to land on an interior close bracket after PrevSkippable, making
 		// walkScope register trivia under the wrong token ID.
-		atDeclBoundary := tok.Keyword() == keyword.Semi || tok.Keyword() == keyword.Braces
+		//
+		// For `{...}`, peek ahead: if the next non-skippable token is `;`,
+		// the braces are a value expression (e.g., option ... = { ... };),
+		// not a definition body. Don't split there -- the `;` will mark
+		// the boundary, keeping the trivia slot count aligned with AST
+		// declarations.
+		atDeclBoundary := tok.Keyword() == keyword.Semi
+		if tok.Keyword() == keyword.Braces {
+			atDeclBoundary = !idx.nextNonSkippableIsSemi(cursor)
+		}
 		if atDeclBoundary {
 			break
 		}
@@ -368,6 +377,26 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		idx.attached[endToken.ID()] = att
 	}
 	return hasBlankLine
+}
+
+// nextNonSkippableIsSemi peeks ahead in the cursor to check if the next
+// non-skippable token is `;`. Used to distinguish definition bodies
+// (message Foo { ... }) from value expressions (option x = { ... };).
+// The cursor is restored to its original position after peeking.
+func (*triviaIndex) nextNonSkippableIsSemi(cursor *token.Cursor) bool {
+	var count int
+	isSemi := false
+	for next := cursor.NextSkippable(); !next.IsZero(); next = cursor.NextSkippable() {
+		count++
+		if !next.Kind().IsSkippable() {
+			isSemi = next.Keyword() == keyword.Semi
+			break
+		}
+	}
+	for range count {
+		cursor.PrevSkippable()
+	}
+	return isSemi
 }
 
 // splitDetached splits a trivia token slice at the last blank line boundary.
