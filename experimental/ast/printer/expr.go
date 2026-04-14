@@ -138,7 +138,7 @@ func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle, ctx printCt
 		case ast.ExprKindLiteral:
 			firstTok = inner.AsLiteral().Token
 		case ast.ExprKindPath:
-			for pc := range inner.AsPath().Path.Components {
+			for pc := range inner.AsPath().Path.Components() {
 				if !pc.Separator().IsZero() {
 					firstTok = pc.Separator()
 				} else if !pc.Name().IsZero() {

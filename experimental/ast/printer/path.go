@@ -28,7 +28,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {
 	ctx.lineToBlock = true
 
 	first := true
-	for pc := range path.Components {
+	for pc := range path.Components() {
 		// Print separator (dot or slash) if present.
 		// The first separator uses the caller's gap (e.g., gapSpace
 		// after "extend" for fully-qualified paths like ".google").

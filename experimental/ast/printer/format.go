@@ -120,7 +120,7 @@ func optionSortName(decl ast.DeclAny) string {
 // isExtensionOption returns true if the option's path starts with an
 // extension component (parenthesized path like `(foo.bar)`).
 func isExtensionOption(opt ast.DefOption) bool {
-	for pc := range opt.Path.Components {
+	for pc := range opt.Path.Components() {
 		return !pc.AsExtension().IsZero()
 	}
 	return false
