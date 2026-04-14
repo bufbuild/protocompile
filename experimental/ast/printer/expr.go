@@ -24,7 +24,7 @@ import (
 // printExpr prints an expression with the specified leading gap.
 // When indent is true, compound strings indent their parts one level
 // (used after `=` or `:`). Containers like arrays ignore indent.
-func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, indent ...bool) {
+func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, ctx printCtx, indent ...bool) {
 	if expr.IsZero() {
 		return
 	}
@@ -33,29 +33,29 @@ func (p *printer) printExpr(expr ast.ExprAny, gap gapStyle, indent ...bool) {
 	case ast.ExprKindLiteral:
 		tok := expr.AsLiteral().Token
 		if !tok.IsLeaf() {
-			p.printCompoundString(tok, gap, len(indent) > 0 && indent[0])
+			p.printCompoundString(tok, gap, len(indent) > 0 && indent[0], ctx)
 		} else {
-			p.printToken(tok, gap)
+			p.printToken(tok, gap, ctx)
 		}
 	case ast.ExprKindPath:
-		p.printPath(expr.AsPath().Path, gap)
+		p.printPath(expr.AsPath().Path, gap, ctx)
 	case ast.ExprKindPrefixed:
-		p.printPrefixed(expr.AsPrefixed(), gap)
+		p.printPrefixed(expr.AsPrefixed(), gap, ctx)
 	case ast.ExprKindRange:
-		p.printExprRange(expr.AsRange(), gap)
+		p.printExprRange(expr.AsRange(), gap, ctx)
 	case ast.ExprKindArray:
-		p.printArray(expr.AsArray(), gap)
+		p.printArray(expr.AsArray(), gap, ctx)
 	case ast.ExprKindDict:
-		p.printDict(expr.AsDict(), gap)
+		p.printDict(expr.AsDict(), gap, ctx)
 	case ast.ExprKindField:
-		p.printExprField(expr.AsField(), gap)
+		p.printExprField(expr.AsField(), gap, ctx)
 	}
 }
 
 // printCompoundString prints a fused compound string token (e.g. "a" "b" "c").
 // Each string part is printed on its own line in format mode. When indent is
 // true, parts are indented one level (used after `=` or `:`).
-func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool) {
+func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool, ctx printCtx) {
 	openTok, closeTok := tok.StartEnd()
 	trivia := p.trivia.scopeTrivia(tok.ID())
 
@@ -70,36 +70,35 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool
 
 	if !p.options.Format {
 		// Print the first string part using the fused token's outer trivia.
-		p.printTokenAs(tok, gap, openTok.Text())
+		p.printTokenAs(tok, gap, openTok.Text(), ctx)
 		for i, part := range parts {
 			p.emitTriviaSlot(trivia, i)
-			p.printToken(part, gapNone)
+			p.printToken(part, gapNone, ctx)
 		}
 		p.emitRemainingTrivia(trivia, len(parts))
-		p.printToken(closeTok, gapNone)
+		p.printToken(closeTok, gapNone, ctx)
 		return
 	}
 
 	// In format mode, all parts go on their own lines.
-	// Clear convertLineToBlock: intermediate // comments between
-	// string parts are on their own lines and are safe as-is.
-	// Restore the caller's value for the last part's trailing,
-	// since a trailing // there would eat the following token
-	// (`;`, `]`, etc) if the caller requested conversion.
-	saved := p.convertLineToBlock
-	p.convertLineToBlock = false
-	defer func() { p.convertLineToBlock = saved }()
+	// Clear lineToBlock: intermediate // comments between string parts
+	// are on their own lines and are safe as-is.
+	// The caller's ctx is used for the last part's trailing, since a
+	// trailing // there would eat the following token (`;`, `]`, etc)
+	// if the caller requested conversion.
+	partsCtx := ctx
+	partsCtx.lineToBlock = false
 
 	printParts := func(pp *printer) {
-		pp.printTokenAs(tok, gapNewline, openTok.Text())
+		pp.printTokenAs(tok, gapNewline, openTok.Text(), partsCtx)
 		for i, part := range parts {
 			pp.emitTriviaSlot(trivia, i)
-			pp.printToken(part, gapNewline)
+			pp.printToken(part, gapNewline, partsCtx)
 		}
 		pp.emitRemainingTrivia(trivia, len(parts))
 
 		// Emit the last part's leading trivia with conversion off,
-		// then restore the caller's value for trailing only.
+		// then use the caller's ctx for trailing only.
 		att, hasTrivia := pp.trivia.tokenTrivia(closeTok.ID())
 		if hasTrivia {
 			pp.appendPending(att.leading)
@@ -108,9 +107,8 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool
 			pp.emitGap(gapNewline)
 		}
 		pp.push(dom.Text(closeTok.Text()))
-		pp.convertLineToBlock = saved
 		if hasTrivia {
-			pp.emitTrailing(att.trailing)
+			pp.emitTrailing(att.trailing, ctx)
 		}
 	}
 
@@ -127,11 +125,11 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle, indent bool
 	}
 }
 
-func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
+func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
-	p.printToken(expr.PrefixToken(), gap)
+	p.printToken(expr.PrefixToken(), gap, ctx)
 	// In format mode, check if the value has leading comments. If so,
 	// use gapSpace for proper spacing (e.g., "- /* comment */ 32").
 	// Otherwise use gapNone to keep prefix glued (e.g., "-32").
@@ -160,20 +158,20 @@ func (p *printer) printPrefixed(expr ast.ExprPrefixed, gap gapStyle) {
 			}
 		}
 	}
-	p.printExpr(expr.Expr(), valueGap)
+	p.printExpr(expr.Expr(), valueGap, ctx)
 }
 
-func (p *printer) printExprRange(expr ast.ExprRange, gap gapStyle) {
+func (p *printer) printExprRange(expr ast.ExprRange, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
 	start, end := expr.Bounds()
-	p.printExpr(start, gap)
-	p.printToken(expr.Keyword(), gapSpace)
-	p.printExpr(end, gapSpace)
+	p.printExpr(start, gap, ctx)
+	p.printToken(expr.Keyword(), gapSpace, ctx)
+	p.printExpr(end, gapSpace, ctx)
 }
 
-func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
+func (p *printer) printArray(expr ast.ExprArray, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
@@ -183,37 +181,35 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	// Entering a nested scope: clear convertLineToBlock since //
-	// comments on their own lines inside arrays are fine.
-	saved := p.convertLineToBlock
-	p.convertLineToBlock = false
-	defer func() { p.convertLineToBlock = saved }()
+	// Entering a nested scope: clear lineToBlock since // comments
+	// on their own lines inside arrays are fine.
+	ctx.lineToBlock = false
 
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
 	elements := expr.Elements()
 
 	if !p.options.Format {
-		p.printToken(openTok, gap)
+		p.printToken(openTok, gap, ctx)
 		for i := range elements.Len() {
 			p.emitTriviaSlot(slots, i)
 			elemGap := gapNone
 			if i > 0 {
-				p.printToken(elements.Comma(i-1), p.semiGap())
+				p.printToken(elements.Comma(i-1), p.semiGap(), ctx)
 				elemGap = gapSpace
 			}
-			p.printExpr(elements.At(i), elemGap)
+			p.printExpr(elements.At(i), elemGap, ctx)
 		}
 		p.emitTriviaSlot(slots, elements.Len())
-		p.printToken(closeTok, gapNone)
+		p.printToken(closeTok, gapNone, ctx)
 		return
 	}
 
 	hasComments := triviaHasComments(slots)
 
 	if elements.Len() == 0 && !hasComments {
-		p.printToken(openTok, gap)
-		p.printToken(closeTok, gapNone)
+		p.printToken(openTok, gap, ctx)
+		p.printToken(closeTok, gapNone, ctx)
 		return
 	}
 
@@ -221,30 +217,30 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		// Emit the open bracket with the caller's gap outside the
 		// group so that a gapNewline (e.g. from a dict field context)
 		// doesn't force the group to break.
-		p.printToken(openTok, gap)
+		p.printToken(openTok, gap, ctx)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.emitTriviaSlot(slots, 0)
-				indented.printExpr(elements.At(0), gapNone)
+				indented.printExpr(elements.At(0), gapNone, ctx)
 				indented.emitTriviaSlot(slots, 1)
 			})
 			p.push(dom.TextIf(dom.Broken, "\n"))
 		})
-		p.printToken(closeTok, gapNone)
+		p.printToken(closeTok, gapNone, ctx)
 		return
 	}
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
-	p.printToken(openTok, gap)
+	p.printToken(openTok, gap, ctx)
 	p.withIndent(func(indented *printer) {
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(slots, i)
 			if i > 0 {
-				indented.printToken(elements.Comma(i-1), p.semiGap())
+				indented.printToken(elements.Comma(i-1), p.semiGap(), ctx)
 			}
-			indented.printExpr(elements.At(i), gapNewline)
+			indented.printExpr(elements.At(i), gapNewline, ctx)
 		}
 		indented.emitTriviaSlot(slots, elements.Len())
 		if len(closeComments) > 0 {
@@ -252,18 +248,16 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		}
 	})
 
-	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
+	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt, ctx)
 }
 
-func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
+func (p *printer) printDict(expr ast.ExprDict, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
-	// Entering a nested scope: clear convertLineToBlock since //
-	// comments on their own lines inside dicts are fine.
-	saved := p.convertLineToBlock
-	p.convertLineToBlock = false
-	defer func() { p.convertLineToBlock = saved }()
+	// Entering a nested scope: clear lineToBlock since // comments
+	// on their own lines inside dicts are fine.
+	ctx.lineToBlock = false
 
 	braces := expr.Braces()
 	if braces.IsZero() {
@@ -275,18 +269,18 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	elements := expr.Elements()
 
 	if !p.options.Format {
-		p.printToken(openTok, gap)
+		p.printToken(openTok, gap, ctx)
 		if elements.Len() > 0 || !trivia.isEmpty() {
 			p.withIndent(func(indented *printer) {
 				for i := range elements.Len() {
 					indented.emitTriviaSlot(trivia, i)
-					indented.printExprField(elements.At(i), gapNewline)
-					indented.emitCommaTrivia(elements.Comma(i))
+					indented.printExprField(elements.At(i), gapNewline, ctx)
+					indented.emitCommaTrivia(elements.Comma(i), ctx)
 				}
 				indented.emitTriviaSlot(trivia, elements.Len())
 			})
 		}
-		p.printToken(closeTok, gapSoftline)
+		p.printToken(closeTok, gapSoftline, ctx)
 		return
 	}
 
@@ -305,8 +299,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 
 	if elements.Len() == 0 && !hasComments {
-		p.printTokenAs(openTok, gap, openText)
-		p.printTokenAs(closeTok, gapNone, closeText)
+		p.printTokenAs(openTok, gap, openText, ctx)
+		p.printTokenAs(closeTok, gapNone, closeText, ctx)
 		return
 	}
 
@@ -314,18 +308,18 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		// Emit the open brace with the caller's gap outside the
 		// group so that a gapNewline (e.g. from an array context)
 		// doesn't force the group to break.
-		p.printTokenAs(openTok, gap, openText)
+		p.printTokenAs(openTok, gap, openText, ctx)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
 				indented.push(dom.TextIf(dom.Broken, "\n"))
 				indented.emitTriviaSlot(trivia, 0)
-				indented.printExprField(elements.At(0), gapNone)
-				indented.emitCommaTrivia(elements.Comma(0))
+				indented.printExprField(elements.At(0), gapNone, ctx)
+				indented.emitCommaTrivia(elements.Comma(0), ctx)
 				indented.emitTriviaSlot(trivia, 1)
 			})
 			p.push(dom.TextIf(dom.Broken, "\n"))
 		})
-		p.printTokenAs(closeTok, gapNone, closeText)
+		p.printTokenAs(closeTok, gapNone, closeText, ctx)
 		return
 	}
 
@@ -348,7 +342,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 		p.push(dom.Text(openText))
 	} else {
-		p.printTokenAs(openTok, gap, openText)
+		p.printTokenAs(openTok, gap, openText, ctx)
 	}
 	p.withIndent(func(indented *printer) {
 		if len(openTrailing) > 0 {
@@ -357,8 +351,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(trivia, i)
-			indented.printExprField(elements.At(i), gapNewline)
-			indented.emitCommaTrivia(elements.Comma(i))
+			indented.printExprField(elements.At(i), gapNewline, ctx)
+			indented.emitCommaTrivia(elements.Comma(i), ctx)
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())
 		if len(closeComments) > 0 {
@@ -366,17 +360,17 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 	})
 
-	p.emitCloseTok(closeTok, closeText, closeComments, closeAtt)
+	p.emitCloseTok(closeTok, closeText, closeComments, closeAtt, ctx)
 }
 
-func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
+func (p *printer) printExprField(expr ast.ExprField, gap gapStyle, ctx printCtx) {
 	if expr.IsZero() {
 		return
 	}
 
 	first := true
 	if !expr.Key().IsZero() {
-		p.printExpr(expr.Key(), gap)
+		p.printExpr(expr.Key(), gap, ctx)
 		first = false
 	}
 	if !expr.Colon().IsZero() {
@@ -385,7 +379,7 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		// last comment with no gap. This prevents an idempotency issue
 		// where trivia between ] and : gets assigned differently on
 		// reparse (leading vs trailing) depending on line breaks.
-		p.printToken(expr.Colon(), gapInline)
+		p.printToken(expr.Colon(), gapInline, ctx)
 	} else if p.options.Format && !expr.Key().IsZero() && !expr.Value().IsZero() {
 		// Insert colon in format mode when missing (e.g. "e []" -> "e: []").
 		p.push(dom.Text(":"))
@@ -395,6 +389,6 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		if first {
 			valueGap = gap
 		}
-		p.printExpr(expr.Value(), valueGap, true)
+		p.printExpr(expr.Value(), valueGap, ctx, true)
 	}
 }

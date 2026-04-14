@@ -17,7 +17,7 @@ package printer
 import "github.com/bufbuild/protocompile/experimental/ast"
 
 // printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
-func (p *printer) printPath(path ast.Path, gap gapStyle) {
+func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {
 	if path.IsZero() {
 		return
 	}
@@ -25,9 +25,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	// Path components are bound tightly (gapPreserve), so a trailing
 	// // comment on any component would eat subsequent components.
 	// Convert to /* */ to keep the path intact.
-	saved := p.convertLineToBlock
-	p.convertLineToBlock = true
-	defer func() { p.convertLineToBlock = saved }()
+	ctx.lineToBlock = true
 
 	first := true
 	for pc := range path.Components {
@@ -40,7 +38,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 			sepGap = gap
 		}
 		if !pc.Separator().IsZero() {
-			p.printToken(pc.Separator(), sepGap)
+			p.printToken(pc.Separator(), sepGap, ctx)
 		}
 
 		// Print the name component
@@ -60,16 +58,14 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 				openTok, closeTok := parens.StartEnd()
 				trivia := p.trivia.scopeTrivia(parens.ID())
 
-				p.printToken(openTok, componentGap)
+				p.printToken(openTok, componentGap, ctx)
 				p.emitTriviaSlot(trivia, 0)
-				p.tightPreserve = true
-				p.printPath(extn, gapPreserve)
-				p.tightPreserve = false
+				p.printPath(extn, gapPreserveTight, ctx)
 				p.emitTriviaSlot(trivia, 1)
-				p.printToken(closeTok, gapPreserve)
+				p.printToken(closeTok, gapPreserve, ctx)
 			} else {
 				// Simple identifier
-				p.printToken(pc.Name(), componentGap)
+				p.printToken(pc.Name(), componentGap, ctx)
 			}
 		}
 	}

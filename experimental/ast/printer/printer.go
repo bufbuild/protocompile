@@ -27,13 +27,14 @@ import (
 type gapStyle int
 
 const (
-	gapNone gapStyle = iota
+	gapNone      gapStyle = iota
 	gapSpace
 	gapNewline
-	gapSoftline  // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
-	gapBlankline // gapBlankline inserts two newline characters
-	gapInline    // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
-	gapPreserve   // gapPreserve is like gapNone but inherits the source's spacing around comments
+	gapSoftline      // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
+	gapBlankline     // gapBlankline inserts two newline characters
+	gapInline        // gapInline acts like gapNone when there are no comments; when there are comments, it spaces around them
+	gapPreserve      // gapPreserve is like gapNone but inherits the source's spacing around comments
+	gapPreserveTight // gapPreserveTight is like gapPreserve but suppresses the inherited space before the first comment
 )
 
 // scopeKind distinguishes file-level scopes from body-level scopes,
@@ -44,6 +45,19 @@ const (
 	scopeFile scopeKind = iota
 	scopeBody
 )
+
+// printCtx carries immutable formatting context down the print call
+// stack. It is passed by value so that modifications only affect the
+// current stack frame and its children.
+type printCtx struct {
+	// lineToBlock, when true, causes emitTrailing to convert line
+	// comments (// ...) to block comments (/* ... */). This only
+	// affects trailing trivia, not leading. It is set in contexts
+	// where inline tokens follow without a newline break (paths,
+	// compact options, option values before `;`) so that a trailing
+	// // comment doesn't eat the next token.
+	lineToBlock bool
+}
 
 // PrintFile renders an AST file to protobuf source text.
 func PrintFile(options Options, file *ast.File) string {
@@ -81,7 +95,8 @@ func Print(options Options, decl ast.DeclAny) string {
 			push:    push,
 			options: options,
 		}
-		p.printDecl(decl, gapNewline)
+		var ctx printCtx
+		p.printDecl(decl, gapNewline, ctx)
 		p.emitTrivia(gapNone)
 	})
 }
@@ -92,22 +107,6 @@ type printer struct {
 	trivia  *triviaIndex
 	pending []token.Token
 	push    dom.Sink
-
-	// convertLineToBlock, when true, causes emitTrailing to convert
-	// line comments (// ...) to block comments (/* ... */). This
-	// only affects trailing trivia, not leading. It is set in
-	// contexts where inline tokens follow without a newline break
-	// (paths, compact options, option values before `;`) so that
-	// a trailing // comment doesn't eat the next token.
-	convertLineToBlock bool
-
-	// tightPreserve, when true, forces the next gapPreserve emitTrivia
-	// call to suppress the inherited space before the first comment.
-	// This is used after open brackets so that "(/* comment */" is
-	// tight, while still allowing spaces between identifiers and
-	// comments elsewhere in the path.
-	tightPreserve bool
-
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -121,7 +120,8 @@ func (p *printer) printFile(file *ast.File) {
 			return sorted[i]
 		})
 	}
-	p.printScopeDecls(trivia, decls, scopeFile)
+	var ctx printCtx
+	p.printScopeDecls(trivia, decls, scopeFile, ctx)
 	// In format mode, trailing file comments need a newline gap so they
 	// don't run into the last declaration's closing token. But if there
 	// are no declarations at all, emit nothing (empty file = empty output).
@@ -146,11 +146,11 @@ func (p *printer) pendingHasComments() bool {
 }
 
 // printToken emits a token with its trivia.
-func (p *printer) printToken(tok token.Token, gap gapStyle) {
+func (p *printer) printToken(tok token.Token, gap gapStyle, ctx printCtx) {
 	if tok.IsZero() {
 		return
 	}
-	p.printTokenAs(tok, gap, tok.Text())
+	p.printTokenAs(tok, gap, tok.Text(), ctx)
 }
 
 // printTokenSuppressTrailing prints a token with its leading trivia but
@@ -179,7 +179,7 @@ func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
 // printTokenAs prints a token using replacement text instead of the token's
 // own text. This is used for normalizing delimiters (e.g., angle brackets
 // to curly braces) while preserving the token's attached trivia.
-func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
+func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string, ctx printCtx) {
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
 		p.appendPending(att.leading)
@@ -199,12 +199,12 @@ func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 	}
 
 	if hasTrivia {
-		p.emitTrailing(att.trailing)
+		p.emitTrailing(att.trailing, ctx)
 	}
 }
 
 // emitTrailing emits trailing attached trivia for a token.
-func (p *printer) emitTrailing(trailing []token.Token) {
+func (p *printer) emitTrailing(trailing []token.Token, ctx printCtx) {
 	if len(trailing) == 0 {
 		return
 	}
@@ -216,7 +216,7 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				switch {
 				case strings.HasPrefix(text, "/*"):
 					p.emitBlockComment(text)
-				case p.convertLineToBlock:
+				case ctx.lineToBlock:
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(text, "//")
 					p.push(dom.Text("/*" + body + " */"))
@@ -234,7 +234,7 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 // itself printed (e.g., commas removed from message literal fields in
 // format mode). This ensures comments attached to skipped commas are
 // never lost.
-func (p *printer) emitCommaTrivia(comma token.Token) {
+func (p *printer) emitCommaTrivia(comma token.Token, ctx printCtx) {
 	if comma.IsZero() {
 		return
 	}
@@ -242,7 +242,7 @@ func (p *printer) emitCommaTrivia(comma token.Token) {
 	if !ok {
 		return
 	}
-	p.emitTrailing(att.trailing)
+	p.emitTrailing(att.trailing, ctx)
 }
 
 // appendPending buffers trivia tokens for later processing by emitTrivia.
@@ -252,11 +252,11 @@ func (p *printer) appendPending(tokens []token.Token) {
 
 // printScopeDecls prints declarations in a scope, computing
 // inter-declaration gaps and emitting trivia slots between them.
-func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind) {
+func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind, ctx printCtx) {
 	for i := range decls.Len() {
 		p.emitTriviaSlot(trivia, i)
 		gap := p.declGap(decls, trivia, i, scope)
-		p.printDecl(decls.At(i), gap)
+		p.printDecl(decls.At(i), gap, ctx)
 	}
 	p.emitRemainingTrivia(trivia, decls.Len())
 }
@@ -371,8 +371,9 @@ func (p *printer) emitGap(gap gapStyle) {
 	case gapInline:
 		// gapInline emits nothing when there are no comments.
 		// Comment handling is done in emitTrivia.
-	case gapPreserve:
-		// gapPreserve emits nothing when no comments are present.
+	case gapPreserve, gapPreserveTight:
+		// gapPreserve/gapPreserveTight emit nothing when no comments
+		// are present.
 	}
 }
 
@@ -407,9 +408,10 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	switch gap {
 	case gapSpace:
 		afterGap = gapSpace
-	case gapPreserve:
-		// gapPreserve: afterGap is determined dynamically per gap
-		// point based on whether the source had whitespace.
+	case gapPreserve, gapPreserveTight:
+		// gapPreserve/gapPreserveTight: afterGap is determined
+		// dynamically per gap point based on whether the source had
+		// whitespace.
 		afterGap = gapNone
 	case gapInline:
 		// gapInline is used for punctuation tokens (`;`, `,`) where
@@ -423,14 +425,10 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		firstGap = gapSpace
 	}
 
-	// Capture and consume tightPreserve so it doesn't leak.
-	tightPreserve := p.tightPreserve
-	p.tightPreserve = false
-
 	// inheritGap promotes base to gapSpace when the source had
-	// non-newline whitespace in a gapPreserve context.
+	// non-newline whitespace in a gapPreserve/gapPreserveTight context.
 	inheritGap := func(base gapStyle, hasSpace bool) gapStyle {
-		if gap == gapPreserve && hasSpace {
+		if (gap == gapPreserve || gap == gapPreserveTight) && hasSpace {
 			return gapSpace
 		}
 		return base
@@ -456,9 +454,9 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		fg := inheritGap(firstGap, hasNonNewlineSpace)
 		ag := inheritGap(afterGap, hasNonNewlineSpace)
 
-		// Suppress the inherited space before the first comment
-		// when tightPreserve is set (right after an open bracket).
-		if tightPreserve && !hasComment {
+		// Suppress the inherited space before the first comment when
+		// gapPreserveTight is used (right after an open bracket).
+		if gap == gapPreserveTight && !hasComment {
 			fg = firstGap
 		}
 
@@ -527,13 +525,13 @@ func (p *printer) extractOpenTrailing(tok token.Token) []token.Token {
 // comments. When close comments were extracted (and emitted inside the
 // preceding indent block), the token text is emitted directly with its
 // trailing trivia. Otherwise, printToken/printTokenAs handles it normally.
-func (p *printer) emitCloseTok(closeTok token.Token, closeText string, closeComments []token.Token, closeAtt attachedTrivia) {
+func (p *printer) emitCloseTok(closeTok token.Token, closeText string, closeComments []token.Token, closeAtt attachedTrivia, ctx printCtx) {
 	if len(closeComments) > 0 {
 		p.emitGap(gapNewline)
 		p.push(dom.Text(closeText))
-		p.emitTrailing(closeAtt.trailing)
+		p.emitTrailing(closeAtt.trailing, ctx)
 	} else {
-		p.printTokenAs(closeTok, gapNewline, closeText)
+		p.printTokenAs(closeTok, gapNewline, closeText, ctx)
 	}
 }
 
@@ -573,7 +571,7 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 
 // scopeHasLeadingLineComments checks whether any interior token in a fused
 // scope has a line comment (//) in its leading trivia. Line comments in
-// leading trivia cannot be converted to block comments by convertLineToBlock
+// leading trivia cannot be converted to block comments by lineToBlock
 // (which only affects trailing trivia), so they would eat the rest of the
 // line if the scope were formatted inline.
 func (p *printer) scopeHasLeadingLineComments(fused token.Token) bool {
@@ -606,17 +604,6 @@ func (p *printer) semiGap() gapStyle {
 		return gapInline
 	}
 	return gapNone
-}
-
-// withLineToBlock runs fn with convertLineToBlock set to the given value,
-// restoring the previous value when fn returns. This controls whether
-// trailing // comments are converted to /* */ to prevent them from
-// eating following tokens like `;` or `]`.
-func (p *printer) withLineToBlock(enabled bool, fn func()) {
-	saved := p.convertLineToBlock
-	p.convertLineToBlock = enabled
-	defer func() { p.convertLineToBlock = saved }()
-	fn()
 }
 
 // withIndent runs fn with an indented printer, swapping the sink temporarily.
