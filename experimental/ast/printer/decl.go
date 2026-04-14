@@ -97,6 +97,27 @@ func (p *printer) printDef(decl ast.DeclDef, gap gapStyle, ctx printCtx) {
 		p.printExtend(decl.AsExtend(), gap, ctx)
 	case ast.DefKindGroup:
 		p.printGroup(decl.AsGroup(), gap, ctx)
+	case ast.DefKindInvalid:
+		p.printInvalidDef(decl, gap, ctx)
+	}
+}
+
+// printInvalidDef prints a corrupt or unrecognized definition by emitting
+// whatever tokens it has, in declaration order. This preserves source text
+// for parse-error artifacts rather than silently dropping them.
+func (p *printer) printInvalidDef(decl ast.DeclDef, gap gapStyle, ctx printCtx) {
+	p.printType(decl.Type(), gap, ctx)
+	p.printPath(decl.Name(), gapSpace, ctx)
+	p.printSignature(decl.Signature(), ctx)
+	if !decl.Equals().IsZero() {
+		p.printToken(decl.Equals(), gapSpace, ctx)
+		p.printExpr(decl.Value(), gapSpace, ctx)
+	}
+	p.printCompactOptions(decl.Options(), ctx)
+	if !decl.Body().IsZero() {
+		p.printBody(decl.Body(), ctx)
+	} else {
+		p.printToken(decl.Semicolon(), p.semiGap(), ctx)
 	}
 }
 
