@@ -212,16 +212,12 @@ func (p *printer) emitTrailing(trailing []token.Token, ctx printCtx) {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				text := strings.TrimRight(t.Text(), " \t")
-				switch {
-				case strings.HasPrefix(text, "/*"):
-					p.emitBlockComment(text)
-				case ctx.lineToBlock:
+				if ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
 					// Convert // comment to /* comment */ for inline contexts.
-					body := strings.TrimPrefix(text, "//")
+					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
 					p.push(dom.Text("/*" + body + " */"))
-				default:
-					p.push(dom.Text(text))
+				} else {
+					p.emitComment(t)
 				}
 			}
 		}
@@ -460,13 +456,8 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		}
 		hasNonNewlineSpace = false
 		newlineRun = 0
-		text := strings.TrimRight(tok.Text(), " \t")
-		isLine := strings.HasPrefix(text, "//")
-		if strings.HasPrefix(text, "/*") {
-			p.emitBlockComment(text)
-		} else {
-			p.push(dom.Text(text))
-		}
+		isLine := strings.HasPrefix(tok.Text(), "//")
+		p.emitComment(tok)
 		hasComment = true
 		prevIsLine = isLine
 	}
@@ -619,6 +610,17 @@ func (p *printer) withGroup(fn func(p *printer)) {
 	p.push = originalPush
 }
 
+// emitComment trims trailing whitespace from a comment token and emits
+// it, dispatching to emitBlockComment for /* comments.
+func (p *printer) emitComment(tok token.Token) {
+	text := strings.TrimRight(tok.Text(), " \t")
+	if strings.HasPrefix(text, "/*") {
+		p.emitBlockComment(text)
+	} else {
+		p.push(dom.Text(text))
+	}
+}
+
 // emitBlockComment normalizes and emits a multi-line block comment as
 // separate dom.Text calls so that dom.Indent can apply outer indentation
 // to each line.
@@ -721,10 +723,12 @@ func (p *printer) emitBlockComment(text string) {
 	}
 }
 
-// isCommentPrefix reports whether ch is a valid block comment line prefix.
-// Letters and digits are not valid prefixes.
+// isCommentPrefix reports whether ch is a valid block comment line prefix
+// character. Only printable ASCII punctuation qualifies (e.g., *, =, -, #).
+// Letters, digits, whitespace, and control characters are not valid prefixes.
 func isCommentPrefix(ch byte) bool {
-	return !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
+	return ch >= '!' && ch <= '~' &&
+		!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
 }
 
 // computeVisualIndent returns the visual indentation of a line, expanding
@@ -741,7 +745,7 @@ func computeVisualIndent(line string) int {
 			return indent
 		}
 	}
-	return 0
+	return indent
 }
 
 // unindent removes up to n visual columns of leading whitespace from line,

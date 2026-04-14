@@ -15,10 +15,7 @@
 package printer
 
 import (
-	"strings"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -315,12 +312,7 @@ func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose boo
 			continue
 		}
 		p.emitGap(gapNewline)
-		text := strings.TrimRight(t.Text(), " \t")
-		if strings.HasPrefix(text, "/*") {
-			p.emitBlockComment(text)
-		} else {
-			p.push(dom.Text(text))
-		}
+		p.emitComment(t)
 	}
 	p.pending = p.pending[:0]
 
@@ -348,12 +340,7 @@ func (p *printer) emitCloseComments(comments []token.Token, blankBeforeClose boo
 		}
 		newlineRun = 0
 		p.emitGap(gap)
-		text := strings.TrimRight(t.Text(), " \t")
-		if strings.HasPrefix(text, "/*") {
-			p.emitBlockComment(text)
-		} else {
-			p.push(dom.Text(text))
-		}
+		p.emitComment(t)
 		gap = gapNewline
 	}
 }
@@ -441,7 +428,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 					for _, t := range openTrailing {
 						if t.Kind() == token.Comment {
 							indented.emitGap(gapNewline)
-							indented.push(dom.Text(strings.TrimRight(t.Text(), " \t")))
+							indented.emitComment(t)
 						}
 					}
 				}
