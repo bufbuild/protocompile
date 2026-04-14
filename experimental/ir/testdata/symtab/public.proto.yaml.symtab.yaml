@@ -40,8 +40,8 @@ tables:
   "dep/public.proto":
     symbols:
     - { fqn: "dep", kind: KIND_PACKAGE, file: "dep/public.proto" }
-    - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
     - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/public.proto" }
+    - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
     - fqn: "dep.foo.public.X"
       kind: KIND_MESSAGE
       file: "dep/public.proto"
