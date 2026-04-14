@@ -359,21 +359,15 @@ func (p *printer) emitRemainingTrivia(trivia detachedTrivia, i int) {
 func (p *printer) emitGap(gap gapStyle) {
 	switch gap {
 	case gapSpace:
-		p.push(dom.Text(" "))
+		p.push(tagSpace)
 	case gapNewline:
-		p.push(dom.Text("\n"))
+		p.push(tagNewline)
 	case gapSoftline:
-		p.push(dom.TextIf(dom.Flat, " "))
-		p.push(dom.TextIf(dom.Broken, "\n"))
+		softline(p.push)
 	case gapBlankline:
-		p.push(dom.Text("\n"))
-		p.push(dom.Text("\n"))
-	case gapInline:
-		// gapInline emits nothing when there are no comments.
-		// Comment handling is done in emitTrivia.
-	case gapPreserve, gapPreserveTight:
-		// gapPreserve/gapPreserveTight emit nothing when no comments
-		// are present.
+		blankline(p.push)
+	case gapInline, gapPreserve, gapPreserveTight:
+		// No visual gap. Comment handling is done in emitTrivia.
 	}
 }
 

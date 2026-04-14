@@ -220,12 +220,12 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle, ctx printCtx) {
 		p.printToken(openTok, gap, ctx)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
-				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.push(tagSoftbreak)
 				indented.emitTriviaSlot(slots, 0)
 				indented.printExpr(elements.At(0), gapNone, ctx)
 				indented.emitTriviaSlot(slots, 1)
 			})
-			p.push(dom.TextIf(dom.Broken, "\n"))
+			p.push(tagSoftbreak)
 		})
 		p.printToken(closeTok, gapNone, ctx)
 		return
@@ -311,13 +311,13 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle, ctx printCtx) {
 		p.printTokenAs(openTok, gap, openText, ctx)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
-				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.push(tagSoftbreak)
 				indented.emitTriviaSlot(trivia, 0)
 				indented.printExprField(elements.At(0), gapNone, ctx)
 				indented.emitCommaTrivia(elements.Comma(0), ctx)
 				indented.emitTriviaSlot(trivia, 1)
 			})
-			p.push(dom.TextIf(dom.Broken, "\n"))
+			p.push(tagSoftbreak)
 		})
 		p.printTokenAs(closeTok, gapNone, closeText, ctx)
 		return

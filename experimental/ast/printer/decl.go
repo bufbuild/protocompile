@@ -209,9 +209,9 @@ func (p *printer) printSignature(sig ast.Signature, ctx printCtx) {
 			slots := p.trivia.scopeTrivia(inputs.Brackets().ID())
 			p.printToken(openTok, gapPreserve, ctx)
 			p.withIndent(func(indented *printer) {
-				indented.push(dom.TextIf(dom.Broken, "\n"))
+				indented.push(tagSoftbreak)
 				indented.printTypeListContents(inputs, slots, ctx)
-				p.push(dom.TextIf(dom.Broken, "\n"))
+				p.push(tagSoftbreak)
 			})
 			p.printToken(closeTok, gapPreserve, ctx)
 		})
@@ -226,9 +226,9 @@ func (p *printer) printSignature(sig ast.Signature, ctx printCtx) {
 				slots := p.trivia.scopeTrivia(outputs.Brackets().ID())
 				p.printToken(openTok, gapSpace, ctx)
 				p.withIndent(func(indented *printer) {
-					indented.push(dom.TextIf(dom.Broken, "\n"))
+					indented.push(tagSoftbreak)
 					indented.printTypeListContents(outputs, slots, ctx)
-					p.push(dom.TextIf(dom.Broken, "\n"))
+					p.push(tagSoftbreak)
 				})
 				p.printToken(closeTok, gapPreserve, ctx)
 			})
@@ -466,7 +466,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 			p.emitTriviaSlot(slots, entries.Len())
 		})
 		p.emitTrivia(gapNone)
-		p.push(dom.TextIf(dom.Broken, "\n"))
+		p.push(tagSoftbreak)
 		p.printToken(closeTok, gapNone, ctx)
 	})
 }
