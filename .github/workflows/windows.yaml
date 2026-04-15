@@ -29,14 +29,11 @@ jobs:
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
-      - name: Checkout Code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version.version }}
-      - name: Test
-        shell: bash
+      - shell: bash
         run: make protoc && go test ./...
