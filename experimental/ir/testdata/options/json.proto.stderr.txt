@@ -42,7 +42,7 @@ warning: message fields have the same (default) JSON name
            conflict, because `google.protobuf.FieldMask`'s JSON syntax
            erroneously does not account for custom JSON names
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `Bar` prefix removed
   --> testdata/options/json.proto:44:5
    |
 43 |     ZERO = 0;
@@ -50,7 +50,7 @@ error: enum values have the same canonical name
 44 |     BAR_ZERO = 1;
    |     ^^^^^^^^ this also implies that name
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `Bar` prefix removed
   --> testdata/options/json.proto:45:5
    |
 43 |     ZERO = 0;
@@ -59,7 +59,7 @@ error: enum values have the same canonical name
 45 |     b_a_r_zero = 2;
    |     ^^^^^^^^^^ this also implies that name
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `Bar` prefix removed
   --> testdata/options/json.proto:49:5
    |
 48 |     FOOBAR = 4;
@@ -67,7 +67,7 @@ error: enum values have the same canonical name
 49 |     BarFooBar = 5;
    |     ^^^^^^^^^ this also implies that name
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `Bar` prefix removed
   --> testdata/options/json.proto:52:5
    |
 51 |     _BAR__ZERO2 = 6;
@@ -75,7 +75,7 @@ error: enum values have the same canonical name
 52 |     _BAR_ZERO2 = 7;
    |     ^^^^^^^^^^ this also implies that name
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `Bar` prefix removed
   --> testdata/options/json.proto:55:5
    |
 54 |     BAR_Z_ERO = 8;

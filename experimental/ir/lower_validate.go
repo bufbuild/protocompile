@@ -219,6 +219,7 @@ func validateEnumValueNames(ty Type, r *report.Report) {
 
 		r.SoftError(strict, errEnumValueConflict{
 			first: prev.member, second: member,
+			enumName:      ty.Name(),
 			canonicalName: name,
 		})
 	}
@@ -237,11 +238,13 @@ func canonicalEnumValueName(enumValueName, enumName string) string {
 // are the same.
 type errEnumValueConflict struct {
 	first, second Member
+	enumName      string
 	canonicalName string
 }
 
 func (e errEnumValueConflict) Diagnose(d *report.Diagnostic) {
-	d.Apply(report.Message("%ss have the same canonical name", e.first.noun()))
+	d.Apply(report.Message("%ss have the same name with the `%s` prefix removed",
+		e.first.noun(), e.enumName))
 	d.Apply(
 		report.Snippetf(e.second.AST().Name(), "this also implies that name"),
 		report.Snippetf(e.first.AST().Name(), "this implies canonical name `%s`", e.canonicalName),

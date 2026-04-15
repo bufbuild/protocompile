@@ -115,7 +115,7 @@ error: enum value name should be SCREAMING_SNAKE_CASE
    = help: STYLE2024 requires enum value names to be SCREAMING_SNAKE_CASE (e.g.,
            MY_VALUE)
 
-error: enum values have the same canonical name
+error: enum values have the same name with the `my_enum` prefix removed
   --> testdata/editions/naming_style_2024_bad.proto:37:3
    |
 36 |   _VALUE = 2;      // Leading underscore
