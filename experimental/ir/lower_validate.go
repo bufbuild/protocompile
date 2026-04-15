@@ -769,7 +769,7 @@ func validatePresence(m Member, r *report.Report) {
 func validatePacked(m Member, r *report.Report) {
 	builtins := m.Context().builtins()
 
-	validate := func(span source.Span) {
+	validate := func(span source.Span, isPacked bool) {
 		switch {
 		case m.IsSingular() || m.IsMap():
 			r.Errorf("expected repeated field, found singular field").Apply(
@@ -777,7 +777,7 @@ func validatePacked(m Member, r *report.Report) {
 				report.Snippetf(span, "packed encoding set here"),
 				report.Helpf("packed encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
 			)
-		case !m.Element().IsPackable():
+		case isPacked && !m.Element().IsPackable():
 			r.Error(errTypeConstraint{
 				want: "packable type",
 				got:  m.Element(),
@@ -791,8 +791,8 @@ func validatePacked(m Member, r *report.Report) {
 
 	option := m.Options().Field(builtins.Packed)
 	if !option.IsZero() {
+		packed, _ := option.AsBool()
 		if m.Context().Syntax().IsEdition() {
-			packed, _ := option.AsBool()
 			want := "PACKED"
 			if !packed {
 				want = "EXPANDED"
@@ -808,15 +808,17 @@ func validatePacked(m Member, r *report.Report) {
 				builtins.FeaturePacked.Name(), want,
 				"replace with `%s`", builtins.FeaturePacked.Name(),
 			))
-		} else if v, _ := option.AsBool(); v {
+		} else if packed {
 			// Don't validate [packed = false], protoc accepts that.
-			validate(option.ValueAST().Span())
+			validate(option.ValueAST().Span(), true)
 		}
 	}
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
-		validate(feature.Value().KeyAST().Span())
+		value, _ := feature.Value().AsInt()
+		isPacked := value == tags.FeatureSet_RepeatedFieldEncoding_Packed
+		validate(feature.Value().KeyAST().Span(), isPacked)
 	}
 }
 
