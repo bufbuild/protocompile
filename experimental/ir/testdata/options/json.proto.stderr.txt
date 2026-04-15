@@ -42,48 +42,63 @@ warning: message fields have the same (default) JSON name
            conflict, because `google.protobuf.FieldMask`'s JSON syntax
            erroneously does not account for custom JSON names
 
-error: enum values have the same JSON name
+error: enum values have the same canonical name
   --> testdata/options/json.proto:44:5
    |
 43 |     ZERO = 0;
-   |     ---- this implies JSON name `ZERO`
+   |     ---- this implies canonical name `Zero`
 44 |     BAR_ZERO = 1;
    |     ^^^^^^^^ this also implies that name
 
-error: enum values have the same JSON name
+error: enum values have the same canonical name
   --> testdata/options/json.proto:45:5
    |
 43 |     ZERO = 0;
-   |     ---- this implies JSON name `ZERO`
+   |     ---- this implies canonical name `Zero`
 44 |     BAR_ZERO = 1;
 45 |     b_a_r_zero = 2;
    |     ^^^^^^^^^^ this also implies that name
 
-error: enum values have the same JSON name
+error: enum values have the same canonical name
   --> testdata/options/json.proto:49:5
    |
-47 |     FOO_BAR = 3;
-   |     ------- this implies JSON name `FOO_BAR`
 48 |     FOOBAR = 4;
+   |     ------ this implies canonical name `Foobar`
 49 |     BarFooBar = 5;
    |     ^^^^^^^^^ this also implies that name
 
-error: message extension cannot specify `json_name`
-  --> testdata/options/json.proto:53:20
+error: enum values have the same canonical name
+  --> testdata/options/json.proto:52:5
    |
-53 |     int32 x = 100 [json_name = "foo"];
+51 |     _BAR__ZERO2 = 6;
+   |     ----------- this implies canonical name `Zero2`
+52 |     _BAR_ZERO2 = 7;
+   |     ^^^^^^^^^^ this also implies that name
+
+error: enum values have the same canonical name
+  --> testdata/options/json.proto:55:5
+   |
+54 |     BAR_Z_ERO = 8;
+   |     --------- this implies canonical name `ZEro`
+55 |     BAR_Z__ERO = 9;
+   |     ^^^^^^^^^^ this also implies that name
+
+error: message extension cannot specify `json_name`
+  --> testdata/options/json.proto:59:20
+   |
+59 |     int32 x = 100 [json_name = "foo"];
    |                    ^^^^^^^^^^^^^^^^^
    = note: JSON format for extensions always uses the extension's
            fully-qualified name
 
 warning: message extension cannot specify `json_name`
-  --> testdata/options/json.proto:54:20
+  --> testdata/options/json.proto:60:20
    |
-54 |     int32 y = 101 [json_name = "y"];
+60 |     int32 y = 101 [json_name = "y"];
    |                    ^^^^^^^^^^^^^^^
    = note: JSON format for extensions always uses the extension's
            fully-qualified name
    = help: protoc erroneously accepts `json_name` on an extension if it happens
            to match the default JSON name exactly
 
-encountered 7 errors and 3 warnings
+encountered 9 errors and 3 warnings

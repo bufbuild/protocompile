@@ -47,6 +47,12 @@ enum Bar {
     FOO_BAR = 3;
     FOOBAR = 4;
     BarFooBar = 5;
+
+    _BAR__ZERO2 = 6;
+    _BAR_ZERO2 = 7;
+
+    BAR_Z_ERO = 8;
+    BAR_Z__ERO = 9;
 }
 
 extend Foo {

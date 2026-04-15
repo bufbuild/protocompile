@@ -36,6 +36,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -183,6 +185,67 @@ func validateEnum(ty Type, r *report.Report) {
 			report.Helpf("open enums must define a zero value, and it must be the first one"),
 		)
 	}
+
+	validateEnumValueNames(ty, r)
+}
+
+// validateEnumValueNames checks that enum values don't collide after
+// prefix stripping and case normalization. Protoc strips the enum type
+// name prefix and normalizes to PascalCase to ensure generated code
+// in languages with proper enum scoping (Java, Swift, C#) won't have
+// duplicate names.
+func validateEnumValueNames(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+	jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
+	strict := jsonFormat == tags.FeatureSet_JsonFormat_Allow
+
+	type seen struct {
+		member Member
+		canon  string
+	}
+	canonical := make(map[string]seen)
+
+	for member := range seq.Values(ty.Members()) {
+		name := canonicalEnumValueName(member.Name(), ty.Name())
+		prev, ok := canonical[name]
+		if !ok {
+			canonical[name] = seen{member, name}
+			continue
+		}
+		if prev.member.Number() == member.Number() {
+			// allow_alias: same number means not a real collision.
+			continue
+		}
+
+		r.SoftError(strict, errEnumValueConflict{
+			first: prev.member, second: member,
+			canonicalName: name,
+		})
+	}
+}
+
+// canonicalEnumValueName computes the canonical name for an enum value
+// by stripping the enum type name prefix and converting to PascalCase
+// with naive (underscore-only) word splitting.
+func canonicalEnumValueName(enumValueName, enumName string) string {
+	suffix := internal.TrimPrefix(enumValueName, enumName)
+	return cases.Converter{Case: cases.Pascal, NaiveSplit: true}.Convert(suffix)
+}
+
+// errEnumValueConflict diagnoses a collision between two enum values
+// whose canonical names (after prefix stripping and case normalization)
+// are the same.
+type errEnumValueConflict struct {
+	first, second Member
+	canonicalName string
+}
+
+func (e errEnumValueConflict) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("%ss have the same canonical name", e.first.noun()))
+	d.Apply(
+		report.Snippetf(e.second.AST().Name(), "this also implies that name"),
+		report.Snippetf(e.first.AST().Name(), "this implies canonical name `%s`", e.canonicalName),
+	)
 }
 
 func validateFileOptions(f *File, r *report.Report) {
