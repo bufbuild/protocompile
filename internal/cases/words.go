@@ -26,27 +26,44 @@ func Words(str string) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		input := str // Not yet yielded.
 
+		// wordMode tracks the case of the most recent cased (letter) rune,
+		// mirroring heck's WordMode. Digits inherit the previous mode rather
+		// than resetting it, so "abc123" leaves the mode as modeLowercase and
+		// a following uppercase letter still triggers a boundary.
+		type wordMode int
+		const (
+			modeBoundary  wordMode = iota // no cased rune seen since last boundary
+			modeLowercase                 // last cased rune was lowercase
+			modeUppercase                 // last cased rune was uppercase
+		)
+
 		var prev rune
-		first := true
+		var mode wordMode
 		for str != "" {
 			next, n := utf8.DecodeRuneInString(str)
 			str = str[n:]
 
 			switch {
 			case !unicode.IsLetter(next) && !unicode.IsDigit(next):
-				// This is punctuation. Split the string around next and
-				// yield the result if it's nonempty.
+				// Punctuation: split around next, yield if nonempty.
 				word := input[:len(input)-len(str)-n]
 				input = input[len(input)-len(str):]
 				if word != "" && !yield(word) {
 					return
 				}
 
-			case unicode.IsUpper(prev) && unicode.IsLower(next):
-				// If the previous rune is uppercase and the next is lowercase,
-				// we want to insert a boundary before prev.
-				idx := len(input) - len(str) - n - utf8.RuneLen(prev)
+			case mode == modeLowercase && unicode.IsUpper(next) && str != "":
+				// Boundary before the uppercase rune.
+				idx := len(input) - len(str) - n
+				word := input[:idx]
+				input = input[idx:]
+				if word != "" && !yield(word) {
+					return
+				}
 
+			case unicode.IsUpper(prev) && unicode.IsLower(next):
+				// Boundary before prev (last of a run of uppercase letters).
+				idx := len(input) - len(str) - n - utf8.RuneLen(prev)
 				word := input[:idx]
 				input = input[idx:]
 				if word != "" && !yield(word) {
@@ -62,17 +79,10 @@ func Words(str string) iter.Seq[string] {
 				}
 
 			case str == "":
-				if first { // Single-rune string.
-					yield(input)
-					return
-				}
-
-				// This is the last rune, which gets special handling. We want
-				// FooBAR and FooBar to become foo_bar but FooX to become foo_x.
-				// Hence, if next is uppercase and prev is not, then we insert a
-				// boundary between them.
-
-				if !unicode.IsUpper(prev) && unicode.IsUpper(next) {
+				// Last rune. We want FooBAR and FooBar → foo_bar, FooX → foo_x:
+				// insert a boundary before a trailing uppercase only when the
+				// preceding cased rune was lowercase.
+				if mode == modeLowercase && unicode.IsUpper(next) {
 					idx := len(input) - len(str) - n
 					word := input[:idx]
 					input = input[idx:]
@@ -80,13 +90,20 @@ func Words(str string) iter.Seq[string] {
 						return
 					}
 				}
-
 				yield(input)
 				return
 			}
 
 			prev = next
-			first = false
+			switch {
+			case unicode.IsLower(next):
+				mode = modeLowercase
+			case unicode.IsUpper(next):
+				mode = modeUppercase
+			case !unicode.IsDigit(next):
+				mode = modeBoundary // non-alphanumeric: reset for next word
+			}
+			// Digits: mode unchanged (inherited from last cased rune).
 		}
 	}
 }
