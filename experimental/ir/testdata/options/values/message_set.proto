@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//% requires_no_message_set_support: true
 syntax = "proto2";
 
 package test;
