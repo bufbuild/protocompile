@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Tests that a very minimal vendored descriptor.proto (missing almost all
-# builtins) causes lowering to bail out for ALL files.
-#
-# This is a worst-case scenario where the vendored descriptor.proto has
-# the correct path but almost no content.
+# Tests that a genuinely broken descriptor.proto (missing required symbols
+# like FileOptions, MessageOptions, FieldOptions) is diagnosed by the
+# compiler with one error per missing required symbol, attached to
+# descriptor.proto itself rather than to the user's proto file.
 exclude_wkt_sources: true
 descriptor: true
 files:

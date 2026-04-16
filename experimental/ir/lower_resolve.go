@@ -39,7 +39,7 @@ import (
 // Field types, method types, and extensions use the symbol table,
 // not builtins.
 func resolveNames(file *File, r *report.Report) {
-	resolveBuiltins(file)
+	resolveBuiltins(file, r)
 
 	for ty := range seq.Values(file.AllTypes()) {
 		if ty.IsMessage() {
