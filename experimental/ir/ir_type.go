@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -181,7 +182,15 @@ func (t Type) IsClosedEnum() bool {
 	}
 
 	builtins := t.Context().builtins()
-	n, _ := t.FeatureSet().Lookup(builtins.FeatureEnum).Value().AsInt()
+	feature := t.FeatureSet().Lookup(builtins.FeatureEnum)
+	if feature.IsZero() {
+		// Feature unavailable (e.g., vendored descriptor.proto missing
+		// FeatureSet). Fall back to syntax: proto2 enums are closed,
+		// proto3 and editions enums are open by default.
+		return !t.Context().Syntax().IsEdition() &&
+			t.Context().Syntax() < syntax.Proto3
+	}
+	n, _ := feature.Value().AsInt()
 	return n == tags.FeatureSet_EnumType_Closed
 }
 

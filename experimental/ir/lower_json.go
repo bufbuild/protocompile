@@ -17,6 +17,7 @@ package ir
 import (
 	"fmt"
 
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -33,8 +34,17 @@ func populateJSONNames(file *File, r *report.Report) {
 	for ty := range seq.Values(file.AllTypes()) {
 		clear(names)
 
-		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
-		strict := jsonFormat == tags.FeatureSet_JsonFormat_Allow
+		feature := ty.FeatureSet().Lookup(builtins.FeatureJSON)
+		var strict bool
+		if feature.IsZero() {
+			// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+			// Proto2 default: LEGACY_BEST_EFFORT (not strict).
+			// Proto3 default: ALLOW (strict).
+			strict = file.Syntax() >= syntax.Proto3
+		} else {
+			jsonFormat, _ := feature.Value().AsInt()
+			strict = jsonFormat == tags.FeatureSet_JsonFormat_Allow
+		}
 
 		// First, populate the default names, and check for collisions among
 		// them.

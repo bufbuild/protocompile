@@ -21,6 +21,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -122,8 +123,14 @@ func (m Member) IsPacked() bool {
 		return packed
 	}
 
-	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
-	value, _ := feature.AsInt()
+	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
+	if feature.IsZero() {
+		// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+		// Proto2 default: EXPANDED (not packed).
+		// Proto3 default: PACKED.
+		return m.Context().Syntax() >= syntax.Proto3
+	}
+	value, _ := feature.Value().AsInt()
 	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
@@ -135,7 +142,14 @@ func (m Member) IsUnicode() bool {
 	}
 
 	builtins := m.Context().builtins()
-	utf8Feature, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
+	feature := m.FeatureSet().Lookup(builtins.FeatureUTF8)
+	if feature.IsZero() {
+		// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+		// Proto2 default: NONE (no validation).
+		// Proto3 default: VERIFY.
+		return m.Context().Syntax() >= syntax.Proto3
+	}
+	utf8Feature, _ := feature.Value().AsInt()
 	return utf8Feature == tags.FeatureSet_Utf8Validation_Verify
 }
 
