@@ -24,69 +24,57 @@ import (
 // https://docs.rs/heck/latest/heck/#definition-of-a-word-boundary.
 func Words(str string) iter.Seq[string] {
 	return func(yield func(string) bool) {
-		input := str // Not yet yielded.
-
+		start := -1
 		var prev rune
-		first := true
-		for str != "" {
-			next, n := utf8.DecodeRuneInString(str)
-			str = str[n:]
+
+		for i := 0; i < len(str); {
+			curr, size := utf8.DecodeRuneInString(str[i:])
+			alnum := unicode.IsLetter(curr) || unicode.IsDigit(curr)
 
 			switch {
-			case !unicode.IsLetter(next) && !unicode.IsDigit(next):
-				// This is punctuation. Split the string around next and
-				// yield the result if it's nonempty.
-				word := input[:len(input)-len(str)-n]
-				input = input[len(input)-len(str):]
-				if word != "" && !yield(word) {
-					return
-				}
-
-			case unicode.IsUpper(prev) && unicode.IsLower(next):
-				// If the previous rune is uppercase and the next is lowercase,
-				// we want to insert a boundary before prev.
-				idx := len(input) - len(str) - n - utf8.RuneLen(prev)
-
-				word := input[:idx]
-				input = input[idx:]
-				if word != "" && !yield(word) {
-					return
-				}
-				// If next was also the last rune, yield the remaining word and
-				// return. Without this, the last-rune case below never fires
-				// for 2-char [A-Z][a-z] strings (e.g. "Ab"), because the loop
-				// exits after this iteration without yielding input.
-				if str == "" {
-					yield(input)
-					return
-				}
-
-			case str == "":
-				if first { // Single-rune string.
-					yield(input)
-					return
-				}
-
-				// This is the last rune, which gets special handling. We want
-				// FooBAR and FooBar to become foo_bar but FooX to become foo_x.
-				// Hence, if next is uppercase and prev is not, then we insert a
-				// boundary between them.
-
-				if !unicode.IsUpper(prev) && unicode.IsUpper(next) {
-					idx := len(input) - len(str) - n
-					word := input[:idx]
-					input = input[idx:]
-					if word != "" && !yield(word) {
+			case !alnum:
+				// Punctuation and spaces act as hard boundaries.
+				// Yield the current word and reset the tracker.
+				if start != -1 {
+					if !yield(str[start:i]) {
 						return
 					}
+					start = -1
 				}
 
-				yield(input)
-				return
+			case start == -1:
+				// We found an alphanumeric character, start tracking a new word.
+				start = i
+
+			default:
+				// We are inside a word. Look ahead to check for case-transition boundaries.
+				var next rune
+				if i+size < len(str) {
+					next, _ = utf8.DecodeRuneInString(str[i+size:])
+				}
+
+				splitHere :=
+					// Rule A: Transition from lowercase/digit to uppercase (e.g., camelCase -> camel, Case)
+					(!unicode.IsUpper(prev) && unicode.IsUpper(curr)) ||
+						// Rule B: Uppercase sequence followed by lowercase (e.g., XMLHttp -> XML, Http)
+						(unicode.IsUpper(prev) && unicode.IsUpper(curr) && unicode.IsLower(next))
+
+				if splitHere {
+					if !yield(str[start:i]) {
+						return
+					}
+					// The current uppercase character becomes the start of the next word.
+					start = i
+				}
 			}
 
-			prev = next
-			first = false
+			prev = curr
+			i += size
+		}
+
+		// Yield any remaining alphanumeric characters as the final word.
+		if start != -1 {
+			yield(str[start:])
 		}
 	}
 }

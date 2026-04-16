@@ -1,0 +1,10 @@
+file:
+- name: "testdata/options/validate/enum_names.proto"
+  package: "buf.test"
+  enum_type:
+  - name: "E"
+    value:
+    - { name: "E_UNSPECIFIED", number: 0 }
+    - { name: "foo_bar", number: 1 }
+    - { name: "fooBar", number: 2 }
+  syntax: "proto3"
