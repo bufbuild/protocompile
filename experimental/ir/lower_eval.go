@@ -496,6 +496,8 @@ validate:
 		mapFieldHelp(d)
 	}
 
+	checkMessageSetFieldUsage(member, expr.Key(), e.Report)
+
 	return member
 }
 
