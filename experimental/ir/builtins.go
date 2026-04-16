@@ -266,3 +266,30 @@ func makeBuiltinWrapper[T ~id.Node[T, *File, Raw], Raw any](
 		out.Set(reflect.ValueOf(x))
 	}
 }
+
+// optionalBuiltinIDs is the set of intern IDs for symbols declared optional in
+// [builtins]. It is populated at session init and consulted when emitting
+// diagnostics about user references to missing optional builtins.
+func optionalBuiltinIDs(ids *builtinIDs) map[intern.ID]struct{} {
+	out := make(map[intern.ID]struct{})
+	bs := reflect.TypeFor[builtins]()
+	idsV := reflect.ValueOf(*ids)
+	for i := range bs.NumField() {
+		f := bs.Field(i)
+		var optional bool
+		for option := range strings.SplitSeq(f.Tag.Get("builtin"), ",") {
+			if option == "optional" {
+				optional = true
+			}
+		}
+		if !optional {
+			continue
+		}
+		idField := idsV.FieldByName(f.Name)
+		if !idField.IsValid() {
+			continue
+		}
+		out[idField.Interface().(intern.ID)] = struct{}{} //nolint:errcheck
+	}
+	return out
+}

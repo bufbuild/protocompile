@@ -479,6 +479,20 @@ func (r optionRef) resolve() {
 				if !pc.IsFirst() {
 					d.Apply(report.Snippetf(prev.AST().Type(), "`%s` specified here", message.FullName()))
 				}
+				// If the user is referencing a known-optional builtin that the
+				// descriptor.proto in use doesn't declare, explain why.
+				fqn := fmt.Sprintf("%s.%s", message.FullName(), ident.Text())
+				if id, known := r.session.intern.Query(fqn); known {
+					if _, optional := r.session.optionalBuiltins[id]; optional {
+						if dpFile := r.imports.DescriptorProto(); dpFile != nil {
+							d.Apply(report.Snippetf(dpFile.AST().Syntax(),
+								"resolved against this descriptor.proto"))
+						}
+						d.Apply(report.Helpf(
+							"`%s` is an editions-era symbol that this descriptor.proto does not declare; "+
+								"use a newer descriptor.proto or remove this option", fqn))
+					}
+				}
 				return
 			}
 		}

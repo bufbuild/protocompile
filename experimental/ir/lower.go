@@ -31,8 +31,9 @@ import (
 type Session struct {
 	intern intern.Table
 
-	once     sync.Once
-	builtins builtinIDs
+	once             sync.Once
+	builtins         builtinIDs
+	optionalBuiltins map[intern.ID]struct{}
 }
 
 // RecordInternStats enables instrumentation of the session's intern table.
@@ -78,7 +79,10 @@ func (s *Session) Lower(source *ast.File, errs *report.Report, importer Importer
 }
 
 func (s *Session) init() {
-	s.once.Do(func() { s.intern.Preload(&s.builtins) })
+	s.once.Do(func() {
+		s.intern.Preload(&s.builtins)
+		s.optionalBuiltins = optionalBuiltinIDs(&s.builtins)
+	})
 }
 
 func lower(file *File, r *report.Report, importer Importer) {
