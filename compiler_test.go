@@ -143,7 +143,7 @@ func findAndLink(t *testing.T, filename string, fdset *descriptorpb.FileDescript
 			return desc, fd
 		}
 	}
-	assert.FailNow(t, "could not find dependency %q in proto set", filename)
+	assert.FailNowf(t, "findAndLink", "could not find dependency %q in proto set", filename)
 	return nil, nil // make compiler happy
 }
 

@@ -250,7 +250,7 @@ func (s Sum) Key() any {
 }
 
 func (s Sum) Execute(t *incremental.Task) (int, error) {
-	var queries []incremental.Query[int] //nolint:prealloc
+	var queries []incremental.Query[int]
 	for s := range strings.SplitSeq(s.Input, ",") {
 		queries = append(queries, ParseInt{s})
 	}
