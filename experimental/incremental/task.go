@@ -216,7 +216,7 @@ func (t *Task) aborted() error {
 //
 // Note: this function really wants to be a method of [Task], but it isn't
 // because it's generic.
-func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expired error) {
+func Resolve[T any](caller *Task, queries ...Query[T]) (Results[T], error) {
 	caller.checkDone()
 	if len(queries) == 0 {
 		return nil, nil
@@ -225,7 +225,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expi
 	caller.stopwatch.Stop()
 	defer caller.stopwatch.Start()
 
-	results = make([]Result[T], len(queries))
+	results := make(Results[T], len(queries))
 	anyQueries := make([]*AnyQuery, len(queries))
 	deps := make([]*task, len(queries))
 
