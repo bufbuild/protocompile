@@ -216,7 +216,7 @@ func (t *Task) aborted() error {
 //
 // Note: this function really wants to be a method of [Task], but it isn't
 // because it's generic.
-func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expired error) {
+func Resolve[T any](caller *Task, queries ...Query[T]) (Results[T], error) {
 	caller.checkDone()
 	if len(queries) == 0 {
 		return nil, nil
@@ -225,7 +225,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expi
 	caller.stopwatch.Stop()
 	defer caller.stopwatch.Start()
 
-	results = make([]Result[T], len(queries))
+	results := make(Results[T], len(queries))
 	anyQueries := make([]*AnyQuery, len(queries))
 	deps := make([]*task, len(queries))
 
@@ -257,14 +257,6 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expi
 		dep.callers.Store(callerTask, struct{}{})
 	}
 
-	// Capture a local copy of the slice header before the loop. The closures
-	// below must not close over the named return variable `results`: if Resolve
-	// exits early (e.g. context cancelled) via `return nil, ...`, Go sets the
-	// named return to nil, and any goroutines that are still running would then
-	// panic when they index into `results`. Using a local variable avoids this
-	// because the local slice header is unaffected by the named-return assignment.
-	localResults := results
-
 	// Schedule all but the first query to run asynchronously.
 	for i, dep := range slices.Backward(deps) {
 		q := anyQueries[i]
@@ -277,12 +269,12 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results Results[T], expi
 					// This type assertion will always succeed, unless the user has
 					// distinct queries with the same key, which is a sufficiently
 					// unrecoverable condition that a panic is acceptable.
-					localResults[i].Value = r.Value.(T) //nolint:errcheck
+					results[i].Value = r.Value.(T) //nolint:errcheck
 				}
 
-				localResults[i].Fatal = r.Fatal
-				localResults[i].Changed = r.runID == caller.runID
-				localResults[i].Elapsed = r.Elapsed
+				results[i].Fatal = r.Fatal
+				results[i].Changed = r.runID == caller.runID
+				results[i].Elapsed = r.Elapsed
 			}
 
 			join.Release(1)
