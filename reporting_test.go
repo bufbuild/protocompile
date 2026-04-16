@@ -407,6 +407,14 @@ func TestWarningReporting(t *testing.T) {
 				"google/protobuf/descriptor.proto": `syntax = "proto2"; package google.protobuf; message MessageOptions { optional fixed32 foobar = 99; }`,
 			},
 		},
+		{
+			// leading-dot fully-qualified references should count as using the import
+			name: "used import with leading dot cross-package reference",
+			sources: map[string]string{
+				"test.proto":           `syntax = "proto3"; import "shared/address.proto"; message Foo { .shared.USAddress addr = 1; }`,
+				"shared/address.proto": `syntax = "proto3"; package shared; message USAddress { string street = 1; }`,
+			},
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {

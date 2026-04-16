@@ -35,13 +35,29 @@ import (
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
 func buildLocalSymbols(file *File) {
-	sym := file.arenas.symbols.NewCompressed(rawSymbol{
-		kind: SymbolKindPackage,
-		fqn:  file.InternedPackage(),
-	})
-	file.exported = append(file.exported, symbol{
-		ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
-	})
+	// Register a package symbol for the full package name and each intermediate parent.
+	// For example, package a.b.c produces the following symbols:
+	//  - a.b.c
+	//  - a.b
+	//  - a
+	//
+	// This is necessary for supporting the resolution of partial names. As the comment in
+	// [symtab.resolve] explains, protoc does a two phase search for names: searching for the
+	// first component, and then appending the rest of the target.
+	//
+	// For example, to resolve the target c.v1.Foo in package a.b.c.v1, it first searches
+	// for c. This is found in the intermediate scope, a.b, resolving to the intermediate
+	// scope a.b.c, before resolving the rest, a.b.c.v1.Foo. So the intermediate scopes must
+	// be present to resolve the first component, since it may be an intermediate package scope.
+	for pkg := file.Package(); pkg != ""; pkg = pkg.Parent() {
+		sym := file.arenas.symbols.NewCompressed(rawSymbol{
+			kind: SymbolKindPackage,
+			fqn:  file.session.intern.Intern(string(pkg)),
+		})
+		file.exported = append(file.exported, symbol{
+			ref: Ref[Symbol]{id: id.ID[Symbol](sym)},
+		})
+	}
 
 	for ty := range seq.Values(file.AllTypes()) {
 		newTypeSymbol(ty)

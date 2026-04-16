@@ -1,6 +1,7 @@
 tables:
   "testdata/editions/ok.proto":
     symbols:
+    - { fqn: "buf", kind: KIND_PACKAGE, file: "testdata/editions/ok.proto" }
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/ok.proto"

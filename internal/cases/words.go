@@ -52,6 +52,14 @@ func Words(str string) iter.Seq[string] {
 				if word != "" && !yield(word) {
 					return
 				}
+				// If next was also the last rune, yield the remaining word and
+				// return. Without this, the last-rune case below never fires
+				// for 2-char [A-Z][a-z] strings (e.g. "Ab"), because the loop
+				// exits after this iteration without yielding input.
+				if str == "" {
+					yield(input)
+					return
+				}
 
 			case str == "":
 				if first { // Single-rune string.

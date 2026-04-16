@@ -4,6 +4,7 @@ tables:
     - { path: "dep/not_public.proto", visible: true }
     - { path: "dep/public.proto", public: true, visible: true }
     symbols:
+    - { fqn: "dep", kind: KIND_PACKAGE, file: "dep/foo.proto" }
     - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
     - fqn: "dep.foo.Foo"
       kind: KIND_MESSAGE
@@ -26,6 +27,8 @@ tables:
       visible: true
   "dep/not_public.proto":
     symbols:
+    - { fqn: "dep", kind: KIND_PACKAGE, file: "dep/not_public.proto" }
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/not_public.proto" }
     - fqn: "dep.foo.not_public"
       kind: KIND_PACKAGE
       file: "dep/not_public.proto"
@@ -36,6 +39,8 @@ tables:
       visible: true
   "dep/public.proto":
     symbols:
+    - { fqn: "dep", kind: KIND_PACKAGE, file: "dep/public.proto" }
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/public.proto" }
     - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
     - fqn: "dep.foo.public.X"
       kind: KIND_MESSAGE
@@ -48,6 +53,7 @@ tables:
     - { path: "dep/not_public.proto", transitive: true }
     - { path: "dep/public.proto", transitive: true, visible: true }
     symbols:
+    - { fqn: "dep", kind: KIND_PACKAGE, file: "dep/foo.proto" }
     - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
     - fqn: "dep.foo.Foo"
       kind: KIND_MESSAGE

@@ -299,6 +299,9 @@ func (r symbolRef) resolve() Symbol {
 	case r.name.Absolute():
 		if id, ok := r.session.intern.Query(string(r.name.ToRelative())); ok {
 			found = r.imported.lookup(id)
+			if foundFile := found.Context(r.File); foundFile != r.File {
+				r.File.imports.MarkUsed(foundFile)
+			}
 		}
 	case r.allowScalars:
 		// TODO: if symbol resolution would provide a different answer for
