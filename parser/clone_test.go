@@ -142,7 +142,7 @@ func checkClone(t *testing.T, orig, clone Result, isProtoClone bool) {
 				continue
 			}
 		}
-		assert.Equal(t, len(origMsgs), len(cloneMsgs), "mismatch for number of messages associated with %T (expect %+v, got %+v)", node, origMsgs, cloneMsgs)
+		assert.Len(t, origMsgs, len(cloneMsgs), "mismatch for number of messages associated with %T (expect %+v, got %+v)", node, origMsgs, cloneMsgs)
 	}
 	origSyntheticMapFields, origSyntheticOneofs := 0, 0
 	for node, origMsgs := range origRevIndex {

@@ -260,9 +260,11 @@ type ImportNode struct {
 	compositeNode
 	Keyword *KeywordNode
 	// Optional; if present indicates this is a public import
+	//
 	// Deprecated: Use Modifier field instead.
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
+	//
 	// Deprecated: Use Modifier field instead.
 	Weak *KeywordNode
 	// Optional; if present indicates modifier (public/weak/option)

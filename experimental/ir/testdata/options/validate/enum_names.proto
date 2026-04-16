@@ -12,10 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tools
+//% descriptor: true
 
-import (
-	_ "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header"
-	_ "github.com/golangci/golangci-lint/v2/cmd/golangci-lint"
-	_ "golang.org/x/tools/cmd/goyacc"
-)
+// Regression: camelCase and snake_case enum values that look similar
+// must not collide. Canonical name uses underscore-only word splitting,
+// so "fooBar" stays one word ("Foobar") while "foo_bar" splits into
+// two ("FooBar").
+
+syntax = "proto3";
+
+package buf.test;
+
+enum E {
+    E_UNSPECIFIED = 0;
+    foo_bar = 1;
+    fooBar = 2;
+}

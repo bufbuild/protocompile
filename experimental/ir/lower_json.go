@@ -22,7 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal"
-	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/tags"
 )
@@ -32,6 +31,14 @@ func populateJSONNames(file *File, r *report.Report) {
 	names := intern.Map[Member]{}
 
 	for ty := range seq.Values(file.AllTypes()) {
+		if ty.IsEnum() {
+			// Enum values don't have JSON names in the protobuf spec;
+			// their JSON representation uses the proto name directly.
+			// Canonical name collision checking is handled separately
+			// in validateEnum.
+			continue
+		}
+
 		clear(names)
 
 		// Syntax dictates JSON strictness for proto2/proto3: proto2 is
@@ -51,13 +58,7 @@ func populateJSONNames(file *File, r *report.Report) {
 		// First, populate the default names, and check for collisions among
 		// them.
 		for field := range seq.Values(ty.Members()) {
-			var name string
-			if ty.IsEnum() {
-				name = internal.TrimPrefix(field.Name(), ty.Name())
-				name = cases.Enum.Convert(name)
-			} else {
-				name = internal.JSONName(field.Name())
-			}
+			name := internal.JSONName(field.Name())
 
 			field.Raw().jsonName = file.session.intern.Intern(name)
 
@@ -74,12 +75,6 @@ func populateJSONNames(file *File, r *report.Report) {
 					first: prev, second: field,
 				})
 			}
-		}
-
-		if ty.IsEnum() {
-			// Don't bother iterating again, since enums cannot have custom
-			// JSON names.
-			continue
 		}
 
 		clear(names)
