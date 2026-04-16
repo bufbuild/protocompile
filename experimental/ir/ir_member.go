@@ -123,13 +123,17 @@ func (m Member) IsPacked() bool {
 		return packed
 	}
 
-	value, _ := m.FeatureSet().Lookup(builtins.FeaturePacked).Value().AsInt()
-	if value == tags.FeatureSet_RepeatedFieldEncoding_Unknown {
-		// Feature unavailable or unresolved (vendored descriptor.proto).
-		// Proto2 default: EXPANDED (not packed).
-		// Proto3 default: PACKED.
-		return m.Context().Syntax() >= syntax.Proto3
+	// Syntax dictates default packing for proto2/proto3: proto2 repeated
+	// fields are expanded, proto3 are packed. The repeated_field_encoding
+	// feature only takes effect in editions.
+	switch s := m.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return false
+	case s == syntax.Proto3:
+		return true
 	}
+
+	value, _ := m.FeatureSet().Lookup(builtins.FeaturePacked).Value().AsInt()
 	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
@@ -140,14 +144,18 @@ func (m Member) IsUnicode() bool {
 		return false
 	}
 
+	// Syntax dictates UTF-8 validation for proto2/proto3: proto2 does not
+	// validate string fields, proto3 does. The utf8_validation feature only
+	// takes effect in editions.
+	switch s := m.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return false
+	case s == syntax.Proto3:
+		return true
+	}
+
 	builtins := m.Context().builtins()
 	value, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
-	if value == tags.FeatureSet_Utf8Validation_Unknown {
-		// Feature unavailable or unresolved (vendored descriptor.proto).
-		// Proto2 default: NONE (no validation).
-		// Proto3 default: VERIFY.
-		return m.Context().Syntax() >= syntax.Proto3
-	}
 	return value == tags.FeatureSet_Utf8Validation_Verify
 }
 

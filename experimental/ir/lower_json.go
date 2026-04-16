@@ -34,14 +34,17 @@ func populateJSONNames(file *File, r *report.Report) {
 	for ty := range seq.Values(file.AllTypes()) {
 		clear(names)
 
-		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
+		// Syntax dictates JSON strictness for proto2/proto3: proto2 is
+		// LEGACY_BEST_EFFORT (not strict), proto3 is ALLOW (strict). The
+		// json_format feature only takes effect in editions.
 		var strict bool
-		if jsonFormat == tags.FeatureSet_JsonFormat_Unknown {
-			// Feature unavailable or unresolved (vendored descriptor.proto).
-			// Proto2 default: LEGACY_BEST_EFFORT (not strict).
-			// Proto3 default: ALLOW (strict).
-			strict = file.Syntax() >= syntax.Proto3
-		} else {
+		switch s := file.Syntax(); {
+		case s == syntax.Proto2:
+			strict = false
+		case s == syntax.Proto3:
+			strict = true
+		default:
+			jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
 			strict = jsonFormat == tags.FeatureSet_JsonFormat_Allow
 		}
 

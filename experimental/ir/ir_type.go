@@ -181,16 +181,18 @@ func (t Type) IsClosedEnum() bool {
 		return false
 	}
 
+	// Syntax dictates enum closedness for proto2/proto3: proto2 enums are
+	// always closed, proto3 enums are always open. Feature overrides only
+	// apply in editions, where the enum_type feature is the source of truth.
+	switch s := t.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return true
+	case s == syntax.Proto3:
+		return false
+	}
+
 	builtins := t.Context().builtins()
 	n, _ := t.FeatureSet().Lookup(builtins.FeatureEnum).Value().AsInt()
-	if n == tags.FeatureSet_EnumType_Unknown {
-		// Feature unavailable or unresolved (e.g., vendored descriptor.proto
-		// missing FeatureSet, or FeatureSet present but edition_defaults not
-		// resolved). Fall back to syntax: proto2 enums are closed, proto3
-		// and editions enums are open by default.
-		return !t.Context().Syntax().IsEdition() &&
-			t.Context().Syntax() < syntax.Proto3
-	}
 	return n == tags.FeatureSet_EnumType_Closed
 }
 
