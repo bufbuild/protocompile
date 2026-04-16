@@ -34,15 +34,14 @@ func populateJSONNames(file *File, r *report.Report) {
 	for ty := range seq.Values(file.AllTypes()) {
 		clear(names)
 
-		feature := ty.FeatureSet().Lookup(builtins.FeatureJSON)
+		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
 		var strict bool
-		if feature.IsZero() {
-			// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+		if jsonFormat == tags.FeatureSet_JsonFormat_Unknown {
+			// Feature unavailable or unresolved (vendored descriptor.proto).
 			// Proto2 default: LEGACY_BEST_EFFORT (not strict).
 			// Proto3 default: ALLOW (strict).
 			strict = file.Syntax() >= syntax.Proto3
 		} else {
-			jsonFormat, _ := feature.Value().AsInt()
 			strict = jsonFormat == tags.FeatureSet_JsonFormat_Allow
 		}
 

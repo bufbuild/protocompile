@@ -123,14 +123,13 @@ func (m Member) IsPacked() bool {
 		return packed
 	}
 
-	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
-	if feature.IsZero() {
-		// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+	value, _ := m.FeatureSet().Lookup(builtins.FeaturePacked).Value().AsInt()
+	if value == tags.FeatureSet_RepeatedFieldEncoding_Unknown {
+		// Feature unavailable or unresolved (vendored descriptor.proto).
 		// Proto2 default: EXPANDED (not packed).
 		// Proto3 default: PACKED.
 		return m.Context().Syntax() >= syntax.Proto3
 	}
-	value, _ := feature.Value().AsInt()
 	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
@@ -142,15 +141,14 @@ func (m Member) IsUnicode() bool {
 	}
 
 	builtins := m.Context().builtins()
-	feature := m.FeatureSet().Lookup(builtins.FeatureUTF8)
-	if feature.IsZero() {
-		// Feature unavailable (vendored descriptor.proto missing FeatureSet).
+	value, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
+	if value == tags.FeatureSet_Utf8Validation_Unknown {
+		// Feature unavailable or unresolved (vendored descriptor.proto).
 		// Proto2 default: NONE (no validation).
 		// Proto3 default: VERIFY.
 		return m.Context().Syntax() >= syntax.Proto3
 	}
-	utf8Feature, _ := feature.Value().AsInt()
-	return utf8Feature == tags.FeatureSet_Utf8Validation_Verify
+	return value == tags.FeatureSet_Utf8Validation_Verify
 }
 
 // AsTagRange wraps this member in a TagRange.
