@@ -520,15 +520,15 @@ func (d DeclDef) Span() source.Span {
 		return source.Span{}
 	}
 
-	return source.Join(
-		d.Type(),
-		d.Name(),
-		d.Signature(),
-		d.Equals(),
-		d.Value(),
-		d.Options(),
-		d.Body(),
-		d.Semicolon(),
+	return source.JoinSpans(
+		d.Type().Span(),
+		d.Name().Span(),
+		d.Signature().Span(),
+		d.Equals().Span(),
+		d.Value().Span(),
+		d.Options().Span(),
+		d.Body().Span(),
+		d.Semicolon().Span(),
 	)
 }
 

@@ -159,7 +159,7 @@ func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 	proto := &compilerpb.Path{
 		Span: c.span(path),
 	}
-	for pc := range path.Components {
+	for pc := range path.Components() {
 		component := new(compilerpb.Path_Component)
 		switch pc.Separator().Text() {
 		case ".":

@@ -45,6 +45,46 @@ func NextPowerOfTwo(n uint) uint {
 	return uint(math.MaxUint)>>uint(bits.LeadingZeros(n)) + 1
 }
 
+// AddOverflow computes x + y, returning whether signed overflow occurred.
+func AddOverflow(x, y int) (z int, of bool) {
+	z = x + y
+	of = z < x
+	return z, of
+}
+
+// AddSaturate computes x + y, saturating on overflow.
+func AddSaturate(x, y int) int {
+	z, of := AddOverflow(x, y)
+	if !of {
+		return z
+	}
+
+	if z < 0 {
+		return math.MaxInt
+	}
+	return math.MinInt
+}
+
+// MulOverflow computes x + y, returning whether signed overflow occurred.
+func MulOverflow(x, y int) (z int, of bool) {
+	z = x * y
+	of = x != 0 && z/x != y
+	return z, of
+}
+
+// MulSaturate computes x + y, saturating on overflow.
+func MulSaturate(x, y int) int {
+	z, of := MulOverflow(x, y)
+	if !of {
+		return z
+	}
+
+	if (x < 0) == (y < 0) {
+		return math.MaxInt
+	}
+	return math.MinInt
+}
+
 // MakePowerOfTwo snaps n to a power of 2: i.e., if it isn't already one,
 // replaces it with the next power of two.
 func MakePowerOfTwo(n uint) uint {

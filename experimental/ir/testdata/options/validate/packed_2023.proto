@@ -33,4 +33,7 @@ message M {
 
     repeated float f3 = 9 [packed = true];
     repeated float f4 = 10 [packed = false];
+
+    repeated string s1 = 11 [features.repeated_field_encoding = PACKED];
+    repeated string s2 = 12 [features.repeated_field_encoding = EXPANDED];
 }

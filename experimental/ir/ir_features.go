@@ -41,7 +41,7 @@ type FeatureInfo struct {
 }
 
 type rawFeatureSet struct {
-	features map[featureKey]rawFeature
+	features map[uint64]rawFeature
 	parent   id.ID[FeatureSet]
 	options  id.ID[Value]
 }
@@ -56,10 +56,6 @@ type rawFeatureInfo struct {
 	defaults                        []featureDefault // Sorted by edition.
 	introduced, deprecated, removed syntax.Syntax
 	deprecationWarning              string
-}
-
-type featureKey struct {
-	extension, field *rawMember
 }
 
 type featureDefault struct {
@@ -96,8 +92,12 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 	if fs.IsZero() {
 		return Feature{}
 	}
+
+	// This key is guaranteed to be unique, because FQNs are unique. This
+	// allows us to use Go's fast path for 64-bit integer keys.
+	key := uint64(extension.InternedFullName())<<32 | uint64(field.InternedFullName())
+
 	// First, check if this value is cached.
-	key := featureKey{extension.Raw(), field.Raw()}
 	if f, ok := fs.Raw().features[key]; ok {
 		return Feature{id.WrapContext(fs.Context()), f}
 	}
@@ -134,7 +134,7 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 	}
 
 	if fs.Raw().features == nil {
-		fs.Raw().features = make(map[featureKey]rawFeature)
+		fs.Raw().features = make(map[uint64]rawFeature)
 	}
 	fs.Raw().features[key] = raw
 	return Feature{id.WrapContext(fs.Context()), raw}

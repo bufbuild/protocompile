@@ -27,17 +27,6 @@ error: expected packable type, found message type `buf.test.M`
    = help: packed encoding can only be set on repeated fields of integer, float,
            `bool`, or enum type
 
-error: expected packable type, found message type `buf.test.M`
-  --> testdata/options/validate/packed_2023.proto:26:14
-   |
-26 |     repeated M m2 = 4 [features.repeated_field_encoding = EXPANDED];
-   |              ^         --------------------------------
-   |                         |
-   |                         packed encoding set here
-   |
-   = help: packed encoding can only be set on repeated fields of integer, float,
-           `bool`, or enum type
-
 error: `packed` is not supported in Edition 2023
   --> testdata/options/validate/packed_2023.proto:34:28
    |
@@ -68,5 +57,16 @@ error: `packed` is not supported in Edition 2023
 35 | +     repeated float f4 = 10 [repeated_field_encoding = EXPANDED];
    |
    = help: removed in Edition 2023
+
+error: expected packable type, found scalar type `string`
+  --> testdata/options/validate/packed_2023.proto:37:14
+   |
+37 |     repeated string s1 = 11 [features.repeated_field_encoding = PACKED];
+   |              ^^^^^^          --------------------------------
+   |                               |
+   |                               packed encoding set here
+   |
+   = help: packed encoding can only be set on repeated fields of integer, float,
+           `bool`, or enum type
 
 encountered 6 errors

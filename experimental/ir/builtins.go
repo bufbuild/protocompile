@@ -15,7 +15,6 @@
 package ir
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -33,6 +32,12 @@ import (
 // This is resolved using reflection in [resolveLangSymbols]. The names of the
 // fields of this type must match those in builtinIDs that names its symbol.
 type builtins struct {
+	// This indicates whether or not the descriptor.proto file used for compilation is valid
+	// or not.
+	//
+	// An invalid descriptor.proto file will be missing non-optional fields.
+	valid bool `builtin:"ignore"`
+
 	FileOptions      Member
 	MessageOptions   Member
 	FieldOptions     Member
@@ -189,9 +194,11 @@ type builtinIDs struct {
 	MethodFeatures    intern.ID `intern:"google.protobuf.MethodOptions.features"`
 }
 
-func resolveBuiltins(file *File) {
+// resolveBuiltins resolves the symbols from descriptor.proto and returns whether the
+// builtins resolved are valid.
+func resolveBuiltins(file *File) bool {
 	if !file.IsDescriptorProto() {
-		return
+		return file.builtins().valid
 	}
 
 	// If adding a new kind of symbol to resolve, add it to this map.
@@ -210,14 +217,19 @@ func resolveBuiltins(file *File) {
 	}
 
 	file.dpBuiltins = new(builtins)
+	file.dpBuiltins.valid = true
 	v := reflect.ValueOf(file.dpBuiltins).Elem()
 	ids := reflect.ValueOf(file.session.builtins)
+
 	for i := range v.NumField() {
 		field := v.Field(i)
 		tyField := v.Type().Field(i)
+		if tyField.Name == "valid" {
+			continue
+		}
+
 		id := ids.FieldByName(tyField.Name).Interface().(intern.ID) //nolint:errcheck
 		kind := kinds[field.Type()]
-
 		var optional bool
 		for option := range strings.SplitSeq(tyField.Tag.Get("builtin"), ",") {
 			if option == "optional" {
@@ -225,20 +237,25 @@ func resolveBuiltins(file *File) {
 			}
 		}
 
-		ref := file.exported.lookup(file, id)
+		ref := file.exported.lookup(id)
 		sym := GetRef(file, ref)
 		if sym.IsZero() && optional {
 			continue
 		}
 
 		if sym.Kind() != kind.kind {
-			panic(fmt.Errorf(
-				"missing descriptor.proto symbol: %s `%s`; got kind %s",
-				kind.kind.noun(), file.session.intern.Value(id), sym.Kind(),
-			))
+			// There is a missing field on descriptor.proto, so we mark the builtins as invalid,
+			// and stop resolving.
+			//
+			// TODO: There is no trivial way to ascertain whether the invalid descriptor.proto
+			// was provided by the compiler or vendored in from a third-party source. Ideally,
+			// we would crash if the compiler is misbehaving.
+			file.dpBuiltins.valid = false
+		} else {
+			kind.wrap(sym.Raw().data, field)
 		}
-		kind.wrap(sym.Raw().data, field)
 	}
+	return file.dpBuiltins.valid
 }
 
 // makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.

@@ -143,18 +143,26 @@ func (e ExprAny) AsField() ExprField {
 
 // Span implements [source.Spanner].
 func (e ExprAny) Span() source.Span {
-	// At most one of the below will produce a non-nil type, and that will be
-	// the span selected by source.Join. If all of them are nil, this produces
-	// the nil span.
-	return source.Join(
-		e.AsLiteral(),
-		e.AsPath(),
-		e.AsPrefixed(),
-		e.AsRange(),
-		e.AsArray(),
-		e.AsDict(),
-		e.AsField(),
-	)
+	switch e.Kind() {
+	case ExprKindArray:
+		return e.AsArray().Span()
+	case ExprKindDict:
+		return e.AsDict().Span()
+	case ExprKindError:
+		return e.AsError().Span()
+	case ExprKindField:
+		return e.AsField().Span()
+	case ExprKindLiteral:
+		return e.AsLiteral().Span()
+	case ExprKindPath:
+		return e.AsPath().Span()
+	case ExprKindPrefixed:
+		return e.AsPrefixed().Span()
+	case ExprKindRange:
+		return e.AsRange().Span()
+	default:
+		return source.Span{}
+	}
 }
 
 // ExprError represents an unrecoverable parsing error in an expression context.

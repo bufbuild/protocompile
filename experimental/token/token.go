@@ -306,23 +306,32 @@ func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
 //
 // If the token is zero or is a leaf token, returns nil.
 func (t Token) Children() *Cursor {
+	// Make sure that Children is inlinable; this avoids heap allocations in
+	// the caller.
+	return t.children(new(Cursor))
+}
+
+//go:noinline
+func (t Token) children(c *Cursor) *Cursor {
 	if t.IsZero() || t.IsLeaf() {
 		return nil
 	}
 
 	if impl := t.nat(); impl != nil {
 		start, _ := t.StartEnd()
-		return &Cursor{
+		*c = Cursor{
 			context: t.Context(),
 			idx:     naturalIndex(start.ID()) + 1, // Skip the start!
 		}
+		return c
 	}
 
 	synth := t.synth()
 	if synth.IsClose() {
-		return id.Wrap(t.Context(), synth.otherEnd).Children()
+		return id.Wrap(t.Context(), synth.otherEnd).children(c)
 	}
-	return NewSliceCursor(t.Context(), synth.children)
+	*c = *NewSliceCursor(t.Context(), synth.children)
+	return c
 }
 
 // SyntheticChildren returns a cursor over the given subslice of the children

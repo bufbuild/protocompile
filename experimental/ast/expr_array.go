@@ -69,7 +69,7 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 				return id.WrapDyn(e.Context(), c.Value)
 			},
 			func(_ int, e ExprAny) withComma[id.Dyn[ExprAny, ExprKind]] {
-				e.Context().Nodes().panicIfNotOurs(e)
+				e.Context().Nodes().panicIfNotOurs(e.Context())
 				return withComma[id.Dyn[ExprAny, ExprKind]]{Value: e.ID()}
 			},
 		),

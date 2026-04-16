@@ -288,14 +288,17 @@ func (v Value) Container() MessageValue {
 // The indexer will be nonempty except for the zero Value. That is to say, unset
 // fields of [MessageValue]s are not represented as a distinct "empty" Value.
 func (v Value) Elements() seq.Indexer[Element] {
-	return seq.NewFixedSlice(v.getElements(), func(n int, bits rawValueBits) Element {
-		return Element{
-			withContext: id.WrapContext(v.Context()),
-			index:       n,
-			value:       v,
-			bits:        bits,
-		}
-	})
+	return seq.Slice[Element, rawValueBits]{
+		Slice: v.getElements(),
+		Wrap: func(n int, bits rawValueBits) Element {
+			return Element{
+				withContext: id.WrapContext(v.Context()),
+				index:       n,
+				value:       v,
+				bits:        bits,
+			}
+		},
+	}
 }
 
 // IsTopLevel returns whether this value corresponds with a top-level option declaration

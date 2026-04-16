@@ -44,7 +44,7 @@ type Option struct {
 
 // Span implements [source.Spanner].
 func (o Option) Span() source.Span {
-	return source.Join(o.Path, o.Equals, o.Value)
+	return source.JoinSpans(o.Path.Span(), o.Equals.Span(), o.Value.Span())
 }
 
 type rawOption struct {
@@ -76,7 +76,8 @@ func (o CompactOptions) Entries() Commas[Option] {
 				return c.Value.With(o.Context())
 			},
 			func(_ int, v Option) withComma[rawOption] {
-				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
+				o.Context().Nodes().panicIfNotOurs(
+					v.Path.Context(), v.Equals.Context(), v.Value.Context())
 				return withComma[rawOption]{Value: rawOption{
 					path:   v.Path.ID(),
 					equals: v.Equals.ID(),

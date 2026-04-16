@@ -56,13 +56,13 @@ clean: ## Delete intermediate build artifacts
 	git clean -Xdf
 
 .PHONY: test
-test: build ## Run unit tests
-	$(GO) test -race -cover ./...
+test: $(PROTOC) ## Run unit tests
+	$(GO) test $(if $(filter 386,$(GOARCH)),,-race) -cover ./...
 	$(GO) test -tags protolegacy ./...
-	cd internal/benchmarks && SKIP_DOWNLOAD_GOOGLEAPIS=true $(GO) test -race -cover ./...
 
 .PHONY: benchmarks
-benchmarks: build ## Run benchmarks
+benchmarks: $(PROTOC) ## Run benchmarks
+	$(GO) test -bench=. -benchmem -v ./experimental/benchmark
 	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
 
 .PHONY: build

@@ -30,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/decimal"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -571,7 +572,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			splitURL := func(path ast.Path) (before, after ast.Path) {
 				// Figure out what part of the key expression actually contains
 				// the domain. Look for the last component whose separator is a /.
-				pc, _ := iterx.Last(iterx.Filter(path.Components, func(pc ast.PathComponent) bool {
+				pc, _ := iterx.Last(iterx.Filter(path.Components(), func(pc ast.PathComponent) bool {
 					return pc.Separator().Text() == "/"
 				}))
 				hostSpan := path.Span()
@@ -878,7 +879,7 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	switch n := got.(type) {
 	case uint64:
 		v = n
-	case *big.Float:
+	case *decimal.Decimal:
 		// We assume that a big.Float is always larger than a uint64.
 		tooLarge = true
 	default:

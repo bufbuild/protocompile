@@ -1,0 +1,11 @@
+file:
+- name: "testdata/tags/enum_two_char_mixed.proto"
+  package: "buf.test"
+  enum_type:
+  - name: "Foo"
+    value:
+    - { name: "FOO_UNSPECIFIED", number: 0 }
+    - { name: "Ab", number: 1 }
+    - { name: "Xq", number: 2 }
+    - { name: "Yz", number: 3 }
+  syntax: "proto3"

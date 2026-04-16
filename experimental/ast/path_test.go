@@ -80,24 +80,24 @@ func TestNaturalSplit(t *testing.T) {
 	pathEq(t, start, components[:2])
 	pathEq(t, end, components[2:])
 
-	start, end = nth(path.Components, 0).SplitBefore()
+	start, end = nth(path.Components(), 0).SplitBefore()
 	pathEq(t, start, [][2]token.Token{})
 	pathEq(t, end, components)
-	start, end = nth(path.Components, 0).SplitAfter()
+	start, end = nth(path.Components(), 0).SplitAfter()
 	pathEq(t, start, components[:1])
 	pathEq(t, end, components[1:])
 
-	start, end = nth(path.Components, 1).SplitBefore()
+	start, end = nth(path.Components(), 1).SplitBefore()
 	pathEq(t, start, components[:1])
 	pathEq(t, end, components[1:])
-	start, end = nth(path.Components, 1).SplitAfter()
+	start, end = nth(path.Components(), 1).SplitAfter()
 	pathEq(t, start, components[:2])
 	pathEq(t, end, components[2:])
 
-	start, end = nth(path.Components, 3).SplitBefore()
+	start, end = nth(path.Components(), 3).SplitBefore()
 	pathEq(t, start, components[:3])
 	pathEq(t, end, components[3:])
-	start, end = nth(path.Components, 3).SplitAfter()
+	start, end = nth(path.Components(), 3).SplitAfter()
 	pathEq(t, start, components)
 	pathEq(t, end, [][2]token.Token{})
 }
@@ -153,7 +153,7 @@ func TestSyntheticSplit(t *testing.T) {
 func pathEq(t *testing.T, path ast.Path, want [][2]token.Token) {
 	t.Helper()
 
-	components := slices.Collect(iterx.Map(path.Components, func(pc ast.PathComponent) [2]token.Token {
+	components := slices.Collect(iterx.Map(path.Components(), func(pc ast.PathComponent) [2]token.Token {
 		return [2]token.Token{pc.Separator(), pc.Name()}
 	}))
 	stringEq(t, components, want)

@@ -44,7 +44,7 @@ func resolveEarlyOptions(file *File) {
 			option := def.AsOption().Option
 
 			// If this option's path has more than one component, skip.
-			first, ok := iterx.OnlyOne(option.Path.Components)
+			first, ok := iterx.OnlyOne(option.Path.Components())
 			if !ok || !first.Separator().IsZero() {
 				continue
 			}
@@ -337,7 +337,7 @@ func validateOptionTargetsInValue(m MessageValue, decl source.Span, target Optio
 			if path := key.AsPath(); !path.IsZero() {
 				// Pull out the last component.
 				// TODO: write a function on Path that does this cheaply.
-				last, _ := iterx.Last(path.Components)
+				last, _ := iterx.Last(path.Components())
 				span = last.Name().Span()
 			}
 
@@ -393,7 +393,7 @@ func (r optionRef) resolve() {
 	field := current.Field()
 	var path ast.Path
 	var raw slot
-	for pc := range r.def.Path.Components {
+	for pc := range r.def.Path.Components() {
 		// If this is the first iteration, use the *Options value as the current
 		// message.
 		message := field.Element()

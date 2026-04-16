@@ -166,3 +166,8 @@ func NoEscape[P ~*E, E any](ptr P) P {
 	p = unsafe.Pointer(uintptr(p) ^ 0) //nolint:staticcheck
 	return P(p)
 }
+
+// NoEscapeSlice marks a slice as not escaping, as by [NoEscape].
+func NoEscapeSlice[S ~[]E, E any](s S) S {
+	return unsafe.Slice(NoEscape(unsafe.SliceData(s)), cap(s))[:len(s)]
+}
