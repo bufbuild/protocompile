@@ -18,6 +18,7 @@
 # the user's usage and explain that the descriptor.proto being used
 # does not support editions features.
 exclude_wkt_sources: true
+symtab: true
 files:
 - path: "google/protobuf/descriptor.proto"
   import: true

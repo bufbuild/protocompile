@@ -18,6 +18,7 @@
 # descriptor.proto itself rather than to the user's proto file.
 exclude_wkt_sources: true
 descriptor: true
+symtab: true
 files:
 - path: "google/protobuf/descriptor.proto"
   import: true

@@ -22,6 +22,7 @@
 # behavior falling back to proto3 defaults.
 exclude_wkt_sources: true
 descriptor: true
+symtab: true
 files:
 - path: "google/protobuf/descriptor.proto"
   import: true
