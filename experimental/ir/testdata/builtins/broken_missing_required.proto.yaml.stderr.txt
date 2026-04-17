@@ -1,0 +1,379 @@
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.DescriptorProto.ExtensionRange.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.DescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.EnumDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.EnumOptions.allow_alias`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.EnumOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.EnumValueDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.EnumValueOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldDescriptorProto.json_name`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldOptions.ctype`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldOptions.jstype`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldOptions.lazy`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FieldOptions.packed`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FileDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FileOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FileOptions.java_multiple_files`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FileOptions.java_string_check_utf8`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.FileOptions.optimize_for`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.MessageOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.MessageOptions.map_entry`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.MessageOptions.message_set_wire_format`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.MethodDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.MethodOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.OneofDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.ServiceDescriptorProto.options`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+error: `google/protobuf/descriptor.proto` is missing required symbol
+       `google.protobuf.ServiceOptions.deprecated`
+  --> google/protobuf/descriptor.proto:1:1
+   |
+ 1 |   syntax = "proto2";
+   |  ^
+ 2 | / package google.protobuf;
+...  |
+14 | | }
+   | \_^
+   = help: the descriptor.proto supplied to the compiler does not declare this
+           message field; it may be vendored from a version that predates this
+           symbol, or may be genuinely corrupt
+
+encountered 27 errors

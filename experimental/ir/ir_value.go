@@ -811,7 +811,12 @@ func (v MessageValue) IsEmpty() bool {
 }
 
 // Field returns the field corresponding with the given member, if it is set.
+//
+// Returns a zero [Value] if either the member or the message value is zero.
 func (v MessageValue) Field(field Member) Value {
+	if field.IsZero() || v.IsZero() {
+		return Value{}
+	}
 	if field.Container() != v.Type() {
 		return Value{}
 	}

@@ -1,0 +1,54 @@
+tables:
+  "test.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "test.proto" }
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Bar"
+      kind: KIND_ENUM
+      file: "test.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Foo.a"
+      kind: KIND_FIELD
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Foo.b"
+      kind: KIND_FIELD
+      file: "test.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Foo.c"
+      kind: KIND_FIELD
+      file: "test.proto"
+      index: 3
+      visible: true
+    - fqn: "test.BAR_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "test.proto"
+      index: 4
+      visible: true
+    - fqn: "test.BAR_A"
+      kind: KIND_ENUM_VALUE
+      file: "test.proto"
+      index: 5
+      visible: true
+    - fqn: "test.BAR_B"
+      kind: KIND_ENUM_VALUE
+      file: "test.proto"
+      index: 6
+      visible: true
+    - fqn: "test.TestService"
+      kind: 9
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.TestService.GetFoo"
+      kind: 10
+      file: "test.proto"
+      index: 1
+      visible: true

@@ -1,0 +1,32 @@
+file:
+- name: "test.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "a"
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "b"
+    - name: "c"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "c"
+  enum_type:
+  - name: "Bar"
+    value:
+    - { name: "BAR_UNSPECIFIED", number: 0 }
+    - { name: "BAR_A", number: 1 }
+    - { name: "BAR_B", number: 2 }
+  service:
+  - name: "TestService"
+    method:
+    - { name: "GetFoo", input_type: ".test.Foo", output_type: ".test.Foo" }
+  syntax: "proto3"
