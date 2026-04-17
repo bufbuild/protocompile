@@ -27,7 +27,29 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/messageset"
 )
+
+// checkMessageSetFieldUsage reports an error if the given field belongs to a
+// message set type. Message set wire format is a legacy proto1 feature that
+// is not supported.
+func checkMessageSetFieldUsage(field Member, span source.Spanner, r *report.Report) {
+	if field.IsZero() || !field.Container().IsMessageSet() {
+		return
+	}
+	if messageset.CanSupportMessageSets() {
+		return
+	}
+	extendee := field.Container()
+	r.Errorf(
+		"field `%s` may not be used in an option: it uses 'message set wire format' legacy proto1 feature which is not supported",
+		field.FullName(),
+	).Apply(
+		report.Snippet(span),
+		report.PageBreak,
+		report.Snippetf(extendee.AST().Stem(), "`%s` declared as message set here", extendee.FullName()),
+	)
+}
 
 // resolveEarlyOptions resolves options whose values must be discovered very
 // early during compilation. This does not create option values, nor does it
@@ -496,6 +518,8 @@ func (r optionRef) resolve() {
 				return
 			}
 		}
+
+		checkMessageSetFieldUsage(field, pc, r.Report)
 
 		if pc.IsFirst() {
 			switch field.InternedFullName() {
