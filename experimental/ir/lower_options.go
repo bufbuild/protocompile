@@ -481,8 +481,8 @@ func (r optionRef) resolve() {
 				}
 				// If the user is referencing a known-optional builtin that the
 				// descriptor.proto in use doesn't declare, explain why.
-				fqn := fmt.Sprintf("%s.%s", message.FullName(), ident.Text())
-				if id, known := r.session.intern.Query(fqn); known {
+				fqn := message.FullName().Append(ident.Text())
+				if id, known := r.session.intern.Query(string(fqn)); known {
 					if _, optional := r.session.optionalBuiltins[id]; optional {
 						if dpFile := r.imports.DescriptorProto(); dpFile != nil {
 							d.Apply(report.Snippetf(dpFile.AST().Syntax(),

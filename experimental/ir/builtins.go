@@ -234,17 +234,11 @@ func resolveBuiltins(file *File, r *report.Report) {
 
 		id := ids.FieldByName(tyField.Name).Interface().(intern.ID) //nolint:errcheck
 		kind := kinds[field.Type()]
-		var optional bool
-		for option := range strings.SplitSeq(tyField.Tag.Get("builtin"), ",") {
-			if option == "optional" {
-				optional = true
-			}
-		}
 
 		ref := file.exported.lookup(id)
 		sym := GetRef(file, ref)
 		if sym.Kind() != kind.kind {
-			if !optional {
+			if !isOptionalBuiltinField(tyField) {
 				r.Errorf("`%s` is missing required symbol `%s`", file.Path(), file.session.intern.Value(id)).Apply(
 					report.Snippet(file.AST()),
 					report.Helpf("the descriptor.proto supplied to the compiler does not declare this %s; "+
@@ -267,6 +261,17 @@ func makeBuiltinWrapper[T ~id.Node[T, *File, Raw], Raw any](
 	}
 }
 
+// isOptionalBuiltinField reports whether the given [builtins] field is tagged
+// `builtin:"optional"`.
+func isOptionalBuiltinField(f reflect.StructField) bool {
+	for option := range strings.SplitSeq(f.Tag.Get("builtin"), ",") {
+		if option == "optional" {
+			return true
+		}
+	}
+	return false
+}
+
 // optionalBuiltinIDs is the set of intern IDs for symbols declared optional in
 // [builtins]. It is populated at session init and consulted when emitting
 // diagnostics about user references to missing optional builtins.
@@ -276,13 +281,7 @@ func optionalBuiltinIDs(ids *builtinIDs) map[intern.ID]struct{} {
 	idsV := reflect.ValueOf(*ids)
 	for i := range bs.NumField() {
 		f := bs.Field(i)
-		var optional bool
-		for option := range strings.SplitSeq(f.Tag.Get("builtin"), ",") {
-			if option == "optional" {
-				optional = true
-			}
-		}
-		if !optional {
+		if !isOptionalBuiltinField(f) {
 			continue
 		}
 		idField := idsV.FieldByName(f.Name)
