@@ -12,7 +12,6 @@ file:
       json_name: "fooBar"
     nested_type:
     - name: "FooBarEntry"
-    - name: "FooBarEntry"
       field:
       - name: "key"
         number: 1
@@ -25,6 +24,7 @@ file:
         type: TYPE_INT32
         json_name: "value"
       options.map_entry: true
+    - name: "FooBarEntry"
   - name: "Underscores"
     field:
     - name: "_"
