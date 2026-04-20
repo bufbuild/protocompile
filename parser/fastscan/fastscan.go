@@ -136,12 +136,11 @@ func Scan(filename string, r io.Reader) (Result, error) {
 		if currentImport != nil {
 			switch token {
 			case stringToken:
-				currentImport = append(currentImport, text.(string)) //nolint:errcheck
+				currentImport = append(currentImport, text)
 			case identifierToken:
-				ident := text.(string) //nolint:errcheck
-				if len(currentImport) == 0 && (ident == "public" || ident == "weak") {
-					isPublic = ident == "public"
-					isWeak = ident == "weak"
+				if len(currentImport) == 0 && (text == "public" || text == "weak") {
+					isPublic = text == "public"
+					isWeak = text == "weak"
 					break
 				}
 				fallthrough
@@ -177,7 +176,7 @@ func Scan(filename string, r io.Reader) (Result, error) {
 							"package name should have a period between name components"),
 					)
 				}
-				packageComponents = append(packageComponents, text.(string)) //nolint:errcheck
+				packageComponents = append(packageComponents, text)
 			case periodToken:
 				if len(packageComponents) == 0 {
 					syntaxErrs = append(syntaxErrs,

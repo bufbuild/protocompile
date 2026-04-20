@@ -108,6 +108,10 @@ type lexer struct {
 	curLine, curCol int
 	// start of the previously read full token
 	prevTokenLine, prevTokenCol int
+	// reused across calls to readIdentifier and readNumber; tokens are ASCII.
+	scratch []byte
+	// reused across calls to readStringLiteral.
+	strBuf bytes.Buffer
 }
 
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}
@@ -138,18 +142,18 @@ func (l *lexer) adjustPos(c rune) {
 	}
 }
 
-func (l *lexer) Lex() (tokenType, any, error) {
+func (l *lexer) Lex() (tokenType, string, error) {
 	for {
 		c, err := l.input.readRune()
 		if err == io.EOF {
 			// we're not actually returning a rune, but this will associate
 			// accumulated comments as a trailing comment on last symbol
 			// (if appropriate)
-			return eofToken, nil, nil
+			return eofToken, "", nil
 		} else if err != nil {
 			// we don't call setError because we don't want it wrapped
 			// with a source position because it's I/O, not syntax
-			return 0, nil, err
+			return 0, "", err
 		}
 
 		if strings.ContainsRune("\n\r\t\f\v ", c) {
@@ -163,7 +167,7 @@ func (l *lexer) Lex() (tokenType, any, error) {
 			// decimal literals could start with a dot
 			cn, err := l.input.readRune()
 			if err != nil {
-				return tokenType(c), nil, nil
+				return tokenType(c), "", nil
 			}
 			if cn >= '0' && cn <= '9' {
 				l.adjustPos(cn)
@@ -171,7 +175,7 @@ func (l *lexer) Lex() (tokenType, any, error) {
 				return numberToken, token, nil
 			}
 			l.input.unreadRune(cn)
-			return tokenType(c), nil, nil
+			return tokenType(c), "", nil
 		}
 
 		if c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
@@ -196,7 +200,7 @@ func (l *lexer) Lex() (tokenType, any, error) {
 			// comment
 			cn, err := l.input.readRune()
 			if err != nil {
-				return tokenType(c), nil, nil
+				return tokenType(c), "", nil
 			}
 			if cn == '/' {
 				l.adjustPos(cn)
@@ -211,12 +215,15 @@ func (l *lexer) Lex() (tokenType, any, error) {
 			l.input.unreadRune(cn)
 		}
 
-		return tokenType(c), nil, nil
+		return tokenType(c), "", nil
 	}
 }
 
 func (l *lexer) readNumber(sofar ...rune) string {
-	token := sofar
+	l.scratch = l.scratch[:0]
+	for _, r := range sofar {
+		l.scratch = append(l.scratch, byte(r))
+	}
 	allowExpSign := false
 	for {
 		c, err := l.input.readRune()
@@ -241,13 +248,13 @@ func (l *lexer) readNumber(sofar ...rune) string {
 			// an exponent sign
 			allowExpSign = true
 		}
-		token = append(token, c)
+		l.scratch = append(l.scratch, byte(c))
 	}
-	return string(token)
+	return string(l.scratch)
 }
 
-func (l *lexer) readIdentifier(sofar ...rune) string {
-	token := sofar
+func (l *lexer) readIdentifier(first rune) string {
+	l.scratch = append(l.scratch[:0], byte(first))
 	for {
 		c, err := l.input.readRune()
 		if err != nil {
@@ -258,13 +265,14 @@ func (l *lexer) readIdentifier(sofar ...rune) string {
 			break
 		}
 		l.adjustPos(c)
-		token = append(token, c)
+		l.scratch = append(l.scratch, byte(c))
 	}
-	return string(token)
+	return string(l.scratch)
 }
 
 func (l *lexer) readStringLiteral(quote rune) string {
-	var buf bytes.Buffer
+	buf := &l.strBuf
+	buf.Reset()
 	for {
 		c, err := l.input.readRune()
 		if err != nil {
