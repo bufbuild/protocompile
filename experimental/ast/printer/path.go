@@ -14,7 +14,24 @@
 
 package printer
 
-import "github.com/bufbuild/protocompile/experimental/ast"
+import (
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+)
+
+// pathFirstToken returns the separator of the first component if set,
+// otherwise its name. Returns the zero token if the path has no components.
+func pathFirstToken(path ast.Path) token.Token {
+	pc, ok := iterx.First(path.Components())
+	if !ok {
+		return token.Zero
+	}
+	if !pc.Separator().IsZero() {
+		return pc.Separator()
+	}
+	return pc.Name()
+}
 
 // printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
 func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {

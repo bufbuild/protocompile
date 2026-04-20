@@ -1,8 +1,9 @@
 # Bufformat Golden Test Differences
 
-This document summarizes the intentional differences between the protocompile
-printer and the old buf format golden files in `TestBufFormat`. Each difference
-is categorized and reasoned about.
+This document summarizes the intentional differences between the
+protocompile printer and the old `buf format` golden files in
+`TestBufFormat`. It also lists the remaining mechanical issues that
+still cause test failures.
 
 ## Skipped Tests
 
@@ -10,117 +11,224 @@ is categorized and reasoned about.
 Parser error test, not a printer test. Not applicable.
 
 ### deprecate/*
-These tests require AST transforms (adding `deprecated` options) performed by
-buf's `FormatModuleSet`, not by the printer. The printer only formats what the
-AST contains.
+These tests require AST transforms (adding `deprecated` options)
+performed by buf's `FormatModuleSet`, not by the printer. The printer
+only formats what the AST contains.
 
 ### all/v1/all.proto, customoptions/options.proto
-Our formatter keeps detached comments at section boundaries during declaration
-sorting rather than permuting them with declarations. When declarations are
-reordered, comments that were between two declarations stay at the section
-boundary rather than moving with the following declaration. This prevents
-comments from being silently associated with the wrong declaration.
+Our formatter keeps detached comments at section boundaries during
+declaration sorting rather than permuting them with declarations. When
+declarations are reordered, comments that were between two
+declarations stay at the section boundary rather than moving with the
+following declaration. This prevents comments from being silently
+associated with the wrong declaration.
 
 ### service/v1/service.proto, service/v1/service_options.proto
 Our formatter always inserts a space before trailing block comments:
-`M /* comment */` vs the golden's `M/* comment */`. Consistent spacing before
-trailing comments is more readable and matches the convention used everywhere
-else in our output.
+`M /* comment */` vs the golden's `M/* comment */`. Consistent spacing
+before trailing comments is more readable and matches the convention
+used everywhere else in our output.
 
 ## Remaining Failing Tests (4)
 
-### 1. option_complex_array_literal.proto -- Blank lines between array elements
+The four remaining failures are all variations of the same small set
+of stylistic differences. The printer output is valid Protobuf and
+idempotent in every case; only whitespace placement around comments
+differs.
 
-Minor blank line differences between array elements.
+### 1. Trailing block comment placement in expanded brackets
 
-**Rationale:** Differences come from our slot-based trivia handling which
-normalizes blank lines between elements consistently.
+When a value has a trailing `/* */` comment and the surrounding
+brackets are rendered multi-line, the golden puts the comment on its
+own line; ours keeps it inline with the value.
 
-### 2. option_message_field.proto -- Extension key bracket expansion + blank lines
+Appears in: `message_options.proto` (3 sites), `literal_comments.proto`
+(1 site), `option_complex_array_literal.proto` (1 site).
+
+```
+golden:  packed = false
+         /* trailing comment */
+
+ours:    packed = false /* trailing comment */
+```
+
+**Cause:** `emitTrailing` always emits trailing comments inline with a
+leading space. It has no awareness that its containing bracket/brace
+scope has been expanded multi-line.
+
+**Rationale:** Our behavior preserves the relationship between the
+value and its trailing comment (they were adjacent in the source and
+stay adjacent in our output). The golden's policy of always splitting
+trailing block comments in expanded scopes is stylistically arguable;
+fixing it would require threading "scope is expanded" context down to
+`emitTrailing`. Low priority.
+
+### 2. Missing blank lines between dict/array entries
+
+Inside message-literal dicts or array literals, blank lines between
+entries are collapsed to a single newline.
+
+Appears in: `option_complex_array_literal.proto` (2 sites),
+`option_message_field.proto` (1 site).
+
+```
+golden:  ]
+
+         values: [
+           ...
+         ]
+
+         recursive: [
+
+ours:    ]
+         values: [
+           ...
+         ]
+         recursive: [
+```
+
+**Cause:** `printDict` and `printArray` iterate elements with a fixed
+`gapNewline`. Unlike `printScopeDecls` (file/body scopes), they do not
+consult `trivia.hasBlankBefore(i)` to preserve blank lines. More
+fundamentally, `walkDecl` does not break at `,` (or at the newline
+that serves as an implicit separator in message literals), so no
+per-element `blankBefore` is even recorded.
+
+**Rationale:** Preserving blank lines inside message literals would
+require treating each dict element as its own "sub-declaration" in the
+trivia walker. Worth doing but non-trivial.
+
+### 3. Single-compact-option trailing block comment expansion
+
+Compact options with a single option and trailing/after-value block
+comments stay inline in the golden but expand in ours (when the
+expansion trigger also fires for other reasons).
+
+Appears in: `literal_comments.proto` — bracket expansion on
+`[]`+trailing-comment patterns.
+
+```
+golden:  additional_rules: [] /* comment on , */
+
+ours:    additional_rules: [] // comment on ,    (line-to-block not applied)
+```
+
+**Cause:** Our printer keeps `//` line comments that already terminate
+on a newline (e.g. after `}` or `]`) as `//` rather than rewriting
+them to `/* */`. The golden rewrites.
+
+**Rationale:** Keeping `//` is safe when nothing else follows on the
+line, and preserves the original comment style. Stylistic choice.
+
+### 4. Missing space before colon after bracketed extension key
+
+When a message-literal key is an extension name `[...]` with a
+trailing block comment, our output has no space between the comment
+and the following `:`.
+
+Appears in: `option_message_field.proto`.
 
 ```
 golden:  [/* One */ foo.bar..._garblez /* Two */] /* Three */ : "boo"
+
+ours:    [/* One */ foo.bar..._garblez /* Two */] /* Three */: "boo"
+```
+
+**Cause:** The colon uses `gapInline`, which produces no gap when
+there's nothing in pending. The `/* Three */` comment was emitted as
+trailing on the `]` via `emitTrailing` and is therefore not visible to
+the subsequent `emitTrivia(gapInline)` call on the colon. The gap
+logic cannot know the prior emission ended with a comment.
+
+**Rationale:** Fixing would require tracking "last emit was a comment"
+on the printer, which is a fair amount of plumbing for one edge case.
+Low priority.
+
+### 5. Compound-string trailing block comment attachment
+
+A block comment between two adjacent string parts that in the source
+sat on its own line attaches as trailing on the preceding part and
+renders inline.
+
+Appears in: `option_complex_array_literal.proto`,
+`literal_comments.proto`, `message_options.proto`.
+
+```
+source:  "two"
+         /* Two */
+         "three"
+
+golden:  "two"
+         /* Two */
+         "three"
+
+ours:    "two" /* Two */
+         "three"
+```
+
+**Cause:** The trivia walker assigns the post-"two" trivia `[\n, /*
+Two */, \n]` to `"three"`'s leading, but the `splitDetached` logic
+does not split (only one blank-line boundary is required; consecutive
+single newlines don't count). So when `"three"` is printed, its
+leading emits the comment with a gap that becomes inline in the flat
+handling.
+
+Really the same underlying issue as (1): block comment placement
+between items in an expanded scope.
+
+### 6. `/* Before */ {}` in array literal stays inline
+
+Leading block comment on an array element is kept on the same line as
+the element by the golden, but we break it onto its own line.
+
+Appears in: `literal_comments.proto`.
+
+```
+golden:  [
+           /* Before */ {}, // Trailing
+           /* Before */ {rule: "child"}, /* child node */
+           ...
+         ]
+
 ours:    [
-           /* One */
-           foo.bar..._garblez /* Two */
-         ]/* Three */
-         : "boo"
+           /* Before */
+           {}, // Trailing
+           /* Before */
+           {rule: "child"}, /* child node */
+           ...
+         ]
 ```
 
-**Cause:** Extension keys containing block comments trigger multi-line expansion
-because `scopeHasAttachedComments` detects comments inside the brackets.
+**Cause:** The element's leading trivia has a comment; when printed
+with `gapNewline`, the post-comment gap becomes a softbreak → newline
+in the broken array context.
 
-**Rationale:** Expanding bracketed expressions with interior comments to
-multi-line is our general policy. It makes the comments more visible and the
-structure clearer. The golden's single-line form with multiple block comments
-is dense and harder to read.
-
-Also has blank line differences between declarations in message literal
-contexts, same cause as other blank line diffs.
-
-### 3. message_options.proto -- Block comment placement + bracket expansion
-
-Multiple differences:
-
-**a) Block comments on their own line become inline trailing:**
-```
-golden:  foo: 1
-         /*trailing*/
-ours:    foo: 1 /*trailing*/
-```
-When a block comment follows a value on the next line with no blank line
-separating them, our trivia index attaches it as trailing on the value. The
-golden keeps it on its own line.
-
-**b) Compact option bracket collapse:**
-```
-golden:  repeated int64 values = 2 [
-           /* leading comment */
-           packed = false
-           /* trailing comment */
-         ];
-ours:    repeated int64 values = 2 [/* leading comment */
-         packed = false /* trailing comment */];
-```
-Single compact option with comments stays inline in our formatter because the
-option count is 1. The golden expands it due to the comments.
-
-**c) Single-element dict expansion:** FIXED. Single-element dicts now stay
-inline when they fit: `{foo: 99}`. The bug was that the caller's gap (e.g.
-`gapNewline` from a multi-element array) was emitted inside the `dom.Group`,
-causing the group to always break.
-
-**Rationale:** (a) and (b) are stylistic choices about when to expand vs
-collapse bracketed expressions. Our formatter consistently expands when content
-could benefit from vertical space.
-
-### 4. literal_comments.proto -- Trailing comment format after close braces
-
-```
-golden:  } /* Trailing */
-ours:    } // Trailing
-```
-
-**Cause:** Our `convertLineToBlock` is not set after close braces because `}`
-ends a scope and `//` at end of line is safe -- nothing follows that would be
-consumed by the line comment.
-
-**Rationale:** Keeping `// Trailing` as-is is correct. The golden's conversion
-to `/* Trailing */` is unnecessary since `}` is always followed by a newline
-or end of scope. Our behavior preserves the original comment style.
-
-Also has bracket expansion differences for message literals with leading block
-comments (same cause as message_options above) and compound string trailing
-comment differences.
+**Rationale:** Both readings are legitimate. The golden's compact form
+pairs the comment visually with its element.
 
 ## Summary
 
-All remaining differences are stylistic. No comments are dropped, no syntax is
-broken, and formatting is idempotent for all passing tests. The categories are:
-
 | Category | Tests affected | Our choice |
 |----------|---------------|------------|
-| Bracket expansion with comments | option_message_field, message_options, literal_comments | Expand when interior has comments |
-| Block comment trailing attachment | message_options, literal_comments | Attach to preceding value when no blank line |
-| `//` vs `/* */` after `}` | literal_comments | Keep `//` (safe at end of line) |
-| Blank lines between declarations | option_message_field, message_options, option_complex_array_literal | Normalized by slot-based trivia |
+| Trailing block comment in expanded bracket | `message_options`, `literal_comments`, `option_complex_array_literal` | Inline with value (same line) |
+| Blank lines between dict/array entries | `option_complex_array_literal`, `option_message_field` | Collapsed to newline (trivia walker does not track per-element blank lines) |
+| `//` vs `/* */` after `}`/`]` | `literal_comments` | Keep `//` (safe at end of line) |
+| Space before `:` after `]` with trailing comment | `option_message_field` | No space (gap logic doesn't see prior trailing emission) |
+| Compound-string comment on its own line | `option_complex_array_literal`, `literal_comments`, `message_options` | Attach as trailing → inline |
+| Leading comment on array element inline pairing | `literal_comments` | Break onto own line |
+
+No comments are dropped, no syntax is broken, and all passing tests
+are idempotent. The remaining diffs are placement-only.
+
+## Recently Fixed
+
+- Empty `;` decl (e.g. `message M {};`) no longer collides with blank-
+  line preservation. The trivia walker correctly recognizes `;` after
+  a body as a separate empty decl.
+- Single-option compact options with a leading `/* */` comment on the
+  value (e.g. `[(opt) = /* Before */ nan /* Trailing */]`) now stay
+  inline rather than expanding.
+- Single-option compact options with a leading comment on the key
+  (e.g. `[/* leading */ packed = false]`) now expand to multi-line
+  correctly instead of emitting a broken half-expanded form.
+- Single-element dicts stay inline when they fit.

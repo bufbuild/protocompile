@@ -229,6 +229,7 @@ func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
 func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) bool {
 	endToken := startToken
 	var pending []token.Token
+	sawAssign := false
 	for tok := startToken; !tok.IsZero(); tok = cursor.NextSkippable() {
 		if tok != startToken && tok.Kind().IsSkippable() {
 			pending = append(pending, tok)
@@ -257,6 +258,10 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 			pending = nil
 		}
 
+		if tok.Keyword() == keyword.Assign {
+			sawAssign = true
+		}
+
 		endToken = tok
 		if !tok.IsLeaf() {
 			// Recurse into fused tokens (non-leaf tokens).
@@ -269,14 +274,14 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		// to land on an interior close bracket after PrevSkippable, making
 		// walkScope register trivia under the wrong token ID.
 		//
-		// For `{...}`, peek ahead: if the next non-skippable token is `;`,
-		// the braces are a value expression (e.g., option ... = { ... };),
-		// not a definition body. Don't split there -- the `;` will mark
-		// the boundary, keeping the trivia slot count aligned with AST
-		// declarations.
+		// For `{...}`, the meaning depends on whether we have seen `=`:
+		// after `=` (e.g. `option x = {...};`), the braces are a value
+		// expression and the `;` closes the same decl, so we keep going.
+		// Without `=` (e.g. `message M {}`), the braces are a body that
+		// ends the decl; any following `;` is a separate empty decl.
 		atDeclBoundary := tok.Keyword() == keyword.Semi
 		if tok.Keyword() == keyword.Braces {
-			atDeclBoundary = !idx.nextNonSkippableIsSemi(cursor)
+			atDeclBoundary = !sawAssign || !idx.nextNonSkippableIsSemi(cursor)
 		}
 		if atDeclBoundary {
 			break

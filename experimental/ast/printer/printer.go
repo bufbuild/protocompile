@@ -553,13 +553,16 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 	return false
 }
 
-// scopeHasLeadingComments checks whether any interior token in a fused
-// scope has a comment in its leading trivia. Comments in leading trivia
-// cannot be handled by lineToBlock (which only affects trailing trivia).
-// Line comments (//) would eat the rest of the line; block comments
-// (/* */) produce a softline gap that breaks to a newline outside the
-// compact options indent wrapper, causing wrong indentation.
-func (p *printer) scopeHasLeadingComments(fused token.Token) bool {
+// scopeHasUninlineableLeadingComments reports whether any interior token
+// in a fused scope has a leading comment that prevents inline rendering.
+//
+// A `//` line comment in leading trivia is always uninlineable (it would
+// eat the rest of the line). A `/* */` block comment is uninlineable
+// only when it is preceded by a newline in the same leading run, since
+// the newline indicates the source had the comment on its own line.
+// Block comments mid-expression (e.g. `= /* before */ value`) have no
+// preceding newline and stay inline cleanly.
+func (p *printer) scopeHasUninlineableLeadingComments(fused token.Token) bool {
 	if p.trivia == nil {
 		return false
 	}
@@ -572,8 +575,20 @@ func (p *printer) scopeHasLeadingComments(fused token.Token) bool {
 		if !ok {
 			continue
 		}
-		if sliceHasComment(att.leading) {
-			return true
+		sawNewline := false
+		for _, t := range att.leading {
+			if t.Kind() == token.Space {
+				if strings.Contains(t.Text(), "\n") {
+					sawNewline = true
+				}
+				continue
+			}
+			if t.Kind() != token.Comment {
+				continue
+			}
+			if strings.HasPrefix(t.Text(), "//") || sawNewline {
+				return true
+			}
 		}
 	}
 	return false

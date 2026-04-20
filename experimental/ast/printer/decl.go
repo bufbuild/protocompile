@@ -19,6 +19,25 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
+// firstOptionKeyHasLeadingComment reports whether the first option's
+// path begins with a leading comment. Such comments cannot render
+// cleanly inline since `[/* comment */ key = value]` would force a
+// softline break after the comment in the broken (file-level) context.
+func (p *printer) firstOptionKeyHasLeadingComment(entries ast.Commas[ast.Option]) bool {
+	if entries.Len() == 0 {
+		return false
+	}
+	firstTok := pathFirstToken(entries.At(0).Path)
+	if firstTok.IsZero() {
+		return false
+	}
+	att, ok := p.trivia.tokenTrivia(firstTok.ID())
+	if !ok {
+		return false
+	}
+	return sliceHasComment(att.leading)
+}
+
 // printDecl dispatches to the appropriate printer based on declaration kind.
 //
 // gap controls the whitespace before the declaration's first token. The caller
@@ -388,7 +407,8 @@ func (p *printer) printCompactOptions(co ast.CompactOptions, ctx printCtx) {
 		openTrailing := p.extractOpenTrailing(openTok)
 		forceExpand := len(openTrailing) > 0 ||
 			triviaHasComments(slots) ||
-			p.scopeHasLeadingComments(brackets)
+			p.scopeHasUninlineableLeadingComments(brackets) ||
+			p.firstOptionKeyHasLeadingComment(entries)
 		if entries.Len() == 1 && !forceExpand {
 			// Single option: stays inline. No group wrapping, so
 			// message literal values expand naturally while keeping
