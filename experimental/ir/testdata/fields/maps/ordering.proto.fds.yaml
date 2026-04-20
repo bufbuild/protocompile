@@ -1,0 +1,115 @@
+file:
+- name: "testdata/fields/maps/ordering.proto"
+  package: "test"
+  message_type:
+  - name: "MapBeforeNested"
+    field:
+    - name: "my_map"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.MapBeforeNested.MyMapEntry"
+      json_name: "myMap"
+    nested_type:
+    - name: "MyMapEntry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "value"
+      options.map_entry: true
+    - name: "Nested"
+  - name: "NestedBeforeMap"
+    field:
+    - name: "my_map"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.NestedBeforeMap.MyMapEntry"
+      json_name: "myMap"
+    nested_type:
+    - name: "Nested"
+    - name: "MyMapEntry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "value"
+      options.map_entry: true
+  - name: "Interleaved"
+    field:
+    - name: "m1"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Interleaved.M1Entry"
+      json_name: "m1"
+    - name: "m2"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Interleaved.M2Entry"
+      json_name: "m2"
+    - name: "m3"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Interleaved.M3Entry"
+      json_name: "m3"
+    nested_type:
+    - name: "A"
+    - name: "M1Entry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "value"
+      options.map_entry: true
+    - name: "B"
+    - name: "M2Entry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "value"
+      options.map_entry: true
+    - name: "C"
+    - name: "M3Entry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
+      options.map_entry: true
+    enum_type: [{ name: "E", value: [{ name: "E_ZERO", number: 0 }] }]
+  syntax: "proto3"
