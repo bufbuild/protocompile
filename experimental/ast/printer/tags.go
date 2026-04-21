@@ -21,10 +21,10 @@ import "github.com/bufbuild/protocompile/experimental/dom"
 // functions that push pre-cached vars into a sink.
 
 var (
-	tagSpace         = dom.Text(" ")
-	tagNewline       = dom.Text("\n")
-	tagSoftbreak     = dom.TextIf(dom.Broken, "\n")
-	tagSoftlineFlat  = dom.TextIf(dom.Flat, " ")
+	tagSpace        = dom.Text(" ")
+	tagNewline      = dom.Text("\n")
+	tagSoftbreak    = dom.TextIf(dom.Broken, "\n")
+	tagSoftlineFlat = dom.TextIf(dom.Flat, " ")
 )
 
 // softline pushes a space-if-flat, newline-if-broken pair.

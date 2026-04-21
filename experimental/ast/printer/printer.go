@@ -27,7 +27,7 @@ import (
 type gapStyle int
 
 const (
-	gapNone      gapStyle = iota
+	gapNone gapStyle = iota
 	gapSpace
 	gapNewline
 	gapSoftline      // gapSoftline inserts a space if the group is flat, or a newline if the group is broken
