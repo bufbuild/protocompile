@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -77,13 +78,14 @@ func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
 	var requiredImports []*ir.File
 	for _, file := range files {
 		// We will already include all linked files
+		mapsx.Add(seen, file.Path(), file)
 		if exists := seen[file.Path()]; exists == nil {
 			seen[file.Path()] = file
 		}
 		for imp := range seq.Values(file.Imports()) {
-			if exists := seen[imp.Path()]; exists == nil {
-				seen[imp.Path()] = imp.File
-				requiredImports = append(requiredImports, imp.File)
+			file, inserted := mapsx.Add(seen, imp.Path(), imp.File)
+			if inserted {
+				requiredImports = append(requiredImports, file)
 			}
 		}
 	}
