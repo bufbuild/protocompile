@@ -15,8 +15,12 @@
 package queries
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -66,7 +70,19 @@ func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
 		return nil, err
 	}
 
+	// Symbols are already deduplicated among imported files during the IR queries.
 	ir.DedupExportedSymbols(t.Report(), files...)
-	ir.DedupExtensions(t.Report(), files...)
+	// Extension numbers are not deduped among imports during the IR queries, so all imported
+	// files are added to this check. We avoid adding duplicated imported files.
+	seen := make(map[string]*ir.File)
+	for _, file := range files {
+		for imp := range seq.Values(file.Imports()) {
+			if exists := seen[imp.Path()]; exists == nil {
+				seen[imp.Path()] = imp.File
+			}
+		}
+	}
+	allFiles := append(files, slices.Collect(maps.Values(seen))...)
+	ir.DedupExtensions(t.Report(), allFiles...)
 	return files, nil
 }
