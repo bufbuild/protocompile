@@ -1700,6 +1700,19 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 		},
+		"success_enum_value_two_char_mixed_case": {
+			// Regression: 2-char [A-Z][a-z] enum values should not produce
+			// a false JSON name collision (bufbuild/buf#4474).
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					enum Foo {
+					  FOO_UNSPECIFIED = 0;
+					  Ab = 1;
+					  Xq = 2;
+					}`,
+			},
+		},
 		"failure_symbol_conflicts_with_package": {
 			input: map[string]string{
 				"foo.proto": `
@@ -3965,7 +3978,7 @@ func removePrefixIndent(s string) string {
 	}
 	lines = lines[1:] // skip first blank line
 	// determine whitespace prefix from first line (e.g. five tabstops)
-	var prefix []rune //nolint:prealloc
+	var prefix []rune
 	for _, r := range lines[1] {
 		if !unicode.IsSpace(r) {
 			break

@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -177,6 +178,16 @@ func (t Type) IsEnum() bool {
 
 func (t Type) IsClosedEnum() bool {
 	if !t.IsEnum() {
+		return false
+	}
+
+	// Syntax dictates enum closedness for proto2/proto3: proto2 enums are
+	// always closed, proto3 enums are always open. Feature overrides only
+	// apply in editions, where the enum_type feature is the source of truth.
+	switch s := t.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return true
+	case s == syntax.Proto3:
 		return false
 	}
 

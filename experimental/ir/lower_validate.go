@@ -36,6 +36,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/cases"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -183,6 +185,70 @@ func validateEnum(ty Type, r *report.Report) {
 			report.Helpf("open enums must define a zero value, and it must be the first one"),
 		)
 	}
+
+	validateEnumValueNames(ty, r)
+}
+
+// validateEnumValueNames checks that enum values don't collide after
+// prefix stripping and case normalization. Protoc strips the enum type
+// name prefix and normalizes to PascalCase to ensure generated code
+// in languages with proper enum scoping (Java, Swift, C#) won't have
+// duplicate names.
+func validateEnumValueNames(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+	jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
+	strict := jsonFormat == tags.FeatureSet_JsonFormat_Allow
+
+	type seen struct {
+		member Member
+		canon  string
+	}
+	canonical := make(map[string]seen)
+
+	for member := range seq.Values(ty.Members()) {
+		name := canonicalEnumValueName(member.Name(), ty.Name())
+		prev, ok := canonical[name]
+		if !ok {
+			canonical[name] = seen{member, name}
+			continue
+		}
+		if prev.member.Number() == member.Number() {
+			// allow_alias: same number means not a real collision.
+			continue
+		}
+
+		r.SoftError(strict, errEnumValueConflict{
+			first: prev.member, second: member,
+			enumName:      ty.Name(),
+			canonicalName: name,
+		})
+	}
+}
+
+// canonicalEnumValueName computes the canonical name for an enum value
+// by stripping the enum type name prefix and converting to PascalCase
+// with naive (underscore-only) word splitting.
+func canonicalEnumValueName(enumValueName, enumName string) string {
+	suffix := internal.TrimPrefix(enumValueName, enumName)
+	return cases.Converter{Case: cases.Pascal, NaiveSplit: true}.Convert(suffix)
+}
+
+// errEnumValueConflict diagnoses a collision between two enum values
+// whose canonical names (after prefix stripping and case normalization)
+// are the same.
+type errEnumValueConflict struct {
+	first, second Member
+	enumName      string
+	canonicalName string
+}
+
+func (e errEnumValueConflict) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("%ss have the same name with the `%s` prefix removed",
+		e.first.noun(), e.enumName))
+	d.Apply(
+		report.Snippetf(e.second.AST().Name(), "this also implies that name"),
+		report.Snippetf(e.first.AST().Name(), "this implies canonical name `%s`", e.canonicalName),
+	)
 }
 
 func validateFileOptions(f *File, r *report.Report) {
@@ -769,7 +835,7 @@ func validatePresence(m Member, r *report.Report) {
 func validatePacked(m Member, r *report.Report) {
 	builtins := m.Context().builtins()
 
-	validate := func(span source.Span) {
+	validate := func(span source.Span, isPacked bool) {
 		switch {
 		case m.IsSingular() || m.IsMap():
 			r.Errorf("expected repeated field, found singular field").Apply(
@@ -777,7 +843,7 @@ func validatePacked(m Member, r *report.Report) {
 				report.Snippetf(span, "packed encoding set here"),
 				report.Helpf("packed encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
 			)
-		case !m.Element().IsPackable():
+		case isPacked && !m.Element().IsPackable():
 			r.Error(errTypeConstraint{
 				want: "packable type",
 				got:  m.Element(),
@@ -791,8 +857,8 @@ func validatePacked(m Member, r *report.Report) {
 
 	option := m.Options().Field(builtins.Packed)
 	if !option.IsZero() {
+		packed, _ := option.AsBool()
 		if m.Context().Syntax().IsEdition() {
-			packed, _ := option.AsBool()
 			want := "PACKED"
 			if !packed {
 				want = "EXPANDED"
@@ -808,15 +874,17 @@ func validatePacked(m Member, r *report.Report) {
 				builtins.FeaturePacked.Name(), want,
 				"replace with `%s`", builtins.FeaturePacked.Name(),
 			))
-		} else if v, _ := option.AsBool(); v {
+		} else if packed {
 			// Don't validate [packed = false], protoc accepts that.
-			validate(option.ValueAST().Span())
+			validate(option.ValueAST().Span(), true)
 		}
 	}
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
-		validate(feature.Value().KeyAST().Span())
+		value, _ := feature.Value().AsInt()
+		isPacked := value == tags.FeatureSet_RepeatedFieldEncoding_Packed
+		validate(feature.Value().KeyAST().Span(), isPacked)
 	}
 }
 

@@ -53,4 +53,15 @@ warning: unused import "c.proto"
    |
    = help: no symbols from this file are referenced
 
-encountered 5 warnings
+warning: unused import "c.proto"
+  --> a8.proto:5:8
+   |
+ 5 | import "c.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "c.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 6 warnings

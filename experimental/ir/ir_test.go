@@ -46,6 +46,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 	"github.com/bufbuild/protocompile/internal/golden"
+	"github.com/bufbuild/protocompile/internal/messageset"
 	"github.com/bufbuild/protocompile/internal/prototest"
 )
 
@@ -85,6 +86,12 @@ type Test struct {
 	// Whether to output a symbol table. Useful for tests that build symbol
 	// tables.
 	Symtab bool `yaml:"symtab"`
+
+	// If true, skip this test when the protobuf-go runtime supports message
+	// sets (e.g. when built with the `protolegacy` build tag). Used for tests
+	// that assert on diagnostics that are only emitted when message sets are
+	// unsupported.
+	RequiresNoMessageSetSupport bool `yaml:"requires_no_message_set_support"`
 }
 
 func (t *Test) Unmarshal(path string, text string) error {
@@ -157,6 +164,10 @@ func TestIR(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		test := new(Test)
 		require.NoError(t, test.Unmarshal(path, text))
+
+		if test.RequiresNoMessageSetSupport && messageset.CanSupportMessageSets() {
+			t.Skip("skipping: test requires that the protobuf-go runtime does not support message sets")
+		}
 
 		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
 			slices.Values(test.Files),

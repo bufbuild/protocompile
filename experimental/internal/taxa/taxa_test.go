@@ -63,7 +63,7 @@ func TestSet(t *testing.T) {
 func TestJoin(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "", taxa.NewSet().Join("and"))
+	assert.Empty(t, taxa.NewSet().Join("and"))
 	assert.Equal(t, "`message`", taxa.NewSet(taxa.Noun(keyword.Message)).Join("and"))
 	assert.Equal(t, "`message` and `enum`", taxa.NewSet(taxa.Noun(keyword.Message), taxa.Noun(keyword.Enum)).Join("and"))
 	assert.Equal(t, "`message`, `enum`, and `service`",

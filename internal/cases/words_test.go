@@ -45,7 +45,14 @@ func TestWords(t *testing.T) {
 		{str: "FOOBar", want: []string{"FOO", "Bar"}},
 		{str: "FooX", want: []string{"Foo", "X"}},
 		{str: "FOO", want: []string{"FOO"}},
-		{str: "FooBARBaz", want: []string{"FooBAR", "Baz"}},
+		{str: "FooBARBaz", want: []string{"Foo", "BAR", "Baz"}},
+
+		// Regression: 2-char [A-Z][a-z] strings produced an empty word list
+		// because the upper+lower boundary case and the last-rune case both
+		// matched simultaneously, and the last-rune handling was skipped.
+		{str: "Ab", want: []string{"Ab"}},
+		{str: "Xq", want: []string{"Xq"}},
+		{str: "ABc", want: []string{"A", "Bc"}},
 	}
 
 	for _, test := range tests {

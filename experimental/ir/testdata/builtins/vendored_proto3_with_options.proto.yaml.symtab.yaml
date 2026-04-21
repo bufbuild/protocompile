@@ -1,0 +1,33 @@
+tables:
+  "test.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "test.proto" }
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Foo.a"
+      kind: KIND_FIELD
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Foo.b"
+      kind: KIND_FIELD
+      file: "test.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "deprecated": { bool: true } }
+    - fqn: "test.TestService"
+      kind: 9
+      file: "test.proto"
+      index: 1
+      visible: true
+    - fqn: "test.TestService.GetFoo"
+      kind: 10
+      file: "test.proto"
+      index: 1
+      visible: true
+    options.message.fields:
+      "go_package": { string: "github.com/example/test" }
+      "java_package": { string: "com.example.test" }

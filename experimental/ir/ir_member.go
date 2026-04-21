@@ -21,6 +21,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -122,8 +123,17 @@ func (m Member) IsPacked() bool {
 		return packed
 	}
 
-	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
-	value, _ := feature.AsInt()
+	// Syntax dictates default packing for proto2/proto3: proto2 repeated
+	// fields are expanded, proto3 are packed. The repeated_field_encoding
+	// feature only takes effect in editions.
+	switch s := m.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return false
+	case s == syntax.Proto3:
+		return true
+	}
+
+	value, _ := m.FeatureSet().Lookup(builtins.FeaturePacked).Value().AsInt()
 	return value == tags.FeatureSet_RepeatedFieldEncoding_Packed
 }
 
@@ -134,9 +144,19 @@ func (m Member) IsUnicode() bool {
 		return false
 	}
 
+	// Syntax dictates UTF-8 validation for proto2/proto3: proto2 does not
+	// validate string fields, proto3 does. The utf8_validation feature only
+	// takes effect in editions.
+	switch s := m.Context().Syntax(); {
+	case s == syntax.Proto2:
+		return false
+	case s == syntax.Proto3:
+		return true
+	}
+
 	builtins := m.Context().builtins()
-	utf8Feature, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
-	return utf8Feature == tags.FeatureSet_Utf8Validation_Verify
+	value, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
+	return value == tags.FeatureSet_Utf8Validation_Verify
 }
 
 // AsTagRange wraps this member in a TagRange.

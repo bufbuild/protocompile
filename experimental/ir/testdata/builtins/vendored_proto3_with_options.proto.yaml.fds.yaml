@@ -1,0 +1,26 @@
+file:
+- name: "test.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "a"
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "b"
+      options.deprecated: true
+  service:
+  - name: "TestService"
+    method:
+    - { name: "GetFoo", input_type: ".test.Foo", output_type: ".test.Foo" }
+    options.deprecated: true
+  options:
+    java_package: "com.example.test"
+    go_package: "github.com/example/test"
+  syntax: "proto3"

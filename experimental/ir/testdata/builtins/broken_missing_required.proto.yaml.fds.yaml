@@ -1,0 +1,12 @@
+file:
+- name: "test.proto"
+  package: "test"
+  message_type:
+  - name: "Simple"
+    field:
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
+  syntax: "proto3"

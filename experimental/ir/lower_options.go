@@ -27,7 +27,29 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/messageset"
 )
+
+// checkMessageSetFieldUsage reports an error if the given field belongs to a
+// message set type. Message set wire format is a legacy proto1 feature that
+// is not supported.
+func checkMessageSetFieldUsage(field Member, span source.Spanner, r *report.Report) {
+	if field.IsZero() || !field.Container().IsMessageSet() {
+		return
+	}
+	if messageset.CanSupportMessageSets() {
+		return
+	}
+	extendee := field.Container()
+	r.Errorf(
+		"field `%s` may not be used in an option: it uses 'message set wire format' legacy proto1 feature which is not supported",
+		field.FullName(),
+	).Apply(
+		report.Snippet(span),
+		report.PageBreak,
+		report.Snippetf(extendee.AST().Stem(), "`%s` declared as message set here", extendee.FullName()),
+	)
+}
 
 // resolveEarlyOptions resolves options whose values must be discovered very
 // early during compilation. This does not create option values, nor does it
@@ -479,9 +501,25 @@ func (r optionRef) resolve() {
 				if !pc.IsFirst() {
 					d.Apply(report.Snippetf(prev.AST().Type(), "`%s` specified here", message.FullName()))
 				}
+				// If the user is referencing a known-optional builtin that the
+				// descriptor.proto in use doesn't declare, explain why.
+				fqn := message.FullName().Append(ident.Text())
+				if id, known := r.session.intern.Query(string(fqn)); known {
+					if _, optional := r.session.optionalBuiltins[id]; optional {
+						if dpFile := r.imports.DescriptorProto(); dpFile != nil {
+							d.Apply(report.Snippetf(dpFile.AST().Syntax(),
+								"resolved against this descriptor.proto"))
+						}
+						d.Apply(report.Helpf(
+							"`%s` is an editions-era symbol that this descriptor.proto does not declare; "+
+								"use a newer descriptor.proto or remove this option", fqn))
+					}
+				}
 				return
 			}
 		}
+
+		checkMessageSetFieldUsage(field, pc, r.Report)
 
 		if pc.IsFirst() {
 			switch field.InternedFullName() {

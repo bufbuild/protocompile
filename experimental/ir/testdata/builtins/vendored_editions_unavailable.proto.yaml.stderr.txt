@@ -1,0 +1,16 @@
+error: cannot find message field `features` in `google.protobuf.FileOptions`
+  --> test.proto:4:8
+   |
+ 4 | option features.field_presence = EXPLICIT;
+   |        ^^^^^^^^ because of this field selector
+   |
+  ::: google/protobuf/descriptor.proto:1:1
+   |
+ 1 | syntax = "proto2";
+   | ------------------ resolved against this descriptor.proto
+   |
+   = help: `google.protobuf.FileOptions.features` is an editions-era symbol that
+           this descriptor.proto does not declare; use a newer descriptor.proto
+           or remove this option
+
+encountered 1 error

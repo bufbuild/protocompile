@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"cmp"
 	"slices"
 	"sync"
 
@@ -131,5 +132,21 @@ func generateMapEntries(file *File, r *report.Report) {
 				"define a message type with a map-typed field"),
 		)
 		lowerField(extn)
+	}
+
+	// Synthetic map-entry types are appended to the end of parent message's nested types.
+	// For conformance with protoc, the nested types are sorted by source-declaration order,
+	// based on the AST span.
+	for parent := range seq.Values(file.AllTypes()) {
+		if !parent.IsMessage() {
+			continue
+		}
+		nested := parent.Raw().nested
+		slices.SortStableFunc(nested, func(a, b id.ID[Type]) int {
+			return cmp.Compare(
+				id.Wrap(file, a).AST().Span().Start,
+				id.Wrap(file, b).AST().Span().Start,
+			)
+		})
 	}
 }

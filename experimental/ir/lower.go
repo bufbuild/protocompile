@@ -31,8 +31,9 @@ import (
 type Session struct {
 	intern intern.Table
 
-	once     sync.Once
-	builtins builtinIDs
+	once             sync.Once
+	builtins         builtinIDs
+	optionalBuiltins map[intern.ID]struct{}
 }
 
 // RecordInternStats enables instrumentation of the session's intern table.
@@ -78,7 +79,10 @@ func (s *Session) Lower(source *ast.File, errs *report.Report, importer Importer
 }
 
 func (s *Session) init() {
-	s.once.Do(func() { s.intern.Preload(&s.builtins) })
+	s.once.Do(func() {
+		s.intern.Preload(&s.builtins)
+		s.optionalBuiltins = optionalBuiltinIDs(&s.builtins)
+	})
 }
 
 func lower(file *File, r *report.Report, importer Importer) {
@@ -100,10 +104,9 @@ func lower(file *File, r *report.Report, importer Importer) {
 	mergeImportedSymbolTables(file, r)
 
 	// Perform "early" name resolution, i.e. field names and extension types.
-	if !resolveNames(file, r) {
-		// An invalid descriptor.proto was found, stop lowering the file.
-		return
-	}
+	// Name resolution always proceeds regardless of builtin validity; field
+	// types, method types, and extensions use the symbol table, not builtins.
+	resolveNames(file, r)
 	resolveEarlyOptions(file)
 
 	// Perform constant evaluation.
