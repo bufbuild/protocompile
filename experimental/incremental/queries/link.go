@@ -82,7 +82,7 @@ func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
 			}
 		}
 	}
-	allFiles := append(files, slices.Collect(maps.Values(seen))...)
-	ir.DedupExtensions(t.Report(), allFiles...)
+	// Make a copy of the files slice
+	ir.DedupExtensions(t.Report(), slices.Concat(files, slices.Collect(maps.Values(seen)))...)
 	return files, nil
 }
