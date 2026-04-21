@@ -15,7 +15,6 @@
 package queries
 
 import (
-	"maps"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/incremental"
@@ -75,14 +74,20 @@ func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
 	// Extension numbers are not deduped among imports during the IR queries, so all imported
 	// files are added to this check. We avoid adding duplicated imported files.
 	seen := make(map[string]*ir.File)
+	var requiredImports []*ir.File
 	for _, file := range files {
+		// We will already include all linked files
+		if exists := seen[file.Path()]; exists == nil {
+			seen[file.Path()] = file
+		}
 		for imp := range seq.Values(file.Imports()) {
 			if exists := seen[imp.Path()]; exists == nil {
 				seen[imp.Path()] = imp.File
+				requiredImports = append(requiredImports, imp.File)
 			}
 		}
 	}
 	// Make a copy of the files slice
-	ir.DedupExtensions(t.Report(), slices.Concat(files, slices.Collect(maps.Values(seen)))...)
+	ir.DedupExtensions(t.Report(), slices.Concat(files, requiredImports)...)
 	return files, nil
 }
