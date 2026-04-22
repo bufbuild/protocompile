@@ -74,14 +74,12 @@ func (l Link) Execute(t *incremental.Task) ([]*ir.File, error) {
 	ir.DedupExportedSymbols(t.Report(), files...)
 	// Extension numbers are not deduped among imports during the IR queries, so all imported
 	// files are added to this check. We avoid adding duplicated imported files.
-	seen := make(map[string]*ir.File)
+	seen := make(map[string]*ir.File, len(files))
+	for _, file := range files {
+		seen[file.Path()] = file
+	}
 	var requiredImports []*ir.File
 	for _, file := range files {
-		// We will already include all linked files
-		mapsx.Add(seen, file.Path(), file)
-		if exists := seen[file.Path()]; exists == nil {
-			seen[file.Path()] = file
-		}
 		for imp := range seq.Values(file.Imports()) {
 			file, inserted := mapsx.Add(seen, imp.Path(), imp.File)
 			if inserted {
