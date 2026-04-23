@@ -91,6 +91,17 @@ func TestBlockComments(t *testing.T) {
 		"\n Line 1\n",
 		18,
 	)
+	testBlockComments(
+		t,
+		"multi-line block with blank line",
+		`/*
+  A block comment
+
+  with new lines preserved.
+*/`,
+		"\nA block comment\n\nwith new lines preserved.\n",
+		52,
+	)
 }
 
 func testBlockComments(t *testing.T, test, text, expectedComments string, blockLen int) {

@@ -84,6 +84,13 @@ enum Baz { // This is a trailing comment for enum Baz.
   BAZ_ONE = 0;
 } // This is NOT a trailing comment for Baz. It is discarded.
 
+/*
+  A block comment
+
+  with new lines preserved.
+*/
+message Qux {}
+
 // This is the leading comment for service FooService.
 service FooService { // This is a trailing comment for service FooService.
   // Leading comment for method FooForBar.

@@ -1,5 +1,5 @@
 "testdata/comments/attribution.proto":
-- { path: "", start: { line: 16, column: 0 }, end: { line: 102, column: 1 } }
+- { path: "", start: { line: 16, column: 0 }, end: { line: 109, column: 1 } }
 - path: ".syntax"
   start: { line: 16, column: 0 }
   end: { line: 16, column: 17 }
@@ -191,81 +191,88 @@
 - path: ".enum_type[Baz].value[BAZ_ONE].number"
   start: { line: 83, column: 12 }
   end: { line: 83, column: 13 }
+- path: ".message_type[Qux]"
+  start: { line: 91, column: 0 }
+  end: { line: 91, column: 14 }
+  leading: "\nA block comment\n\nwith new lines preserved.\n"
+- path: ".message_type[Qux].name"
+  start: { line: 91, column: 8 }
+  end: { line: 91, column: 11 }
 - path: ".service[FooService]"
-  start: { line: 87, column: 0 }
-  end: { line: 94, column: 1 }
+  start: { line: 94, column: 0 }
+  end: { line: 101, column: 1 }
   leading: " This is the leading comment for service FooService.\n"
   trailing: " This is a trailing comment for service FooService."
 - path: ".service[FooService].name"
-  start: { line: 87, column: 8 }
-  end: { line: 87, column: 18 }
+  start: { line: 94, column: 8 }
+  end: { line: 94, column: 18 }
 - path: ".service[FooService].method[FooForBar]"
-  start: { line: 89, column: 2 }
-  end: { line: 89, column: 35 }
+  start: { line: 96, column: 2 }
+  end: { line: 96, column: 35 }
   leading: " Leading comment for method FooForBar.\n"
   trailing: " Trailing comment for FooForBar."
 - path: ".service[FooService].method[FooForBar].name"
-  start: { line: 89, column: 6 }
-  end: { line: 89, column: 15 }
+  start: { line: 96, column: 6 }
+  end: { line: 96, column: 15 }
 - path: ".service[FooService].method[FooForBar].input_type"
-  start: { line: 89, column: 16 }
-  end: { line: 89, column: 19 }
+  start: { line: 96, column: 16 }
+  end: { line: 96, column: 19 }
 - path: ".service[FooService].method[FooForBar].output_type"
-  start: { line: 89, column: 30 }
-  end: { line: 89, column: 33 }
+  start: { line: 96, column: 30 }
+  end: { line: 96, column: 33 }
 - path: ".service[FooService].method[BarForBar]"
-  start: { line: 92, column: 2 }
-  end: { line: 93, column: 3 }
+  start: { line: 99, column: 2 }
+  end: { line: 100, column: 3 }
   leading: " Leading comment for method BarForBar.\n"
   trailing: " Trailing comment for BarForBar."
 - path: ".service[FooService].method[BarForBar].name"
-  start: { line: 92, column: 6 }
-  end: { line: 92, column: 15 }
+  start: { line: 99, column: 6 }
+  end: { line: 99, column: 15 }
 - path: ".service[FooService].method[BarForBar].input_type"
-  start: { line: 92, column: 16 }
-  end: { line: 92, column: 19 }
+  start: { line: 99, column: 16 }
+  end: { line: 99, column: 19 }
 - path: ".service[FooService].method[BarForBar].output_type"
-  start: { line: 92, column: 30 }
-  end: { line: 92, column: 33 }
+  start: { line: 99, column: 30 }
+  end: { line: 99, column: 33 }
 - path: ".extension"
-  start: { line: 96, column: 0 }
-  end: { line: 98, column: 1 }
+  start: { line: 103, column: 0 }
+  end: { line: 105, column: 1 }
 - path: ".extension[c].extendee"
-  start: { line: 96, column: 7 }
-  end: { line: 96, column: 35 }
+  start: { line: 103, column: 7 }
+  end: { line: 103, column: 35 }
 - path: ".extension[c].label"
-  start: { line: 97, column: 2 }
-  end: { line: 97, column: 10 }
+  start: { line: 104, column: 2 }
+  end: { line: 104, column: 10 }
 - path: ".extension[c]"
-  start: { line: 97, column: 2 }
-  end: { line: 97, column: 26 }
+  start: { line: 104, column: 2 }
+  end: { line: 104, column: 26 }
 - path: ".extension[c].type"
-  start: { line: 97, column: 11 }
-  end: { line: 97, column: 16 }
+  start: { line: 104, column: 11 }
+  end: { line: 104, column: 16 }
 - path: ".extension[c].name"
-  start: { line: 97, column: 17 }
-  end: { line: 97, column: 18 }
+  start: { line: 104, column: 17 }
+  end: { line: 104, column: 18 }
 - path: ".extension[c].number"
-  start: { line: 97, column: 21 }
-  end: { line: 97, column: 25 }
+  start: { line: 104, column: 21 }
+  end: { line: 104, column: 25 }
 - path: ".extension"
-  start: { line: 100, column: 0 }
-  end: { line: 102, column: 1 }
+  start: { line: 107, column: 0 }
+  end: { line: 109, column: 1 }
 - path: ".extension[a].extendee"
-  start: { line: 100, column: 7 }
-  end: { line: 100, column: 37 }
+  start: { line: 107, column: 7 }
+  end: { line: 107, column: 37 }
 - path: ".extension[a].label"
-  start: { line: 101, column: 2 }
-  end: { line: 101, column: 10 }
+  start: { line: 108, column: 2 }
+  end: { line: 108, column: 10 }
 - path: ".extension[a]"
-  start: { line: 101, column: 2 }
-  end: { line: 101, column: 26 }
+  start: { line: 108, column: 2 }
+  end: { line: 108, column: 26 }
 - path: ".extension[a].type"
-  start: { line: 101, column: 11 }
-  end: { line: 101, column: 16 }
+  start: { line: 108, column: 11 }
+  end: { line: 108, column: 16 }
 - path: ".extension[a].name"
-  start: { line: 101, column: 17 }
-  end: { line: 101, column: 18 }
+  start: { line: 108, column: 17 }
+  end: { line: 108, column: 18 }
 - path: ".extension[a].number"
-  start: { line: 101, column: 21 }
-  end: { line: 101, column: 25 }
+  start: { line: 108, column: 21 }
+  end: { line: 108, column: 25 }

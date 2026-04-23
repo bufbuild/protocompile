@@ -37,6 +37,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_STRING
       json_name: "barbar"
+  - name: "Qux"
   enum_type: [{ name: "Baz", value: [{ name: "BAZ_ONE", number: 0 }] }]
   service:
   - name: "FooService"
