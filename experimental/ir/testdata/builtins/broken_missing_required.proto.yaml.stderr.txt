@@ -1,18 +1,4 @@
 error: `google/protobuf/descriptor.proto` is missing required symbol
-       `google.protobuf.DescriptorProto.ExtensionRange.options`
-  --> google/protobuf/descriptor.proto:1:1
-   |
- 1 |   syntax = "proto2";
-   |  ^
- 2 | / package google.protobuf;
-...  |
-14 | | }
-   | \_^
-   = help: the descriptor.proto supplied to the compiler does not declare this
-           message field; it may be vendored from a version that predates this
-           symbol, or may be genuinely corrupt
-
-error: `google/protobuf/descriptor.proto` is missing required symbol
        `google.protobuf.DescriptorProto.options`
   --> google/protobuf/descriptor.proto:1:1
    |
@@ -375,5 +361,15 @@ error: `google/protobuf/descriptor.proto` is missing required symbol
    = help: the descriptor.proto supplied to the compiler does not declare this
            message field; it may be vendored from a version that predates this
            symbol, or may be genuinely corrupt
+
+error: cannot resolve option setting
+  --> test.proto:4:8
+   |
+ 4 | option go_package = "example.com";
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ::: google/protobuf/descriptor.proto:1:1
+   |
+ 1 | syntax = "proto2";
+   | ------------------ resolved against this descriptor.proto
 
 encountered 27 errors

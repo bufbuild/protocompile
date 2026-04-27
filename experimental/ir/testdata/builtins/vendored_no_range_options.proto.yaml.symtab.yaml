@@ -1,0 +1,9 @@
+tables:
+  "test.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "test.proto" }
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "test.proto"
+      index: 1
+      visible: true
