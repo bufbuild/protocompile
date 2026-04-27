@@ -108,6 +108,7 @@ func resolveEarlyOptions(file *File) {
 // resolveOptions resolves all of the options in a file.
 func resolveOptions(file *File, r *report.Report) {
 	builtins := file.builtins()
+	ids := &file.session.builtins
 	bodyOptions := func(decls seq.Inserter[ast.DeclAny]) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(decls), func(d ast.DeclAny) (ast.Option, bool) {
 			def := d.AsDef()
@@ -126,8 +127,9 @@ func resolveOptions(file *File, r *report.Report) {
 			scope: file.Package(),
 			def:   def,
 
-			field: builtins.FileOptions,
-			raw:   &file.options,
+			field:    builtins.FileOptions,
+			fieldFQN: ids.FileOptions,
+			raw:      &file.options,
 		}.resolve()
 	}
 
@@ -141,8 +143,10 @@ func resolveOptions(file *File, r *report.Report) {
 
 		for def := range bodyOptions(ty.AST().Body().Decls()) {
 			options := builtins.MessageOptions
+			optionsFQN := ids.MessageOptions
 			if ty.IsEnum() {
 				options = builtins.EnumOptions
+				optionsFQN = ids.EnumOptions
 			}
 			optionRef{
 				File:   file,
@@ -151,16 +155,19 @@ func resolveOptions(file *File, r *report.Report) {
 				scope: ty.Scope(),
 				def:   def,
 
-				field: options,
-				raw:   &ty.Raw().options,
+				field:    options,
+				fieldFQN: optionsFQN,
+				raw:      &ty.Raw().options,
 			}.resolve()
 		}
 
 		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
 				options := builtins.FieldOptions
+				optionsFQN := ids.FieldOptions
 				if ty.IsEnum() {
 					options = builtins.EnumValueOptions
+					optionsFQN = ids.EnumValueOptions
 				}
 				optionRef{
 					File:   file,
@@ -169,9 +176,10 @@ func resolveOptions(file *File, r *report.Report) {
 					scope: field.Scope(),
 					def:   def,
 
-					field:  options,
-					raw:    &field.Raw().options,
-					target: field,
+					field:    options,
+					fieldFQN: optionsFQN,
+					raw:      &field.Raw().options,
+					target:   field,
 				}.resolve()
 			}
 		}
@@ -184,8 +192,9 @@ func resolveOptions(file *File, r *report.Report) {
 					scope: ty.Scope(),
 					def:   def,
 
-					field: builtins.OneofOptions,
-					raw:   &oneof.Raw().options,
+					field:    builtins.OneofOptions,
+					fieldFQN: ids.OneofOptions,
+					raw:      &oneof.Raw().options,
 				}.resolve()
 			}
 		}
@@ -206,8 +215,9 @@ func resolveOptions(file *File, r *report.Report) {
 					scope: ty.Scope(),
 					def:   def,
 
-					field: builtins.RangeOptions,
-					raw:   &extns.Raw().options,
+					field:    builtins.RangeOptions,
+					fieldFQN: ids.RangeOptions,
+					raw:      &extns.Raw().options,
 				}.resolve()
 			}
 
@@ -223,9 +233,10 @@ func resolveOptions(file *File, r *report.Report) {
 				scope: field.Scope(),
 				def:   def,
 
-				field:  builtins.FieldOptions,
-				raw:    &field.Raw().options,
-				target: field,
+				field:    builtins.FieldOptions,
+				fieldFQN: ids.FieldOptions,
+				raw:      &field.Raw().options,
+				target:   field,
 			}.resolve()
 		}
 	}
@@ -238,8 +249,9 @@ func resolveOptions(file *File, r *report.Report) {
 				scope: service.FullName(),
 				def:   def,
 
-				field: builtins.ServiceOptions,
-				raw:   &service.Raw().options,
+				field:    builtins.ServiceOptions,
+				fieldFQN: ids.ServiceOptions,
+				raw:      &service.Raw().options,
 			}.resolve()
 		}
 
@@ -252,8 +264,9 @@ func resolveOptions(file *File, r *report.Report) {
 					scope: service.FullName(),
 					def:   def,
 
-					field: builtins.MethodOptions,
-					raw:   &method.Raw().options,
+					field:    builtins.MethodOptions,
+					fieldFQN: ids.MethodOptions,
+					raw:      &method.Raw().options,
 				}.resolve()
 			}
 		}
@@ -398,12 +411,55 @@ type optionRef struct {
 	field Member
 	raw   *id.ID[Value]
 
+	// fieldFQN is the interned FQN of the *Options builtin field that field
+	// resolves to. It is set even when field is zero (because the vendored
+	// descriptor.proto does not declare it), so the diagnostic emitted on the
+	// zero-field path can name the missing symbol.
+	fieldFQN intern.ID
+
 	// A member being annotated. This is used for pseudo-option resolution.
 	target Member
 }
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
+	// If the *Options builtin we are resolving into is unresolved, we cannot
+	// resolve the option ref. This is the case when an invalid descriptor.proto
+	// has been vendored (missing a required builtin) or when the user wrote an
+	// option targeting an optional descriptor.proto field that the vendored
+	// copy predates. In both cases we bail out before the resolver attempts to
+	// dereference the zero builtin, which would otherwise panic in
+	// [Member.toRef] and [newMessage].
+	//
+	// Note that `protoc` does not respect vendored descriptor.protos for option
+	// resolution; it always uses its own internally-bundled copy. This compiler
+	// and the legacy compiler both honor the vendored descriptor.proto so that
+	// users can depend on their own descriptor.proto files, and so downstream
+	// tooling built on the compiler can provide descriptor.proto (and the
+	// well-known types as a whole).
+	//
+	// We emit a diagnostic at the user's option site so they have a pointer
+	// from their source to the underlying descriptor.proto problem.
+	// [resolveBuiltins] also emits a "missing required symbol" diagnostic on
+	// descriptor.proto for required builtins that is complementary to this error.
+	if r.field.IsZero() {
+		fqn := r.session.intern.Value(r.fieldFQN)
+		d := r.Errorf("cannot resolve %s", taxa.Option).Apply(
+			report.Snippet(r.def),
+		)
+		if dpFile := r.imports.DescriptorProto(); dpFile != nil {
+			d.Apply(report.Snippetf(dpFile.AST().Syntax(),
+				"resolved against this descriptor.proto"))
+		}
+		if _, optional := r.session.optionalBuiltins[r.fieldFQN]; optional {
+			d.Apply(report.Helpf(
+				"`%s` is not declared by this descriptor.proto; "+
+					"use a newer descriptor.proto or remove this option",
+				fqn))
+		}
+		return
+	}
+
 	ids := &r.session.builtins
 	root := r.field.Element()
 

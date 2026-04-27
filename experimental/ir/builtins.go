@@ -42,7 +42,7 @@ type builtins struct {
 	MessageOptions   Member
 	FieldOptions     Member
 	OneofOptions     Member
-	RangeOptions     Member
+	RangeOptions     Member `builtin:"optional"`
 	EnumOptions      Member
 	EnumValueOptions Member
 	ServiceOptions   Member
