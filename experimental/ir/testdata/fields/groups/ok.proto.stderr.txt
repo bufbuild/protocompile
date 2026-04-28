@@ -1,21 +1,21 @@
 warning: group syntax is deprecated
-  --> testdata/fields/groups/ok.proto:23:14
+  --> testdata/fields/groups/ok.proto:9:14
    |
-23 |     optional group FooBar = 1 {
+ 9 |     optional group FooBar = 1 {
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 warning: group syntax is deprecated
-  --> testdata/fields/groups/ok.proto:27:18
+  --> testdata/fields/groups/ok.proto:13:18
    |
-27 |         repeated group X_Y_Z = 2 [deprecated = true] {
+13 |         repeated group X_Y_Z = 2 [deprecated = true] {
    |                  ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 warning: group syntax is deprecated
-  --> testdata/fields/groups/ok.proto:28:22
+  --> testdata/fields/groups/ok.proto:14:22
    |
-28 |             required group Baz = 3 {}
+14 |             required group Baz = 3 {}
    |                      ^^^^^
    = note: group syntax is not available in proto3 or editions
 

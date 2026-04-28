@@ -1,7 +1,7 @@
 error: unexpected `{...}` in expression
-  --> testdata/parser/option/broken_angle.proto:21:1
+  --> testdata/parser/option/broken_angle.proto:7:1
    |
-21 | };
+ 7 | };
    | ^ expected expression
 
 encountered 1 error

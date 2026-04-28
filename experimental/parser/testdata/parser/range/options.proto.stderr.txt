@@ -1,7 +1,7 @@
 error: reserved range cannot specify compact options
-  --> testdata/parser/range/options.proto:21:16
+  --> testdata/parser/range/options.proto:7:16
    |
-21 |     reserved 1 [(allowed) = false];
+ 7 |     reserved 1 [(allowed) = false];
    |                ^^^^^^^^^^^^^^^^^^^ help: remove this
 
 encountered 1 error

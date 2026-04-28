@@ -1,11 +1,11 @@
 error: the value of a `syntax` declaration must be a string literal
-  --> testdata/syntax/proto2_unquoted.proto:16:10
+  --> testdata/syntax/proto2_unquoted.proto:2:10
    |
-16 | syntax = proto2;
+ 2 | syntax = proto2;
    |          ^^^^^^
   help: add quotes to make this a string literal
    |
-16 | syntax = "proto2";
+ 2 | syntax = "proto2";
    |          +      +
 
 encountered 1 error

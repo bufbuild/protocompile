@@ -1,7 +1,7 @@
 error: `syntax` declaration cannot specify compact options
-  --> testdata/parser/syntax/options.proto:15:19
+  --> testdata/parser/syntax/options.proto:1:19
    |
-15 | syntax = "proto2" [(not.allowed) = "here"];
+ 1 | syntax = "proto2" [(not.allowed) = "here"];
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 encountered 1 error

@@ -1,48 +1,48 @@
 error: unexpected range expression in option setting value
-  --> testdata/parser/option/values.proto:32:12
+  --> testdata/parser/option/values.proto:18:12
    |
-32 | option x = x to y;
+18 | option x = x to y;
    |            ^^^^^^
 
 error: unexpected array expression in option setting value
-  --> testdata/parser/option/values.proto:34:12
+  --> testdata/parser/option/values.proto:20:12
    |
-34 | option x = [];
+20 | option x = [];
    |            ^^
   help: delete this option; an empty array expression has no effect
    |
-34 | - option x = [];
+20 | - option x = [];
    |
    = note: array expressions can only appear inside of message expressions
 
 error: unexpected array expression in option setting value
-  --> testdata/parser/option/values.proto:35:12
+  --> testdata/parser/option/values.proto:21:12
    |
-35 | option x = [1];
+21 | option x = [1];
    |            ^^^
   help: delete the brackets; this is equivalent for repeated fields
    |
-35 | - option x = [1];
-35 | + option x = 1;
+21 | - option x = [1];
+21 | + option x = 1;
    |
    = note: array expressions can only appear inside of message expressions
 
 error: unexpected array expression in option setting value
-  --> testdata/parser/option/values.proto:36:12
+  --> testdata/parser/option/values.proto:22:12
    |
-36 | option x = [1, 2];
+22 | option x = [1, 2];
    |            ^^^^^^
    = note: array expressions can only appear inside of message expressions
 
 error: cannot use `<...>` for message expression here
-  --> testdata/parser/option/values.proto:38:12
+  --> testdata/parser/option/values.proto:24:12
    |
-38 | option x = <>:
+24 | option x = <>:
    |            ^^
   help: use `{...}` instead
    |
-38 | - option x = <>:
-38 | + option x = {}:
+24 | - option x = <>:
+24 | + option x = {}:
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -50,31 +50,31 @@ error: cannot use `<...>` for message expression here
            recommended
 
 error: unexpected `:` after definition
-  --> testdata/parser/option/values.proto:38:14
+  --> testdata/parser/option/values.proto:24:14
    |
-38 | option x = <>:
+24 | option x = <>:
    |              ^ expected `;`
    |
   help: consider inserting a `;`
    |
-38 | option x = <>;:
+24 | option x = <>;:
    |              +
 
 error: unexpected `:` in file scope
-  --> testdata/parser/option/values.proto:38:14
+  --> testdata/parser/option/values.proto:24:14
    |
-38 | option x = <>:
+24 | option x = <>:
    |              ^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: cannot use `<...>` for message expression here
-  --> testdata/parser/option/values.proto:39:12
+  --> testdata/parser/option/values.proto:25:12
    |
-39 | option x = <a: 42>;
+25 | option x = <a: 42>;
    |            ^^^^^^^
   help: use `{...}` instead
    |
-39 | - option x = <a: 42>;
-39 | + option x = {a: 42};
+25 | - option x = <a: 42>;
+25 | + option x = {a: 42};
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -82,66 +82,66 @@ error: cannot use `<...>` for message expression here
            recommended
 
 error: unexpected range expression in option setting value
-  --> testdata/parser/option/values.proto:57:8
+  --> testdata/parser/option/values.proto:43:8
    |
-57 |     x: x to y
+43 |     x: x to y
    |        ^^^^^^
 
 error: unexpected identifier in message expression
-  --> testdata/parser/option/values.proto:59:5
+  --> testdata/parser/option/values.proto:45:5
    |
-59 |     x
+45 |     x
    |     ^ expected message field value
 
 warning: empty array expression has no effect
-  --> testdata/parser/option/values.proto:61:8
+  --> testdata/parser/option/values.proto:47:8
    |
-61 |     x: []
+47 |     x: []
    |        ^^
   help: delete this message field value
    |
-61 | -     x: []
+47 | -     x: []
    |
    = note: repeated fields do not distinguish "empty" and "missing" states
 
 error: nested array expressions are not allowed
-  --> testdata/parser/option/values.proto:64:18
+  --> testdata/parser/option/values.proto:50:18
    |
-64 |     x: [1, 2, 3, [4, 5, [6]]]
+50 |     x: [1, 2, 3, [4, 5, [6]]]
    |        ----------^^^^^^^^^^^- ...within this array expression
    |                   |
    |                   cannot nest this array expression...
 
 error: nested array expressions are not allowed
-  --> testdata/parser/option/values.proto:66:9
+  --> testdata/parser/option/values.proto:52:9
    |
-65 |       x: [
+51 |       x: [
    |  _______-
-66 | /         [1],
+52 | /         [1],
    | |         ^^^ cannot nest this array expression...
-67 | |     ]
+53 | |     ]
    | \_____- ...within this array expression
 
 error: unexpected trailing `,` in array expression
-  --> testdata/parser/option/values.proto:66:12
+  --> testdata/parser/option/values.proto:52:12
    |
-66 |         [1],
+52 |         [1],
    |            ^
   help: delete this `,`
    |
-66 | -         [1],
-66 | +         [1]
+52 | -         [1],
+52 | +         [1]
    |
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:69:8
+  --> testdata/parser/option/values.proto:55:8
    |
-69 |     x: <>
+55 |     x: <>
    |        ^^
   help: use `{...}` instead
    |
-69 | -     x: <>
-69 | +     x: {}
+55 | -     x: <>
+55 | +     x: {}
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -149,14 +149,14 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:70:8
+  --> testdata/parser/option/values.proto:56:8
    |
-70 |     x: <a: 42>
+56 |     x: <a: 42>
    |        ^^^^^^^
   help: use `{...}` instead
    |
-70 | -     x: <a: 42>
-70 | +     x: {a: 42}
+56 | -     x: <a: 42>
+56 | +     x: {a: 42}
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -164,14 +164,14 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:71:8
+  --> testdata/parser/option/values.proto:57:8
    |
-71 |     x: <a: <a: 42>>
+57 |     x: <a: <a: 42>>
    |        ^^^^^^^^^^^^
   help: use `{...}` instead
    |
-71 | -     x: <a: <a: 42>>
-71 | +     x: {a: <a: 42>}
+57 | -     x: <a: <a: 42>>
+57 | +     x: {a: <a: 42>}
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -179,14 +179,14 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:71:12
+  --> testdata/parser/option/values.proto:57:12
    |
-71 |     x: <a: <a: 42>>
+57 |     x: <a: <a: 42>>
    |            ^^^^^^^
   help: use `{...}` instead
    |
-71 | -     x: <a: <a: 42>>
-71 | +     x: <a: {a: 42}>
+57 | -     x: <a: <a: 42>>
+57 | +     x: <a: {a: 42}>
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -194,14 +194,14 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:75:7
+  --> testdata/parser/option/values.proto:61:7
    |
-75 |     x <a: 42>
+61 |     x <a: 42>
    |       ^^^^^^^
   help: use `{...}` instead
    |
-75 | -     x <a: 42>
-75 | +     x {a: 42}
+61 | -     x <a: 42>
+61 | +     x {a: 42}
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -209,14 +209,14 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 warning: using `<...>` for message expression is not recommended
-  --> testdata/parser/option/values.proto:76:7
+  --> testdata/parser/option/values.proto:62:7
    |
-76 |     x <a: 42, b: 43>
+62 |     x <a: 42, b: 43>
    |       ^^^^^^^^^^^^^^
   help: use `{...}` instead
    |
-76 | -     x <a: 42, b: 43>
-76 | +     x {a: 42, b: 43}
+62 | -     x <a: 42, b: 43>
+62 | +     x {a: 42, b: 43}
    |
    = note: `<...>` are only permitted for sub-messages within a message
            expression, but as top-level option values
@@ -224,93 +224,93 @@ warning: using `<...>` for message expression is not recommended
            recommended
 
 error: unexpected identifier in message expression
-  --> testdata/parser/option/values.proto:80:5
+  --> testdata/parser/option/values.proto:66:5
    |
-80 |     x3 17 to {}
+66 |     x3 17 to {}
    |     ^^ expected message field value
 
 error: unexpected integer literal in message expression
-  --> testdata/parser/option/values.proto:80:8
+  --> testdata/parser/option/values.proto:66:8
    |
-80 |     x3 17 to {}
+66 |     x3 17 to {}
    |        ^^ expected message field value
 
 error: unexpected range expression in option setting value
-  --> testdata/parser/option/values.proto:81:8
+  --> testdata/parser/option/values.proto:67:8
    |
-81 |     x4 {} to 91
+67 |     x4 {} to 91
    |        ^^^^^^^^
 
 error: cannot name extension field using `(...)` in message expression
-  --> testdata/parser/option/values.proto:91:5
+  --> testdata/parser/option/values.proto:77:5
    |
-91 |     (x.y): 42
+77 |     (x.y): 42
    |     ^^^^^ expected this to be wrapped in `[...]` instead
    |
   help: replace the `(...)` with `[...]`
    |
-91 | -     (x.y): 42
-91 | +     [x.y]: 42
+77 | -     (x.y): 42
+77 | +     [x.y]: 42
    |
 
 error: unexpected absolute path in extension name
-  --> testdata/parser/option/values.proto:96:6
+  --> testdata/parser/option/values.proto:82:6
    |
-96 |     [.x.y]: 42
+82 |     [.x.y]: 42
    |      ^^^^ expected a path without a leading `.`
    |
   help: remove the leading `.`
    |
-96 | -     [.x.y]: 42
-96 | +     [x.y]: 42
+82 | -     [.x.y]: 42
+82 | +     [x.y]: 42
    |
 
 error: unexpected array expression in message field value
-  --> testdata/parser/option/values.proto:97:5
+  --> testdata/parser/option/values.proto:83:5
    |
-97 |     [x, y, z]: 42
+83 |     [x, y, z]: 42
    |     ^^^^^^^^^
    |      |
    |      expected message field name, extension name, or `Any` type URL
 
 error: unexpected array expression in message field value
-  --> testdata/parser/option/values.proto:98:5
+  --> testdata/parser/option/values.proto:84:5
    |
-98 |     []: 42
+84 |     []: 42
    |     ^^ expected message field name, extension name, or `Any` type URL
 
 error: type URL can only contain a single `/`
-   --> testdata/parser/option/values.proto:100:17
-    |
-100 |     [buf.build/x/y]: 42
-    |               - ^
-    |               |
-    |               first one is here
+  --> testdata/parser/option/values.proto:86:17
+   |
+86 |     [buf.build/x/y]: 42
+   |               - ^
+   |               |
+   |               first one is here
 
 error: unexpected integer literal in array expression
-   --> testdata/parser/option/values.proto:102:16
-    |
-102 |     x [{x: 5}, 1, <x: 5>, 2, 3],
-    |     -          ^ expected message expression
-    |     |
-    |     because this message field value is missing a `:`
-    |
-    = note: the `:` can be omitted in a message field value, but only if the
-            value is a message expression or a array expression of them
+  --> testdata/parser/option/values.proto:88:16
+   |
+88 |     x [{x: 5}, 1, <x: 5>, 2, 3],
+   |     -          ^ expected message expression
+   |     |
+   |     because this message field value is missing a `:`
+   |
+   = note: the `:` can be omitted in a message field value, but only if the
+           value is a message expression or a array expression of them
 
 warning: using `<...>` for message expression is not recommended
-   --> testdata/parser/option/values.proto:102:19
-    |
-102 |     x [{x: 5}, 1, <x: 5>, 2, 3],
-    |                   ^^^^^^
-   help: use `{...}` instead
-    |
-102 | -     x [{x: 5}, 1, <x: 5>, 2, 3],
-102 | +     x [{x: 5}, 1, {x: 5}, 2, 3],
-    |
-    = note: `<...>` are only permitted for sub-messages within a message
-            expression, but as top-level option values
-    = help: `<...>` message expressions are an obscure feature and not
-            recommended
+  --> testdata/parser/option/values.proto:88:19
+   |
+88 |     x [{x: 5}, 1, <x: 5>, 2, 3],
+   |                   ^^^^^^
+  help: use `{...}` instead
+   |
+88 | -     x [{x: 5}, 1, <x: 5>, 2, 3],
+88 | +     x [{x: 5}, 1, {x: 5}, 2, 3],
+   |
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
 encountered 22 errors and 8 warnings

@@ -1,146 +1,146 @@
 error: unexpected range expression in message field tag
-  --> testdata/tags/fields.proto:60:25
+  --> testdata/tags/fields.proto:46:25
    |
-60 |     optional int32 m3 = 1 to 2;
+46 |     optional int32 m3 = 1 to 2;
    |                         ^^^^^^
 
 error: unexpected `:` after definition
-  --> testdata/tags/fields.proto:61:26
+  --> testdata/tags/fields.proto:47:26
    |
-61 |     optional int32 m4 = a: 2;
+47 |     optional int32 m4 = a: 2;
    |                          ^ expected `;`
    |
   help: consider inserting a `;`
    |
-61 |     optional int32 m4 = a;: 2;
+47 |     optional int32 m4 = a;: 2;
    |                          +
 
 error: unexpected tokens in message definition
-  --> testdata/tags/fields.proto:61:26
+  --> testdata/tags/fields.proto:47:26
    |
-61 |     optional int32 m4 = a: 2;
+47 |     optional int32 m4 = a: 2;
    |                          ^^^
    |                          |
    |                          expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: encountered more than one message field tag
-  --> testdata/tags/fields.proto:62:27
+  --> testdata/tags/fields.proto:48:27
    |
-62 |     optional int32 m5 = a = 2;
+48 |     optional int32 m5 = a = 2;
    |                       --- ^^^ help: consider removing this
    |                       |
    |                       first one is here
 
 error: field number `2` used more than once
-  --> testdata/tags/fields.proto:22:25
+  --> testdata/tags/fields.proto:8:25
    |
-21 |     optional int32 y = 2;
+ 7 |     optional int32 y = 2;
    |                        - previously used here
-22 |     optional int32 y2 = 2;
+ 8 |     optional int32 y2 = 2;
    |                         ^ used here
 
 error: field number out of range
-  --> testdata/tags/fields.proto:24:25
+  --> testdata/tags/fields.proto:10:25
    |
-24 |     optional int32 z1 = 0;
+10 |     optional int32 z1 = 0;
    |                         ^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:25:26
+  --> testdata/tags/fields.proto:11:26
    |
-25 |     optional int32 z12 = 0;
+11 |     optional int32 z12 = 0;
    |                          ^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:27:25
+  --> testdata/tags/fields.proto:13:25
    |
-27 |     optional int32 z3 = 0x20000000;
+13 |     optional int32 z3 = 0x20000000;
    |                         ^^^^^^^^^^
    = note: the range for field numbers is `0x1 to 0x1fffffff`,
            minus `0x4a38 to 0x4e1f`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:28:25
+  --> testdata/tags/fields.proto:14:25
    |
-28 |     optional int32 z4 = 0Xffffffff;
+14 |     optional int32 z4 = 0Xffffffff;
    |                         ^^^^^^^^^^
    = note: the range for field numbers is `0X1 to 0X1fffffff`,
            minus `0X4a38 to 0X4e1f`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:29:25
+  --> testdata/tags/fields.proto:15:25
    |
-29 |     optional int32 z5 = 04777777777;
+15 |     optional int32 z5 = 04777777777;
    |                         ^^^^^^^^^^^
    = note: the range for field numbers is `01 to 03777777777`,
            minus `045070 to 047037`, which is reserved for internal use
 
 error: `z6` declared multiple times
-  --> testdata/tags/fields.proto:31:20
+  --> testdata/tags/fields.proto:17:20
    |
-31 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
+17 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
    |                    ^^ first here, as a message field
-32 |
-33 |     optional int32 z6 = -1;
+18 |
+19 |     optional int32 z6 = -1;
    |                    -- ...also declared here
 
 error: field number out of range
-  --> testdata/tags/fields.proto:31:25
+  --> testdata/tags/fields.proto:17:25
    |
-31 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
+17 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the range for field numbers is `0x1 to 0x1fffffff`,
            minus `0x4a38 to 0x4e1f`, which is reserved for internal use
 
 warning: message fields have the same JSON name
-  --> testdata/tags/fields.proto:33:20
+  --> testdata/tags/fields.proto:19:20
    |
-31 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
+17 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
    |                    -- this implies JSON name `z6`
-32 |
-33 |     optional int32 z6 = -1;
+18 |
+19 |     optional int32 z6 = -1;
    |                    ^^ this also implies that name
 
 error: field number out of range
-  --> testdata/tags/fields.proto:33:25
+  --> testdata/tags/fields.proto:19:25
    |
-33 |     optional int32 z6 = -1;
+19 |     optional int32 z6 = -1;
    |                         ^^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:35:25
+  --> testdata/tags/fields.proto:21:25
    |
-35 |     optional int32 r1 = 19000;
+21 |     optional int32 r1 = 19000;
    |                         ^^^^^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:36:25
+  --> testdata/tags/fields.proto:22:25
    |
-36 |     optional int32 r2 = 19001;
+22 |     optional int32 r2 = 19001;
    |                         ^^^^^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/fields.proto:37:25
+  --> testdata/tags/fields.proto:23:25
    |
-37 |     optional int32 r3 = 19999;
+23 |     optional int32 r3 = 19999;
    |                         ^^^^^
    = note: the range for field numbers is `1 to 536870911`,
            minus `19000 to 19999`, which is reserved for internal use
 
 error: mismatched types
-  --> testdata/tags/fields.proto:42:25
+  --> testdata/tags/fields.proto:28:25
    |
-42 |     optional float f1 = 1.0;
+28 |     optional float f1 = 1.0;
    |                         ^^^
    |                         |
    |                         expected field number, found floating-point literal
@@ -149,9 +149,9 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:43:25
+  --> testdata/tags/fields.proto:29:25
    |
-43 |     optional float f2 = -1.0;
+29 |     optional float f2 = -1.0;
    |                         ^^^^
    |                          |
    |                          expected field number, found floating-point literal
@@ -160,9 +160,9 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:44:25
+  --> testdata/tags/fields.proto:30:25
    |
-44 |     optional float f3 = inf;
+30 |     optional float f3 = inf;
    |                         ^^^
    |                         |
    |                         expected field number, found floating-point literal
@@ -171,9 +171,9 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:45:25
+  --> testdata/tags/fields.proto:31:25
    |
-45 |     optional float f4 = -inf;
+31 |     optional float f4 = -inf;
    |                         ^^^^
    |                          |
    |                          expected field number, found floating-point literal
@@ -182,9 +182,9 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:46:25
+  --> testdata/tags/fields.proto:32:25
    |
-46 |     optional float f5 = nan;
+32 |     optional float f5 = nan;
    |                         ^^^
    |                         |
    |                         expected field number, found floating-point literal
@@ -193,9 +193,9 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:47:25
+  --> testdata/tags/fields.proto:33:25
    |
-47 |     optional float f6 = -nan;
+33 |     optional float f6 = -nan;
    |                         ^^^^
    |                          |
    |                          expected field number, found floating-point literal
@@ -204,61 +204,61 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:49:24
+  --> testdata/tags/fields.proto:35:24
    |
-49 |     optional bool b1 = false;
+35 |     optional bool b1 = false;
    |                        ^^^^^ expected field number, found `bool`
    |
    = note: expected: field number
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:50:24
+  --> testdata/tags/fields.proto:36:24
    |
-50 |     optional bool b2 = true;
+36 |     optional bool b2 = true;
    |                        ^^^^ expected field number, found `bool`
    |
    = note: expected: field number
               found: scalar type `bool`
 
 error: `max` outside of range end
-  --> testdata/tags/fields.proto:51:24
+  --> testdata/tags/fields.proto:37:24
    |
-51 |     optional bool b3 = max;
+37 |     optional bool b3 = max;
    |                        ^^^
    = note: the special `max` expression can only be used at the end of a range
 
 error: mismatched types
-  --> testdata/tags/fields.proto:53:26
+  --> testdata/tags/fields.proto:39:26
    |
-53 |     optional string s1 = "";
+39 |     optional string s1 = "";
    |                          ^^ expected field number, found `string`
    |
    = note: expected: field number
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:54:26
+  --> testdata/tags/fields.proto:40:26
    |
-54 |     optional string s2 = '';
+40 |     optional string s2 = '';
    |                          ^^ expected field number, found `string`
    |
    = note: expected: field number
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:55:26
+  --> testdata/tags/fields.proto:41:26
    |
-55 |     optional string s3 = "abc";
+41 |     optional string s3 = "abc";
    |                          ^^^^^ expected field number, found `string`
    |
    = note: expected: field number
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:56:26
+  --> testdata/tags/fields.proto:42:26
    |
-56 |     optional string s4 = '\xff\xff\xff';
+42 |     optional string s4 = '\xff\xff\xff';
    |                          ^^^^^^^^^^^^^^
    |                           |
    |                           expected field number, found `string`
@@ -267,27 +267,27 @@ error: mismatched types
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:58:25
+  --> testdata/tags/fields.proto:44:25
    |
-58 |     optional int32 m1 = {};
+44 |     optional int32 m1 = {};
    |                         ^^ expected field number, found message expression
    |
    = note: expected: field number
               found: message expression
 
 error: mismatched types
-  --> testdata/tags/fields.proto:59:25
+  --> testdata/tags/fields.proto:45:25
    |
-59 |     optional int32 m2 = [];
+45 |     optional int32 m2 = [];
    |                         ^^ expected field number, found array expression
    |
    = note: expected: field number
               found: array expression
 
 error: mismatched types
-  --> testdata/tags/fields.proto:60:25
+  --> testdata/tags/fields.proto:46:25
    |
-60 |     optional int32 m3 = 1 to 2;
+46 |     optional int32 m3 = 1 to 2;
    |                         ^^^^^^
    |                          |
    |                          expected field number, found range expression
@@ -296,17 +296,17 @@ error: mismatched types
               found: range expression
 
 error: cannot find `a` in this scope
-  --> testdata/tags/fields.proto:61:25
+  --> testdata/tags/fields.proto:47:25
    |
-61 |     optional int32 m4 = a: 2;
+47 |     optional int32 m4 = a: 2;
    |                         ^ not found in this scope
    |
    = help: the full name of this scope is `test.M`
 
 error: cannot find `a` in this scope
-  --> testdata/tags/fields.proto:62:25
+  --> testdata/tags/fields.proto:48:25
    |
-62 |     optional int32 m5 = a = 2;
+48 |     optional int32 m5 = a = 2;
    |                         ^ not found in this scope
    |
    = help: the full name of this scope is `test.M`

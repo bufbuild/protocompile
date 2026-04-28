@@ -1,60 +1,60 @@
 error: type URL can only contain a single `/`
-  --> testdata/options/values/any.proto:32:32
+  --> testdata/options/values/any.proto:17:32
    |
-32 | option (y) = { [buf.build/types/buf.test.Foo] {
+17 | option (y) = { [buf.build/types/buf.test.Foo] {
    |                          -     ^
    |                          |
    |                          first one is here
 
 error: unsupported domain `buf.build/types` in `Any` type URL
-  --> testdata/options/values/any.proto:32:17
+  --> testdata/options/values/any.proto:17:17
    |
-32 | option (y) = { [buf.build/types/buf.test.Foo] {
+17 | option (y) = { [buf.build/types/buf.test.Foo] {
    |                 ^^^^^^^^^^^^^^^
    = note: The domain must be one of `type.googleapis.com` or
            `type.googleprod.com`. This is a quirk of textformat; the compiler
            does not actually make any network requests.
 
 error: missing domain in `Any` type URL
-  --> testdata/options/values/any.proto:36:16
+  --> testdata/options/values/any.proto:21:16
    |
-36 | option (y) = { [/buf.test.Foo] {
+21 | option (y) = { [/buf.test.Foo] {
    |                ^^^^^^^^^^^^^^^
    = note: The domain must be one of `type.googleapis.com` or
            `type.googleprod.com`. This is a quirk of textformat; the compiler
            does not actually make any network requests.
 
 error: partly-qualified name in `Any` type URL
-  --> testdata/options/values/any.proto:40:37
+  --> testdata/options/values/any.proto:25:37
    |
-40 | option (y) = { [type.googleapis.com/Foo] {
+25 | option (y) = { [type.googleapis.com/Foo] {
    |                                     ^^^ type referenced here
    |
   help: replace with fully qualified name
    |
-40 | - option (y) = { [type.googleapis.com/Foo] {
-40 | + option (y) = { [type.googleapis.com/buf.test.Foo] {
+25 | - option (y) = { [type.googleapis.com/Foo] {
+25 | + option (y) = { [type.googleapis.com/buf.test.Foo] {
    |
    |
    = note: `Any` type URL require fully qualified names
 
 error: unexpected field in `Any` expression
-  --> testdata/options/values/any.proto:67:13
+  --> testdata/options/values/any.proto:52:13
    |
-66 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
+51 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
    |             ----------------------------------
    |              |
    |              expected this to be the only field
-67 |             [type.googleapis.com/google.protobuf.FileOptions]: {}
+52 |             [type.googleapis.com/google.protobuf.FileOptions]: {}
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the `Any` type URL must be the only field
 
 error: unexpected field in `Any` expression
-  --> testdata/options/values/any.proto:70:13
+  --> testdata/options/values/any.proto:55:13
    |
-70 |             type_url: "type.googleapis.com/buf.test.Bar"
+55 |             type_url: "type.googleapis.com/buf.test.Bar"
    |             ^^^^^^^^
-71 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
+56 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
    |             ----------------------------------
    |              |
    |              expected this to be the only field
@@ -62,16 +62,16 @@ error: unexpected field in `Any` expression
    = note: the `Any` type URL must be the only field
 
 error: unexpected field in `Any` expression
-  --> testdata/options/values/any.proto:72:13
+  --> testdata/options/values/any.proto:57:13
    |
-72 |             bytes: "xyz"
+57 |             bytes: "xyz"
    |             ^^^^^
    = note: the `Any` type URL must be the only field
 
 error: mismatched types
-  --> testdata/options/values/any.proto:78:47
+  --> testdata/options/values/any.proto:63:47
    |
-78 |         { [type.googleapis.com/buf.test.Foo]: 42 },
+63 |         { [type.googleapis.com/buf.test.Foo]: 42 },
    |           ----------------------------------  ^^
    |            |                                  |
    |            expected due to this               expected `buf.test.Foo`, found integer literal
@@ -80,30 +80,30 @@ error: mismatched types
               found: integer literal
 
 error: expected message type, found enum type `buf.test.Bar`
-  --> testdata/options/values/any.proto:79:32
+  --> testdata/options/values/any.proto:64:32
    |
-79 |         { [type.googleapis.com/buf.test.Bar]: BAR_ZERO },
+64 |         { [type.googleapis.com/buf.test.Bar]: BAR_ZERO },
    |                                ^^^^^^^^^^^^ expected message type
-80 |         { [type.googleapis.com/buf.test.NotReal]: {} },
+65 |         { [type.googleapis.com/buf.test.NotReal]: {} },
 ...
-92 | enum Bar {
+77 | enum Bar {
    |      --- defined here
 
 error: cannot find `buf.test.NotReal` in this scope
-  --> testdata/options/values/any.proto:80:32
+  --> testdata/options/values/any.proto:65:32
    |
-80 |         { [type.googleapis.com/buf.test.NotReal]: {} },
+65 |         { [type.googleapis.com/buf.test.NotReal]: {} },
    |                                ^^^^^^^^^^^^^^^^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: expected message type, found message field `buf.test.Foo.a`
-  --> testdata/options/values/any.proto:81:32
+  --> testdata/options/values/any.proto:66:32
    |
-81 |         { [type.googleapis.com/buf.test.Foo.a]: 42 }
+66 |         { [type.googleapis.com/buf.test.Foo.a]: 42 }
    |                                ^^^^^^^^^^^^^^ expected message type
 ...
-89 |     repeated google.protobuf.Any a = 3;
+74 |     repeated google.protobuf.Any a = 3;
    |                                  - defined here
 
 encountered 11 errors

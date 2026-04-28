@@ -1,59 +1,59 @@
 error: invalid digit in decimal integer literal
-  --> testdata/parser/option/cel_literals.proto:21:14
+  --> testdata/parser/option/cel_literals.proto:7:14
    |
-21 | option x = 42i32;
+ 7 | option x = 42i32;
    |              ^ expected `0` to `9`
 
 error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:24:8
+  --> testdata/parser/option/cel_literals.proto:10:8
   help: delete it
    |
-24 | -     r: r"""x""",
-24 | +     r: """x""",
+10 | -     r: r"""x""",
+10 | +     r: """x""",
    |
 
 error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:25:8
+  --> testdata/parser/option/cel_literals.proto:11:8
   help: delete it
    |
-25 | -     b: br"""x""",
-25 | +     b: """x""",
+11 | -     b: br"""x""",
+11 | +     b: """x""",
    |
 
 error: unexpected string literal in message expression
-  --> testdata/parser/option/cel_literals.proto:26:10
+  --> testdata/parser/option/cel_literals.proto:12:10
    |
-26 |     b: bR'''x''',
+12 |     b: bR'''x''',
    |          ^^^^^^^ expected message field value
 
 error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:29:8
+  --> testdata/parser/option/cel_literals.proto:15:8
   help: delete it
    |
-29 | -     k: r"x",
-29 | +     k: "x",
+15 | -     k: r"x",
+15 | +     k: "x",
    |
 
 error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:30:8
+  --> testdata/parser/option/cel_literals.proto:16:8
   help: delete it
    |
-30 | -     j: b"",
-30 | +     j: "",
+16 | -     j: b"",
+16 | +     j: "",
    |
 
 error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:32:8
+  --> testdata/parser/option/cel_literals.proto:18:8
   help: delete it
    |
-32 | -     x: r"" b"""""",
-32 | +     x: "" b"""""",
+18 | -     x: r"" b"""""",
+18 | +     x: "" b"""""",
    |
 
 error: implicitly-concatenated string has incompatible prefix
-  --> testdata/parser/option/cel_literals.proto:32:12
+  --> testdata/parser/option/cel_literals.proto:18:12
    |
-32 |     x: r"" b"""""",
+18 |     x: r"" b"""""",
    |        -   ^
    |        |
    |        must match this prefix

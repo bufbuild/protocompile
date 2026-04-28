@@ -4,9 +4,9 @@ warning: missing `package` declaration
            package; using it strongly is discouraged
 
 error: unexpected end-of-file in `syntax` declaration
-  --> testdata/parser/syntax/eof_after_kw.proto:15:7
+  --> testdata/parser/syntax/eof_after_kw.proto:1:7
    |
-15 | syntax
+ 1 | syntax
    |       ^
 
 encountered 1 error and 1 warning

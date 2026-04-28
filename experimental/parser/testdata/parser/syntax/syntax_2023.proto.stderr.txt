@@ -1,12 +1,12 @@
 error: editions must use the `edition` keyword
-  --> testdata/parser/syntax/syntax_2023.proto:15:1
+  --> testdata/parser/syntax/syntax_2023.proto:1:1
    |
-15 | syntax = "2023";
+ 1 | syntax = "2023";
    | ^^^^^^
   help: replace with `edition`
    |
-15 | - syntax = "2023";
-15 | + edition = "2023";
+ 1 | - syntax = "2023";
+ 1 | + edition = "2023";
    |
 
 encountered 1 error

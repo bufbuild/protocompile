@@ -1,234 +1,234 @@
 error: unexpected range expression in enum value
-  --> testdata/tags/values.proto:50:10
+  --> testdata/tags/values.proto:36:10
    |
-50 |     M3 = 1 to 2;
+36 |     M3 = 1 to 2;
    |          ^^^^^^
 
 error: unexpected `:` after definition
-  --> testdata/tags/values.proto:51:11
+  --> testdata/tags/values.proto:37:11
    |
-51 |     M4 = a: 2;
+37 |     M4 = a: 2;
    |           ^ expected `;`
    |
   help: consider inserting a `;`
    |
-51 |     M4 = a;: 2;
+37 |     M4 = a;: 2;
    |           +
 
 error: unexpected tokens in enum definition
-  --> testdata/tags/values.proto:51:11
+  --> testdata/tags/values.proto:37:11
    |
-51 |     M4 = a: 2;
+37 |     M4 = a: 2;
    |           ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: encountered more than one message field tag
-  --> testdata/tags/values.proto:52:12
+  --> testdata/tags/values.proto:38:12
    |
-52 |     M5 = a = 2;
+38 |     M5 = a = 2;
    |        --- ^^^ help: consider removing this
    |        |
    |        first one is here
 
 error: enum value `2` used more than once
-  --> testdata/tags/values.proto:23:10
+  --> testdata/tags/values.proto:9:10
    |
-22 |     Y = 2;
+ 8 |     Y = 2;
    |         - previously used here
-23 |     Y2 = 2;
+ 9 |     Y2 = 2;
    |          ^ used here
 
 error: literal out of range for `int32`
-  --> testdata/tags/values.proto:28:10
+  --> testdata/tags/values.proto:14:10
    |
-28 |     Z4 = 0x80000000;
+14 |     Z4 = 0x80000000;
    |          ^^^^^^^^^^
    = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
 
 error: literal out of range for `int32`
-  --> testdata/tags/values.proto:29:10
+  --> testdata/tags/values.proto:15:10
    |
-29 |     Z5 = -0x80000001;
+15 |     Z5 = -0x80000001;
    |          ^^^^^^^^^^^
    = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
 
 error: literal out of range for `int32`
-  --> testdata/tags/values.proto:30:10
+  --> testdata/tags/values.proto:16:10
    |
-30 |     Z6 = 0xffffffffffffffffffffffffffffffff;
+16 |     Z6 = 0xffffffffffffffffffffffffffffffff;
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
 
 error: mismatched types
-  --> testdata/tags/values.proto:32:10
+  --> testdata/tags/values.proto:18:10
    |
-32 |     F1 = 1.0;
+18 |     F1 = 1.0;
    |          ^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:33:10
+  --> testdata/tags/values.proto:19:10
    |
-33 |     F2 = -1.0;
+19 |     F2 = -1.0;
    |          ^^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:34:10
+  --> testdata/tags/values.proto:20:10
    |
-34 |     F3 = inf;
+20 |     F3 = inf;
    |          ^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:35:10
+  --> testdata/tags/values.proto:21:10
    |
-35 |     F4 = -inf;
+21 |     F4 = -inf;
    |          ^^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:36:10
+  --> testdata/tags/values.proto:22:10
    |
-36 |     F5 = nan;
+22 |     F5 = nan;
    |          ^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:37:10
+  --> testdata/tags/values.proto:23:10
    |
-37 |     F6 = -nan;
+23 |     F6 = -nan;
    |          ^^^^ expected `int32`, found floating-point literal
    |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:39:10
+  --> testdata/tags/values.proto:25:10
    |
-39 |     B1 = false;
+25 |     B1 = false;
    |          ^^^^^ expected `int32`, found `bool`
    |
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/tags/values.proto:40:10
+  --> testdata/tags/values.proto:26:10
    |
-40 |     B2 = true;
+26 |     B2 = true;
    |          ^^^^ expected `int32`, found `bool`
    |
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
 error: `max` outside of range end
-  --> testdata/tags/values.proto:41:10
+  --> testdata/tags/values.proto:27:10
    |
-41 |     B3 = max;
+27 |     B3 = max;
    |          ^^^
    = note: the special `max` expression can only be used at the end of a range
 
 error: mismatched types
-  --> testdata/tags/values.proto:43:10
+  --> testdata/tags/values.proto:29:10
    |
-43 |     S1 = "";
+29 |     S1 = "";
    |          ^^ expected `int32`, found `string`
    |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/values.proto:44:10
+  --> testdata/tags/values.proto:30:10
    |
-44 |     S2 = '';
+30 |     S2 = '';
    |          ^^ expected `int32`, found `string`
    |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/values.proto:45:10
+  --> testdata/tags/values.proto:31:10
    |
-45 |     S3 = "abc";
+31 |     S3 = "abc";
    |          ^^^^^ expected `int32`, found `string`
    |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/values.proto:46:10
+  --> testdata/tags/values.proto:32:10
    |
-46 |     S4 = '\xff\xff\xff';
+32 |     S4 = '\xff\xff\xff';
    |          ^^^^^^^^^^^^^^ expected `int32`, found `string`
    |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/tags/values.proto:48:10
+  --> testdata/tags/values.proto:34:10
    |
-48 |     M1 = {};
+34 |     M1 = {};
    |          ^^ expected `int32`, found message expression
    |
    = note: expected: scalar type `int32`
               found: message expression
 
 error: mismatched types
-  --> testdata/tags/values.proto:49:10
+  --> testdata/tags/values.proto:35:10
    |
-49 |     M2 = [];
+35 |     M2 = [];
    |          ^^ expected `int32`, found array expression
    |
    = note: expected: scalar type `int32`
               found: array expression
 
 error: mismatched types
-  --> testdata/tags/values.proto:50:10
+  --> testdata/tags/values.proto:36:10
    |
-50 |     M3 = 1 to 2;
+36 |     M3 = 1 to 2;
    |          ^^^^^^ expected `int32`, found range expression
    |
    = note: expected: scalar type `int32`
               found: range expression
 
 error: cannot find `a` in this scope
-  --> testdata/tags/values.proto:51:10
+  --> testdata/tags/values.proto:37:10
    |
-51 |     M4 = a: 2;
+37 |     M4 = a: 2;
    |          ^ not found in this scope
    |
    = help: the full name of this scope is `test.E`
 
 error: cannot find `a` in this scope
-  --> testdata/tags/values.proto:52:10
+  --> testdata/tags/values.proto:38:10
    |
-52 |     M5 = a = 2;
+38 |     M5 = a = 2;
    |          ^ not found in this scope
    |
    = help: the full name of this scope is `test.E`
 
 error: mismatched types
-  --> testdata/tags/values.proto:54:10
+  --> testdata/tags/values.proto:40:10
    |
-54 |     E1 = X;
+40 |     E1 = X;
    |          ^ expected `int32`, found `test.E`
    |
    = note: expected: scalar type `int32`
               found: enum type `test.E`
 
 error: mismatched types
-  --> testdata/tags/values.proto:55:10
+  --> testdata/tags/values.proto:41:10
    |
-55 |     E2 = -Y;
+41 |     E2 = -Y;
    |          ^^ expected `int32`, found `test.E`
    |
    = note: expected: scalar type `int32`

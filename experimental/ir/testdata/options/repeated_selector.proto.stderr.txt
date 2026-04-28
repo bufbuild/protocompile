@@ -1,26 +1,26 @@
 error: expected singular message, found repeated `int32`
-  --> testdata/options/repeated_selector.proto:22:16
+  --> testdata/options/repeated_selector.proto:8:16
    |
-22 |     option (x).z = 42;
+ 8 |     option (x).z = 42;
    |            --- ^ field selector requires singular message
    |            |
    |            found repeated `int32`
-23 |     option (y).z = 42;
+ 9 |     option (y).z = 42;
 ...
-30 |     repeated int32 x = 1000;
+16 |     repeated int32 x = 1000;
    |     -------------- type specified here
 
 error: expected singular message, found repeated `buf.test.Foo`
-  --> testdata/options/repeated_selector.proto:23:16
+  --> testdata/options/repeated_selector.proto:9:16
    |
-23 |     option (y).z = 42;
+ 9 |     option (y).z = 42;
    |            --- ^ field selector requires singular message
    |            |
    |            found repeated `buf.test.Foo`
-24 |     option (z).z = 42;
+10 |     option (z).z = 42;
 ...
-30 |     repeated int32 x = 1000;
-31 |     repeated Foo y = 1001;
+16 |     repeated int32 x = 1000;
+17 |     repeated Foo y = 1001;
    |     ------------ type specified here
 
 encountered 2 errors

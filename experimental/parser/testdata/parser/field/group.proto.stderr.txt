@@ -1,49 +1,49 @@
 warning: group syntax is deprecated
-  --> testdata/parser/field/group.proto:20:14
+  --> testdata/parser/field/group.proto:6:14
    |
-20 |     optional group Foo = 1 {
+ 6 |     optional group Foo = 1 {
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 warning: group syntax is deprecated
-  --> testdata/parser/field/group.proto:25:14
+  --> testdata/parser/field/group.proto:11:14
    |
-25 |     optional group Bar = 2 {
+11 |     optional group Bar = 2 {
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 warning: group syntax is deprecated
-  --> testdata/parser/field/group.proto:29:14
+  --> testdata/parser/field/group.proto:15:14
    |
-29 |     repeated group X = 3 [bar = 1] {
+15 |     repeated group X = 3 [bar = 1] {
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 warning: required fields are deprecated
-  --> testdata/parser/field/group.proto:33:5
+  --> testdata/parser/field/group.proto:19:5
    |
-33 |     required group lowercase = 4 {}
+19 |     required group lowercase = 4 {}
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 warning: group syntax is deprecated
-  --> testdata/parser/field/group.proto:33:14
+  --> testdata/parser/field/group.proto:19:14
    |
-33 |     required group lowercase = 4 {}
+19 |     required group lowercase = 4 {}
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
 error: group names must start with an uppercase letter
-  --> testdata/parser/field/group.proto:33:20
+  --> testdata/parser/field/group.proto:19:20
    |
-33 |     required group lowercase = 4 {}
+19 |     required group lowercase = 4 {}
    |                    ^^^^^^^^^
 
 warning: group syntax is deprecated
-  --> testdata/parser/field/group.proto:36:9
+  --> testdata/parser/field/group.proto:22:9
    |
-36 |         group Baz = 5 {}
+22 |         group Baz = 5 {}
    |         ^^^^^
    = note: group syntax is not available in proto3 or editions
 

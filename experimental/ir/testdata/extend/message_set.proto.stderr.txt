@@ -1,25 +1,25 @@
 error: message set type `google.protobuf.test.M1` declares no extension ranges
-  --> testdata/extend/message_set.proto:23:12
+  --> testdata/extend/message_set.proto:9:12
    |
-22 | message M1 {
+ 8 | message M1 {
    | ----------
-23 |     option message_set_wire_format = true;
+ 9 |     option message_set_wire_format = true;
    |            ^^^^^^^^^^^^^^^^^^^^^^^ declared as message set here
 
 error: message set type `google.protobuf.test.M2` declares no extension ranges
-  --> testdata/extend/message_set.proto:27:12
+  --> testdata/extend/message_set.proto:13:12
    |
-26 | message M2 {
+12 | message M2 {
    | ----------
-27 |     option (MessageOptions.message_set_wire_format) = true;
+13 |     option (MessageOptions.message_set_wire_format) = true;
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |             |
    |             declared as message set here
 
 warning: redundant custom option setting syntax
-   --> testdata/extend/message_set.proto:27:12
+   --> testdata/extend/message_set.proto:13:12
     |
- 27 |     option (MessageOptions.message_set_wire_format) = true;
+ 13 |     option (MessageOptions.message_set_wire_format) = true;
     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     |             |
     |             this field is not a message extension
@@ -31,26 +31,26 @@ warning: redundant custom option setting syntax
     |                  |
     |                  field declared inside of `google.protobuf.MessageOptions` here
     |
-   ::: testdata/extend/message_set.proto:27:12
+   ::: testdata/extend/message_set.proto:13:12
    help: replace `(...)` with a field name
     |
- 27 | -     option (MessageOptions.message_set_wire_format) = true;
- 27 | +     option message_set_wire_format = true;
+ 13 | -     option (MessageOptions.message_set_wire_format) = true;
+ 13 | +     option message_set_wire_format = true;
     |
     |
     = help: custom option setting syntax should only be used with message
             extensions
 
 error: field declared in message set type `google.protobuf.test.M2`
-  --> testdata/extend/message_set.proto:28:5
+  --> testdata/extend/message_set.proto:14:5
    |
-28 |     optional int32 x = 1;
+14 |     optional int32 x = 1;
    |     ^^^^^^^^^^^^^^^^^^^^^
-  ::: testdata/extend/message_set.proto:26:1
+  ::: testdata/extend/message_set.proto:12:1
    |
-26 | message M2 {
+12 | message M2 {
    | ----------
-27 |     option (MessageOptions.message_set_wire_format) = true;
+13 |     option (MessageOptions.message_set_wire_format) = true;
    |            ----------------------------------------
    |             |
    |             declared as message set here
@@ -58,11 +58,11 @@ error: field declared in message set type `google.protobuf.test.M2`
    = help: message set types may only declare extension ranges
 
 warning: message set types are deprecated
-  --> testdata/extend/message_set.proto:32:12
+  --> testdata/extend/message_set.proto:18:12
    |
-31 | message M3 {
+17 | message M3 {
    | ----------
-32 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
+18 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |             |
    |             declared as message set here
@@ -71,9 +71,9 @@ warning: message set types are deprecated
            implementations
 
 warning: redundant custom option setting syntax
-   --> testdata/extend/message_set.proto:32:12
+   --> testdata/extend/message_set.proto:18:12
     |
- 32 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
+ 18 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     |             |
     |             this field is not a message extension
@@ -85,33 +85,33 @@ warning: redundant custom option setting syntax
     |                  |
     |                  field declared inside of `google.protobuf.MessageOptions` here
     |
-   ::: testdata/extend/message_set.proto:32:12
+   ::: testdata/extend/message_set.proto:18:12
    help: replace `(...)` with a field name
     |
- 32 | -     option (protobuf.MessageOptions.message_set_wire_format) = true;
- 32 | +     option message_set_wire_format = true;
+ 18 | -     option (protobuf.MessageOptions.message_set_wire_format) = true;
+ 18 | +     option message_set_wire_format = true;
     |
     |
     = help: custom option setting syntax should only be used with message
             extensions
 
 error: literal out of range for message set extension number
-  --> testdata/extend/message_set.proto:34:16
+  --> testdata/extend/message_set.proto:20:16
    |
-34 |     extensions 0x7fffffff;
+20 |     extensions 0x7fffffff;
    |                ^^^^^^^^^^
    = note: the range for message set extension number is `0x0 to 0x7ffffffe`
 
 error: repeated message set extension
-  --> testdata/extend/message_set.proto:39:5
+  --> testdata/extend/message_set.proto:25:5
    |
-39 |     repeated M2 m2 = 2;
+25 |     repeated M2 m2 = 2;
    |     ^^^^^^^^
-  ::: testdata/extend/message_set.proto:32:12
+  ::: testdata/extend/message_set.proto:18:12
    |
-31 | message M3 {
+17 | message M3 {
    | ----------
-32 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
+18 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
    |            -------------------------------------------------
    |             |
    |             declared as message set here
@@ -119,15 +119,15 @@ error: repeated message set extension
    = help: message set extensions must be singular message fields
 
 error: non-message message set extension
-  --> testdata/extend/message_set.proto:40:14
+  --> testdata/extend/message_set.proto:26:14
    |
-40 |     optional int32 m3 = 3;
+26 |     optional int32 m3 = 3;
    |              ^^^^^
-  ::: testdata/extend/message_set.proto:32:12
+  ::: testdata/extend/message_set.proto:18:12
    |
-31 | message M3 {
+17 | message M3 {
    | ----------
-32 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
+18 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
    |            -------------------------------------------------
    |             |
    |             declared as message set here
@@ -135,25 +135,25 @@ error: non-message message set extension
    = help: message set extensions must be singular message fields
 
 error: unsupported map-typed extension
-  --> testdata/extend/message_set.proto:42:5
+  --> testdata/extend/message_set.proto:28:5
    |
-42 |     map<string, string> m4 = 4;
+28 |     map<string, string> m4 = 4;
    |     ^^^^^^^^^^^^^^^^^^^ declared here
    |
    = help: extensions cannot be map-typed; instead, define a message type with a
            map-typed field
 
 error: literal out of range for message set extension number
-  --> testdata/extend/message_set.proto:44:22
+  --> testdata/extend/message_set.proto:30:22
    |
-44 |     optional M3 m5 = 0x7fffffff;
+30 |     optional M3 m5 = 0x7fffffff;
    |                      ^^^^^^^^^^
    = note: the range for message set extension number is `0x0 to 0x7ffffffe`
 
 error: literal out of range for message set extension number
-  --> testdata/extend/message_set.proto:45:22
+  --> testdata/extend/message_set.proto:31:22
    |
-45 |     optional M3 m6 = 0xffffffff;
+31 |     optional M3 m6 = 0xffffffff;
    |                      ^^^^^^^^^^
    = note: the range for message set extension number is `0x0 to 0x7ffffffe`
 

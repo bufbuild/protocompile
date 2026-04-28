@@ -1,7 +1,7 @@
 error: group syntax is not supported
-  --> testdata/parser/field/group_proto3.proto:20:5
+  --> testdata/parser/field/group_proto3.proto:6:5
    |
-20 |     group G = 1 {}
+ 6 |     group G = 1 {}
    |     ^^^^^
    = note: group syntax is only available in proto2
 
