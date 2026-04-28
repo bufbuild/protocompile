@@ -60,6 +60,9 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 	if err != nil {
 		return nil, err
 	}
+	if linkResult[0].Fatal != nil {
+		return nil, linkResult[0].Fatal
+	}
 
 	irs := linkResult[0].Value
 	irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
