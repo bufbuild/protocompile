@@ -1,45 +1,45 @@
 error: message field name `foo` reserved more than once
-  --> testdata/fields/reserved.proto:21:21
+  --> testdata/fields/reserved.proto:7:21
    |
-21 |   reserved "valid", "foo", "foo", "bar";
+ 7 |   reserved "valid", "foo", "foo", "bar";
    |                     ^^^^^  ----- `foo` also reserved here
 
 error: message field name `bar` reserved more than once
-  --> testdata/fields/reserved.proto:21:35
+  --> testdata/fields/reserved.proto:7:35
    |
-21 |   reserved "valid", "foo", "foo", "bar";
+ 7 |   reserved "valid", "foo", "foo", "bar";
    |                                   ^^^^^
-22 |   reserved "bar";
+ 8 |   reserved "bar";
    |            ----- `bar` also reserved here
 
 error: message field name `baz` reserved more than once
-  --> testdata/fields/reserved.proto:23:12
+  --> testdata/fields/reserved.proto:9:12
    |
-23 |   reserved "baz", "baz";
+ 9 |   reserved "baz", "baz";
    |            ^^^^^  ----- `baz` also reserved here
-24 |   reserved "baz";
+10 |   reserved "baz";
    |            ----- `baz` also reserved here
 
 error: enum value `foo` reserved more than once
-  --> testdata/fields/reserved.proto:28:21
+  --> testdata/fields/reserved.proto:14:21
    |
-28 |   reserved "valid", "foo", "foo", "bar";
+14 |   reserved "valid", "foo", "foo", "bar";
    |                     ^^^^^  ----- `foo` also reserved here
 
 error: enum value `bar` reserved more than once
-  --> testdata/fields/reserved.proto:28:35
+  --> testdata/fields/reserved.proto:14:35
    |
-28 |   reserved "valid", "foo", "foo", "bar";
+14 |   reserved "valid", "foo", "foo", "bar";
    |                                   ^^^^^
-29 |   reserved "bar";
+15 |   reserved "bar";
    |            ----- `bar` also reserved here
 
 error: enum value `baz` reserved more than once
-  --> testdata/fields/reserved.proto:30:12
+  --> testdata/fields/reserved.proto:16:12
    |
-30 |   reserved "baz", "also_valid", "baz";
+16 |   reserved "baz", "also_valid", "baz";
    |            ^^^^^                ----- `baz` also reserved here
-31 |   reserved "baz";
+17 |   reserved "baz";
    |            ----- `baz` also reserved here
 
 encountered 6 errors

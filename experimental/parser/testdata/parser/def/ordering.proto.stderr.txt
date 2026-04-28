@@ -1,631 +1,631 @@
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:20:5
+  --> testdata/parser/def/ordering.proto:6:5
    |
-20 |     M x (T) (T);
+ 6 |     M x (T) (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-20 |     optional M x (T) (T);
+ 6 |     optional M x (T) (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:20:5
+  --> testdata/parser/def/ordering.proto:6:5
    |
-20 |     M x (T) (T);
+ 6 |     M x (T) (T);
    |     ^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:20:9
+  --> testdata/parser/def/ordering.proto:6:9
    |
-20 |     M x (T) (T);
+ 6 |     M x (T) (T);
    |         ^^^ help: remove this
 
 error: encountered more than one method parameter list
-  --> testdata/parser/def/ordering.proto:20:13
+  --> testdata/parser/def/ordering.proto:6:13
    |
-20 |     M x (T) (T);
+ 6 |     M x (T) (T);
    |         --- ^^^ help: consider removing this
    |         |
    |         first one is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:21:5
+  --> testdata/parser/def/ordering.proto:7:5
    |
-21 |     M x returns (T) (T);
+ 7 |     M x returns (T) (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-21 |     optional M x returns (T) (T);
+ 7 |     optional M x returns (T) (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:21:5
+  --> testdata/parser/def/ordering.proto:7:5
    |
-21 |     M x returns (T) (T);
+ 7 |     M x returns (T) (T);
    |     ^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:21:9
+  --> testdata/parser/def/ordering.proto:7:9
    |
-21 |     M x returns (T) (T);
+ 7 |     M x returns (T) (T);
    |         ^^^^^^^^^^^^^^^ help: remove this
 
 error: unexpected method parameter list after method return type
-  --> testdata/parser/def/ordering.proto:21:21
+  --> testdata/parser/def/ordering.proto:7:21
    |
-21 |     M x returns (T) (T);
+ 7 |     M x returns (T) (T);
    |         ----------- ^^^
    |          |
    |          previous method return type is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:22:5
+  --> testdata/parser/def/ordering.proto:8:5
    |
-22 |     M x returns T (T);
+ 8 |     M x returns T (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-22 |     optional M x returns T (T);
+ 8 |     optional M x returns T (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:22:5
+  --> testdata/parser/def/ordering.proto:8:5
    |
-22 |     M x returns T (T);
+ 8 |     M x returns T (T);
    |     ^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:22:9
+  --> testdata/parser/def/ordering.proto:8:9
    |
-22 |     M x returns T (T);
+ 8 |     M x returns T (T);
    |         ^^^^^^^^^^^^^ help: remove this
 
 error: missing `(...)` around method return type
-  --> testdata/parser/def/ordering.proto:22:17
+  --> testdata/parser/def/ordering.proto:8:17
    |
-22 |     M x returns T (T);
+ 8 |     M x returns T (T);
    |                 ^
   help: insert (...) around the return type
    |
-22 |     M x returns (T) (T);
+ 8 |     M x returns (T) (T);
    |                 + +
 
 error: unexpected method parameter list after method return type
-  --> testdata/parser/def/ordering.proto:22:19
+  --> testdata/parser/def/ordering.proto:8:19
    |
-22 |     M x returns T (T);
+ 8 |     M x returns T (T);
    |         --------- ^^^
    |          |
    |          previous method return type is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:23:5
+  --> testdata/parser/def/ordering.proto:9:5
    |
-23 |     M x [foo = bar] (T);
+ 9 |     M x [foo = bar] (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-23 |     optional M x [foo = bar] (T);
+ 9 |     optional M x [foo = bar] (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:23:5
+  --> testdata/parser/def/ordering.proto:9:5
    |
-23 |     M x [foo = bar] (T);
+ 9 |     M x [foo = bar] (T);
    |     ^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:23:21
+  --> testdata/parser/def/ordering.proto:9:21
    |
-23 |     M x [foo = bar] (T);
+ 9 |     M x [foo = bar] (T);
    |                     ^^^ help: remove this
 
 error: unexpected method parameter list after compact options
-  --> testdata/parser/def/ordering.proto:23:21
+  --> testdata/parser/def/ordering.proto:9:21
    |
-23 |     M x [foo = bar] (T);
+ 9 |     M x [foo = bar] (T);
    |         ----------- ^^^
    |          |
    |          previous compact options is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:24:5
+  --> testdata/parser/def/ordering.proto:10:5
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-24 |     optional M x { /* ... */ } (T);
+10 |     optional M x { /* ... */ } (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:24:5
+  --> testdata/parser/def/ordering.proto:10:5
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
-  --> testdata/parser/def/ordering.proto:24:9
+  --> testdata/parser/def/ordering.proto:10:9
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |         ^^^^^^^^^^^^^
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/def/ordering.proto:24:23
+  --> testdata/parser/def/ordering.proto:10:23
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |                       ^^^
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:24:23
+  --> testdata/parser/def/ordering.proto:10:23
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |                       ^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-24 |     M x { /* ... */ } optional (T);
+10 |     M x { /* ... */ } optional (T);
    |                       +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:24:23
+  --> testdata/parser/def/ordering.proto:10:23
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |                       ^^^^
 
 error: missing name in message field
-  --> testdata/parser/def/ordering.proto:24:23
+  --> testdata/parser/def/ordering.proto:10:23
    |
-24 |     M x { /* ... */ } (T);
+10 |     M x { /* ... */ } (T);
    |                       ^^^^
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:26:5
+  --> testdata/parser/def/ordering.proto:12:5
    |
-26 |     M x returns (T) returns (T);
+12 |     M x returns (T) returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-26 |     optional M x returns (T) returns (T);
+12 |     optional M x returns (T) returns (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:26:5
+  --> testdata/parser/def/ordering.proto:12:5
    |
-26 |     M x returns (T) returns (T);
+12 |     M x returns (T) returns (T);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:26:9
+  --> testdata/parser/def/ordering.proto:12:9
    |
-26 |     M x returns (T) returns (T);
+12 |     M x returns (T) returns (T);
    |         ^^^^^^^^^^^ help: remove this
 
 error: encountered more than one method return type
-  --> testdata/parser/def/ordering.proto:26:21
+  --> testdata/parser/def/ordering.proto:12:21
    |
-26 |     M x returns (T) returns (T);
+12 |     M x returns (T) returns (T);
    |         ----------- ^^^^^^^^^^^ help: consider removing this
    |          |
    |          first one is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:27:5
+  --> testdata/parser/def/ordering.proto:13:5
    |
-27 |     M x [foo = bar] returns (T);
+13 |     M x [foo = bar] returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-27 |     optional M x [foo = bar] returns (T);
+13 |     optional M x [foo = bar] returns (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:27:5
+  --> testdata/parser/def/ordering.proto:13:5
    |
-27 |     M x [foo = bar] returns (T);
+13 |     M x [foo = bar] returns (T);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:27:21
+  --> testdata/parser/def/ordering.proto:13:21
    |
-27 |     M x [foo = bar] returns (T);
+13 |     M x [foo = bar] returns (T);
    |                     ^^^^^^^^^^^ help: remove this
 
 error: unexpected method return type after compact options
-  --> testdata/parser/def/ordering.proto:27:21
+  --> testdata/parser/def/ordering.proto:13:21
    |
-27 |     M x [foo = bar] returns (T);
+13 |     M x [foo = bar] returns (T);
    |         ----------- ^^^^^^^^^^^
    |          |
    |          previous compact options is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:28:5
+  --> testdata/parser/def/ordering.proto:14:5
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-28 |     optional M x { /* ... */ } returns (T);
+14 |     optional M x { /* ... */ } returns (T);
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:28:5
+  --> testdata/parser/def/ordering.proto:14:5
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
-  --> testdata/parser/def/ordering.proto:28:9
+  --> testdata/parser/def/ordering.proto:14:9
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |         ^^^^^^^^^^^^^
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:28:23
+  --> testdata/parser/def/ordering.proto:14:23
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |                       ^^^^^^^
    |                        |
    |                        expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-28 |     M x { /* ... */ } optional returns (T);
+14 |     M x { /* ... */ } optional returns (T);
    |                       +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:28:23
+  --> testdata/parser/def/ordering.proto:14:23
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |                       ^^^^^^^^^^^^
 
 error: unexpected extension name in message field
-  --> testdata/parser/def/ordering.proto:28:31
+  --> testdata/parser/def/ordering.proto:14:31
    |
-28 |     M x { /* ... */ } returns (T);
+14 |     M x { /* ... */ } returns (T);
    |                               ^^^ expected identifier
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:30:5
+  --> testdata/parser/def/ordering.proto:16:5
    |
-30 |     M x returns T returns T;
+16 |     M x returns T returns T;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-30 |     optional M x returns T returns T;
+16 |     optional M x returns T returns T;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:30:5
+  --> testdata/parser/def/ordering.proto:16:5
    |
-30 |     M x returns T returns T;
+16 |     M x returns T returns T;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:30:9
+  --> testdata/parser/def/ordering.proto:16:9
    |
-30 |     M x returns T returns T;
+16 |     M x returns T returns T;
    |         ^^^^^^^^^ help: remove this
 
 error: missing `(...)` around method return type
-  --> testdata/parser/def/ordering.proto:30:17
+  --> testdata/parser/def/ordering.proto:16:17
    |
-30 |     M x returns T returns T;
+16 |     M x returns T returns T;
    |                 ^
   help: insert (...) around the return type
    |
-30 |     M x returns (T) returns T;
+16 |     M x returns (T) returns T;
    |                 + +
 
 error: encountered more than one method return type
-  --> testdata/parser/def/ordering.proto:30:19
+  --> testdata/parser/def/ordering.proto:16:19
    |
-30 |     M x returns T returns T;
+16 |     M x returns T returns T;
    |         --------- ^^^^^^^^^ help: consider removing this
    |          |
    |          first one is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:31:5
+  --> testdata/parser/def/ordering.proto:17:5
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-31 |     optional M x returns T [] returns T;
+17 |     optional M x returns T [] returns T;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:31:5
+  --> testdata/parser/def/ordering.proto:17:5
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:31:9
+  --> testdata/parser/def/ordering.proto:17:9
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |         ^^^^^^^^^ help: remove this
 
 error: missing `(...)` around method return type
-  --> testdata/parser/def/ordering.proto:31:17
+  --> testdata/parser/def/ordering.proto:17:17
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |                 ^
   help: insert (...) around the return type
    |
-31 |     M x returns (T) [] returns T;
+17 |     M x returns (T) [] returns T;
    |                 + +
 
 error: compact options cannot be empty
-  --> testdata/parser/def/ordering.proto:31:19
+  --> testdata/parser/def/ordering.proto:17:19
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |                   ^^ help: remove this
 
 error: unexpected method return type after compact options
-  --> testdata/parser/def/ordering.proto:31:22
+  --> testdata/parser/def/ordering.proto:17:22
    |
-31 |     M x returns T [] returns T;
+17 |     M x returns T [] returns T;
    |                   -- ^^^^^^^^^
    |                   |
    |                   previous compact options is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:32:5
+  --> testdata/parser/def/ordering.proto:18:5
    |
-32 |     M x [foo = bar] returns T;
+18 |     M x [foo = bar] returns T;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-32 |     optional M x [foo = bar] returns T;
+18 |     optional M x [foo = bar] returns T;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:32:5
+  --> testdata/parser/def/ordering.proto:18:5
    |
-32 |     M x [foo = bar] returns T;
+18 |     M x [foo = bar] returns T;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
-  --> testdata/parser/def/ordering.proto:32:21
+  --> testdata/parser/def/ordering.proto:18:21
    |
-32 |     M x [foo = bar] returns T;
+18 |     M x [foo = bar] returns T;
    |                     ^^^^^^^^^ help: remove this
 
 error: unexpected method return type after compact options
-  --> testdata/parser/def/ordering.proto:32:21
+  --> testdata/parser/def/ordering.proto:18:21
    |
-32 |     M x [foo = bar] returns T;
+18 |     M x [foo = bar] returns T;
    |         ----------- ^^^^^^^^^
    |          |
    |          previous compact options is here
 
 error: missing `(...)` around method return type
-  --> testdata/parser/def/ordering.proto:32:29
+  --> testdata/parser/def/ordering.proto:18:29
    |
-32 |     M x [foo = bar] returns T;
+18 |     M x [foo = bar] returns T;
    |                             ^
   help: insert (...) around the return type
    |
-32 |     M x [foo = bar] returns (T);
+18 |     M x [foo = bar] returns (T);
    |                             + +
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:33:5
+  --> testdata/parser/def/ordering.proto:19:5
    |
-33 |     M x { /* ... */ } returns T;
+19 |     M x { /* ... */ } returns T;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-33 |     optional M x { /* ... */ } returns T;
+19 |     optional M x { /* ... */ } returns T;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:33:5
+  --> testdata/parser/def/ordering.proto:19:5
    |
-33 |     M x { /* ... */ } returns T;
+19 |     M x { /* ... */ } returns T;
    |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
-  --> testdata/parser/def/ordering.proto:33:9
+  --> testdata/parser/def/ordering.proto:19:9
    |
-33 |     M x { /* ... */ } returns T;
+19 |     M x { /* ... */ } returns T;
    |         ^^^^^^^^^^^^^
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:33:23
+  --> testdata/parser/def/ordering.proto:19:23
    |
-33 |     M x { /* ... */ } returns T;
+19 |     M x { /* ... */ } returns T;
    |                       ^^^^^^^
    |                        |
    |                        expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-33 |     M x { /* ... */ } optional returns T;
+19 |     M x { /* ... */ } optional returns T;
    |                       +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:33:23
+  --> testdata/parser/def/ordering.proto:19:23
    |
-33 |     M x { /* ... */ } returns T;
+19 |     M x { /* ... */ } returns T;
    |                       ^^^^^^^^^^
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:35:5
+  --> testdata/parser/def/ordering.proto:21:5
    |
-35 |     M x = 1 = 1;
+21 |     M x = 1 = 1;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-35 |     optional M x = 1 = 1;
+21 |     optional M x = 1 = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: encountered more than one message field tag
-  --> testdata/parser/def/ordering.proto:35:13
+  --> testdata/parser/def/ordering.proto:21:13
    |
-35 |     M x = 1 = 1;
+21 |     M x = 1 = 1;
    |         --- ^^^ help: consider removing this
    |         |
    |         first one is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:36:5
+  --> testdata/parser/def/ordering.proto:22:5
    |
-36 |     M x [foo = bar] = 1;
+22 |     M x [foo = bar] = 1;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-36 |     optional M x [foo = bar] = 1;
+22 |     optional M x [foo = bar] = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected message field tag after compact options
-  --> testdata/parser/def/ordering.proto:36:21
+  --> testdata/parser/def/ordering.proto:22:21
    |
-36 |     M x [foo = bar] = 1;
+22 |     M x [foo = bar] = 1;
    |         ----------- ^^^
    |          |
    |          previous compact options is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:37:5
+  --> testdata/parser/def/ordering.proto:23:5
    |
-37 |     M x { /* ... */ } = 1;
+23 |     M x { /* ... */ } = 1;
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-37 |     optional M x { /* ... */ } = 1;
+23 |     optional M x { /* ... */ } = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:37:5
+  --> testdata/parser/def/ordering.proto:23:5
    |
-37 |     M x { /* ... */ } = 1;
+23 |     M x { /* ... */ } = 1;
    |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
-  --> testdata/parser/def/ordering.proto:37:9
+  --> testdata/parser/def/ordering.proto:23:9
    |
-37 |     M x { /* ... */ } = 1;
+23 |     M x { /* ... */ } = 1;
    |         ^^^^^^^^^^^^^
 
 error: unexpected tokens in message definition
-  --> testdata/parser/def/ordering.proto:37:23
+  --> testdata/parser/def/ordering.proto:23:23
    |
-37 |     M x { /* ... */ } = 1;
+23 |     M x { /* ... */ } = 1;
    |                       ^^^
    |                       |
    |                       expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:39:5
+  --> testdata/parser/def/ordering.proto:25:5
    |
-39 |     M x [foo = bar] [foo = bar];
+25 |     M x [foo = bar] [foo = bar];
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-39 |     optional M x [foo = bar] [foo = bar];
+25 |     optional M x [foo = bar] [foo = bar];
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:39:5
+  --> testdata/parser/def/ordering.proto:25:5
    |
-39 |     M x [foo = bar] [foo = bar];
+25 |     M x [foo = bar] [foo = bar];
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: encountered more than one compact options
-  --> testdata/parser/def/ordering.proto:39:21
+  --> testdata/parser/def/ordering.proto:25:21
    |
-39 |     M x [foo = bar] [foo = bar];
+25 |     M x [foo = bar] [foo = bar];
    |         ----------- ^^^^^^^^^^^ help: consider removing this
    |          |
    |          first one is here
 
 error: unexpected type name
-  --> testdata/parser/def/ordering.proto:40:5
+  --> testdata/parser/def/ordering.proto:26:5
    |
-40 |     M x { /* ... */ } [foo = bar];
+26 |     M x { /* ... */ } [foo = bar];
    |     ^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-40 |     optional M x { /* ... */ } [foo = bar];
+26 |     optional M x { /* ... */ } [foo = bar];
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
-  --> testdata/parser/def/ordering.proto:40:5
+  --> testdata/parser/def/ordering.proto:26:5
    |
-40 |     M x { /* ... */ } [foo = bar];
+26 |     M x { /* ... */ } [foo = bar];
    |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
-  --> testdata/parser/def/ordering.proto:40:9
+  --> testdata/parser/def/ordering.proto:26:9
    |
-40 |     M x { /* ... */ } [foo = bar];
+26 |     M x { /* ... */ } [foo = bar];
    |         ^^^^^^^^^^^^^
 
 error: unexpected `[...]` in message definition
-  --> testdata/parser/def/ordering.proto:40:23
+  --> testdata/parser/def/ordering.proto:26:23
    |
-40 |     M x { /* ... */ } [foo = bar];
+26 |     M x { /* ... */ } [foo = bar];
    |                       ^^^^^^^^^^^
    |                        |
    |                        expected identifier, `;`, `.`, `(...)`, or `{...}`

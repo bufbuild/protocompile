@@ -1,338 +1,338 @@
 error: nested array expressions are not allowed
-  --> testdata/options/values/float.proto:56:28
+  --> testdata/options/values/float.proto:42:28
    |
-56 |     f32: ["foo", true, {}, [], 0 to 1]
+42 |     f32: ["foo", true, {}, [], 0 to 1]
    |          ------------------^^--------- ...within this array expression
    |                            |
    |                            cannot nest this array expression...
 
 error: unexpected range expression in option setting value
-  --> testdata/options/values/float.proto:56:32
+  --> testdata/options/values/float.proto:42:32
    |
-56 |     f32: ["foo", true, {}, [], 0 to 1]
+42 |     f32: ["foo", true, {}, [], 0 to 1]
    |                                ^^^^^^
 
 error: nested array expressions are not allowed
-  --> testdata/options/values/float.proto:57:28
+  --> testdata/options/values/float.proto:43:28
    |
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
    |          ------------------^^--------- ...within this array expression
    |                            |
    |                            cannot nest this array expression...
 
 error: unexpected range expression in option setting value
-  --> testdata/options/values/float.proto:57:32
+  --> testdata/options/values/float.proto:43:32
    |
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                                ^^^^^^
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:28:9
+  --> testdata/options/values/float.proto:14:9
    |
-28 |         Infinity, -InFiNiTy,
+14 |         Infinity, -InFiNiTy,
    |         ^^^^^^^^
   help: replace with `inf`
    |
-28 | -         Infinity, -InFiNiTy,
-28 | +         inf, -InFiNiTy,
+14 | -         Infinity, -InFiNiTy,
+14 | +         inf, -InFiNiTy,
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:28:20
+  --> testdata/options/values/float.proto:14:20
    |
-28 |         Infinity, -InFiNiTy,
+14 |         Infinity, -InFiNiTy,
    |                    ^^^^^^^^
   help: replace with `inf`
    |
-28 | -         Infinity, -InFiNiTy,
-28 | +         Infinity, -inf,
+14 | -         Infinity, -InFiNiTy,
+14 | +         Infinity, -inf,
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:29:9
+  --> testdata/options/values/float.proto:15:9
    |
-29 |         NaN, -nAn
+15 |         NaN, -nAn
    |         ^^^
   help: replace with `nan`
    |
-29 | -         NaN, -nAn
-29 | +         nan, -nAn
+15 | -         NaN, -nAn
+15 | +         nan, -nAn
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:29:15
+  --> testdata/options/values/float.proto:15:15
    |
-29 |         NaN, -nAn
+15 |         NaN, -nAn
    |               ^^^
   help: replace with `nan`
    |
-29 | -         NaN, -nAn
-29 | +         NaN, -nan
+15 | -         NaN, -nAn
+15 | +         NaN, -nan
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: floating-point literal rounds to infinity
-  --> testdata/options/values/float.proto:37:9
+  --> testdata/options/values/float.proto:23:9
    |
-37 |         1234567890123456789012345678901234567890,
+23 |         1234567890123456789012345678901234567890,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |          |
    |          this value is beyond the dynamic range of `float`
    |
   help: replace with `inf`
    |
-37 | -         1234567890123456789012345678901234567890,
-37 | +         inf,
+23 | -         1234567890123456789012345678901234567890,
+23 | +         inf,
    |
    |
    = note: this value is of order 1e39; `float` can only represent around 1e38
 
 warning: floating-point literal rounds to infinity
-  --> testdata/options/values/float.proto:38:10
+  --> testdata/options/values/float.proto:24:10
    |
-38 |         -1234567890123456789012345678901234567890
+24 |         -1234567890123456789012345678901234567890
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |           |
    |           this value is beyond the dynamic range of `float`
    |
   help: replace with `inf`
    |
-38 | -         -1234567890123456789012345678901234567890
-38 | +         -inf
+24 | -         -1234567890123456789012345678901234567890
+24 | +         -inf
    |
    |
    = note: this value is of order 1e39; `float` can only represent around 1e38
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:46:9
+  --> testdata/options/values/float.proto:32:9
    |
-46 |         Infinity, -InFiNiTy,
+32 |         Infinity, -InFiNiTy,
    |         ^^^^^^^^
   help: replace with `inf`
    |
-46 | -         Infinity, -InFiNiTy,
-46 | +         inf, -InFiNiTy,
+32 | -         Infinity, -InFiNiTy,
+32 | +         inf, -InFiNiTy,
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:46:20
+  --> testdata/options/values/float.proto:32:20
    |
-46 |         Infinity, -InFiNiTy,
+32 |         Infinity, -InFiNiTy,
    |                    ^^^^^^^^
   help: replace with `inf`
    |
-46 | -         Infinity, -InFiNiTy,
-46 | +         Infinity, -inf,
+32 | -         Infinity, -InFiNiTy,
+32 | +         Infinity, -inf,
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:47:9
+  --> testdata/options/values/float.proto:33:9
    |
-47 |         NaN, -nAn
+33 |         NaN, -nAn
    |         ^^^
   help: replace with `nan`
    |
-47 | -         NaN, -nAn
-47 | +         nan, -nAn
+33 | -         NaN, -nAn
+33 | +         nan, -nAn
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: non-canonical floating-point literal
-  --> testdata/options/values/float.proto:47:15
+  --> testdata/options/values/float.proto:33:15
    |
-47 |         NaN, -nAn
+33 |         NaN, -nAn
    |               ^^^
   help: replace with `nan`
    |
-47 | -         NaN, -nAn
-47 | +         NaN, -nan
+33 | -         NaN, -nAn
+33 | +         NaN, -nan
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 warning: floating-point literal rounds to infinity
-  --> testdata/options/values/float.proto:53:11
+  --> testdata/options/values/float.proto:39:11
    |
-53 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
+39 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
    |           ^^^^^^ this value is beyond the dynamic range of `double`
    |
   help: replace with `inf`
    |
-53 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
-53 | +     f64: [inf, -1e1000],       // Snap to Infinity.
+39 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
+39 | +     f64: [inf, -1e1000],       // Snap to Infinity.
    |
    |
    = note: this value is of order 1e1000; `double` can only represent around
            1e308
 
 warning: floating-point literal rounds to infinity
-  --> testdata/options/values/float.proto:53:20
+  --> testdata/options/values/float.proto:39:20
    |
-53 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
+39 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
    |                    ^^^^^^
    |                     |
    |                     this value is beyond the dynamic range of `double`
    |
   help: replace with `inf`
    |
-53 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
-53 | +     f64: [1e1000, -inf],       // Snap to Infinity.
+39 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
+39 | +     f64: [1e1000, -inf],       // Snap to Infinity.
    |
    |
    = note: this value is of order 1e1000; `double` can only represent around
            1e308
 
 error: mismatched types
-  --> testdata/options/values/float.proto:56:11
+  --> testdata/options/values/float.proto:42:11
    |
-56 |     f32: ["foo", true, {}, [], 0 to 1]
+42 |     f32: ["foo", true, {}, [], 0 to 1]
    |           ^^^^^ expected `float`, found `string`
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-69 |     repeated float f32 = 1;
+55 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/options/values/float.proto:56:18
+  --> testdata/options/values/float.proto:42:18
    |
-56 |     f32: ["foo", true, {}, [], 0 to 1]
+42 |     f32: ["foo", true, {}, [], 0 to 1]
    |                  ^^^^ expected `float`, found `bool`
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-69 |     repeated float f32 = 1;
+55 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/float.proto:56:24
+  --> testdata/options/values/float.proto:42:24
    |
-56 |     f32: ["foo", true, {}, [], 0 to 1]
+42 |     f32: ["foo", true, {}, [], 0 to 1]
    |                        ^^ expected `float`, found message expression
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-69 |     repeated float f32 = 1;
+55 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
               found: message expression
 
 error: mismatched types
-  --> testdata/options/values/float.proto:57:11
+  --> testdata/options/values/float.proto:43:11
    |
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
    |           ^^^^^ expected `double`, found `string`
 ...
-69 |     repeated float f32 = 1;
-70 |     repeated double f64 = 2;
+55 |     repeated float f32 = 1;
+56 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/options/values/float.proto:57:18
+  --> testdata/options/values/float.proto:43:18
    |
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                  ^^^^ expected `double`, found `bool`
 ...
-69 |     repeated float f32 = 1;
-70 |     repeated double f64 = 2;
+55 |     repeated float f32 = 1;
+56 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/float.proto:57:24
+  --> testdata/options/values/float.proto:43:24
    |
-57 |     f64: ["foo", true, {}, [], 0 to 1]
+43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                        ^^ expected `double`, found message expression
 ...
-69 |     repeated float f32 = 1;
-70 |     repeated double f64 = 2;
+55 |     repeated float f32 = 1;
+56 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
               found: message expression
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:61:14
+  --> testdata/options/values/float.proto:47:14
    |
-61 | option (y) = infinity;
+47 | option (y) = infinity;
    |              ^^^^^^^^
   help: replace with `inf`
    |
-61 | - option (y) = infinity;
-61 | + option (y) = inf;
+47 | - option (y) = infinity;
+47 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:62:14
+  --> testdata/options/values/float.proto:48:14
    |
-62 | option (y) = INF;
+48 | option (y) = INF;
    |              ^^^
   help: replace with `inf`
    |
-62 | - option (y) = INF;
-62 | + option (y) = inf;
+48 | - option (y) = INF;
+48 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:63:14
+  --> testdata/options/values/float.proto:49:14
    |
-63 | option (y) = Infinity;
+49 | option (y) = Infinity;
    |              ^^^^^^^^
   help: replace with `inf`
    |
-63 | - option (y) = Infinity;
-63 | + option (y) = inf;
+49 | - option (y) = Infinity;
+49 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:65:14
+  --> testdata/options/values/float.proto:51:14
    |
-65 | option (y) = NaN;
+51 | option (y) = NaN;
    |              ^^^
   help: replace with `nan`
    |
-65 | - option (y) = NaN;
-65 | + option (y) = nan;
+51 | - option (y) = NaN;
+51 | + option (y) = nan;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:66:14
+  --> testdata/options/values/float.proto:52:14
    |
-66 | option (y) = NAN;
+52 | option (y) = NAN;
    |              ^^^
   help: replace with `nan`
    |
-66 | - option (y) = NAN;
-66 | + option (y) = nan;
+52 | - option (y) = NAN;
+52 | + option (y) = nan;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive

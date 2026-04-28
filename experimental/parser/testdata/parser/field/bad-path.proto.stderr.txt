@@ -1,262 +1,262 @@
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:20:19
+  --> testdata/parser/field/bad-path.proto:6:19
    |
-20 |     optional Type path.name = 1;
+ 6 |     optional Type path.name = 1;
    |                   ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:21:19
+  --> testdata/parser/field/bad-path.proto:7:19
    |
-21 |     repeated Type path.name = 1;
+ 7 |     repeated Type path.name = 1;
    |                   ^^^^^^^^^ expected identifier
 
 warning: required fields are deprecated
-  --> testdata/parser/field/bad-path.proto:22:5
+  --> testdata/parser/field/bad-path.proto:8:5
    |
-22 |     required Type path.name = 1;
+ 8 |     required Type path.name = 1;
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:22:19
+  --> testdata/parser/field/bad-path.proto:8:19
    |
-22 |     required Type path.name = 1;
+ 8 |     required Type path.name = 1;
    |                   ^^^^^^^^^ expected identifier
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:23:5
+  --> testdata/parser/field/bad-path.proto:9:5
    |
-23 |     Type path.name = 1;
+ 9 |     Type path.name = 1;
    |     ^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-23 |     optional Type path.name = 1;
+ 9 |     optional Type path.name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:23:10
+  --> testdata/parser/field/bad-path.proto:9:10
    |
-23 |     Type path.name = 1;
+ 9 |     Type path.name = 1;
    |          ^^^^^^^^^ expected identifier
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:24:5
+  --> testdata/parser/field/bad-path.proto:10:5
    |
-24 |     Type path/name = 1;
+10 |     Type path/name = 1;
    |     ^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-24 |     optional Type path/name = 1;
+10 |     optional Type path/name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:24:10
+  --> testdata/parser/field/bad-path.proto:10:10
    |
-24 |     Type path/name = 1;
+10 |     Type path/name = 1;
    |          ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:26:27
+  --> testdata/parser/field/bad-path.proto:12:27
    |
-26 |     optional package.Type path.name = 1;
+12 |     optional package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:27:27
+  --> testdata/parser/field/bad-path.proto:13:27
    |
-27 |     repeated package.Type path.name = 1;
+13 |     repeated package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 warning: required fields are deprecated
-  --> testdata/parser/field/bad-path.proto:28:5
+  --> testdata/parser/field/bad-path.proto:14:5
    |
-28 |     required package.Type path.name = 1;
+14 |     required package.Type path.name = 1;
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:28:27
+  --> testdata/parser/field/bad-path.proto:14:27
    |
-28 |     required package.Type path.name = 1;
+14 |     required package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:29:5
+  --> testdata/parser/field/bad-path.proto:15:5
    |
-29 |     package.Type name = 1;
+15 |     package.Type name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-29 |     optional package.Type name = 1;
+15 |     optional package.Type name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:30:5
+  --> testdata/parser/field/bad-path.proto:16:5
    |
-30 |     package/Type name = 1;
+16 |     package/Type name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-30 |     optional package/Type name = 1;
+16 |     optional package/Type name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected `/` in path in message field
-  --> testdata/parser/field/bad-path.proto:30:12
+  --> testdata/parser/field/bad-path.proto:16:12
    |
-30 |     package/Type name = 1;
+16 |     package/Type name = 1;
    |            ^ help: replace this with a `.`
 
 error: unexpected `/` in path in message field
-  --> testdata/parser/field/bad-path.proto:31:21
+  --> testdata/parser/field/bad-path.proto:17:21
    |
-31 |     optional package/Type path.name = 1;
+17 |     optional package/Type path.name = 1;
    |                     ^ help: replace this with a `.`
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:31:27
+  --> testdata/parser/field/bad-path.proto:17:27
    |
-31 |     optional package/Type path.name = 1;
+17 |     optional package/Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:33:14
+  --> testdata/parser/field/bad-path.proto:19:14
    |
-33 |     optional (foo.bar).Type name = 1;
+19 |     optional (foo.bar).Type name = 1;
    |              ^^^^^^^^^
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:34:14
+  --> testdata/parser/field/bad-path.proto:20:14
    |
-34 |     repeated (foo.bar).Type name = 1;
+20 |     repeated (foo.bar).Type name = 1;
    |              ^^^^^^^^^
 
 warning: required fields are deprecated
-  --> testdata/parser/field/bad-path.proto:35:5
+  --> testdata/parser/field/bad-path.proto:21:5
    |
-35 |     required (foo.bar).Type name = 1;
+21 |     required (foo.bar).Type name = 1;
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:35:14
+  --> testdata/parser/field/bad-path.proto:21:14
    |
-35 |     required (foo.bar).Type name = 1;
+21 |     required (foo.bar).Type name = 1;
    |              ^^^^^^^^^
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:36:5
+  --> testdata/parser/field/bad-path.proto:22:5
    |
-36 |     (foo.bar).Type name = 1;
+22 |     (foo.bar).Type name = 1;
    |     ^^^^^^^^^
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:36:5
+  --> testdata/parser/field/bad-path.proto:22:5
    |
-36 |     (foo.bar).Type name = 1;
+22 |     (foo.bar).Type name = 1;
    |     ^^^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-36 |     optional (foo.bar).Type name = 1;
+22 |     optional (foo.bar).Type name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:38:27
+  --> testdata/parser/field/bad-path.proto:24:27
    |
-38 |     optional package.Type (foo.bar).name = 1;
+24 |     optional package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:39:27
+  --> testdata/parser/field/bad-path.proto:25:27
    |
-39 |     repeated package.Type (foo.bar).name = 1;
+25 |     repeated package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 warning: required fields are deprecated
-  --> testdata/parser/field/bad-path.proto:40:5
+  --> testdata/parser/field/bad-path.proto:26:5
    |
-40 |     required package.Type (foo.bar).name = 1;
+26 |     required package.Type (foo.bar).name = 1;
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:40:27
+  --> testdata/parser/field/bad-path.proto:26:27
    |
-40 |     required package.Type (foo.bar).name = 1;
+26 |     required package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:41:5
+  --> testdata/parser/field/bad-path.proto:27:5
    |
-41 |     package.Type (foo.bar).name = 1;
+27 |     package.Type (foo.bar).name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-41 |     optional package.Type (foo.bar).name = 1;
+27 |     optional package.Type (foo.bar).name = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:41:18
+  --> testdata/parser/field/bad-path.proto:27:18
    |
-41 |     package.Type (foo.bar).name = 1;
+27 |     package.Type (foo.bar).name = 1;
    |                  ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:43:5
+  --> testdata/parser/field/bad-path.proto:29:5
    |
-43 |     (foo) (bar) = 1;
+29 |     (foo) (bar) = 1;
    |     ^^^^^
 
 error: unexpected type name
-  --> testdata/parser/field/bad-path.proto:43:5
+  --> testdata/parser/field/bad-path.proto:29:5
    |
-43 |     (foo) (bar) = 1;
+29 |     (foo) (bar) = 1;
    |     ^^^^^ expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
-43 |     optional (foo) (bar) = 1;
+29 |     optional (foo) (bar) = 1;
    |     +++++++++
    |
    = note: modifiers are required in proto2
 
 error: unexpected extension name in message field
-  --> testdata/parser/field/bad-path.proto:43:11
+  --> testdata/parser/field/bad-path.proto:29:11
    |
-43 |     (foo) (bar) = 1;
+29 |     (foo) (bar) = 1;
    |           ^^^^^ expected identifier
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:45:21
+  --> testdata/parser/field/bad-path.proto:31:21
    |
-45 |     map<string, foo.(bar)> foo = 1;
+31 |     map<string, foo.(bar)> foo = 1;
    |                     ^^^^^
 
 error: unexpected `/` in path in message field
-  --> testdata/parser/field/bad-path.proto:46:20
+  --> testdata/parser/field/bad-path.proto:32:20
    |
-46 |     map<string, foo/bar> foo = 1;
+32 |     map<string, foo/bar> foo = 1;
    |                    ^ help: replace this with a `.`
 
 encountered 30 errors and 4 warnings

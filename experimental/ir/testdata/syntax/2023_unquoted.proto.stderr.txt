@@ -1,11 +1,11 @@
 error: the value of a `edition` declaration must be a string literal
-  --> testdata/syntax/2023_unquoted.proto:16:11
+  --> testdata/syntax/2023_unquoted.proto:2:11
    |
-16 | edition = 2023;
+ 2 | edition = 2023;
    |           ^^^^
   help: add quotes to make this a string literal
    |
-16 | edition = "2023";
+ 2 | edition = "2023";
    |           +    +
 
 encountered 1 error

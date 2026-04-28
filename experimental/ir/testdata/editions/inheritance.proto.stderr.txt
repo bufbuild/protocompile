@@ -1,20 +1,20 @@
 warning: `legacy_closed_enum` is deprecated in Edition 2023
-  --> testdata/editions/inheritance.proto:24:8
+  --> testdata/editions/inheritance.proto:10:8
    |
-17 | edition = "2023";
+ 3 | edition = "2023";
    |           ------ edition specified here
 ...
-23 | option features.field_presence = IMPLICIT;
-24 | option features.(pb.cpp).legacy_closed_enum = false;
+ 9 | option features.field_presence = IMPLICIT;
+10 | option features.(pb.cpp).legacy_closed_enum = false;
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: deprecated since Edition 2023
    = help: the legacy closed enum behavior in C++ is deprecated and is scheduled
            to be removed in Edition 2025
 
 warning: required fields are deprecated
-  --> testdata/editions/inheritance.proto:28:44
+  --> testdata/editions/inheritance.proto:14:44
    |
-28 |     int32 y = 2 [features.field_presence = LEGACY_REQUIRED];
+14 |     int32 y = 2 [features.field_presence = LEGACY_REQUIRED];
    |                                            ^^^^^^^^^^^^^^^
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break

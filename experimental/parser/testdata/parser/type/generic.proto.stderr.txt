@@ -1,125 +1,125 @@
 error: unexpected type in map value type
-  --> testdata/parser/type/generic.proto:23:17
+  --> testdata/parser/type/generic.proto:9:17
    |
-23 |     map<string, map<string, test.M>> x4 = 4;
+ 9 |     map<string, map<string, test.M>> x4 = 4;
    |                 ^^^^^^^^^^^^^^^^^^^ expected type name
 
 error: generic types other than `map` are not supported
-  --> testdata/parser/type/generic.proto:25:5
+  --> testdata/parser/type/generic.proto:11:5
    |
-25 |     list<string> x5 = 5;
+11 |     list<string> x5 = 5;
    |     ^^^^
 
 error: generic types other than `map` are not supported
-  --> testdata/parser/type/generic.proto:26:5
+  --> testdata/parser/type/generic.proto:12:5
    |
-26 |     void<> x6 = 6;
+12 |     void<> x6 = 6;
    |     ^^^^
 
 error: generic types other than `map` are not supported
-  --> testdata/parser/type/generic.proto:28:5
+  --> testdata/parser/type/generic.proto:14:5
    |
-28 |     my.Map<A, B, C> x7 = 7;
+14 |     my.Map<A, B, C> x7 = 7;
    |     ^^^^^^
 
 error: unexpected type after `optional`
-  --> testdata/parser/type/generic.proto:30:14
+  --> testdata/parser/type/generic.proto:16:14
    |
-30 |     optional map<string, string> x8 = 8;
+16 |     optional map<string, string> x8 = 8;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
 error: unexpected type after `repeated`
-  --> testdata/parser/type/generic.proto:31:14
+  --> testdata/parser/type/generic.proto:17:14
    |
-31 |     repeated map<string, string> x9 = 9;
+17 |     repeated map<string, string> x9 = 9;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
 warning: required fields are deprecated
-  --> testdata/parser/type/generic.proto:32:5
+  --> testdata/parser/type/generic.proto:18:5
    |
-32 |     required map<string, string> x10 = 10;
+18 |     required map<string, string> x10 = 10;
    |     ^^^^^^^^
    = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected type after `required`
-  --> testdata/parser/type/generic.proto:32:14
+  --> testdata/parser/type/generic.proto:18:14
    |
-32 |     required map<string, string> x10 = 10;
+18 |     required map<string, string> x10 = 10;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
 error: unexpected `repeated` in map value type
-  --> testdata/parser/type/generic.proto:34:17
+  --> testdata/parser/type/generic.proto:20:17
    |
-34 |     map<string, repeated string> x11 = 11;
+20 |     map<string, repeated string> x11 = 11;
    |                 ^^^^^^^^
 
 error: unexpected `required` in map value type
-  --> testdata/parser/type/generic.proto:35:27
+  --> testdata/parser/type/generic.proto:21:27
    |
-35 |     map<optional .test.M, required test.M> x12 = 12;
+21 |     map<optional .test.M, required test.M> x12 = 12;
    |                           ^^^^^^^^
 
 error: generic types other than `map` are not supported
-  --> testdata/parser/type/generic.proto:37:5
+  --> testdata/parser/type/generic.proto:23:5
    |
-37 |     set<Foo bar> x13 = 13;
+23 |     set<Foo bar> x13 = 13;
    |     ^^^
 
 error: unexpected type name in type parameters
-  --> testdata/parser/type/generic.proto:37:13
+  --> testdata/parser/type/generic.proto:23:13
    |
-37 |     set<Foo bar> x13 = 13;
+23 |     set<Foo bar> x13 = 13;
    |             ^^^ expected `,`
    |             - note: assuming a missing `,` here
    |
   help: add a `,` here
    |
-37 |     set<Foo, bar> x13 = 13;
+23 |     set<Foo, bar> x13 = 13;
    |            +
 
 error: generic types other than `map` are not supported
-  --> testdata/parser/type/generic.proto:38:5
+  --> testdata/parser/type/generic.proto:24:5
    |
-38 |     set<optional.Foo> x14 = 14;
+24 |     set<optional.Foo> x14 = 14;
    |     ^^^
 
 error: unexpected type in method parameter list
-  --> testdata/parser/type/generic.proto:42:12
+  --> testdata/parser/type/generic.proto:28:12
    |
-42 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
+28 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
    |            ^^^^^^^^^^^^^^^^^^^ expected message type
 
 error: unexpected type in method return type
-  --> testdata/parser/type/generic.proto:42:42
+  --> testdata/parser/type/generic.proto:28:42
    |
-42 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
+28 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
    |                                          ^^^^^^^^^^^^^^^^^^^^^
    |                                           |
    |                                           expected message type
 
 error: unexpected type in method parameter list
-  --> testdata/parser/type/generic.proto:43:12
+  --> testdata/parser/type/generic.proto:29:12
    |
-43 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
+29 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
    |            ^^^^^^^^^^^^ expected message type
 
 error: unexpected type in method return type
-  --> testdata/parser/type/generic.proto:43:42
+  --> testdata/parser/type/generic.proto:29:42
    |
-43 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
+29 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
    |                                          ^^^^^^^^ expected message type
 
 error: unexpected type in method parameter list
-  --> testdata/parser/type/generic.proto:44:12
+  --> testdata/parser/type/generic.proto:30:12
    |
-44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
+30 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected message type
 
 error: unexpected type in method return type
-  --> testdata/parser/type/generic.proto:44:58
+  --> testdata/parser/type/generic.proto:30:58
    |
-44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
+30 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
    |                                                          ^^^^^^^^^^^^^^^^^^^
    |                                                           |
    |                                                           expected message type

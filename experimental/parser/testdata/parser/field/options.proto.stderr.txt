@@ -1,30 +1,30 @@
 error: compact options cannot be empty
-  --> testdata/parser/field/options.proto:21:15
+  --> testdata/parser/field/options.proto:7:15
    |
-21 |     M bar = 2 [];
+ 7 |     M bar = 2 [];
    |               ^^ help: remove this
 
 error: unexpected `:` in compact option
-  --> testdata/parser/field/options.proto:27:19
+  --> testdata/parser/field/options.proto:13:19
    |
-27 |     M bad = 4 [foo: {bar: baz}];
+13 |     M bad = 4 [foo: {bar: baz}];
    |                   ^
   help: replace this with an `=`
    |
-27 | -     M bad = 4 [foo: {bar: baz}];
-27 | +     M bad = 4 [foo = {bar: baz}];
+13 | -     M bad = 4 [foo: {bar: baz}];
+13 | +     M bad = 4 [foo = {bar: baz}];
    |
    = note: top-level `option` assignment uses `=`, not `:`
 
 error: unexpected `=` in expression
-  --> testdata/parser/field/options.proto:28:28
+  --> testdata/parser/field/options.proto:14:28
    |
-28 |     M bad2 = 5 [foo = {bar = baz}];
+14 |     M bad2 = 5 [foo = {bar = baz}];
    |                            ^
   help: replace this with an `:`
    |
-28 | -     M bad2 = 5 [foo = {bar = baz}];
-28 | +     M bad2 = 5 [foo = {bar: baz}];
+14 | -     M bad2 = 5 [foo = {bar = baz}];
+14 | +     M bad2 = 5 [foo = {bar: baz}];
    |
    = note: a message expression use `=`, not `:`, for setting fields
 

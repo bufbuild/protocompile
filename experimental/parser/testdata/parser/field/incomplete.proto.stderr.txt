@@ -1,82 +1,82 @@
 error: missing name in message field
-  --> testdata/parser/field/incomplete.proto:20:5
+  --> testdata/parser/field/incomplete.proto:6:5
    |
-20 |     name = 1;
+ 6 |     name = 1;
    |     ^^^^^^^^^
 
 error: missing name in message field
-  --> testdata/parser/field/incomplete.proto:21:5
+  --> testdata/parser/field/incomplete.proto:7:5
    |
-21 |     foo.Bar = 1;
+ 7 |     foo.Bar = 1;
    |     ^^^^^^^^^^^^
 
 error: unexpected identifier after definition
-  --> testdata/parser/field/incomplete.proto:24:5
+  --> testdata/parser/field/incomplete.proto:10:5
    |
-24 |     foo.Bar name;
+10 |     foo.Bar name;
    |     ^^^ expected `;`
    |
   help: consider inserting a `;`
    |
-23 |     foo.bar name = 1;
+ 9 |     foo.bar name = 1;
    |                     +
 
 error: missing message field tag in declaration
-  --> testdata/parser/field/incomplete.proto:24:5
+  --> testdata/parser/field/incomplete.proto:10:5
    |
-24 |     foo.Bar name;
+10 |     foo.Bar name;
    |     ^^^^^^^^^^^^^
 
 error: unexpected integer literal in definition
-  --> testdata/parser/field/incomplete.proto:25:18
+  --> testdata/parser/field/incomplete.proto:11:18
    |
-25 |     foo.Bar name 1;
+11 |     foo.Bar name 1;
    |                  ^ expected `=`
    |
   help: consider inserting a `=`
    |
-25 |     foo.Bar name = 1;
+11 |     foo.Bar name = 1;
    |                  ++
 
 error: unexpected identifier after definition
-  --> testdata/parser/field/incomplete.proto:28:5
+  --> testdata/parser/field/incomplete.proto:14:5
    |
-28 |     foo..bar name = 1;
+14 |     foo..bar name = 1;
    |     ^^^ expected `;`
    |
   help: consider inserting a `;`
    |
-26 |     foo.bar name = 1;  // Comment
+12 |     foo.bar name = 1;  // Comment
    |                     +
 
 error: unexpected tokens after `.`
-  --> testdata/parser/field/incomplete.proto:28:9
+  --> testdata/parser/field/incomplete.proto:14:9
    |
-28 |     foo..bar name = 1;
+14 |     foo..bar name = 1;
    |         ^ expected identifier or `(...)`
 
 error: unexpected tokens after `.`
-  --> testdata/parser/field/incomplete.proto:29:9
+  --> testdata/parser/field/incomplete.proto:15:9
    |
-29 |     foo...bar name = 1;
+15 |     foo...bar name = 1;
    |         ^^ expected identifier or `(...)`
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/incomplete.proto:30:13
+  --> testdata/parser/field/incomplete.proto:16:13
    |
-30 |     foo.bar name. = 1;
+16 |     foo.bar name. = 1;
    |             ^^^^^ expected identifier
 
 error: unexpected `=` after qualified name
-  --> testdata/parser/field/incomplete.proto:30:19
+  --> testdata/parser/field/incomplete.proto:16:19
    |
-30 |     foo.bar name. = 1;
+16 |     foo.bar name. = 1;
    |                   ^ expected identifier or `(...)`
    |
   help: delete the extra `.`
    |
-30 | -     foo.bar name. = 1;
-30 | +     foo.bar name = 1;
+16 | -     foo.bar name. = 1;
+16 | +     foo.bar name = 1;
    |
 
 encountered 10 errors

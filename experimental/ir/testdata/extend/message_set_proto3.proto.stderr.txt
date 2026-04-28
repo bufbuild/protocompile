@@ -1,14 +1,14 @@
 error: message set type are not supported
-  --> testdata/extend/message_set_proto3.proto:20:12
+  --> testdata/extend/message_set_proto3.proto:6:12
    |
-19 | message M1 {
+ 5 | message M1 {
    | ----------
-20 |     option message_set_wire_format = true;
+ 6 |     option message_set_wire_format = true;
    |            ^^^^^^^^^^^^^^^^^^^^^^^ declared as message set here
    |
-  ::: testdata/extend/message_set_proto3.proto:15:10
+  ::: testdata/extend/message_set_proto3.proto:1:10
    |
-15 | syntax = "proto3";
+ 1 | syntax = "proto3";
    |          -------- "proto3" specified here
    |
    = help: message set types cannot be defined in "proto3" only
@@ -16,13 +16,13 @@ error: message set type are not supported
            implementations
 
 error: extension range in "proto3"
-  --> testdata/extend/message_set_proto3.proto:21:16
+  --> testdata/extend/message_set_proto3.proto:7:16
    |
-21 |     extensions 1 to max;
+ 7 |     extensions 1 to max;
    |                ^^^^^^^^
-  ::: testdata/extend/message_set_proto3.proto:15:10
+  ::: testdata/extend/message_set_proto3.proto:1:10
    |
-15 | syntax = "proto3";
+ 1 | syntax = "proto3";
    |          -------- "proto3" specified here
    |
    = help: extension numbers cannot be reserved in "proto3"

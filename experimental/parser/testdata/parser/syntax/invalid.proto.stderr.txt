@@ -1,7 +1,7 @@
 error: unrecognized `syntax` declaration value
-  --> testdata/parser/syntax/invalid.proto:15:10
+  --> testdata/parser/syntax/invalid.proto:1:10
    |
-15 | syntax = invalid;
+ 1 | syntax = invalid;
    |          ^^^^^^^
    = note: treating the file as "proto2" instead
    = help: permitted values: "proto2", "proto3"

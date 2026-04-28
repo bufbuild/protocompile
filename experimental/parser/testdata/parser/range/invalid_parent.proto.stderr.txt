@@ -1,60 +1,60 @@
 error: unexpected extension range within service definition
-  --> testdata/parser/range/invalid_parent.proto:20:5
+  --> testdata/parser/range/invalid_parent.proto:6:5
    |
-19 | / service Foo {
-20 | |     extensions 1;
+ 5 | / service Foo {
+ 6 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...
-21 | |     reserved 1;
-22 | | }
+ 7 | |     reserved 1;
+ 8 | | }
    | \_- ...cannot be declared within this service definition
    |
    = help: this extension range can only appear within a message definition
 
 error: unexpected reserved range within service definition
-  --> testdata/parser/range/invalid_parent.proto:21:5
+  --> testdata/parser/range/invalid_parent.proto:7:5
    |
-19 | / service Foo {
-20 | |     extensions 1;
-21 | |     reserved 1;
+ 5 | / service Foo {
+ 6 | |     extensions 1;
+ 7 | |     reserved 1;
    | |     ^^^^^^^^^^^ this reserved range...
-22 | | }
+ 8 | | }
    | \_- ...cannot be declared within this service definition
    |
    = help: this reserved range can only appear within one of message definition
            or enum definition
 
 error: unexpected extension range within message extension block
-  --> testdata/parser/range/invalid_parent.proto:25:5
+  --> testdata/parser/range/invalid_parent.proto:11:5
    |
-24 | / extend Foo {
-25 | |     extensions 1;
+10 | / extend Foo {
+11 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...
-26 | |     reserved 1;
-27 | | }
+12 | |     reserved 1;
+13 | | }
    | \_- ...cannot be declared within this message extension block
    |
    = help: this extension range can only appear within a message definition
 
 error: unexpected reserved range within message extension block
-  --> testdata/parser/range/invalid_parent.proto:26:5
+  --> testdata/parser/range/invalid_parent.proto:12:5
    |
-24 | / extend Foo {
-25 | |     extensions 1;
-26 | |     reserved 1;
+10 | / extend Foo {
+11 | |     extensions 1;
+12 | |     reserved 1;
    | |     ^^^^^^^^^^^ this reserved range...
-27 | | }
+13 | | }
    | \_- ...cannot be declared within this message extension block
    |
    = help: this reserved range can only appear within one of message definition
            or enum definition
 
 error: unexpected extension range within enum definition
-  --> testdata/parser/range/invalid_parent.proto:30:5
+  --> testdata/parser/range/invalid_parent.proto:16:5
    |
-29 | / enum Foo {
-30 | |     extensions 1;
+15 | / enum Foo {
+16 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...
-31 | | }
+17 | | }
    | \_- ...cannot be declared within this enum definition
    |
    = help: this extension range can only appear within a message definition

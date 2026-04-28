@@ -1,65 +1,65 @@
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:23:8
+  --> testdata/editions/proto2.proto:9:8
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-23 | option features = {};
+ 9 | option features = {};
    |        ^^^^^^^^
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:26:12
+  --> testdata/editions/proto2.proto:12:12
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-26 |     option features = {};
+12 |     option features = {};
    |            ^^^^^^^^
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:27:27
+  --> testdata/editions/proto2.proto:13:27
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-26 |     option features = {};
-27 |     optional int32 x = 1 [features.field_presence = IMPLICIT];
+12 |     option features = {};
+13 |     optional int32 x = 1 [features.field_presence = IMPLICIT];
    |                           ^^^^^^^^
 
 error: `field_presence` is not supported in "proto2"
-  --> testdata/editions/proto2.proto:27:27
+  --> testdata/editions/proto2.proto:13:27
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-26 |     option features = {};
-27 |     optional int32 x = 1 [features.field_presence = IMPLICIT];
+12 |     option features = {};
+13 |     optional int32 x = 1 [features.field_presence = IMPLICIT];
    |                           ^^^^^^^^^^^^^^^^^^^^^^^
    = help: `field_presence` requires at least Edition 2023
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:29:16
+  --> testdata/editions/proto2.proto:15:16
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-29 |         option features = {};
+15 |         option features = {};
    |                ^^^^^^^^
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:30:22
+  --> testdata/editions/proto2.proto:16:22
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-29 |         option features = {};
-30 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+15 |         option features = {};
+16 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: redundant custom option setting syntax
-   --> testdata/editions/proto2.proto:30:22
+   --> testdata/editions/proto2.proto:16:22
     |
- 30 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+ 16 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
     |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     |                       |
     |                       this field is not a message extension
@@ -71,33 +71,33 @@ warning: redundant custom option setting syntax
     |                        |
     |                        field declared inside of `google.protobuf.FieldOptions` here
     |
-   ::: testdata/editions/proto2.proto:30:22
+   ::: testdata/editions/proto2.proto:16:22
    help: replace `(...)` with a field name
     |
- 30 | -         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
- 30 | +         int32 z = 2 [features = {}];
+ 16 | -         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+ 16 | +         int32 z = 2 [features = {}];
     |
     |
     = help: custom option setting syntax should only be used with message
             extensions
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:35:12
+  --> testdata/editions/proto2.proto:21:12
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-35 |     option features = {};
+21 |     option features = {};
    |            ^^^^^^^^
 
 error: `features` cannot be set in "proto2"
-  --> testdata/editions/proto2.proto:36:12
+  --> testdata/editions/proto2.proto:22:12
    |
-17 | syntax = "proto2";
+ 3 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-35 |     option features = {};
-36 |     X = 1 [features = {}];
+21 |     option features = {};
+22 |     X = 1 [features = {}];
    |            ^^^^^^^^
 
 encountered 8 errors and 1 warning

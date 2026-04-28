@@ -1,7 +1,7 @@
 error: `package` declaration cannot specify compact options
-  --> testdata/parser/package/options.proto:17:14
+  --> testdata/parser/package/options.proto:3:14
    |
-17 | package test [(not.allowed) = "here"];
+ 3 | package test [(not.allowed) = "here"];
    |              ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 encountered 1 error

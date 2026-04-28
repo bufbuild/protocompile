@@ -1,14 +1,14 @@
 error: cannot use identifiers in reserved range in syntax mode
-  --> testdata/parser/range/reserved_syntax.proto:20:14
+  --> testdata/parser/range/reserved_syntax.proto:6:14
    |
-15 | syntax = "proto2";
+ 1 | syntax = "proto2";
    | ------------------ syntax mode is specified here
 ...
-20 |     reserved foo, "foo";
+ 6 |     reserved foo, "foo";
    |              ^^^
   help: quote it to make it into a string literal
    |
-20 |     reserved "foo", "foo";
+ 6 |     reserved "foo", "foo";
    |              +   +
 
 encountered 1 error
