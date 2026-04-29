@@ -41,8 +41,9 @@ type Result struct {
 type Import struct {
 	// Path of the imported file.
 	Path string
-	// Indicate if public or weak keyword was used in import statement.
-	IsPublic, IsWeak bool
+	// Indicate if public, weak, or option keyword was used in import statement.
+	// IsOption corresponds to the Editions 2024 "import option" syntax.
+	IsPublic, IsWeak, IsOption bool
 }
 
 // SyntaxError is returned from Scan when one or more syntax errors are observed.
@@ -96,9 +97,9 @@ func newSyntaxError(errs []reporter.ErrorWithPos) error {
 func Scan(filename string, r io.Reader) (Result, error) {
 	var res Result
 
-	var currentImport []string     // if non-nil, parsing an import statement
-	var isPublic, isWeak bool      // if public or weak keyword observed in current import statement
-	var packageComponents []string // if non-nil, parsing a package statement
+	var currentImport []string          // if non-nil, parsing an import statement
+	var isPublic, isWeak, isOption bool // if public, weak, or option keyword observed in current import statement
+	var packageComponents []string      // if non-nil, parsing a package statement
 	var syntaxErrs []reporter.ErrorWithPos
 
 	// current stack of open blocks -- those starting with {, [, (, or < for
@@ -138,9 +139,10 @@ func Scan(filename string, r io.Reader) (Result, error) {
 			case stringToken:
 				currentImport = append(currentImport, text)
 			case identifierToken:
-				if len(currentImport) == 0 && (text == "public" || text == "weak") {
+				if len(currentImport) == 0 && (text == "public" || text == "weak" || text == "option") {
 					isPublic = text == "public"
 					isWeak = text == "weak"
+					isOption = text == "option"
 					break
 				}
 				fallthrough
@@ -156,6 +158,7 @@ func Scan(filename string, r io.Reader) (Result, error) {
 						Path:     strings.Join(currentImport, ""),
 						IsPublic: isPublic,
 						IsWeak:   isWeak,
+						IsOption: isOption,
 					})
 				} else {
 					syntaxErrs = append(syntaxErrs,
@@ -226,7 +229,7 @@ func Scan(filename string, r io.Reader) (Result, error) {
 			if declarationStart && len(contextStack) == 0 {
 				if text == "import" {
 					currentImport = []string{}
-					isPublic, isWeak = false, false
+					isPublic, isWeak, isOption = false, false, false
 				} else if text == "package" {
 					packageComponents = []string{}
 				}

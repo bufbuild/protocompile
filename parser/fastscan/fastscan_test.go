@@ -159,6 +159,21 @@ func TestScan(t *testing.T) {
 			},
 			expectedPackage: "abc.xyz",
 		},
+		{
+			name: "option imports",
+			input: `edition = "2024";
+				package abc.xyz;
+				import "foo/bar/baz.proto";
+				import option "google/protobuf/cpp_features.proto";
+				import option "google/protobuf/java_features.proto";
+			`,
+			expectedImports: []Import{
+				{Path: "foo/bar/baz.proto"},
+				{Path: "google/protobuf/cpp_features.proto", IsOption: true},
+				{Path: "google/protobuf/java_features.proto", IsOption: true},
+			},
+			expectedPackage: "abc.xyz",
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
