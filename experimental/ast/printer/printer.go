@@ -270,7 +270,7 @@ func (p *printer) declGap(
 	scope scopeKind,
 ) gapStyle {
 	if i == 0 {
-		return p.firstDeclGap(trivia, scope)
+		return p.firstDeclGap(scope)
 	}
 
 	if !p.options.Format {
@@ -298,9 +298,8 @@ func (p *printer) declGap(
 	return gapNewline
 }
 
-// firstDeclGap computes the gap before the first declaration in a scope,
-// flushing any detached leading comments when necessary.
-func (p *printer) firstDeclGap(trivia detachedTrivia, scope scopeKind) gapStyle {
+// firstDeclGap computes the gap before the first declaration in a scope.
+func (p *printer) firstDeclGap(scope scopeKind) gapStyle {
 	if !p.options.Format {
 		if scope == scopeFile {
 			return gapNone
@@ -308,27 +307,16 @@ func (p *printer) firstDeclGap(trivia detachedTrivia, scope scopeKind) gapStyle 
 		return gapNewline
 	}
 
-	// Detect leading comments that need to be flushed separately from
-	// the first declaration. At file level, these are copyright headers
-	// or other file-leading comments. At body level, these are comments
-	// between '{' and the first member that were separated by a blank
-	// line in the source.
-	flush := false
-	if scope == scopeFile {
-		flush = p.pendingHasComments()
-	} else {
-		flush = trivia.hasBlankBefore(0)
-	}
-
-	if flush {
-		beforeComments := gapNone
-		if scope == scopeBody {
-			beforeComments = gapNewline
-		}
-		p.emitTrivia(beforeComments)
-		return gapNewline
-	}
-
+	// We deliberately do not flush p.pending here. The slot trivia
+	// already in pending (file-leading comments, or body comments
+	// between '{' and the first member) needs to merge with the first
+	// declaration's leading trivia in a single emitTrivia pass so that
+	// blank-line counts (newlineRun) span the whole boundary; otherwise
+	// splitDetached's separation of "last \n on the next token's leading"
+	// from the rest of the run would fragment a blank line into two
+	// flushes and lose it. The natural gap returned here propagates into
+	// printTokenAs, which appends att.leading to pending and then calls
+	// emitTrivia, seeing all the trivia together.
 	if scope == scopeFile {
 		return gapNone
 	}

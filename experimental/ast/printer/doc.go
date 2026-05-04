@@ -14,7 +14,9 @@
 
 // Package printer renders AST nodes to protobuf source text.
 //
-// The main entry point is [PrintFile], which renders an entire file while
+// The main entry point is [PrintFile], which renders an entire [ast.File] while
 // preserving original formatting (whitespace, comments, blank lines).
-// Use [Print] for rendering individual declarations without context.
+// Use [Print] for rendering individual AST declarations.
+//
+// TODO: docs
 package printer
