@@ -34,15 +34,17 @@ func pathFirstToken(path ast.Path) token.Token {
 }
 
 // printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
-func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {
+func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	if path.IsZero() {
 		return
 	}
 
 	// Path components are bound tightly (gapPreserve), so a trailing
 	// // comment on any component would eat subsequent components.
-	// Convert to /* */ to keep the path intact.
-	ctx.lineToBlock = true
+	// Convert to /* */ to keep the path intact for the duration of
+	// this call.
+	defer p.pushCtx()()
+	p.ctx.lineToBlock = true
 
 	first := true
 	for pc := range path.Components() {
@@ -55,7 +57,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {
 			sepGap = gap
 		}
 		if !pc.Separator().IsZero() {
-			p.printToken(pc.Separator(), sepGap, ctx)
+			p.printToken(pc.Separator(), sepGap)
 		}
 
 		// Print the name component
@@ -75,14 +77,14 @@ func (p *printer) printPath(path ast.Path, gap gapStyle, ctx printCtx) {
 				openTok, closeTok := parens.StartEnd()
 				trivia := p.trivia.scopeTrivia(parens.ID())
 
-				p.printToken(openTok, componentGap, ctx)
+				p.printToken(openTok, componentGap)
 				p.emitTriviaSlot(trivia, 0)
-				p.printPath(extn, gapPreserveTight, ctx)
+				p.printPath(extn, gapPreserveTight)
 				p.emitTriviaSlot(trivia, 1)
-				p.printToken(closeTok, gapPreserve, ctx)
+				p.printToken(closeTok, gapPreserve)
 			} else {
 				// Simple identifier
-				p.printToken(pc.Name(), componentGap, ctx)
+				p.printToken(pc.Name(), componentGap)
 			}
 		}
 	}

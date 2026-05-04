@@ -34,10 +34,16 @@ type Options struct {
 }
 
 // withDefaults returns a copy of opts with default values applied.
+//
+// Printer-specific defaults are applied first; remaining dom-related
+// fields are then defaulted via [dom.Options.WithDefaults].
 func (opts Options) withDefaults() Options {
 	if opts.TabstopWidth == 0 {
 		opts.TabstopWidth = 2
 	}
+	dd := opts.domOptions().WithDefaults()
+	opts.MaxWidth = dd.MaxWidth
+	opts.TabstopWidth = dd.TabstopWidth
 	return opts
 }
 

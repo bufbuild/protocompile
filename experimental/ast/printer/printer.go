@@ -46,9 +46,14 @@ const (
 	scopeBody
 )
 
-// printCtx carries formatting context down the print call stack. It
-// is passed by value so that modifications only affect the current
-// stack frame and its children. Fields only take effect in format mode.
+// printCtx is internal stack-frame state for the printer, carried
+// implicitly via [printer.ctx]. It is not user-configurable.
+//
+// The fields here track syntactic context that the printer enters and
+// exits during recursive descent (for example, "inside a path" or "after
+// `=` in a value position"). Callers mutate [printer.ctx] directly and
+// use [printer.pushCtx] to save and restore the state around recursive
+// calls. Fields only take effect in format mode.
 type printCtx struct {
 	// lineToBlock converts trailing // comments to /* */ in contexts
 	// where inline tokens follow without a newline break (paths,
@@ -97,8 +102,7 @@ func Print(options Options, decl ast.DeclAny) string {
 			push:    push,
 			options: options,
 		}
-		var ctx printCtx
-		p.printDecl(decl, gapNewline, ctx)
+		p.printDecl(decl, gapNewline)
 		p.emitTrivia(gapNone)
 	})
 }
@@ -109,6 +113,22 @@ type printer struct {
 	trivia  *triviaIndex
 	pending []token.Token
 	push    dom.Sink
+
+	// ctx is internal stack-frame state propagated through recursive
+	// descent. Mutations should be paired with [printer.pushCtx] to
+	// restore prior state when leaving a syntactic scope.
+	ctx printCtx
+}
+
+// pushCtx saves the current ctx and returns a function that restores it.
+//
+// Typical use is `defer p.pushCtx()()` at the top of a function whose
+// ctx mutations should be scoped to its body, or `restore := p.pushCtx()`
+// followed by an explicit `restore()` call to scope mutations to a
+// narrower block.
+func (p *printer) pushCtx() func() {
+	saved := p.ctx
+	return func() { p.ctx = saved }
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -122,8 +142,7 @@ func (p *printer) printFile(file *ast.File) {
 			return sorted[i]
 		})
 	}
-	var ctx printCtx
-	p.printScopeDecls(trivia, decls, scopeFile, ctx)
+	p.printScopeDecls(trivia, decls, scopeFile)
 	// In format mode, trailing file comments need a newline gap so they
 	// don't run into the last declaration's closing token. But if there
 	// are no declarations at all, emit nothing (empty file = empty output).
@@ -148,11 +167,11 @@ func (p *printer) pendingHasComments() bool {
 }
 
 // printToken emits a token with its trivia.
-func (p *printer) printToken(tok token.Token, gap gapStyle, ctx printCtx) {
+func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
 	}
-	p.printTokenAs(tok, gap, tok.Text(), ctx)
+	p.printTokenAs(tok, gap, tok.Text())
 }
 
 // printTokenSuppressTrailing prints a token with its leading trivia but
@@ -179,7 +198,7 @@ func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
 // printTokenAs prints a token using replacement text instead of the token's
 // own text. This is used for normalizing delimiters (e.g., angle brackets
 // to curly braces) while preserving the token's attached trivia.
-func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string, ctx printCtx) {
+func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
 		p.appendPending(att.leading)
@@ -199,12 +218,12 @@ func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string, ctx p
 	}
 
 	if hasTrivia {
-		p.emitTrailing(att.trailing, ctx)
+		p.emitTrailing(att.trailing)
 	}
 }
 
 // emitTrailing emits trailing attached trivia for a token.
-func (p *printer) emitTrailing(trailing []token.Token, ctx printCtx) {
+func (p *printer) emitTrailing(trailing []token.Token) {
 	if len(trailing) == 0 {
 		return
 	}
@@ -212,7 +231,7 @@ func (p *printer) emitTrailing(trailing []token.Token, ctx printCtx) {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				if ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
+				if p.ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
 					p.push(dom.Text("/*" + body + " */"))
@@ -230,7 +249,7 @@ func (p *printer) emitTrailing(trailing []token.Token, ctx printCtx) {
 // itself printed (e.g., commas removed from message literal fields in
 // format mode). This ensures comments attached to skipped commas are
 // never lost.
-func (p *printer) emitCommaTrivia(comma token.Token, ctx printCtx) {
+func (p *printer) emitCommaTrivia(comma token.Token) {
 	if comma.IsZero() {
 		return
 	}
@@ -238,7 +257,7 @@ func (p *printer) emitCommaTrivia(comma token.Token, ctx printCtx) {
 	if !ok {
 		return
 	}
-	p.emitTrailing(att.trailing, ctx)
+	p.emitTrailing(att.trailing)
 }
 
 // appendPending buffers trivia tokens for later processing by emitTrivia.
@@ -248,11 +267,11 @@ func (p *printer) appendPending(tokens []token.Token) {
 
 // printScopeDecls prints declarations in a scope, computing
 // inter-declaration gaps and emitting trivia slots between them.
-func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind, ctx printCtx) {
+func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind) {
 	for i := range decls.Len() {
 		p.emitTriviaSlot(trivia, i)
 		gap := p.declGap(decls, trivia, i, scope)
-		p.printDecl(decls.At(i), gap, ctx)
+		p.printDecl(decls.At(i), gap)
 	}
 	p.emitRemainingTrivia(trivia, decls.Len())
 }
@@ -497,13 +516,13 @@ func (p *printer) extractOpenTrailing(tok token.Token) []token.Token {
 // comments. When close comments were extracted (and emitted inside the
 // preceding indent block), the token text is emitted directly with its
 // trailing trivia. Otherwise, printToken/printTokenAs handles it normally.
-func (p *printer) emitCloseTok(closeTok token.Token, closeText string, closeComments []token.Token, closeAtt attachedTrivia, ctx printCtx) {
+func (p *printer) emitCloseTok(closeTok token.Token, closeText string, closeComments []token.Token, closeAtt attachedTrivia) {
 	if len(closeComments) > 0 {
 		p.emitGap(gapNewline)
 		p.push(dom.Text(closeText))
-		p.emitTrailing(closeAtt.trailing, ctx)
+		p.emitTrailing(closeAtt.trailing)
 	} else {
-		p.printTokenAs(closeTok, gapNewline, closeText, ctx)
+		p.printTokenAs(closeTok, gapNewline, closeText)
 	}
 }
 

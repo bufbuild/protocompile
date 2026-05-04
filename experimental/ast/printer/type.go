@@ -17,35 +17,35 @@ package printer
 import "github.com/bufbuild/protocompile/experimental/ast"
 
 // printType prints a type with the specified leading gap.
-func (p *printer) printType(ty ast.TypeAny, gap gapStyle, ctx printCtx) {
+func (p *printer) printType(ty ast.TypeAny, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
 
 	switch ty.Kind() {
 	case ast.TypeKindPath:
-		p.printPath(ty.AsPath().Path, gap, ctx)
+		p.printPath(ty.AsPath().Path, gap)
 	case ast.TypeKindPrefixed:
-		p.printTypePrefixed(ty.AsPrefixed(), gap, ctx)
+		p.printTypePrefixed(ty.AsPrefixed(), gap)
 	case ast.TypeKindGeneric:
-		p.printTypeGeneric(ty.AsGeneric(), gap, ctx)
+		p.printTypeGeneric(ty.AsGeneric(), gap)
 	}
 }
 
-func (p *printer) printTypePrefixed(ty ast.TypePrefixed, gap gapStyle, ctx printCtx) {
+func (p *printer) printTypePrefixed(ty ast.TypePrefixed, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
-	p.printToken(ty.PrefixToken(), gap, ctx)
-	p.printType(ty.Type(), gapSpace, ctx)
+	p.printToken(ty.PrefixToken(), gap)
+	p.printType(ty.Type(), gapSpace)
 }
 
-func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle, ctx printCtx) {
+func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle) {
 	if ty.IsZero() {
 		return
 	}
 
-	p.printPath(ty.Path(), gap, ctx)
+	p.printPath(ty.Path(), gap)
 	args := ty.Args()
 	brackets := args.Brackets()
 	if brackets.IsZero() {
@@ -55,16 +55,16 @@ func (p *printer) printTypeGeneric(ty ast.TypeGeneric, gap gapStyle, ctx printCt
 	openTok, closeTok := brackets.StartEnd()
 	trivia := p.trivia.scopeTrivia(brackets.ID())
 
-	p.printToken(openTok, gapPreserve, ctx)
+	p.printToken(openTok, gapPreserve)
 	for i := range args.Len() {
 		p.emitTriviaSlot(trivia, i)
 		argGap := gapPreserve
 		if i > 0 {
-			p.printToken(args.Comma(i-1), p.semiGap(), ctx)
+			p.printToken(args.Comma(i-1), p.semiGap())
 			argGap = gapSpace
 		}
-		p.printType(args.At(i), argGap, ctx)
+		p.printType(args.At(i), argGap)
 	}
 	p.emitRemainingTrivia(trivia, args.Len())
-	p.printToken(closeTok, gapPreserve, ctx)
+	p.printToken(closeTok, gapPreserve)
 }

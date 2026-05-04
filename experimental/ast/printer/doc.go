@@ -18,5 +18,5 @@
 // preserving original formatting (whitespace, comments, blank lines).
 // Use [Print] for rendering individual AST declarations.
 //
-// TODO: docs
+// TODO: Add [Edits] to this after implementing
 package printer
