@@ -1,0 +1,40 @@
+syntax = "proto2";
+import "google/protobuf/descriptor.proto";
+
+message Test {
+  extensions 100 to 200;
+  message Nested {
+    extend google.protobuf.MessageOptions {
+      optional int32 fooblez = 20003;
+    }
+    message _NestedNested {
+      extend Test {
+        optional string _garblez = 100;
+      }
+    }
+  }
+}
+
+extend google.protobuf.MessageOptions {
+  repeated Test rept = 20002;
+}
+
+message Foo {
+  // Simple extension field name in a message literal.
+  option (rept) = {
+    foo: "hoo"
+    [Test.Nested._NestedNested._garblez]: "spoo"
+  };
+  // Extension field name with block comments.
+  option (rept) = {
+    // Leading comment on 'foo'.
+    foo: "goo" // Trailing comment on foo
+
+    // Leading comment on extension name.
+    [ /* One */ foo.bar.Test.Nested._NestedNested._garblez /* Two */ ] /* Three */ : "boo" // Trailing comment on extension name.
+
+    // Leading comment on '}'.
+  };
+  // Single-field extension name in a message literal.
+  option (rept) = { [Test.Nested._NestedNested._garblez]: "only" };
+}

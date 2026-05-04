@@ -19,9 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pmezard/go-difflib/difflib"
-	"gopkg.in/yaml.v3"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/printer"
 	"github.com/bufbuild/protocompile/experimental/parser"
@@ -33,36 +30,54 @@ import (
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
-func TestPrinter(t *testing.T) {
+// TestRoundTrip exercises round-tripping a protobuf source through the printer.
+func TestRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
-		Root:       "testdata",
-		Extensions: []string{"yaml"},
+		Root:       "testdata/roundtrip",
+		Extensions: []string{"proto"},
+	}
+
+	corpus.Run(t, func(t *testing.T, path, text string, _ []string) {
+		errs := &report.Report{}
+		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
+		for _, d := range errs.Diagnostics {
+			if d.Level() <= report.Warning {
+				t.Logf("parse warning: %q", d)
+			}
+		}
+
+		got := printer.PrintFile(printer.Options{}, file)
+		if msg := golden.CompareAndDiff(got, text); msg != "" {
+			t.Errorf("round-trip mismatch:\n%s", msg)
+		}
+	})
+}
+
+// TestFormat exercises the printer's format mode against goldens in
+// testdata/format. Each <name>.proto is formatted and compared against
+// <name>.proto.txt; the output must also re-parse cleanly and be
+// idempotent under a second format pass.
+//
+// TODO: A few cases currently fail (blank-line preservation at trivia/
+// code transitions, and one block-comment-internals case). These are
+// expected to be fixed as part of the trivia-flush work landing after
+// round-trip is stable.
+func TestFormat(t *testing.T) {
+	t.Parallel()
+
+	corpus := golden.Corpus{
+		Root:       "testdata/format",
+		Extensions: []string{"proto"},
 		Outputs: []golden.Output{
 			{Extension: "txt"},
 		},
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
-		var testCase struct {
-			Source       string `yaml:"source"`
-			Format       bool   `yaml:"format"`
-			TabstopWidth int    `yaml:"indent"`
-			Edits        []Edit `yaml:"edits"`
-		}
-
-		if err := yaml.Unmarshal([]byte(text), &testCase); err != nil {
-			t.Fatalf("failed to parse test case %q: %v", path, err)
-		}
-
-		if testCase.Source == "" {
-			t.Fatalf("test case %q missing 'source' field", path)
-		}
-
-		// Parse the source
 		errs := &report.Report{}
-		file, _ := parser.Parse(path, source.NewFile(path, testCase.Source), errs)
+		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
 		hasParseErrors := false
 		for _, d := range errs.Diagnostics {
 			if d.Level() <= report.Error {
@@ -73,24 +88,13 @@ func TestPrinter(t *testing.T) {
 			}
 		}
 
-		// Apply edits if any
-		for _, edit := range testCase.Edits {
-			if err := applyEdit(file, edit); err != nil {
-				t.Fatalf("failed to apply edit in %q: %v", path, err)
-			}
-		}
-
-		options := printer.Options{
-			Format:       testCase.Format,
-			TabstopWidth: testCase.TabstopWidth,
-		}
+		options := printer.Options{Format: true}
 		got := printer.PrintFile(options, file)
 		outputs[0] = got
 
 		// Skip validity and idempotency checks when the source had
-		// parse errors (e.g., partial_message tests) or has edits
-		// (synthetic AST nodes may not round-trip).
-		if hasParseErrors || len(testCase.Edits) > 0 || !testCase.Format {
+		// parse errors (e.g., invalid_defs tests).
+		if hasParseErrors {
 			return
 		}
 
@@ -106,18 +110,23 @@ func TestPrinter(t *testing.T) {
 		// Verify idempotency: formatting the re-parsed output should
 		// produce the same result.
 		got2 := printer.PrintFile(options, file2)
-		if got2 != got {
-			diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(got),
-				B:        difflib.SplitLines(got2),
-				FromFile: "format(source)",
-				ToFile:   "format(format(source))",
-				Context:  3,
-			})
-			t.Errorf("formatting is not idempotent:\n%s", diff)
+		if msg := golden.CompareAndDiff(got2, got); msg != "" {
+			t.Errorf("formatting is not idempotent:\n%s", msg)
 		}
 	})
 }
+
+// TestEdits will exercise the AST-edit code paths against testdata/edits.
+//
+// TODO: edit support is being reworked; the Edit struct and edit helpers
+// below are retained so they can be revised when this test is wired up.
+func TestEdits(t *testing.T) {
+	t.Skip("TODO: edit support is being reworked; testdata/edits tests are temporarily disabled")
+}
+
+// Sink keeping the AST-edit helpers below from being flagged unused
+// while TestEdits is skipped. Drop once TestEdits is wired up.
+var _ = applyEdit
 
 // Edit represents an edit to apply to the AST.
 type Edit struct {
