@@ -23,6 +23,7 @@ import "github.com/bufbuild/protocompile/experimental/dom"
 var (
 	tagSpace        = dom.Text(" ")
 	tagNewline      = dom.Text("\n")
+	tagBlankline    = dom.Text("\n\n")
 	tagSoftbreak    = dom.TextIf(dom.Broken, "\n")
 	tagSoftlineFlat = dom.TextIf(dom.Flat, " ")
 )
@@ -32,7 +33,7 @@ func softline(push dom.Sink) {
 	push(tagSoftlineFlat, tagSoftbreak)
 }
 
-// blankline pushes two newlines (one blank line).
+// blankline pushes one blank line (two newlines).
 func blankline(push dom.Sink) {
-	push(tagNewline, tagNewline)
+	push(tagBlankline)
 }

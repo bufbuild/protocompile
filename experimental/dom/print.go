@@ -81,14 +81,7 @@ func (p *printer) print(cond Cond, cursor cursor) {
 			p.spaces = max(p.spaces, len(tag.text))
 
 		case kindBreak:
-			if len(tag.text) == 1 {
-				// Single-newline breaks increment by 1, capped at 2
-				// (one blank line maximum).
-				p.newlines = min(p.newlines+1, 2)
-			} else {
-				// Multi-newline breaks set the floor directly.
-				p.newlines = max(p.newlines, len(tag.text))
-			}
+			p.newlines = max(p.newlines, len(tag.text))
 
 		case kindGroup:
 			ourCond := Flat
