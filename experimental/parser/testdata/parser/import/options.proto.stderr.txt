@@ -1,32 +1,32 @@
 error: import cannot specify compact options
-  --> testdata/parser/import/options.proto:19:20
+  --> testdata/parser/import/options.proto:5:20
    |
-19 | import "foo.proto" [(not.allowed) = "here"];
+ 5 | import "foo.proto" [(not.allowed) = "here"];
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 warning: `import weak` is deprecated in "proto2"
-  --> testdata/parser/import/options.proto:20:8
+  --> testdata/parser/import/options.proto:6:8
    |
-15 | syntax = "proto2";
+ 1 | syntax = "proto2";
    |          -------- syntax specified here
 ...
-19 | import "foo.proto" [(not.allowed) = "here"];
-20 | import weak "weak.proto" [(not.allowed) = "here"];
+ 5 | import "foo.proto" [(not.allowed) = "here"];
+ 6 | import weak "weak.proto" [(not.allowed) = "here"];
    |        ^^^^
    = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 
 error: import cannot specify compact options
-  --> testdata/parser/import/options.proto:20:26
+  --> testdata/parser/import/options.proto:6:26
    |
-20 | import weak "weak.proto" [(not.allowed) = "here"];
+ 6 | import weak "weak.proto" [(not.allowed) = "here"];
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 error: import cannot specify compact options
-  --> testdata/parser/import/options.proto:21:30
+  --> testdata/parser/import/options.proto:7:30
    |
-21 | import public "public.proto" [(not.allowed) = "here"];
+ 7 | import public "public.proto" [(not.allowed) = "here"];
    |                              ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 encountered 3 errors and 1 warning

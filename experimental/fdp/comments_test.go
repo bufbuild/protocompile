@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,6 +90,17 @@ func TestBlockComments(t *testing.T) {
 		*/`,
 		"\n Line 1\n",
 		18,
+	)
+	testBlockComments(
+		t,
+		"multi-line block with blank line",
+		`/*
+  A block comment
+
+  with new lines preserved.
+*/`,
+		"\nA block comment\n\nwith new lines preserved.\n",
+		52,
 	)
 }
 

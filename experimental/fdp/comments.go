@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,13 @@ type commentTracker struct {
 	firstCommentOnSameLine bool
 }
 
+// isNonNewlineSpace reports whether r is whitespace other than a newline.
+// Used when trimming block-comment line prefixes so a blank line (which is
+// just "\n") keeps its newline.
+func isNonNewlineSpace(r rune) bool {
+	return r != '\n' && unicode.IsSpace(r)
+}
+
 // A paragraph is a group of comment and whitespace tokens that make up a single paragraph comment.
 type paragraph []token.Token
 
@@ -67,8 +74,9 @@ func (p paragraph) stringify() string {
 			for i, line := range strings.SplitAfter(text, "\n") {
 				// The block opening prefix has already been trimmed for the first line.
 				if i != 0 {
-					// Trim the leading whitespace and then check for a leading "*" prefix.
-					line = strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
+					// Trim leading whitespace except "\n" itself, so a blank line keeps
+					// its newline instead of collapsing to an empty string.
+					line = strings.TrimPrefix(strings.TrimLeftFunc(line, isNonNewlineSpace), "*")
 				}
 
 				str.WriteString(line)

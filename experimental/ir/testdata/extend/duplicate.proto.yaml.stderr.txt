@@ -9,4 +9,15 @@ error: field number `1` used more than once
  7 |   optional int32 a = 1;
    |                      - previously used here
 
-encountered 1 error
+error: field number `4` used more than once
+  --> d.proto:7:22
+   |
+ 7 |   optional int32 e = 4;
+   |                      ^ used here
+   |
+  ::: e.proto:7:22
+   |
+ 7 |   optional int32 f = 4;
+   |                      - previously used here
+
+encountered 2 errors

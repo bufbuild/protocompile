@@ -1,0 +1,4 @@
+file:
+- name: "test.proto"
+  package: "test"
+  message_type: [{ name: "Foo", extension_range: [{ start: 100, end: 201 }] }]

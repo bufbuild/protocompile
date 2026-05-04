@@ -1,7 +1,7 @@
 error: service method cannot specify compact options
-  --> testdata/parser/method/options.proto:20:41
+  --> testdata/parser/method/options.proto:6:41
    |
-20 |     rpc Bar1(foo.Bar) returns (foo.Bar) [not.(allowed).here = 42];
+ 6 |     rpc Bar1(foo.Bar) returns (foo.Bar) [not.(allowed).here = 42];
    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
    |                                          |
    |                                          help: remove this

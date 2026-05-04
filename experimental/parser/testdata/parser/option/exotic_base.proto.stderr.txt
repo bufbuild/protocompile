@@ -1,50 +1,50 @@
 error: unsupported base for integer literal
-  --> testdata/parser/option/exotic_base.proto:19:12
+  --> testdata/parser/option/exotic_base.proto:5:12
   help: use a hexadecimal literal instead
    |
-19 | - option x = 0b1100101;
-19 | + option x = 0x65;
+ 5 | - option x = 0b1100101;
+ 5 | + option x = 0x65;
    |
    = note: Protobuf does not support binary literals
 
 error: unsupported base for integer literal
-  --> testdata/parser/option/exotic_base.proto:20:12
+  --> testdata/parser/option/exotic_base.proto:6:12
   help: use a hexadecimal literal instead
    |
-20 | - option x = 0B1010101;
-20 | + option x = 0x55;
+ 6 | - option x = 0B1010101;
+ 6 | + option x = 0x55;
    |
    = note: Protobuf does not support binary literals
 
 error: unsupported base for integer literal
-  --> testdata/parser/option/exotic_base.proto:21:12
+  --> testdata/parser/option/exotic_base.proto:7:12
   help: remove the `o`
    |
-21 | - option x = 0o1234567;
-21 | + option x = 01234567;
+ 7 | - option x = 0o1234567;
+ 7 | + option x = 01234567;
    |
    = note: octal literals are prefixed with `0`, not `0o`
 
 error: unsupported base for integer literal
-  --> testdata/parser/option/exotic_base.proto:22:12
+  --> testdata/parser/option/exotic_base.proto:8:12
   help: remove the `o`
    |
-22 | - option x = 0O1234567;
-22 | + option x = 01234567;
+ 8 | - option x = 0O1234567;
+ 8 | + option x = 01234567;
    |
    = note: octal literals are prefixed with `0`, not `0o`
 
 error: unsupported base for floating-point literal
-  --> testdata/parser/option/exotic_base.proto:24:12
+  --> testdata/parser/option/exotic_base.proto:10:12
    |
-24 | option x = 0x10203.4;
+10 | option x = 0x10203.4;
    |            ^^^^^^^^^
    = note: Protobuf does not support hexadecimal floating-point literals
 
 error: unsupported base for floating-point literal
-  --> testdata/parser/option/exotic_base.proto:25:12
+  --> testdata/parser/option/exotic_base.proto:11:12
    |
-25 | option x = 0X12.ffP10;
+11 | option x = 0X12.ffP10;
    |            ^^^^^^^^^^
    = note: Protobuf does not support hexadecimal floating-point literals
 

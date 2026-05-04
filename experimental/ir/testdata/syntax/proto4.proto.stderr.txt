@@ -1,7 +1,7 @@
 error: unrecognized `syntax` declaration value
-  --> testdata/syntax/proto4.proto:16:10
+  --> testdata/syntax/proto4.proto:2:10
    |
-16 | syntax = "proto4";
+ 2 | syntax = "proto4";
    |          ^^^^^^^^
    = note: treating the file as "proto2" instead
    = help: permitted values: "proto2", "proto3"

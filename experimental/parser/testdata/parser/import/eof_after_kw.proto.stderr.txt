@@ -1,7 +1,7 @@
 error: unexpected end-of-file in import
-  --> testdata/parser/import/eof_after_kw.proto:20:7
+  --> testdata/parser/import/eof_after_kw.proto:6:7
    |
-20 | import
+ 6 | import
    |       ^
 
 encountered 1 error

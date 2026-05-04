@@ -1,52 +1,52 @@
 error: unexpected import within message definition
-  --> testdata/parser/import/in_message.proto:20:5
+  --> testdata/parser/import/in_message.proto:6:5
    |
-19 | / message M {
-20 | |     import "foo.proto";
+ 5 | / message M {
+ 6 | |     import "foo.proto";
    | |     ^^^^^^^^^^^^^^^^^^^ this import...
-21 | |     import public "foo.proto";
+ 7 | |     import public "foo.proto";
 ...  |
-25 | | }
+11 | | }
    | \_- ...cannot be declared within this message definition
    |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
-  --> testdata/parser/import/in_message.proto:21:5
+  --> testdata/parser/import/in_message.proto:7:5
    |
-19 | / message M {
-20 | |     import "foo.proto";
-21 | |     import public "foo.proto";
+ 5 | / message M {
+ 6 | |     import "foo.proto";
+ 7 | |     import public "foo.proto";
    | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ this import...
-22 | |     import weak "foo.proto";
+ 8 | |     import weak "foo.proto";
 ...  |
-25 | | }
+11 | | }
    | \_- ...cannot be declared within this message definition
    |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
-  --> testdata/parser/import/in_message.proto:22:5
+  --> testdata/parser/import/in_message.proto:8:5
    |
-19 | / message M {
-20 | |     import "foo.proto";
-21 | |     import public "foo.proto";
-22 | |     import weak "foo.proto";
+ 5 | / message M {
+ 6 | |     import "foo.proto";
+ 7 | |     import public "foo.proto";
+ 8 | |     import weak "foo.proto";
    | |     ^^^^^^^^^^^^^^^^^^^^^^^^ this import...
 ...  |
-25 | | }
+11 | | }
    | \_- ...cannot be declared within this message definition
    |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
-  --> testdata/parser/import/in_message.proto:24:5
+  --> testdata/parser/import/in_message.proto:10:5
    |
-19 | / message M {
+ 5 | / message M {
 ...  |
-24 | |     import foo.proto;
+10 | |     import foo.proto;
    | |     ^^^^^^^^^^^^^^^^^ this import...
-25 | | }
+11 | | }
    | \_- ...cannot be declared within this message definition
    |
    = help: this import can only appear at file scope

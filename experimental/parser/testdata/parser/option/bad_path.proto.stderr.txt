@@ -1,61 +1,61 @@
 error: missing option setting path
-  --> testdata/parser/option/bad_path.proto:19:1
+  --> testdata/parser/option/bad_path.proto:5:1
    |
-19 | option;
+ 5 | option;
    | ^^^^^^^
 
 error: missing option setting value
-  --> testdata/parser/option/bad_path.proto:20:1
+  --> testdata/parser/option/bad_path.proto:6:1
    |
-20 | option foo.bar;
+ 6 | option foo.bar;
    | ^^^^^^^^^^^^^^^
 
 error: missing option setting path
-  --> testdata/parser/option/bad_path.proto:21:1
+  --> testdata/parser/option/bad_path.proto:7:1
    |
-21 | option = 2;
+ 7 | option = 2;
    | ^^^^^^^^^^^
 
 error: unexpected absolute path in option setting
-  --> testdata/parser/option/bad_path.proto:22:8
+  --> testdata/parser/option/bad_path.proto:8:8
    |
-22 | option .(foo.bar).baz = 3;
+ 8 | option .(foo.bar).baz = 3;
    |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
    |
   help: remove the leading `.`
    |
-22 | - option .(foo.bar).baz = 3;
-22 | + option (foo.bar).baz = 3;
+ 8 | - option .(foo.bar).baz = 3;
+ 8 | + option (foo.bar).baz = 3;
    |
 
 error: unexpected `/` in path in option setting
-  --> testdata/parser/option/bad_path.proto:23:11
+  --> testdata/parser/option/bad_path.proto:9:11
    |
-23 | option foo/(bar.baz).foo = 4;
+ 9 | option foo/(bar.baz).foo = 4;
    |           ^ help: replace this with a `.`
 
 error: unexpected absolute path in option setting
-  --> testdata/parser/option/bad_path.proto:27:9
+  --> testdata/parser/option/bad_path.proto:13:9
    |
-27 |         .(foo.bar).baz = 3,
+13 |         .(foo.bar).baz = 3,
    |         ^^^^^^^^^^^^^^ expected a path without a leading `.`
    |
   help: remove the leading `.`
    |
-27 | -         .(foo.bar).baz = 3,
-27 | +         (foo.bar).baz = 3,
+13 | -         .(foo.bar).baz = 3,
+13 | +         (foo.bar).baz = 3,
    |
 
 error: unexpected `/` in path in option setting
-  --> testdata/parser/option/bad_path.proto:28:12
+  --> testdata/parser/option/bad_path.proto:14:12
    |
-28 |         foo/(bar.baz).foo = 4
+14 |         foo/(bar.baz).foo = 4
    |            ^ help: replace this with a `.`
 
 error: compact options cannot be empty
-  --> testdata/parser/option/bad_path.proto:30:17
+  --> testdata/parser/option/bad_path.proto:16:17
    |
-30 |     int32 y = 2 [];
+16 |     int32 y = 2 [];
    |                 ^^ help: remove this
 
 encountered 8 errors

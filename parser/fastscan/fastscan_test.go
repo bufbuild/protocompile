@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -156,6 +156,21 @@ func TestScan(t *testing.T) {
 			expectedImports: []Import{
 				{Path: "foo/bar/baz.proto", IsPublic: true},
 				{Path: "google/protobuf/descriptor.proto", IsWeak: true},
+			},
+			expectedPackage: "abc.xyz",
+		},
+		{
+			name: "option imports",
+			input: `edition = "2024";
+				package abc.xyz;
+				import "foo/bar/baz.proto";
+				import option "google/protobuf/cpp_features.proto";
+				import option "google/protobuf/java_features.proto";
+			`,
+			expectedImports: []Import{
+				{Path: "foo/bar/baz.proto"},
+				{Path: "google/protobuf/cpp_features.proto", IsOption: true},
+				{Path: "google/protobuf/java_features.proto", IsOption: true},
 			},
 			expectedPackage: "abc.xyz",
 		},

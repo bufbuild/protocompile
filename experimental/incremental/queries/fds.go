@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,6 +59,9 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 	linkResult, err := incremental.Resolve(t, linkQuery)
 	if err != nil {
 		return nil, err
+	}
+	if linkResult[0].Fatal != nil {
+		return nil, linkResult[0].Fatal
 	}
 
 	irs := linkResult[0].Value

@@ -1,64 +1,64 @@
 error: message field `buf.test.Foo.x1` set multiple times
-  --> testdata/options/values/singular.proto:24:5
+  --> testdata/options/values/singular.proto:10:5
    |
-23 |     x1: 1,
+ 9 |     x1: 1,
    |     -- first set here...
-24 |     x1: 2, // Setting more than once is an error.
+10 |     x1: 2, // Setting more than once is an error.
    |     ^^ ... also set here
 ...
-34 |     optional int32 x1 = 1;
+20 |     optional int32 x1 = 1;
    |                    -- not a repeated field
    |
    = note: a non-`repeated` option may be set at most once
 
 error: mismatched types
-  --> testdata/options/values/singular.proto:26:9
+  --> testdata/options/values/singular.proto:12:9
    |
-26 |     x2: [-1, 1], // Setting from an array is an error.
+12 |     x2: [-1, 1], // Setting from an array is an error.
    |         ^^^^^^^ expected `int32`, found array expression
 ...
-34 |     optional int32 x1 = 1;
-35 |     optional int32 x2 = 2;
+20 |     optional int32 x1 = 1;
+21 |     optional int32 x2 = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: array expression
 
 error: message field `buf.test.Foo.x3` set multiple times
-  --> testdata/options/values/singular.proto:29:5
+  --> testdata/options/values/singular.proto:15:5
    |
-28 |     x3: -1,
+14 |     x3: -1,
    |     -- first set here...
-29 |     x3: [0, "foo"], // Setting more than once with an array is an error,
+15 |     x3: [0, "foo"], // Setting more than once with an array is an error,
    |     ^^ ... also set here
 ...
-35 |     optional int32 x2 = 2;
-36 |     optional int32 x3 = 3;
+21 |     optional int32 x2 = 2;
+22 |     optional int32 x3 = 3;
    |                    -- not a repeated field
    |
    = note: a non-`repeated` option may be set at most once
 
 error: mismatched types
-  --> testdata/options/values/singular.proto:29:9
+  --> testdata/options/values/singular.proto:15:9
    |
-29 |     x3: [0, "foo"], // Setting more than once with an array is an error,
+15 |     x3: [0, "foo"], // Setting more than once with an array is an error,
    |         ^^^^^^^^^^ expected `int32`, found array expression
 ...
-35 |     optional int32 x2 = 2;
-36 |     optional int32 x3 = 3;
+21 |     optional int32 x2 = 2;
+22 |     optional int32 x3 = 3;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: array expression
 
 error: mismatched types
-  --> testdata/options/values/singular.proto:29:13
+  --> testdata/options/values/singular.proto:15:13
    |
-29 |     x3: [0, "foo"], // Setting more than once with an array is an error,
+15 |     x3: [0, "foo"], // Setting more than once with an array is an error,
    |             ^^^^^ expected `int32`, found `string`
 ...
-35 |     optional int32 x2 = 2;
-36 |     optional int32 x3 = 3;
+21 |     optional int32 x2 = 2;
+22 |     optional int32 x3 = 3;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`

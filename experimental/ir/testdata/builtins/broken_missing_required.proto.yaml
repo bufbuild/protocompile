@@ -1,21 +1,12 @@
-# Copyright 2020-2025 Buf Technologies, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http:#www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 # Tests that a genuinely broken descriptor.proto (missing required symbols
 # like FileOptions, MessageOptions, FieldOptions) is diagnosed by the
 # compiler with one error per missing required symbol, attached to
 # descriptor.proto itself rather than to the user's proto file.
+#
+# The user file additionally sets `option go_package = ...` so we exercise
+# the optionRef.resolve guard against a zero `field` builtin: with FileOptions
+# unresolved, lowering would otherwise panic when constructing an options
+# message rooted at the unresolved builtin.
 exclude_wkt_sources: true
 descriptor: true
 symtab: true
@@ -42,6 +33,8 @@ files:
   text: |
     syntax = "proto3";
     package test;
+
+    option go_package = "example.com";
 
     message Simple {
       string name = 1;

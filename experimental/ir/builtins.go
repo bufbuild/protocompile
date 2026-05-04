@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ type builtins struct {
 	MessageOptions   Member
 	FieldOptions     Member
 	OneofOptions     Member
-	RangeOptions     Member
+	RangeOptions     Member `builtin:"optional"`
 	EnumOptions      Member
 	EnumValueOptions Member
 	ServiceOptions   Member
