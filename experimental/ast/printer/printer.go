@@ -693,30 +693,41 @@ func (p *printer) emitBlockComment(text string) {
 		end = len(lines)
 	}
 
+	// pendingNewlines accumulates the number of '\n's that should
+	// precede the next content push. We coalesce them into a single
+	// wider break tag so blank interior lines survive dom's adjacent-
+	// break merge (which keeps the wider of two equal-width breaks but
+	// drops one when they are equal).
+	pendingNewlines := 0
 	for i := 1; i < end; i++ {
-		p.push(dom.Text("\n"))
+		pendingNewlines++
 		trimmed := strings.TrimLeft(lines[i], " \t")
 
 		if trimmed == "" {
 			continue
 		}
 
+		var content string
 		if prefix != 0 {
-			trimmed = strings.TrimRight(trimmed, " \t")
-			p.push(dom.Text(" " + trimmed))
+			content = " " + strings.TrimRight(trimmed, " \t")
 		} else {
 			line := unindent(lines[i], minIndent)
 			line = strings.TrimRight(line, " \t")
 			if line == "" {
 				continue
 			}
-			p.push(dom.Text("   " + line))
+			content = "   " + line
 		}
+
+		p.push(dom.Text(strings.Repeat("\n", pendingNewlines)))
+		p.push(dom.Text(content))
+		pendingNewlines = 0
 	}
 
 	// Emit standalone closing line if applicable.
 	if standaloneClose {
-		p.push(dom.Text("\n"))
+		pendingNewlines++
+		p.push(dom.Text(strings.Repeat("\n", pendingNewlines)))
 		if prefix == '*' {
 			p.push(dom.Text(" */"))
 		} else {
