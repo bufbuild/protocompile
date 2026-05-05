@@ -92,19 +92,58 @@ func PrintFile(options Options, file *ast.File) string {
 	})
 }
 
-// Print renders a single declaration to protobuf source text.
+// Print renders a snippet for an AST declaration to protobuf source text.
+//
+// The output reflects the declaration in its source position, including the
+// [detachedTrivia] at that position (e.g. a section comment that preceded
+// the decl).
+//
+// Currently only top-level declarations preserve their leading detached trivia.
+// Nested declarations (inside a message body, for example) emit their attached
+// leading trivia but not the body scope's detached slot at their position.
 //
 // For printing entire files, use [PrintFile] instead.
 func Print(options Options, decl ast.DeclAny) string {
 	options = options.withDefaults()
-	return dom.Render(options.domOptions(), func(push dom.Sink) {
+	domOpts := options.domOptions()
+
+	// Explicitly set OmitTrailingNewline to true to avoid [dom] from padding the
+	// output with a trailing newlines, allowing callers to manage the spacing of
+	// the output.
+	domOpts.OmitTrailingNewline = true
+	return dom.Render(domOpts, func(push dom.Sink) {
+		file := decl.Context()
+		trivia := buildTriviaIndex(file.Stream())
 		p := &printer{
+			trivia:  trivia,
 			push:    push,
 			options: options,
 		}
+
+		// Emit the decl's preceding scope slot for top-level decls so that section
+		// comments at the decl's source position render alongside the decl. Nested
+		// decls fall back to attached leading trivia only.
+		if i, ok := fileDeclIndex(file, decl); ok {
+			p.emitTriviaSlot(trivia.scopeTrivia(0), i)
+		}
 		p.printDecl(decl, gapNewline)
+
+		// If non-format mode left any trailing trivia in pending after the last
+		// token, flush it.
 		p.emitTrivia(gapNone)
 	})
+}
+
+// fileDeclIndex returns the index of decl in file.Decls() at the top
+// level, or false if decl is not a top-level declaration.
+func fileDeclIndex(file *ast.File, decl ast.DeclAny) (int, bool) {
+	decls := file.Decls()
+	for i := range decls.Len() {
+		if decls.At(i) == decl {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 // printer tracks state for printing AST nodes with fidelity.
@@ -267,7 +306,18 @@ func (p *printer) appendPending(tokens []token.Token) {
 
 // printScopeDecls prints declarations in a scope, computing
 // inter-declaration gaps and emitting trivia slots between them.
-func (p *printer) printScopeDecls(trivia detachedTrivia, decls seq.Indexer[ast.DeclAny], scope scopeKind) {
+//
+// Detached trivia (scope.slots[i]) stays at scope positions so that
+// section-boundary comments do not travel with their declaration when
+// the file is sorted in format mode.
+//
+// Attached trivia (leading on first token, trailing on last) is handled by
+// [printer.printDecl] via [printer.printTokenAs].
+func (p *printer) printScopeDecls(
+	trivia detachedTrivia,
+	decls seq.Indexer[ast.DeclAny],
+	scope scopeKind,
+) {
 	for i := range decls.Len() {
 		p.emitTriviaSlot(trivia, i)
 		gap := p.declGap(decls, trivia, i, scope)

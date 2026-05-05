@@ -30,7 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
-// TestRoundTrip exercises round-tripping a protobuf source through the printer.
+// TestRoundTrip exercises round-tripping a protobuf source through [printer.PrintFile].
 func TestRoundTrip(t *testing.T) {
 	t.Parallel()
 
@@ -51,6 +51,47 @@ func TestRoundTrip(t *testing.T) {
 		got := printer.PrintFile(printer.Options{}, file)
 		if msg := golden.CompareAndDiff(got, text); msg != "" {
 			t.Errorf("round-trip mismatch:\n%s", msg)
+		}
+	})
+}
+
+// TestPrint exercises [printer.Print] on each declaration in the round-trip
+// corpus. The concatenated output of [printer.Print] on each AST decl is
+// expected to be equivalent to the output of [printer.PrintFile], minus any
+// file-level trailing trivia, since those will not be captured by AST decls.
+func TestPrint(t *testing.T) {
+	t.Parallel()
+
+	corpus := golden.Corpus{
+		Root:       "testdata/roundtrip",
+		Extensions: []string{"proto"},
+	}
+
+	corpus.Run(t, func(t *testing.T, path, text string, _ []string) {
+		errs := &report.Report{}
+		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
+		for _, d := range errs.Diagnostics {
+			if d.Level() <= report.Warning {
+				t.Logf("parse warning: %q", d)
+			}
+		}
+
+		var actual strings.Builder
+		for decl := range seq.Values(file.Decls()) {
+			actual.WriteString(printer.Print(printer.Options{}, decl))
+		}
+
+		whole := printer.PrintFile(printer.Options{}, file)
+		// Trim the trailing newline from the printed decls to check against the
+		// [printer.PrintFile] output.
+		// trimmed := strings.TrimRight(actual.String(), "\n")
+		// We check that the trimmed output is a prefix of the whole file, since
+		// printing the whole file may emit any trailing detached trivia (e.g. EOF
+		// comments) that are not printed along with any decls.
+		if !strings.HasPrefix(whole, actual.String()) {
+			if msg := golden.CompareAndDiff(actual.String(), whole); msg != "" {
+				t.Errorf("Print over decls is not a prefix of PrintFile:\n%s", msg)
+			}
 		}
 	})
 }

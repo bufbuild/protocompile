@@ -54,7 +54,13 @@ func render(options Options, doc *dom) string {
 		p.print(Broken, doc.cursor())
 	}
 
-	if !strings.HasSuffix(p.out.String(), "\n") {
+	if options.OmitTrailingNewline {
+		// Flush any queued newlines from trailing break tags so they
+		// land in the output. The safeguard newline is skipped.
+		for range p.newlines {
+			p.out.WriteByte('\n')
+		}
+	} else if !strings.HasSuffix(p.out.String(), "\n") {
 		p.out.WriteByte('\n')
 	}
 
