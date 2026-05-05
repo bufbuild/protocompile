@@ -80,14 +80,15 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// In format mode, all parts go on their own lines.
 	// Clear lineToBlock for the parts: intermediate // comments
 	// between string parts are on their own lines and are safe as-is.
-	// We capture the caller's ctx separately and restore it before the
-	// trailing emit on the closing part, since a trailing // there
+	// The restorer below scopes the change and is also invoked inline
+	// before the closing part's trailing emit -- a trailing // there
 	// would eat the following token (`;`, `]`, etc) if the caller
-	// requested conversion.
+	// requested conversion, so we rewind to the caller's state for
+	// that one emit. The restorer is idempotent, so the deferred call
+	// at function exit is safe regardless.
 	indented := p.ctx.indentExpr
-	caller := p.ctx
-	defer p.pushCtx()()
-	p.ctx.lineToBlock = false
+	restore := p.ctx.with(lineToBlock(false))
+	defer restore()
 
 	printParts := func(pp *printer) {
 		pp.printTokenAs(tok, gapNewline, openTok.Text())
@@ -107,9 +108,9 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 		}
 		pp.push(dom.Text(closeTok.Text()))
 		if hasTrivia {
-			// Restore the caller's ctx (specifically lineToBlock) for
-			// the closing trailing comment.
-			p.ctx = caller
+			// Rewind to the caller's state so the trailing emit
+			// uses the caller's lineToBlock.
+			restore()
 			pp.emitTrailing(att.trailing)
 		}
 	}
@@ -178,9 +179,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	// Containers manage their own indentation; both flags reset for the
 	// scope of this array.
-	defer p.pushCtx()()
-	p.ctx.lineToBlock = false
-	p.ctx.indentExpr = false
+	defer p.ctx.with(lineToBlock(false), indentExpr(false))()
 
 	openTok, closeTok := brackets.StartEnd()
 	slots := p.trivia.scopeTrivia(brackets.ID())
@@ -254,9 +253,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 	// Containers manage their own indentation; both flags reset for the
 	// scope of this dict.
-	defer p.pushCtx()()
-	p.ctx.lineToBlock = false
-	p.ctx.indentExpr = false
+	defer p.ctx.with(lineToBlock(false), indentExpr(false))()
 
 	braces := expr.Braces()
 	if braces.IsZero() {
@@ -388,8 +385,7 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		if first {
 			valueGap = gap
 		}
-		restore := p.pushCtx()
-		p.ctx.indentExpr = true
+		restore := p.ctx.with(indentExpr(true))
 		p.printExpr(expr.Value(), valueGap)
 		restore()
 	}

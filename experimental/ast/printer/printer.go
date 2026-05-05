@@ -46,26 +46,6 @@ const (
 	scopeBody
 )
 
-// printCtx is internal stack-frame state for the printer, carried
-// implicitly via [printer.ctx]. It is not user-configurable.
-//
-// The fields here track syntactic context that the printer enters and
-// exits during recursive descent (for example, "inside a path" or "after
-// `=` in a value position"). Callers mutate [printer.ctx] directly and
-// use [printer.pushCtx] to save and restore the state around recursive
-// calls. Fields only take effect in format mode.
-type printCtx struct {
-	// lineToBlock converts trailing // comments to /* */ in contexts
-	// where inline tokens follow without a newline break (paths,
-	// compact options, option values before `;`).
-	lineToBlock bool
-
-	// indentExpr indents compound string parts one level. Set in
-	// value contexts after `=` or `:` so multi-part strings break
-	// under the assignment.
-	indentExpr bool
-}
-
 // PrintFile renders an AST file to protobuf source text.
 func PrintFile(options Options, file *ast.File) string {
 	options = options.withDefaults()
@@ -87,6 +67,7 @@ func PrintFile(options Options, file *ast.File) string {
 			trivia:  trivia,
 			push:    push,
 			options: options,
+			ctx:     new(context),
 		}
 		p.printFile(file)
 	})
@@ -118,6 +99,7 @@ func Print(options Options, decl ast.DeclAny) string {
 			trivia:  trivia,
 			push:    push,
 			options: options,
+			ctx:     new(context),
 		}
 
 		// Emit the decl's preceding scope slot for top-level decls so that section
@@ -153,21 +135,9 @@ type printer struct {
 	pending []token.Token
 	push    dom.Sink
 
-	// ctx is internal stack-frame state propagated through recursive
-	// descent. Mutations should be paired with [printer.pushCtx] to
-	// restore prior state when leaving a syntactic scope.
-	ctx printCtx
-}
-
-// pushCtx saves the current ctx and returns a function that restores it.
-//
-// Typical use is `defer p.pushCtx()()` at the top of a function whose
-// ctx mutations should be scoped to its body, or `restore := p.pushCtx()`
-// followed by an explicit `restore()` call to scope mutations to a
-// narrower block.
-func (p *printer) pushCtx() func() {
-	saved := p.ctx
-	return func() { p.ctx = saved }
+	// ctx stores expected formatting behaviours based on the scope of the
+	// printed entity.
+	ctx *context
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.

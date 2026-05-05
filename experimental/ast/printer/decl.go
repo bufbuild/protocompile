@@ -145,9 +145,7 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
 		// Convert trailing // comments to /* */ on the value expression,
 		// since the `;` follows on the same line and a line comment
 		// would consume it.
-		restore := p.pushCtx()
-		p.ctx.lineToBlock = true
-		p.ctx.indentExpr = true
+		restore := p.ctx.with(lineToBlock(true), indentExpr(true))
 		p.printExpr(opt.Value, gapSpace)
 		restore()
 	}
@@ -294,8 +292,7 @@ func (p *printer) printBody(body ast.DeclBody) {
 	}
 	// Line comments are safe on their own lines inside bodies; reset
 	// the inline-conversion flag for the body's scope.
-	defer p.pushCtx()()
-	p.ctx.lineToBlock = false
+	defer p.ctx.with(lineToBlock(false))()
 
 	openTok, closeTok := body.Braces().StartEnd()
 	trivia := p.trivia.scopeTrivia(body.Braces().ID())
@@ -417,16 +414,14 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			// message literal values expand naturally while keeping
 			// [ and ] on the field line. Convert any trailing //
 			// comments to /* */ so they don't eat the closing bracket.
-			singleRestore := p.pushCtx()
-			p.ctx.lineToBlock = true
+			singleRestore := p.ctx.with(lineToBlock(true))
 			p.printToken(openTok, gapSpace)
 			opt := entries.At(0)
 			p.emitTriviaSlot(slots, 0)
 			p.printPath(opt.Path, gapNone)
 			if !opt.Equals.IsZero() {
 				p.printToken(opt.Equals, gapSpace)
-				valueRestore := p.pushCtx()
-				p.ctx.indentExpr = true
+				valueRestore := p.ctx.with(indentExpr(true))
 				p.printExpr(opt.Value, gapSpace)
 				valueRestore()
 			}
@@ -467,8 +462,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					indented.printPath(opt.Path, gapNewline)
 					if !opt.Equals.IsZero() {
 						indented.printToken(opt.Equals, gapSpace)
-						restore := p.pushCtx()
-						p.ctx.indentExpr = true
+						restore := p.ctx.with(indentExpr(true))
 						indented.printExpr(opt.Value, gapSpace)
 						restore()
 					}

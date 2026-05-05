@@ -43,8 +43,7 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	// // comment on any component would eat subsequent components.
 	// Convert to /* */ to keep the path intact for the duration of
 	// this call.
-	defer p.pushCtx()()
-	p.ctx.lineToBlock = true
+	defer p.ctx.with(lineToBlock(true))()
 
 	first := true
 	for pc := range path.Components() {
