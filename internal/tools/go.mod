@@ -3,7 +3,7 @@ module github.com/bufbuild/protocompile/internal/tools
 go 1.25.7
 
 require (
-	github.com/bufbuild/buf v1.68.3
+	github.com/bufbuild/buf v1.69.0
 	github.com/golangci/golangci-lint/v2 v2.11.4
 	golang.org/x/tools v0.44.0
 )
@@ -137,7 +137,7 @@ require (
 	github.com/maratori/testpackage v1.1.2 // indirect
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.15.0 // indirect
