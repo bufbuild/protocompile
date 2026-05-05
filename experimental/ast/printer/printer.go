@@ -62,13 +62,7 @@ func PrintFile(options Options, file *ast.File) string {
 	}
 
 	return dom.Render(options.domOptions(), func(push dom.Sink) {
-		trivia := buildTriviaIndex(file.Stream())
-		p := &printer{
-			trivia:  trivia,
-			push:    push,
-			options: options,
-			ctx:     new(context),
-		}
+		p := newPrinter(options, buildTriviaIndex(file.Stream()), push)
 		p.printFile(file)
 	})
 }
@@ -95,12 +89,7 @@ func Print(options Options, decl ast.DeclAny) string {
 	return dom.Render(domOpts, func(push dom.Sink) {
 		file := decl.Context()
 		trivia := buildTriviaIndex(file.Stream())
-		p := &printer{
-			trivia:  trivia,
-			push:    push,
-			options: options,
-			ctx:     new(context),
-		}
+		p := newPrinter(options, trivia, push)
 
 		// Emit the decl's preceding scope slot for top-level decls so that section
 		// comments at the decl's source position render alongside the decl. Nested
@@ -135,9 +124,27 @@ type printer struct {
 	pending []token.Token
 	push    dom.Sink
 
+	// indent is the cached indentation string applied by [printer.withIndent],
+	// computed once from [Options.TabstopWidth] at construction time to avoid
+	// re-allocating on every nested scope.
+	indent string
+
 	// ctx stores expected formatting behaviours based on the scope of the
 	// printed entity.
 	ctx *context
+}
+
+// newPrinter constructs a printer for the given options, trivia index,
+// and dom sink. options should already have defaults applied via
+// [Options.withDefaults].
+func newPrinter(options Options, trivia *triviaIndex, push dom.Sink) *printer {
+	return &printer{
+		options: options,
+		trivia:  trivia,
+		push:    push,
+		indent:  strings.Repeat(" ", options.TabstopWidth),
+		ctx:     new(context),
+	}
 }
 
 // printFile prints all declarations in a file, zipping with trivia slots.
@@ -243,6 +250,9 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				if p.ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
+					// If the body contains "*/", insert a space to keep
+					// it from prematurely terminating the block comment.
+					body = strings.ReplaceAll(body, "*/", "* /")
 					p.push(dom.Text("/*" + body + " */"))
 				} else {
 					p.emitComment(t)
@@ -634,7 +644,7 @@ func (p *printer) semiGap() gapStyle {
 // withIndent runs fn with an indented printer, swapping the sink temporarily.
 func (p *printer) withIndent(fn func(p *printer)) {
 	originalPush := p.push
-	p.push(dom.Indent(strings.Repeat(" ", p.options.TabstopWidth), func(indentSink dom.Sink) {
+	p.push(dom.Indent(p.indent, func(indentSink dom.Sink) {
 		p.push = indentSink
 		fn(p)
 	}))

@@ -31,4 +31,9 @@ message Foo {
   optional string path_comments = 6 [
     (custom  /* One */  .  /* Two */  name) = "hello"
   ];
+
+  // Issue 9: Trailing // containing "*/" in its body must be escaped on
+  // conversion so the synthesised /* */ does not terminate prematurely.
+  optional string with_terminator = 7 [deprecated = true // foo */ bar
+  ];
 }
