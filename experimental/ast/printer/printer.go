@@ -151,13 +151,15 @@ func newPrinter(options Options, trivia *triviaIndex, push dom.Sink) *printer {
 func (p *printer) printFile(file *ast.File) {
 	trivia := p.trivia.scopeTrivia(0)
 	decls := seq.Indexer[ast.DeclAny](file.Decls())
-	if p.options.Format {
+
+	if p.options.Format && p.options.Formatting.CanonicalizeFileOrder {
 		sorted := seq.ToSlice(decls)
 		sortFileDeclsForFormat(sorted)
 		decls = seq.NewFunc(len(sorted), func(i int) ast.DeclAny {
 			return sorted[i]
 		})
 	}
+
 	p.printScopeDecls(trivia, decls, scopeFile)
 	// In format mode, trailing file comments need a newline gap so they
 	// don't run into the last declaration's closing token. But if there
@@ -174,6 +176,7 @@ func (p *printer) printFile(file *ast.File) {
 			}
 		}
 	}
+
 	p.emitTrivia(endGap)
 }
 
@@ -197,6 +200,7 @@ func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
 		return
 	}
+
 	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
 	if hasTrivia {
 		p.appendPending(att.leading)
@@ -207,6 +211,7 @@ func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
 	} else {
 		p.emitGap(gap)
 	}
+
 	p.push(dom.Text(tok.Text()))
 	// Trailing trivia intentionally not emitted.
 }
@@ -245,6 +250,7 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 	if len(trailing) == 0 {
 		return
 	}
+
 	if p.options.Format {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
@@ -274,10 +280,12 @@ func (p *printer) emitCommaTrivia(comma token.Token) {
 	if comma.IsZero() {
 		return
 	}
+
 	att, ok := p.trivia.tokenTrivia(comma.ID())
 	if !ok {
 		return
 	}
+
 	p.emitTrailing(att.trailing)
 }
 
@@ -305,6 +313,7 @@ func (p *printer) printScopeDecls(
 		gap := p.declGap(decls, trivia, i, scope)
 		p.printDecl(decls.At(i), gap)
 	}
+
 	p.emitRemainingTrivia(trivia, decls.Len())
 }
 
@@ -346,6 +355,7 @@ func (p *printer) declGap(
 	if trivia.hasBlankBefore(i) {
 		return gapBlankline
 	}
+
 	return gapNewline
 }
 
@@ -371,6 +381,7 @@ func (p *printer) firstDeclGap(scope scopeKind) gapStyle {
 	if scope == scopeFile {
 		return gapNone
 	}
+
 	return gapNewline
 }
 
@@ -380,6 +391,7 @@ func (p *printer) emitTriviaSlot(trivia detachedTrivia, i int) {
 	if i >= len(trivia.slots) {
 		return
 	}
+
 	p.appendPending(trivia.slots[i])
 }
 
@@ -411,9 +423,11 @@ func commentGap(contextGap gapStyle, isLineComment bool, blankRun int) gapStyle 
 	if blankRun >= 2 {
 		return gapBlankline
 	}
+
 	if isLineComment {
 		return gapNewline
 	}
+
 	return contextGap
 }
 
@@ -493,6 +507,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		} else {
 			p.emitGap(commentGap(ag, prevIsLine, newlineRun))
 		}
+
 		hasNonNewlineSpace = false
 		newlineRun = 0
 		isLine := strings.HasPrefix(tok.Text(), "//")
@@ -509,6 +524,7 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		p.emitGap(commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, newlineRun))
 		return
 	}
+
 	p.emitGap(gap)
 }
 
@@ -520,13 +536,16 @@ func (p *printer) extractCloseComments(closeTok token.Token) ([]token.Token, att
 	if !p.options.Format {
 		return nil, attachedTrivia{}
 	}
+
 	att, hasTrivia := p.trivia.tokenTrivia(closeTok.ID())
 	if !hasTrivia {
 		return nil, attachedTrivia{}
 	}
+
 	if sliceHasComment(att.leading) {
 		return att.leading, att
 	}
+
 	return nil, attachedTrivia{}
 }
 
@@ -538,6 +557,7 @@ func (p *printer) extractOpenTrailing(tok token.Token) []token.Token {
 	if !ok {
 		return nil
 	}
+
 	if sliceHasComment(att.trailing) {
 		return att.trailing
 	}
@@ -564,6 +584,7 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 	if p.trivia == nil {
 		return false
 	}
+
 	openTok, closeTok := fused.StartEnd()
 	// Check open token trailing.
 	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
@@ -571,12 +592,14 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 			return true
 		}
 	}
+
 	// Check close token leading.
 	if att, ok := p.trivia.tokenTrivia(closeTok.ID()); ok {
 		if sliceHasComment(att.leading) {
 			return true
 		}
 	}
+
 	// Check interior tokens.
 	cursor := fused.Children()
 	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
@@ -605,6 +628,7 @@ func (p *printer) scopeHasUninlineableLeadingComments(fused token.Token) bool {
 	if p.trivia == nil {
 		return false
 	}
+
 	cursor := fused.Children()
 	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
 		if tok.Kind().IsSkippable() {
@@ -730,6 +754,7 @@ func (p *printer) emitBlockComment(text string) {
 			prefix = 0
 		}
 	}
+
 	if minIndent < 0 {
 		minIndent = 0
 	}

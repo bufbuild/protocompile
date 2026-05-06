@@ -129,7 +129,7 @@ func TestFormat(t *testing.T) {
 			}
 		}
 
-		options := printer.Options{Format: true}
+		options := printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}
 		got := printer.PrintFile(options, file)
 		outputs[0] = got
 

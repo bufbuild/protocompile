@@ -107,7 +107,8 @@ func TestBufFormat(t *testing.T) {
 				t.Logf("parse warning: %q", diagnostic)
 			}
 
-			got := printer.PrintFile(printer.Options{Format: true}, file)
+			opts := printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}
+			got := printer.PrintFile(opts, file)
 			want := string(goldenData)
 
 			if got != want {
@@ -130,7 +131,7 @@ func TestBufFormat(t *testing.T) {
 					t.Errorf("formatted output does not re-parse: %v", diagnostic)
 				}
 			}
-			got2 := printer.PrintFile(printer.Options{Format: true}, file2)
+			got2 := printer.PrintFile(opts, file2)
 			if got2 != got {
 				diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:        difflib.SplitLines(got),
