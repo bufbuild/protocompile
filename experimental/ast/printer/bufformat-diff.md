@@ -232,3 +232,16 @@ are idempotent. The remaining diffs are placement-only.
   (e.g. `[/* leading */ packed = false]`) now expand to multi-line
   correctly instead of emitting a broken half-expanded form.
 - Single-element dicts stay inline when they fit.
+
+## Correctness Improvements Over Legacy
+
+These are cases where our output is intentionally not byte-equivalent
+to legacy `buf format` because the legacy output is broken protobuf.
+
+- Inline `//` comment containing `*/` in its body (e.g. `// foo */ bar`)
+  is escaped to `/* foo * / bar */` when converting to a block comment.
+  Legacy `bufformat/formatter.go` does not check for embedded `*/` and
+  produces `/* foo */ bar */`, which terminates the synthesized block
+  comment prematurely and leaks `bar */` as text. Our escape preserves
+  syntactic validity at the cost of a one-character visual difference
+  in the body.
