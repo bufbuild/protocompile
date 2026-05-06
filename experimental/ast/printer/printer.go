@@ -125,7 +125,7 @@ type printer struct {
 	push    dom.Sink
 
 	// indent is the cached indentation string applied by [printer.withIndent],
-	// computed once from [Options.TabstopWidth] at construction time to avoid
+	// computed once from [Formatting.TabstopWidth] at construction time to avoid
 	// re-allocating on every nested scope.
 	indent string
 
@@ -142,7 +142,7 @@ func newPrinter(options Options, trivia *triviaIndex, push dom.Sink) *printer {
 		options: options,
 		trivia:  trivia,
 		push:    push,
-		indent:  strings.Repeat(" ", options.TabstopWidth),
+		indent:  strings.Repeat(" ", options.Formatting.TabstopWidth),
 		ctx:     new(context),
 	}
 }
@@ -656,7 +656,7 @@ func (p *printer) withIndent(fn func(p *printer)) {
 // withGroup runs fn with a grouped printer, swapping the sink temporarily.
 func (p *printer) withGroup(fn func(p *printer)) {
 	originalPush := p.push
-	p.push(dom.Group(p.options.MaxWidth, func(groupSink dom.Sink) {
+	p.push(dom.Group(p.options.Formatting.MaxWidth, func(groupSink dom.Sink) {
 		p.push = groupSink
 		fn(p)
 	}))
