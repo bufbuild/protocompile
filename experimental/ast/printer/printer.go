@@ -252,10 +252,11 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 	}
 
 	if p.options.Format {
+		rewriteToBlock := p.options.Formatting.RewriteTrailingLineCommentsToBlock
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				if p.ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
+				if rewriteToBlock && p.ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
 					// If the body contains "*/", insert a space to keep
@@ -608,6 +609,50 @@ func (p *printer) scopeHasAttachedComments(fused token.Token) bool {
 		}
 		if att, ok := p.trivia.tokenTrivia(tok.ID()); ok {
 			if sliceHasComment(att.leading) || sliceHasComment(att.trailing) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// scopeHasLineTrailingComments reports whether any token in a fused
+// scope has a trailing `//` line comment. Used by the layout fallback
+// when [Formatting.RewriteTrailingLineCommentsToBlock] is false: a `//`
+// trailing in an otherwise-flat scope would consume the closing
+// punctuation, so the scope must render broken instead.
+func (p *printer) scopeHasLineTrailingComments(fused token.Token) bool {
+	if p.trivia == nil {
+		return false
+	}
+
+	hasLineComment := func(tokens []token.Token) bool {
+		for _, t := range tokens {
+			if t.Kind() == token.Comment && strings.HasPrefix(t.Text(), "//") {
+				return true
+			}
+		}
+		return false
+	}
+
+	openTok, closeTok := fused.StartEnd()
+	if att, ok := p.trivia.tokenTrivia(openTok.ID()); ok {
+		if hasLineComment(att.trailing) {
+			return true
+		}
+	}
+	if att, ok := p.trivia.tokenTrivia(closeTok.ID()); ok {
+		if hasLineComment(att.leading) {
+			return true
+		}
+	}
+	cursor := fused.Children()
+	for tok := cursor.NextSkippable(); !tok.IsZero(); tok = cursor.NextSkippable() {
+		if tok.Kind().IsSkippable() {
+			continue
+		}
+		if att, ok := p.trivia.tokenTrivia(tok.ID()); ok {
+			if hasLineComment(att.leading) || hasLineComment(att.trailing) {
 				return true
 			}
 		}

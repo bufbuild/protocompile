@@ -432,6 +432,13 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			triviaHasComments(slots) ||
 			p.scopeHasUninlineableLeadingComments(brackets) ||
 			p.firstOptionKeyHasLeadingComment(entries)
+		// Layout fallback: when trailing `//` rewrite is disabled, a `//`
+		// inside an inline `[...]` would consume the closing bracket.
+		// Force broken so the comment terminates safely on its own line.
+		if !p.options.Formatting.RewriteTrailingLineCommentsToBlock &&
+			p.scopeHasLineTrailingComments(brackets) {
+			forceExpand = true
+		}
 		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len())
 
 		switch {
