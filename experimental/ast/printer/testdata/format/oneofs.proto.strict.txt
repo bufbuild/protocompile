@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message Foo {
+  oneof bar {
+    // This is a trailing comment on the oneof's '{'.
+    // This is another trailing comment.
+
+    // This is a leading comment on name.
+    string name = 1;
+    float value = 2;
+  }
+}

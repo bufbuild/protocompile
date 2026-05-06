@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+option (any) = {
+  foo: "abc"
+  array: [1, 2, 3]
+};

@@ -97,23 +97,42 @@ func TestPrint(t *testing.T) {
 }
 
 // TestFormat exercises the printer's format mode against goldens in
-// testdata/format. Each <name>.proto is formatted and compared against
-// <name>.proto.txt; the output must also re-parse cleanly and be
-// idempotent under a second format pass.
+// testdata/format. Each <name>.proto is formatted under two presets
+// and compared against the corresponding golden:
+//   - <name>.proto.strict.txt: [printer.LegacyBufFormat], all-strict
+//     layout strategies (matches legacy `buf format` shape rules).
+//   - <name>.proto.dynamic.txt: same preset with [printer.LayoutDynamic]
+//     applied to BodyLayout and LiteralLayout (preserves source
+//     intent for flat-vs-broken decisions).
 //
-// TODO: A few cases currently fail (blank-line preservation at trivia/
-// code transitions, and one block-comment-internals case). These are
-// expected to be fixed as part of the trivia-flush work landing after
-// round-trip is stable.
+// Each preset's output must re-parse cleanly and be idempotent under
+// a second format pass.
+//
+// To regenerate goldens:
+//
+//	PROTOCOMPILE_REFRESH=** go test ./experimental/ast/printer/... -run TestFormat
 func TestFormat(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
 		Root:       "testdata/format",
 		Extensions: []string{"proto"},
+		Refresh:    "PROTOCOMPILE_REFRESH",
 		Outputs: []golden.Output{
-			{Extension: "txt"},
+			{Extension: "strict.txt"},
+			{Extension: "dynamic.txt"},
 		},
+	}
+
+	dynamic := printer.LegacyBufFormat()
+	dynamic.BodyLayout = printer.LayoutDynamic
+	dynamic.LiteralLayout = printer.LayoutDynamic
+	presets := []struct {
+		label string
+		opts  printer.Options
+	}{
+		{"strict", printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}},
+		{"dynamic", printer.Options{Format: true, Formatting: dynamic}},
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
@@ -129,147 +148,30 @@ func TestFormat(t *testing.T) {
 			}
 		}
 
-		options := printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}
-		got := printer.PrintFile(options, file)
-		outputs[0] = got
+		for i, preset := range presets {
+			got := printer.PrintFile(preset.opts, file)
+			outputs[i] = got
 
-		// Skip validity and idempotency checks when the source had
-		// parse errors (e.g., invalid_defs tests).
-		if hasParseErrors {
-			return
-		}
-
-		// Verify the output is valid protobuf by re-parsing it.
-		errs2 := &report.Report{}
-		file2, _ := parser.Parse(path, source.NewFile(path, got), errs2)
-		for _, d := range errs2.Diagnostics {
-			if d.Level() <= report.Error {
-				t.Errorf("formatted output does not re-parse: %v", d)
+			if hasParseErrors {
+				continue
 			}
-		}
 
-		// Verify idempotency: formatting the re-parsed output should
-		// produce the same result.
-		got2 := printer.PrintFile(options, file2)
-		if msg := golden.CompareAndDiff(got2, got); msg != "" {
-			t.Errorf("formatting is not idempotent:\n%s", msg)
+			// Verify the output is valid protobuf by re-parsing it.
+			errs2 := &report.Report{}
+			file2, _ := parser.Parse(path, source.NewFile(path, got), errs2)
+			for _, d := range errs2.Diagnostics {
+				if d.Level() <= report.Error {
+					t.Errorf("[%s] formatted output does not re-parse: %v", preset.label, d)
+				}
+			}
+
+			// Verify idempotency.
+			got2 := printer.PrintFile(preset.opts, file2)
+			if msg := golden.CompareAndDiff(got2, got); msg != "" {
+				t.Errorf("[%s] formatting is not idempotent:\n%s", preset.label, msg)
+			}
 		}
 	})
-}
-
-// TestLiteralLayoutDynamic exercises [printer.LayoutDynamic] for compact
-// options, array literals, and dict literals. The strategy preserves
-// source intent: scopes flat in source stay flat (subject to MaxWidth),
-// scopes broken in source stay broken.
-func TestLiteralLayoutDynamic(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "compact options flat in source stay flat",
-			src:  "syntax = \"proto3\";\nmessage M { string s = 1 [a = true, b = false]; }\n",
-			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1 [a = true, b = false];\n}\n",
-		},
-		{
-			name: "compact options broken in source stay broken",
-			src:  "syntax = \"proto3\";\nmessage M { string s = 1 [\n  a = true,\n  b = false\n]; }\n",
-			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1 [\n    a = true,\n    b = false\n  ];\n}\n",
-		},
-		{
-			name: "array literal flat in source stays flat",
-			src:  "syntax = \"proto3\";\noption (x) = { v: [1, 2, 3] };\n",
-			want: "syntax = \"proto3\";\n\noption (x) = {v: [1, 2, 3]};\n",
-		},
-		{
-			name: "array literal broken in source stays broken",
-			src:  "syntax = \"proto3\";\noption (x) = { v: [\n  1,\n  2,\n  3\n] };\n",
-			want: "syntax = \"proto3\";\n\noption (x) = {\n  v: [\n    1,\n    2,\n    3\n  ]\n};\n",
-		},
-		{
-			name: "dict literal flat in source stays flat",
-			src:  "syntax = \"proto3\";\noption (x) = {a: 1, b: 2};\n",
-			want: "syntax = \"proto3\";\n\noption (x) = {a: 1 b: 2};\n",
-		},
-	}
-
-	fmt := printer.LegacyBufFormat()
-	fmt.LiteralLayout = printer.LayoutDynamic
-	options := printer.Options{Format: true, Formatting: fmt}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			errs := &report.Report{}
-			file, _ := parser.Parse(tc.name, source.NewFile(tc.name, tc.src), errs)
-			for _, d := range errs.Diagnostics {
-				if d.Level() <= report.Error {
-					t.Fatalf("parse error: %v", d)
-				}
-			}
-			got := printer.PrintFile(options, file)
-			if got != tc.want {
-				t.Errorf("output mismatch\n--- want\n%s\n--- got\n%s", tc.want, got)
-			}
-		})
-	}
-}
-
-// TestBodyLayoutDynamic exercises [printer.LayoutDynamic] for decl-bearing
-// body scopes (`{ ... }`).
-func TestBodyLayoutDynamic(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "message body flat in source stays flat",
-			src:  "syntax = \"proto3\";\nmessage M { string s = 1; int32 i = 2; }\n",
-			want: "syntax = \"proto3\";\n\nmessage M { string s = 1; int32 i = 2; }\n",
-		},
-		{
-			name: "message body broken in source stays broken",
-			src:  "syntax = \"proto3\";\nmessage M {\n  string s = 1;\n  int32 i = 2;\n}\n",
-			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1;\n  int32 i = 2;\n}\n",
-		},
-		{
-			name: "empty body stays flat",
-			src:  "syntax = \"proto3\";\nmessage M {}\n",
-			want: "syntax = \"proto3\";\n\nmessage M {}\n",
-		},
-		{
-			name: "comment in body forces broken",
-			src:  "syntax = \"proto3\";\nmessage M { string s = 1; /* note */ int32 i = 2; }\n",
-			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1; /* note */\n  int32 i = 2;\n}\n",
-		},
-	}
-
-	fmt := printer.LegacyBufFormat()
-	fmt.BodyLayout = printer.LayoutDynamic
-	options := printer.Options{Format: true, Formatting: fmt}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			errs := &report.Report{}
-			file, _ := parser.Parse(tc.name, source.NewFile(tc.name, tc.src), errs)
-			for _, d := range errs.Diagnostics {
-				if d.Level() <= report.Error {
-					t.Fatalf("parse error: %v", d)
-				}
-			}
-			got := printer.PrintFile(options, file)
-			if got != tc.want {
-				t.Errorf("output mismatch\n--- want\n%s\n--- got\n%s", tc.want, got)
-			}
-		})
-	}
 }
 
 // TestEdits will exercise the AST-edit code paths against testdata/edits.
