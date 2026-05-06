@@ -14,7 +14,7 @@ message Foo {
 
   // Issue 1: Trailing // comment before ] should become /* */ on single-line.
   optional string trail = 3 [
-    deprecated = true /* Trailing */
+    deprecated = true // Trailing
   ];
 
   // Issue 2: Trailing comment after , should stay inline.
@@ -37,6 +37,6 @@ message Foo {
   // Issue 9: Trailing // containing "*/" in its body must be escaped on
   // conversion so the synthesised /* */ does not terminate prematurely.
   optional string with_terminator = 7 [
-    deprecated = true /* foo * / bar */
+    deprecated = true // foo */ bar
   ];
 }

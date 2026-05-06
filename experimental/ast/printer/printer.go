@@ -256,14 +256,25 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
 				p.push(dom.Text(" "))
-				if rewriteToBlock && p.ctx.lineToBlock && strings.HasPrefix(t.Text(), "//") {
+				isLine := strings.HasPrefix(t.Text(), "//")
+				switch {
+				case rewriteToBlock && p.ctx.lineToBlock && isLine:
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
 					// If the body contains "*/", insert a space to keep
 					// it from prematurely terminating the block comment.
 					body = strings.ReplaceAll(body, "*/", "* /")
 					p.push(dom.Text("/*" + body + " */"))
-				} else {
+				case !rewriteToBlock && p.ctx.lineToBlock && isLine:
+					// Verbatim emission inside a context where inline
+					// content (e.g. `;`, `]`, `.next`) follows. The
+					// `//` would consume that content, so push a
+					// newline after the comment to force a layout
+					// break. dom merges this with any adjacent newline
+					// from the surrounding broken layout.
+					p.emitComment(t)
+					p.push(tagNewline)
+				default:
 					p.emitComment(t)
 				}
 			}
@@ -751,6 +762,10 @@ func (p *printer) emitComment(tok token.Token) {
 // Multi-line comments where the closing line has content before */ are
 // treated as degenerate and emitted verbatim.
 //
+// When [Formatting.NormalizeBlockComments] is false, lines are emitted
+// verbatim (with trailing whitespace per line stripped for cleanliness)
+// rather than rewritten to a canonical prefix or plain style.
+//
 // The normalization algorithm matches buf format's behavior:
 //   - Detect if all non-empty interior lines share a common non-alphanumeric
 //     prefix character (e.g., *, =). If so, strip all whitespace and re-add
@@ -763,6 +778,37 @@ func (p *printer) emitBlockComment(text string) {
 	lines := strings.Split(text, "\n")
 	if len(lines) <= 1 {
 		p.push(dom.Text(text))
+		return
+	}
+
+	if !p.options.Formatting.NormalizeBlockComments {
+		// Verbatim emission preserves the user's prefix style and
+		// relative line content, but must strip the common leading
+		// indent shared by all interior lines so that dom.Indent's
+		// outer-indent prefix does not compound on each re-format
+		// pass. Each line is pushed separately with an explicit "\n"
+		// between so dom.Indent prefixes the outer indentation onto
+		// each line.
+		minIndent := -1
+		for i := 1; i < len(lines); i++ {
+			if strings.TrimLeft(lines[i], " \t") == "" {
+				continue
+			}
+			indent := computeVisualIndent(lines[i])
+			if minIndent < 0 || indent < minIndent {
+				minIndent = indent
+			}
+		}
+		if minIndent < 0 {
+			minIndent = 0
+		}
+		p.push(dom.Text(strings.TrimRight(lines[0], " \t")))
+		for i := 1; i < len(lines); i++ {
+			line := unindent(lines[i], minIndent)
+			line = strings.TrimRight(line, " \t")
+			p.push(dom.Text("\n"))
+			p.push(dom.Text(line))
+		}
 		return
 	}
 

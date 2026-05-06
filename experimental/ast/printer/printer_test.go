@@ -99,11 +99,11 @@ func TestPrint(t *testing.T) {
 // TestFormat exercises the printer's format mode against goldens in
 // testdata/format. Each <name>.proto is formatted under two presets
 // and compared against the corresponding golden:
-//   - <name>.proto.strict.txt: [printer.LegacyBufFormat], all-strict
-//     layout strategies (matches legacy `buf format` shape rules).
-//   - <name>.proto.dynamic.txt: same preset with [printer.LayoutDynamic]
-//     applied to BodyLayout and LiteralLayout (preserves source
-//     intent for flat-vs-broken decisions).
+//   - <name>.proto.legacy.txt: [printer.LegacyBufFormat], matches
+//     legacy `buf format` behavior.
+//   - <name>.proto.default.txt: the eventual modern default — every
+//     knob flipped to its modern value (LayoutDynamic for body/literal,
+//     and false for the comment-handling knobs that legacy sets true).
 //
 // Each preset's output must re-parse cleanly and be idempotent under
 // a second format pass.
@@ -119,20 +119,29 @@ func TestFormat(t *testing.T) {
 		Extensions: []string{"proto"},
 		Refresh:    "PROTOCOMPILE_REFRESH",
 		Outputs: []golden.Output{
-			{Extension: "strict.txt"},
-			{Extension: "dynamic.txt"},
+			{Extension: "legacy.txt"},
+			{Extension: "default.txt"},
 		},
 	}
 
-	dynamic := printer.LegacyBufFormat()
-	dynamic.BodyLayout = printer.LayoutDynamic
-	dynamic.LiteralLayout = printer.LayoutDynamic
+	// Modern default preset. Constructed from LegacyBufFormat with
+	// every knob flipped to its modern value. Once a Default()
+	// constructor lands (Step 4 of the migration plan), this becomes
+	// `printer.Default()`.
+	def := printer.LegacyBufFormat()
+	def.BodyLayout = printer.LayoutDynamic
+	def.LiteralLayout = printer.LayoutDynamic
+	def.RewriteTrailingLineCommentsToBlock = false
+	def.NormalizeBlockComments = false
+	def.TrailingBlockCommentsOnNewLine = false
+	def.PairLeadingBlockComments = false
+
 	presets := []struct {
 		label string
 		opts  printer.Options
 	}{
-		{"strict", printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}},
-		{"dynamic", printer.Options{Format: true, Formatting: dynamic}},
+		{"legacy", printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}},
+		{"default", printer.Options{Format: true, Formatting: def}},
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
@@ -172,63 +181,6 @@ func TestFormat(t *testing.T) {
 			}
 		}
 	})
-}
-
-// TestRewriteTrailingLineCommentsToBlockOff exercises the
-// [printer.Formatting] knob that disables the legacy `// → /* */`
-// rewrite. With the knob false, trailing `//` comments emit verbatim;
-// scopes that would otherwise have a `//` consume their closing
-// punctuation fall back to a broken layout instead.
-func TestRewriteTrailingLineCommentsToBlockOff(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			// Compact options containing a trailing `//` falls back to
-			// broken layout so the `//` does not consume the `]`.
-			name: "compact option with line trailing falls back to broken",
-			src:  "syntax = \"proto2\";\nmessage M {\n  optional string s = 1 [deprecated = true // note\n  ];\n}\n",
-			want: "syntax = \"proto2\";\n\nmessage M {\n  optional string s = 1 [\n    deprecated = true // note\n  ];\n}\n",
-		},
-		{
-			// Trailing `//` at end-of-line position emits verbatim
-			// without rewrite (no inline content follows).
-			name: "field trailing line comment emits verbatim",
-			src:  "syntax = \"proto2\";\nmessage M {\n  optional string s = 1; // note\n}\n",
-			want: "syntax = \"proto2\";\n\nmessage M {\n  optional string s = 1; // note\n}\n",
-		},
-	}
-
-	fmt := printer.LegacyBufFormat()
-	fmt.RewriteTrailingLineCommentsToBlock = false
-	options := printer.Options{Format: true, Formatting: fmt}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			errs := &report.Report{}
-			file, _ := parser.Parse(tc.name, source.NewFile(tc.name, tc.src), errs)
-			for _, d := range errs.Diagnostics {
-				if d.Level() <= report.Error {
-					t.Fatalf("parse error: %v", d)
-				}
-			}
-			got := printer.PrintFile(options, file)
-			if got != tc.want {
-				t.Errorf("output mismatch\n--- want\n%s\n--- got\n%s", tc.want, got)
-			}
-			// Verify idempotency.
-			file2, _ := parser.Parse(tc.name, source.NewFile(tc.name, got), &report.Report{})
-			got2 := printer.PrintFile(options, file2)
-			if got2 != got {
-				t.Errorf("not idempotent\n--- pass1\n%s\n--- pass2\n%s", got, got2)
-			}
-		})
-	}
 }
 
 // TestEdits will exercise the AST-edit code paths against testdata/edits.

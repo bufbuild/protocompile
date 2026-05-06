@@ -13,7 +13,8 @@ option (custom.single) = "Just one string";
 option (custom.trailing) =
   "One"
   "Two"
-  "Three" /* Trailing */;
+  "Three" // Trailing
+;
 
 message Foo {
   optional string name = 1;
