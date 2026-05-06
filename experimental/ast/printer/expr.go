@@ -209,17 +209,27 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	if elements.Len() == 1 && !hasComments {
-		// Emit the open bracket with the caller's gap outside the
-		// group so that a gapNewline (e.g. from a dict field context)
-		// doesn't force the group to break.
+	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+
+	if !wantBroken {
+		// Flat path: emit the elements inside a group with softbreak
+		// padding and softline separators. dom.Group will auto-break
+		// the group if its flat width exceeds MaxWidth or if any
+		// element contains a newline.
 		p.printToken(openTok, gap)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
 				indented.push(tagSoftbreak)
-				indented.emitTriviaSlot(slots, 0)
-				indented.printExpr(elements.At(0), gapNone)
-				indented.emitTriviaSlot(slots, 1)
+				for i := range elements.Len() {
+					indented.emitTriviaSlot(slots, i)
+					elemGap := gapNone
+					if i > 0 {
+						indented.printToken(elements.Comma(i-1), gapNone)
+						elemGap = gapSoftline
+					}
+					indented.printExpr(elements.At(i), elemGap)
+				}
+				indented.emitTriviaSlot(slots, elements.Len())
 			})
 			p.push(tagSoftbreak)
 		})
@@ -300,18 +310,27 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
-	if elements.Len() == 1 && !hasComments {
-		// Emit the open brace with the caller's gap outside the
-		// group so that a gapNewline (e.g. from an array context)
-		// doesn't force the group to break.
+	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+
+	if !wantBroken {
+		// Flat path: emit fields inside a group with softbreak padding
+		// and softline separators between fields. Message-literal fields
+		// have no explicit separator emitted; the softline (space when
+		// flat, newline when broken) suffices.
 		p.printTokenAs(openTok, gap, openText)
 		p.withGroup(func(p *printer) {
 			p.withIndent(func(indented *printer) {
 				indented.push(tagSoftbreak)
-				indented.emitTriviaSlot(trivia, 0)
-				indented.printExprField(elements.At(0), gapNone)
-				indented.emitCommaTrivia(elements.Comma(0))
-				indented.emitTriviaSlot(trivia, 1)
+				for i := range elements.Len() {
+					indented.emitTriviaSlot(trivia, i)
+					fieldGap := gapNone
+					if i > 0 {
+						fieldGap = gapSoftline
+					}
+					indented.printExprField(elements.At(i), fieldGap)
+					indented.emitCommaTrivia(elements.Comma(i))
+				}
+				indented.emitTriviaSlot(trivia, elements.Len())
 			})
 			p.push(tagSoftbreak)
 		})

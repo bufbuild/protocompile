@@ -395,23 +395,25 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	entries := co.Entries()
 
 	if p.options.Format {
-		// In format mode, compact options layout is deterministic:
-		// - 1 option: inline [key = value]
-		// - 2+ options: expanded one-per-line
-		// Force multi-line if the brackets contain comments that
-		// would break inline formatting. Comments in leading trivia
-		// cannot be handled by lineToBlock (which only affects
-		// trailing trivia): line comments eat the rest of the line,
-		// and block comments produce softline gaps that break
-		// outside the indent wrapper.
 		openTrailing := p.extractOpenTrailing(openTok)
+
+		// For formatted compact option elements, force multi-line expansion if the
+		// brackets contain comments that would break inline formatting.
+		//
+		// Comments in leading trivia are not coerced to block comments via
+		// lineToBlock (which only affects trailing trivia): line comments eat the
+		// rest of the line, and block comments produce softline gaps that break
+		// outside the indent wrapper.
 		forceExpand := len(openTrailing) > 0 ||
 			triviaHasComments(slots) ||
 			p.scopeHasUninlineableLeadingComments(brackets) ||
 			p.firstOptionKeyHasLeadingComment(entries)
-		if entries.Len() == 1 && !forceExpand {
-			// Single option: stays inline. No group wrapping, so
-			// message literal values expand naturally while keeping
+		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len())
+
+		switch {
+		case !wantBroken && entries.Len() == 1:
+			// Single option, flat: stays inline. No group wrapping,
+			// so message literal values expand naturally while keeping
 			// [ and ] on the field line. Convert any trailing //
 			// comments to /* */ so they don't eat the closing bracket.
 			singleRestore := p.ctx.with(lineToBlock(true))
@@ -429,7 +431,38 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			p.emitTrivia(gapNone)
 			p.printToken(closeTok, gapNone)
 			singleRestore()
-		} else {
+
+		case !wantBroken:
+			// Multi-option, flat: emit inside a group with softbreak
+			// padding and softline separators so the group breaks if
+			// flat width exceeds MaxWidth.
+			p.printToken(openTok, gapSpace)
+			p.withGroup(func(p *printer) {
+				p.withIndent(func(indented *printer) {
+					indented.push(tagSoftbreak)
+					for i := range entries.Len() {
+						indented.emitTriviaSlot(slots, i)
+						opt := entries.At(i)
+						if i > 0 {
+							indented.printToken(entries.Comma(i-1), gapNone)
+							indented.printPath(opt.Path, gapSoftline)
+						} else {
+							indented.printPath(opt.Path, gapNone)
+						}
+						if !opt.Equals.IsZero() {
+							indented.printToken(opt.Equals, gapSpace)
+							restore := p.ctx.with(indentExpr(true))
+							indented.printExpr(opt.Value, gapSpace)
+							restore()
+						}
+					}
+					indented.emitTriviaSlot(slots, entries.Len())
+				})
+				p.push(tagSoftbreak)
+			})
+			p.printToken(closeTok, gapNone)
+
+		default:
 			// Multiple options or comments force expand: one-per-line.
 			// When the open bracket has trailing comments, suppress
 			// them from the inline position and emit them as the first

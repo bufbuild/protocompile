@@ -157,6 +157,67 @@ func TestFormat(t *testing.T) {
 	})
 }
 
+// TestLiteralLayoutDynamic exercises [printer.LayoutDynamic] for compact
+// options, array literals, and dict literals. The strategy preserves
+// source intent: scopes flat in source stay flat (subject to MaxWidth),
+// scopes broken in source stay broken.
+func TestLiteralLayoutDynamic(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "compact options flat in source stay flat",
+			src:  "syntax = \"proto3\";\nmessage M { string s = 1 [a = true, b = false]; }\n",
+			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1 [a = true, b = false];\n}\n",
+		},
+		{
+			name: "compact options broken in source stay broken",
+			src:  "syntax = \"proto3\";\nmessage M { string s = 1 [\n  a = true,\n  b = false\n]; }\n",
+			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1 [\n    a = true,\n    b = false\n  ];\n}\n",
+		},
+		{
+			name: "array literal flat in source stays flat",
+			src:  "syntax = \"proto3\";\noption (x) = { v: [1, 2, 3] };\n",
+			want: "syntax = \"proto3\";\n\noption (x) = {v: [1, 2, 3]};\n",
+		},
+		{
+			name: "array literal broken in source stays broken",
+			src:  "syntax = \"proto3\";\noption (x) = { v: [\n  1,\n  2,\n  3\n] };\n",
+			want: "syntax = \"proto3\";\n\noption (x) = {\n  v: [\n    1,\n    2,\n    3\n  ]\n};\n",
+		},
+		{
+			name: "dict literal flat in source stays flat",
+			src:  "syntax = \"proto3\";\noption (x) = {a: 1, b: 2};\n",
+			want: "syntax = \"proto3\";\n\noption (x) = {a: 1 b: 2};\n",
+		},
+	}
+
+	fmt := printer.LegacyBufFormat()
+	fmt.LiteralLayout = printer.LayoutDynamic
+	options := printer.Options{Format: true, Formatting: fmt}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			errs := &report.Report{}
+			file, _ := parser.Parse(tc.name, source.NewFile(tc.name, tc.src), errs)
+			for _, d := range errs.Diagnostics {
+				if d.Level() <= report.Error {
+					t.Fatalf("parse error: %v", d)
+				}
+			}
+			got := printer.PrintFile(options, file)
+			if got != tc.want {
+				t.Errorf("output mismatch\n--- want\n%s\n--- got\n%s", tc.want, got)
+			}
+		})
+	}
+}
+
 // TestEdits will exercise the AST-edit code paths against testdata/edits.
 //
 // TODO: edit support is being reworked; the Edit struct and edit helpers

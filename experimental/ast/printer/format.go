@@ -19,7 +19,44 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
+
+// sourceWasFlat reports whether the source had open and close on the
+// same line, i.e. the bracketed scope was written without any newline
+// between its opening and closing tokens. Returns false if either token
+// is zero or has a missing source position.
+//
+// Uses [token.Token.LeafSpan] (not [token.Token.Span]) because the open
+// and close tokens of a fused bracket pair both report the full range
+// of the bracketed scope from [token.Token.Span]; only LeafSpan gives
+// the position of the punctuation token itself.
+func sourceWasFlat(openTok, closeTok token.Token) bool {
+	if openTok.IsZero() || closeTok.IsZero() {
+		return false
+	}
+	openSpan, closeSpan := openTok.LeafSpan(), closeTok.LeafSpan()
+	if openSpan.IsZero() || closeSpan.IsZero() {
+		return false
+	}
+	return openSpan.StartLoc().Line == closeSpan.StartLoc().Line
+}
+
+// literalShouldBreak applies the configured [LayoutStrategy] to a
+// literal scope (compact options bracket, array literal, dict literal).
+//
+// It returns true when the scope should be rendered broken (multi-line)
+// based on the strategy alone, irrespective of comments or other
+// scope-specific force-broken conditions; callers should OR the result
+// with their own forceBroken signal.
+func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) bool {
+	switch p.options.Formatting.LiteralLayout {
+	case LayoutDynamic:
+		return !sourceWasFlat(openTok, closeTok)
+	default: // LayoutStrict
+		return count >= 2
+	}
+}
 
 // sortFileDeclsForFormat sorts file-level declarations in place into
 // canonical order using a stable sort. The canonical order is:
