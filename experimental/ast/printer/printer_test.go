@@ -218,6 +218,60 @@ func TestLiteralLayoutDynamic(t *testing.T) {
 	}
 }
 
+// TestBodyLayoutDynamic exercises [printer.LayoutDynamic] for decl-bearing
+// body scopes (`{ ... }`).
+func TestBodyLayoutDynamic(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "message body flat in source stays flat",
+			src:  "syntax = \"proto3\";\nmessage M { string s = 1; int32 i = 2; }\n",
+			want: "syntax = \"proto3\";\n\nmessage M { string s = 1; int32 i = 2; }\n",
+		},
+		{
+			name: "message body broken in source stays broken",
+			src:  "syntax = \"proto3\";\nmessage M {\n  string s = 1;\n  int32 i = 2;\n}\n",
+			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1;\n  int32 i = 2;\n}\n",
+		},
+		{
+			name: "empty body stays flat",
+			src:  "syntax = \"proto3\";\nmessage M {}\n",
+			want: "syntax = \"proto3\";\n\nmessage M {}\n",
+		},
+		{
+			name: "comment in body forces broken",
+			src:  "syntax = \"proto3\";\nmessage M { string s = 1; /* note */ int32 i = 2; }\n",
+			want: "syntax = \"proto3\";\n\nmessage M {\n  string s = 1; /* note */\n  int32 i = 2;\n}\n",
+		},
+	}
+
+	fmt := printer.LegacyBufFormat()
+	fmt.BodyLayout = printer.LayoutDynamic
+	options := printer.Options{Format: true, Formatting: fmt}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			errs := &report.Report{}
+			file, _ := parser.Parse(tc.name, source.NewFile(tc.name, tc.src), errs)
+			for _, d := range errs.Diagnostics {
+				if d.Level() <= report.Error {
+					t.Fatalf("parse error: %v", d)
+				}
+			}
+			got := printer.PrintFile(options, file)
+			if got != tc.want {
+				t.Errorf("output mismatch\n--- want\n%s\n--- got\n%s", tc.want, got)
+			}
+		})
+	}
+}
+
 // TestEdits will exercise the AST-edit code paths against testdata/edits.
 //
 // TODO: edit support is being reworked; the Edit struct and edit helpers

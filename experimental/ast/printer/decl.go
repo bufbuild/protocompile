@@ -306,6 +306,30 @@ func (p *printer) printBody(body ast.DeclBody) {
 		return
 	}
 
+	if p.options.Format {
+		// LayoutDynamic can keep a non-empty body flat when the source
+		// had it flat and there are no comments anywhere in the scope.
+		// Comments anywhere force broken so per-decl gap handling and
+		// trivia slots remain on their own lines. Whitespace-only
+		// trivia between decls is fine; only comments matter here.
+		forceBroken := triviaHasComments(trivia) ||
+			len(closeComments) > 0 ||
+			p.scopeHasAttachedComments(body.Braces())
+		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok) {
+			decls := body.Decls()
+			p.withGroup(func(p *printer) {
+				p.withIndent(func(indented *printer) {
+					for i := range decls.Len() {
+						indented.printDecl(decls.At(i), gapSoftline)
+					}
+				})
+				p.push(tagSoftlineFlat, tagSoftbreak)
+			})
+			p.printToken(closeTok, gapNone)
+			return
+		}
+	}
+
 	p.withIndent(func(indented *printer) {
 		indented.printScopeDecls(trivia, body.Decls(), scopeBody)
 		// Emit close comments inside the indent block. Also flush

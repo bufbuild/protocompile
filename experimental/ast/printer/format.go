@@ -58,6 +58,23 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 	}
 }
 
+// bodyShouldBreak applies the configured [LayoutStrategy] to a
+// decl-bearing body scope (`{ ... }`).
+//
+// LayoutStrict always returns true (legacy behavior: any non-empty body
+// is rendered multi-line). LayoutDynamic preserves source intent: a
+// body that was flat in source stays flat, otherwise broken. Callers
+// should OR the result with their own forceBroken signal (e.g. for
+// scope-attached comments).
+func (p *printer) bodyShouldBreak(openTok, closeTok token.Token) bool {
+	switch p.options.Formatting.BodyLayout {
+	case LayoutDynamic:
+		return !sourceWasFlat(openTok, closeTok)
+	default: // LayoutStrict
+		return true
+	}
+}
+
 // sortFileDeclsForFormat sorts file-level declarations in place into
 // canonical order using a stable sort. The canonical order is:
 //
