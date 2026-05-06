@@ -223,6 +223,8 @@ func (p *printer) printTokenAs(tok token.Token, gap gapStyle, text string) {
 	if len(text) > 0 {
 		if hasTrivia {
 			if !p.options.Format {
+				// In non-format mode, ignore caller's gap and print trivia as-is,
+				// which may or may not include whitespace.
 				gap = gapNone
 			}
 			p.emitTrivia(gap)
