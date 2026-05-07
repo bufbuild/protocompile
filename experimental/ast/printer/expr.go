@@ -410,7 +410,18 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		// last comment with no gap. This prevents an idempotency issue
 		// where trivia between ] and : gets assigned differently on
 		// reparse (leading vs trailing) depending on line breaks.
-		p.printToken(expr.Colon(), gapInline)
+		//
+		// Exception: when the colon's leading trivia ends in an inline
+		// block comment (e.g. extension key `[ ... ] /* Three */ :`),
+		// gapInline would emit `*/:` glued. Switch to gapSpace so the
+		// `:` follows a separating space.
+		colonGap := gapInline
+		if att, ok := p.trivia.tokenTrivia(expr.Colon().ID()); ok {
+			if pendingEndsWithInlineBlockComment(att.leading) {
+				colonGap = gapSpace
+			}
+		}
+		p.printToken(expr.Colon(), colonGap)
 	} else if p.options.Format && !expr.Key().IsZero() && !expr.Value().IsZero() {
 		// Insert colon in format mode when missing (e.g. "e []" -> "e: []").
 		p.push(dom.Text(":"))
