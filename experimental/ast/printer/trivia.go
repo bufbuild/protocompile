@@ -141,9 +141,21 @@ func buildTriviaIndex(stream *token.Stream) *triviaIndex {
 		attached: make(map[token.ID]attachedTrivia),
 		detached: make(map[token.ID]detachedTrivia),
 	}
-	idx.walkScope(stream.Cursor(), 0)
+	idx.walkScope(stream.Cursor(), 0, scopeModeDecl)
 	return idx
 }
+
+// scopeMode classifies a scope for the trivia walker. Decl scopes
+// (file, message body, enum body, ...) end declarations at `;` or
+// `{...}`. Literal scopes (compact options `[...]`, array literals,
+// dict literals) additionally end "elements" at `,`, so per-element
+// trivia slots and blankBefore indicators get recorded.
+type scopeMode int
+
+const (
+	scopeModeDecl scopeMode = iota
+	scopeModeLiteral
+)
 
 // walkScope processes all tokens within one scope.
 //
@@ -153,7 +165,7 @@ func buildTriviaIndex(stream *token.Stream) *triviaIndex {
 // It builds both per-token attached trivia and per-scope slot arrays.
 // Slot boundaries are detected by tracking `;` and `}` tokens, which
 // mark the end of declarations in protobuf syntax.
-func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
+func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID, mode scopeMode) {
 	var pending []token.Token
 	var trivia detachedTrivia
 	hadBlank := false
@@ -193,7 +205,7 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 		idx.attached[tok.ID()] = attachedTrivia{leading: attached}
 		pending = nil
 
-		hadBlank = idx.walkDecl(cursor, tok)
+		hadBlank = idx.walkDecl(cursor, tok, mode)
 	}
 	// Append any remaining tokens at the end of scope.
 	trivia.slots = append(trivia.slots, pending)
@@ -209,9 +221,27 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID) {
 	idx.detached[scopeID] = trivia
 }
 
-func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
+func (idx *triviaIndex) walkFused(leafToken token.Token, parentSawAssign bool) token.Token {
 	openToken, closeToken := leafToken.StartEnd()
-	idx.walkScope(leafToken.Children(), openToken.ID())
+	// Determine the child scope's mode based on the bracket kind and
+	// the parent's `=` state:
+	//   - [...]   : literal (compact options or array). Always.
+	//   - {...}/<>: dict literal (literal mode) when the parent saw
+	//               `=` (e.g. `option foo = {...}`); otherwise a body.
+	//   - (...)   : parens — typically extension names like
+	//               `(ext.name)`; treat as decl mode (no comma
+	//               boundary since the contents are paths, not
+	//               element lists).
+	childMode := scopeModeDecl
+	switch leafToken.Keyword() {
+	case keyword.Brackets:
+		childMode = scopeModeLiteral
+	case keyword.Braces, keyword.Angles:
+		if parentSawAssign {
+			childMode = scopeModeLiteral
+		}
+	}
+	idx.walkScope(leafToken.Children(), openToken.ID(), childMode)
 
 	trivia := idx.scopeTrivia(openToken.ID())
 	endTokens := trivia.slots[len(trivia.slots)-1]
@@ -226,7 +256,12 @@ func (idx *triviaIndex) walkFused(leafToken token.Token) token.Token {
 
 // walkDecl processes a declaration. Returns true if the trailing trivia
 // contained a blank line separating this declaration from the next.
-func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) bool {
+//
+// In literal scope mode, `,` is also a declaration boundary, so each
+// element of a compact-options/array/dict scope becomes its own
+// "decl" for trivia purposes (yielding per-element slots and
+// blankBefore).
+func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, mode scopeMode) bool {
 	endToken := startToken
 	var pending []token.Token
 	sawAssign := false
@@ -265,7 +300,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		endToken = tok
 		if !tok.IsLeaf() {
 			// Recurse into fused tokens (non-leaf tokens).
-			endToken = idx.walkFused(tok)
+			endToken = idx.walkFused(tok, sawAssign)
 		}
 
 		// Only `;` and `{...}` mark declaration boundaries. Other fused
@@ -282,6 +317,11 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token) b
 		atDeclBoundary := tok.Keyword() == keyword.Semi
 		if tok.Keyword() == keyword.Braces {
 			atDeclBoundary = !sawAssign || !idx.nextNonSkippableIsSemi(cursor)
+		}
+		// In a literal scope, `,` is also a boundary so each element
+		// gets its own trivia slot and blankBefore indicator.
+		if mode == scopeModeLiteral && tok.Keyword() == keyword.Comma {
+			atDeclBoundary = true
 		}
 		if atDeclBoundary {
 			break

@@ -244,11 +244,19 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	p.printToken(openTok, gap)
 	p.withIndent(func(indented *printer) {
 		for i := range elements.Len() {
-			indented.emitTriviaSlot(slots, i)
+			// Comma is the boundary token of the previous element in
+			// the trivia walker, so emit it (and its trailing) first;
+			// then emit the detached slot[i] which holds between-comma
+			// and-this-element trivia; then the element itself.
 			if i > 0 {
 				indented.printToken(elements.Comma(i-1), p.semiGap())
 			}
-			indented.printExpr(elements.At(i), gapNewline)
+			indented.emitTriviaSlot(slots, i)
+			elemGap := gapNewline
+			if i > 0 && slots.hasBlankBefore(i) {
+				elemGap = gapBlankline
+			}
+			indented.printExpr(elements.At(i), elemGap)
 		}
 		indented.emitTriviaSlot(slots, elements.Len())
 		if len(closeComments) > 0 {
@@ -370,7 +378,11 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(trivia, i)
-			indented.printExprField(elements.At(i), gapNewline)
+			fieldGap := gapNewline
+			if i > 0 && trivia.hasBlankBefore(i) {
+				fieldGap = gapBlankline
+			}
+			indented.printExprField(elements.At(i), fieldGap)
 			indented.emitCommaTrivia(elements.Comma(i))
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())

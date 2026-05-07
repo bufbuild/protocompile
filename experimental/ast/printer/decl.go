@@ -519,12 +519,19 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					}
 				}
 				for i := range entries.Len() {
-					indented.emitTriviaSlot(slots, i)
+					// Emit the comma (and its trailing) first; then the
+					// detached slot[i] between comma and this entry;
+					// then the entry itself.
 					if i > 0 {
 						indented.printToken(entries.Comma(i-1), p.semiGap())
 					}
+					indented.emitTriviaSlot(slots, i)
 					opt := entries.At(i)
-					indented.printPath(opt.Path, gapNewline)
+					optGap := gapNewline
+					if i > 0 && slots.hasBlankBefore(i) {
+						optGap = gapBlankline
+					}
+					indented.printPath(opt.Path, optGap)
 					if !opt.Equals.IsZero() {
 						indented.printToken(opt.Equals, gapSpace)
 						restore := p.ctx.with(indentExpr(true))
