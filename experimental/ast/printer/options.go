@@ -31,6 +31,11 @@ type Options struct {
 	// Formatting controls behavior in format mode. Honored only when
 	// Format is true.
 	Formatting Formatting
+
+	// Edits are applied to the AST in order before formatting. The
+	// mutations happen on the file passed to [PrintFile]; a caller
+	// wishing to preserve the original AST must clone it first.
+	Edits []Edit
 }
 
 // Formatting groups all options that drive formatting behavior. Each

@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 package test;
 
 // This is a detached comment (blank line follows)

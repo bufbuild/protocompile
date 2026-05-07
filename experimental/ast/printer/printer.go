@@ -47,8 +47,19 @@ const (
 )
 
 // PrintFile renders an AST file to protobuf source text.
-func PrintFile(options Options, file *ast.File) string {
+//
+// If [Options.Edits] is non-empty, the edits are applied to file in
+// order before formatting; failures to apply an edit return an error
+// without producing output. Edits mutate file in place; clone it
+// first if the caller needs the unedited AST.
+func PrintFile(options Options, file *ast.File) (string, error) {
 	options = options.withDefaults()
+
+	if len(options.Edits) > 0 {
+		if err := applyEdits(file, options.Edits); err != nil {
+			return "", err
+		}
+	}
 
 	// In format mode, a file with no declarations and no comments
 	// produces empty output. The dom renderer always appends a trailing
@@ -57,14 +68,14 @@ func PrintFile(options Options, file *ast.File) string {
 		trivia := buildTriviaIndex(file.Stream())
 		scope := trivia.scopeTrivia(0)
 		if !triviaHasComments(scope) {
-			return ""
+			return "", nil
 		}
 	}
 
 	return dom.Render(options.domOptions(), func(push dom.Sink) {
 		p := newPrinter(options, buildTriviaIndex(file.Stream()), push)
 		p.printFile(file)
-	})
+	}), nil
 }
 
 // Print renders a snippet for an AST declaration to protobuf source text.

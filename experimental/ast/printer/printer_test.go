@@ -19,6 +19,8 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/printer"
 	"github.com/bufbuild/protocompile/experimental/parser"
@@ -48,7 +50,10 @@ func TestRoundTrip(t *testing.T) {
 			}
 		}
 
-		got := printer.PrintFile(printer.Options{}, file)
+		got, err := printer.PrintFile(printer.Options{}, file)
+		if err != nil {
+			t.Fatalf("PrintFile: %v", err)
+		}
 		if msg := golden.CompareAndDiff(got, text); msg != "" {
 			t.Errorf("round-trip mismatch:\n%s", msg)
 		}
@@ -81,7 +86,10 @@ func TestPrint(t *testing.T) {
 			actual.WriteString(printer.Print(printer.Options{}, decl))
 		}
 
-		whole := printer.PrintFile(printer.Options{}, file)
+		whole, err := printer.PrintFile(printer.Options{}, file)
+		if err != nil {
+			t.Fatalf("PrintFile: %v", err)
+		}
 		// Trim the trailing newline from the printed decls to check against the
 		// [printer.PrintFile] output.
 		// trimmed := strings.TrimRight(actual.String(), "\n")
@@ -146,7 +154,11 @@ func TestFormat(t *testing.T) {
 		}
 
 		for i, preset := range presets {
-			got := printer.PrintFile(preset.opts, file)
+			got, err := printer.PrintFile(preset.opts, file)
+			if err != nil {
+				t.Errorf("[%s] PrintFile: %v", preset.label, err)
+				continue
+			}
 			outputs[i] = got
 
 			if hasParseErrors {
@@ -163,7 +175,11 @@ func TestFormat(t *testing.T) {
 			}
 
 			// Verify idempotency.
-			got2 := printer.PrintFile(preset.opts, file2)
+			got2, err := printer.PrintFile(preset.opts, file2)
+			if err != nil {
+				t.Errorf("[%s] PrintFile (idempotency): %v", preset.label, err)
+				continue
+			}
 			if msg := golden.CompareAndDiff(got2, got); msg != "" {
 				t.Errorf("[%s] formatting is not idempotent:\n%s", preset.label, msg)
 			}
@@ -171,53 +187,342 @@ func TestFormat(t *testing.T) {
 	})
 }
 
-// TestEdits will exercise the AST-edit code paths against testdata/edits.
+// TestEdits exercises [printer.Options.Edits] / [printer.PrintFile]
+// against testdata/edits.
 //
-// TODO: edit support is being reworked; the Edit struct and edit helpers
-// below are retained so they can be revised when this test is wired up.
+// Each <name>.yaml fixture defines a `source` proto and an ordered list
+// of `edits` to apply. The test parses the source, converts the YAML
+// edits into [printer.Edit] values, attaches them to [printer.Options],
+// and formats the file with [printer.Default]. The result is compared
+// against the <name>.yaml.txt golden and must re-parse cleanly.
+// Idempotency of formatting is a property of the formatter alone and
+// is exercised by [TestFormat] / [TestRoundTrip].
+//
+// To regenerate goldens:
+//
+//	PROTOCOMPILE_REFRESH=** go test ./experimental/ast/printer/... -run TestEdits
 func TestEdits(t *testing.T) {
-	t.Skip("TODO: edit support is being reworked; testdata/edits tests are temporarily disabled")
-}
+	t.Parallel()
 
-// Sink keeping the AST-edit helpers below from being flagged unused
-// while TestEdits is skipped. Drop once TestEdits is wired up.
-var _ = applyEdit
-
-// Edit represents an edit to apply to the AST.
-type Edit struct {
-	Kind   string `yaml:"kind"`   // Edit operation type
-	Target string `yaml:"target"` // Target path (e.g., "M" or "M.Inner" or "M.field_name")
-	Name   string `yaml:"name"`   // Name for new element (message, field, enum, etc.)
-	Type   string `yaml:"type"`   // Type for fields
-	Tag    string `yaml:"tag"`    // Tag number for fields/enum values
-	Option string `yaml:"option"` // Option name (e.g., "deprecated")
-	Value  string `yaml:"value"`  // Option value (e.g., "true")
-}
-
-// applyEdit applies an edit to the file.
-func applyEdit(file *ast.File, edit Edit) error {
-	switch edit.Kind {
-	case "add_option":
-		return addOptionToMessage(file, edit.Target, edit.Option, edit.Value)
-	case "add_compact_option":
-		return addCompactOption(file, edit.Target, edit.Option, edit.Value)
-	case "add_message":
-		return addMessage(file, edit.Target, edit.Name)
-	case "add_field":
-		return addField(file, edit.Target, edit.Name, edit.Type, edit.Tag)
-	case "add_enum":
-		return addEnum(file, edit.Target, edit.Name)
-	case "add_enum_value":
-		return addEnumValue(file, edit.Target, edit.Name, edit.Tag)
-	case "add_service":
-		return addService(file, edit.Name)
-	case "delete_decl":
-		return deleteDecl(file, edit.Target)
-	case "move_decl":
-		return moveDecl(file, edit.Target, edit.Name)
-	default:
-		return fmt.Errorf("unknown edit kind: %s", edit.Kind)
+	corpus := golden.Corpus{
+		Root:       "testdata/edits",
+		Extensions: []string{"yaml"},
+		Refresh:    "PROTOCOMPILE_REFRESH",
+		Outputs: []golden.Output{
+			{Extension: "txt"},
+		},
 	}
+
+	formatting := printer.Default()
+
+	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
+		var spec struct {
+			Source string     `yaml:"source"`
+			Edits  []editSpec `yaml:"edits"`
+		}
+		if err := yaml.Unmarshal([]byte(text), &spec); err != nil {
+			t.Fatalf("parsing yaml spec: %v", err)
+		}
+
+		errs := &report.Report{}
+		file, _ := parser.Parse(path, source.NewFile(path, spec.Source), errs)
+		hasParseErrors := false
+		for _, d := range errs.Diagnostics {
+			if d.Level() <= report.Error {
+				hasParseErrors = true
+			}
+			if d.Level() <= report.Warning {
+				t.Logf("source parse: %q", d)
+			}
+		}
+
+		// Build all edits eagerly. Forward references between edits
+		// (a later edit targets a decl that an earlier edit adds)
+		// are handled via a pending-decls map: each `add_*` registers
+		// its constructed decl under the would-be path, and lookups
+		// fall back to the map when the file lookup misses. The
+		// stashed [ast.DeclAny] is the same ref the printer will
+		// insert into the file, so it stays valid as a Target.
+		pending := pendingDecls{}
+		edits := make([]printer.Edit, 0, len(spec.Edits))
+		for i, espec := range spec.Edits {
+			e, err := buildEdit(file, pending, espec)
+			if err != nil {
+				t.Fatalf("building edit[%d] %+v: %v", i, espec, err)
+			}
+			edits = append(edits, e)
+		}
+
+		opts := printer.Options{
+			Format:     true,
+			Formatting: formatting,
+			Edits:      edits,
+		}
+		got, err := printer.PrintFile(opts, file)
+		if err != nil {
+			t.Fatalf("PrintFile: %v", err)
+		}
+		outputs[0] = got
+
+		// Skip the re-parse check when the source had parse errors.
+		if hasParseErrors {
+			return
+		}
+
+		// Re-parse the formatted output to verify validity: edits
+		// should not produce an AST that formats to invalid
+		// protobuf.
+		errs2 := &report.Report{}
+		_, _ = parser.Parse(path, source.NewFile(path, got), errs2)
+		for _, d := range errs2.Diagnostics {
+			if d.Level() <= report.Error {
+				t.Errorf("formatted output does not re-parse: %v", d)
+			}
+		}
+	})
+}
+
+// editSpec is the YAML shape used by testdata/edits/*.yaml. It is
+// converted to [printer.Edit] by [buildEdit] using the file's stream
+// and AST helpers.
+type editSpec struct {
+	Kind   string `yaml:"kind"`
+	Target string `yaml:"target"`
+	Name   string `yaml:"name"`
+	Type   string `yaml:"type"`
+	Tag    string `yaml:"tag"`
+	Option string `yaml:"option"`
+	Value  string `yaml:"value"`
+}
+
+// pendingDecls maps a dotted path to a [ast.DeclAny] that has been
+// constructed for a yet-to-be-applied [printer.Edit]. It lets later
+// build steps resolve targets that earlier edits will create. The
+// stashed [ast.DeclAny] is the same ref the printer will eventually
+// insert into the file, so it stays valid as a Target.
+type pendingDecls map[string]ast.DeclAny
+
+// resolve looks up a decl by path: first in the file (already-present
+// decls), then in pending (decls awaiting Edit application).
+func (p pendingDecls) resolve(file *ast.File, targetPath string) (ast.DeclAny, bool) {
+	if d, ok := findDeclByPath(file, targetPath); ok {
+		return d, true
+	}
+	if d, ok := p[targetPath]; ok {
+		return d, true
+	}
+	return ast.DeclAny{}, false
+}
+
+// register records a newly-constructed decl at fullPath so subsequent
+// edits can reference it as a target.
+func (p pendingDecls) register(fullPath string, d ast.DeclAny) {
+	p[fullPath] = d
+}
+
+// buildEdit converts a YAML edit spec into a [printer.Edit] by
+// performing any pre-edit AST setup (constructing insertion decls,
+// looking up targets) and packaging them into the appropriate edit
+// shape. Targets are always passed to [printer.Edit] as the parent
+// definition (DeclDef.AsAny()) — never the bare body — so the printer
+// can classify the container via [ast.DeclDef.Classify].
+func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (printer.Edit, error) {
+	stream := file.Stream()
+	nodes := file.Nodes()
+
+	switch spec.Kind {
+	case "add_option":
+		target, err := ensureOptionTarget(file, pending, spec.Target)
+		if err != nil {
+			return printer.Edit{}, err
+		}
+		opt := createOptionDecl(stream, nodes, spec.Option, spec.Value)
+		return printer.Edit{
+			Kind:       printer.EditAdd,
+			Target:     target,
+			Insertions: []ast.DeclAny{opt.AsAny()},
+		}, nil
+
+	case "add_message":
+		msg := createMessageDecl(stream, nodes, spec.Name)
+		return buildAdd(file, pending, spec.Target, spec.Name, msg.AsAny())
+
+	case "add_field":
+		field := createFieldDecl(stream, nodes, spec.Type, spec.Name, spec.Tag)
+		return buildAdd(file, pending, spec.Target, spec.Name, field.AsAny())
+
+	case "add_enum":
+		e := createEnumDecl(stream, nodes, spec.Name)
+		return buildAdd(file, pending, spec.Target, spec.Name, e.AsAny())
+
+	case "add_enum_value":
+		ev := createEnumValueDecl(stream, nodes, spec.Name, spec.Tag)
+		return buildAdd(file, pending, spec.Target, spec.Name, ev.AsAny())
+
+	case "add_service":
+		svc := createServiceDecl(stream, nodes, spec.Name)
+		return buildAdd(file, pending, "", spec.Name, svc.AsAny())
+
+	case "delete_decl":
+		target, ok := pending.resolve(file, spec.Target)
+		if !ok {
+			return printer.Edit{}, fmt.Errorf("decl %q not found", spec.Target)
+		}
+		return printer.Edit{
+			Kind:   printer.EditDelete,
+			Target: target,
+		}, nil
+
+	case "move_decl":
+		target, ok := findTopLevelDeclByName(file, spec.Target)
+		if !ok {
+			return printer.Edit{}, fmt.Errorf("decl %q not found", spec.Target)
+		}
+		before, ok := findTopLevelDeclByName(file, spec.Name)
+		if !ok {
+			return printer.Edit{}, fmt.Errorf("decl %q not found", spec.Name)
+		}
+		return printer.Edit{
+			Kind:   printer.EditMove,
+			Target: target,
+			Before: before,
+		}, nil
+
+	default:
+		return printer.Edit{}, fmt.Errorf("unknown edit kind: %q", spec.Kind)
+	}
+}
+
+// buildAdd builds an EditAdd targeting the decl at targetPath (file
+// when empty), inserting the prebuilt decl ins. The new decl is
+// registered in pending under "<targetPath>.<name>" (or just "name"
+// at file level) so subsequent edits can target it.
+func buildAdd(file *ast.File, pending pendingDecls, targetPath, name string, ins ast.DeclAny) (printer.Edit, error) {
+	var target ast.DeclAny
+	if targetPath != "" {
+		t, ok := pending.resolve(file, targetPath)
+		if !ok {
+			return printer.Edit{}, fmt.Errorf("target %q not found", targetPath)
+		}
+		target = t
+	}
+	fullPath := name
+	if targetPath != "" {
+		fullPath = targetPath + "." + name
+	}
+	pending.register(fullPath, ins)
+	return printer.Edit{
+		Kind:       printer.EditAdd,
+		Target:     target,
+		Insertions: []ast.DeclAny{ins},
+	}, nil
+}
+
+// ensureOptionTarget returns the target for an "option foo = bar;"
+// insertion. The path may identify a message, enum, service, or
+// service method (resolved against file + pending). For a service
+// method without an existing `{}` body, one is created and attached
+// so the resulting target has a body.
+func ensureOptionTarget(file *ast.File, pending pendingDecls, targetPath string) (ast.DeclAny, error) {
+	if d, ok := pending.resolve(file, targetPath); ok {
+		return d, nil
+	}
+	// Service.Method: pending.resolve descends only into
+	// messages/enums via findDeclByPath. Locate the method
+	// directly, ensuring it has a body for the option to land in.
+	parts := strings.Split(targetPath, ".")
+	if len(parts) == 2 {
+		for d := range seq.Values(file.Decls()) {
+			def := d.AsDef()
+			if def.IsZero() || def.Classify() != ast.DefKindService {
+				continue
+			}
+			if defName(def) != parts[0] {
+				continue
+			}
+			for md := range seq.Values(def.Body().Decls()) {
+				mdef := md.AsDef()
+				if mdef.IsZero() || mdef.Classify() != ast.DefKindMethod {
+					continue
+				}
+				if defName(mdef) != parts[1] {
+					continue
+				}
+				if mdef.Body().IsZero() {
+					stream := file.Stream()
+					nodes := file.Nodes()
+					openBrace := stream.NewPunct(keyword.LBrace.String())
+					closeBrace := stream.NewPunct(keyword.RBrace.String())
+					stream.NewFused(openBrace, closeBrace)
+					body := nodes.NewDeclBody(openBrace)
+					mdef.SetBody(body)
+				}
+				return md, nil
+			}
+		}
+	}
+	return ast.DeclAny{}, fmt.Errorf("option target %q not found", targetPath)
+}
+
+// findDeclByPath returns the [ast.DeclAny] for a decl at the given
+// dotted path, searching messages and enums recursively.
+func findDeclByPath(file *ast.File, targetPath string) (ast.DeclAny, bool) {
+	parts := strings.Split(targetPath, ".")
+
+	if len(parts) == 1 {
+		for d := range seq.Values(file.Decls()) {
+			def := d.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			if defName(def) == parts[0] {
+				return d, true
+			}
+		}
+		return ast.DeclAny{}, false
+	}
+
+	// Nested path: find the parent body, then the named decl in it.
+	parentPath := strings.Join(parts[:len(parts)-1], ".")
+	name := parts[len(parts)-1]
+	if body := findMessageBody(file, parentPath); !body.IsZero() {
+		for d := range seq.Values(body.Decls()) {
+			def := d.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			if defName(def) == name {
+				return d, true
+			}
+		}
+	}
+	if body := findEnumBody(file, parentPath); !body.IsZero() {
+		for d := range seq.Values(body.Decls()) {
+			def := d.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			if defName(def) == name {
+				return d, true
+			}
+		}
+	}
+	return ast.DeclAny{}, false
+}
+
+// findTopLevelDeclByName returns the file-level decl with the given
+// name.
+func findTopLevelDeclByName(file *ast.File, name string) (ast.DeclAny, bool) {
+	for d := range seq.Values(file.Decls()) {
+		def := d.AsDef()
+		if def.IsZero() {
+			continue
+		}
+		if defName(def) == name {
+			return d, true
+		}
+	}
+	return ast.DeclAny{}, false
 }
 
 // defName returns the simple name of a definition, handling both natural
@@ -281,39 +586,6 @@ func findMessageBody(file *ast.File, targetPath string) ast.DeclBody {
 	return searchDecls(file.Decls(), 0)
 }
 
-// findFieldDef finds a field definition by path (e.g., "M.field_name" or "M.Inner.field_name").
-func findFieldDef(file *ast.File, targetPath string) ast.DeclDef {
-	parts := strings.Split(targetPath, ".")
-	if len(parts) < 2 {
-		return ast.DeclDef{}
-	}
-
-	// Find the containing message
-	msgPath := strings.Join(parts[:len(parts)-1], ".")
-	fieldName := parts[len(parts)-1]
-
-	msgBody := findMessageBody(file, msgPath)
-	if msgBody.IsZero() {
-		return ast.DeclDef{}
-	}
-
-	// Find the field in the message
-	for decl := range seq.Values(msgBody.Decls()) {
-		def := decl.AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if def.Classify() != ast.DefKindField {
-			continue
-		}
-		if defName(def) == fieldName {
-			return def
-		}
-	}
-
-	return ast.DeclDef{}
-}
-
 // findEnumBody finds an enum body by path (e.g., "Status" or "M.Status").
 func findEnumBody(file *ast.File, targetPath string) ast.DeclBody {
 	parts := strings.Split(targetPath, ".")
@@ -352,183 +624,6 @@ func findEnumBody(file *ast.File, targetPath string) ast.DeclBody {
 	return searchDecls(file.Decls(), 0)
 }
 
-// findEnumValueDef finds an enum value definition by path (e.g., "Status.UNKNOWN").
-func findEnumValueDef(file *ast.File, targetPath string) ast.DeclDef {
-	parts := strings.Split(targetPath, ".")
-	if len(parts) < 2 {
-		return ast.DeclDef{}
-	}
-
-	// Find the containing enum
-	enumPath := strings.Join(parts[:len(parts)-1], ".")
-	valueName := parts[len(parts)-1]
-
-	enumBody := findEnumBody(file, enumPath)
-	if enumBody.IsZero() {
-		return ast.DeclDef{}
-	}
-
-	// Find the value in the enum
-	for decl := range seq.Values(enumBody.Decls()) {
-		def := decl.AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if def.Classify() != ast.DefKindEnumValue {
-			continue
-		}
-		if defName(def) == valueName {
-			return def
-		}
-	}
-
-	return ast.DeclDef{}
-}
-
-// addOptionToMessage adds an option declaration to a message or method.
-func addOptionToMessage(file *ast.File, targetPath, optionName, optionValue string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	// Try finding a message body first
-	body := findMessageBody(file, targetPath)
-
-	// If not found, try finding a method body (Service.Method pattern)
-	if body.IsZero() {
-		body = findOrCreateMethodBody(file, targetPath)
-	}
-
-	if body.IsZero() {
-		return fmt.Errorf("message or method %q not found", targetPath)
-	}
-
-	// Create the option declaration
-	optionDecl := createOptionDecl(stream, nodes, optionName, optionValue)
-
-	// Find the right position to insert (after existing options, before fields)
-	insertPos := 0
-	for i := range body.Decls().Len() {
-		decl := body.Decls().At(i)
-		def := decl.AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if def.Classify() == ast.DefKindOption {
-			insertPos = i + 1
-		} else {
-			break
-		}
-	}
-	body.Decls().Insert(insertPos, optionDecl.AsAny())
-	return nil
-}
-
-// findOrCreateMethodBody finds a method and returns its body, creating one if needed.
-func findOrCreateMethodBody(file *ast.File, targetPath string) ast.DeclBody {
-	parts := strings.Split(targetPath, ".")
-	if len(parts) != 2 {
-		return ast.DeclBody{}
-	}
-	serviceName, methodName := parts[0], parts[1]
-
-	for decl := range seq.Values(file.Decls()) {
-		def := decl.AsDef()
-		if def.IsZero() || def.Classify() != ast.DefKindService {
-			continue
-		}
-		if defName(def) != serviceName {
-			continue
-		}
-
-		svcBody := def.Body()
-		for i := range svcBody.Decls().Len() {
-			methodDecl := svcBody.Decls().At(i).AsDef()
-			if methodDecl.IsZero() || methodDecl.Classify() != ast.DefKindMethod {
-				continue
-			}
-			if defName(methodDecl) != methodName {
-				continue
-			}
-
-			// Found the method - get or create body
-			if methodDecl.Body().IsZero() {
-				stream := file.Stream()
-				nodes := file.Nodes()
-				openBrace := stream.NewPunct(keyword.LBrace.String())
-				closeBrace := stream.NewPunct(keyword.RBrace.String())
-				stream.NewFused(openBrace, closeBrace)
-				body := nodes.NewDeclBody(openBrace)
-				methodDecl.SetBody(body)
-			}
-			return methodDecl.Body()
-		}
-	}
-	return ast.DeclBody{}
-}
-
-// addCompactOption adds a compact option to a field or enum value.
-func addCompactOption(file *ast.File, targetPath, optionName, optionValue string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	// Try to find as a field first
-	fieldDef := findFieldDef(file, targetPath)
-	if !fieldDef.IsZero() {
-		return addCompactOptionToDef(stream, nodes, fieldDef, optionName, optionValue)
-	}
-
-	// Try to find as an enum value
-	enumValueDef := findEnumValueDef(file, targetPath)
-	if !enumValueDef.IsZero() {
-		return addCompactOptionToDef(stream, nodes, enumValueDef, optionName, optionValue)
-	}
-
-	return fmt.Errorf("target %q not found", targetPath)
-}
-
-// addCompactOptionToDef adds a compact option to a definition (field or enum value).
-func addCompactOptionToDef(stream *token.Stream, nodes *ast.Nodes, def ast.DeclDef, optionName, optionValue string) error {
-	// Create the option entry
-	nameIdent := stream.NewIdent(optionName)
-	equals := stream.NewPunct(keyword.Assign.String())
-	valueIdent := stream.NewIdent(optionValue)
-
-	optionNamePath := nodes.NewPath(
-		nodes.NewPathComponent(token.Zero, nameIdent),
-	)
-
-	optionValueExpr := ast.ExprPath{
-		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, valueIdent)),
-	}
-
-	// Get or create compact options
-	options := def.Options()
-	if options.IsZero() {
-		// Create new compact options with fused brackets
-		openBracket := stream.NewPunct(keyword.LBracket.String())
-		closeBracket := stream.NewPunct(keyword.RBracket.String())
-		stream.NewFused(openBracket, closeBracket)
-		options = nodes.NewCompactOptions(openBracket)
-		def.SetOptions(options)
-	}
-
-	// Add the option
-	opt := ast.Option{
-		Path:   optionNamePath,
-		Equals: equals,
-		Value:  optionValueExpr.AsAny(),
-	}
-
-	entries := options.Entries()
-	if entries.Len() > 0 && entries.Comma(entries.Len()-1).IsZero() {
-		// Add a comma after the last existing entry (only if it doesn't already have one)
-		comma := stream.NewPunct(keyword.Comma.String())
-		entries.SetComma(entries.Len()-1, comma)
-	}
-	seq.Append(entries, opt)
-	return nil
-}
-
 // createOptionDecl creates an option declaration.
 func createOptionDecl(stream *token.Stream, nodes *ast.Nodes, optionName, optionValue string) ast.DeclDef {
 	optionKw := stream.NewIdent(keyword.Option.String())
@@ -552,27 +647,6 @@ func createOptionDecl(stream *token.Stream, nodes *ast.Nodes, optionName, option
 	})
 }
 
-// addMessage adds a new message to the file or to a target message.
-func addMessage(file *ast.File, target, name string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	msgDecl := createMessageDecl(stream, nodes, name)
-
-	if target == "" {
-		// Add to file level
-		seq.Append(file.Decls(), msgDecl.AsAny())
-	} else {
-		// Add to target message
-		msgBody := findMessageBody(file, target)
-		if msgBody.IsZero() {
-			return fmt.Errorf("message %q not found", target)
-		}
-		seq.Append(msgBody.Decls(), msgDecl.AsAny())
-	}
-	return nil
-}
-
 // createMessageDecl creates a new message declaration.
 func createMessageDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.DeclDef {
 	msgKw := stream.NewIdent(keyword.Message.String())
@@ -593,21 +667,6 @@ func createMessageDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.
 		Name:    msgNamePath,
 		Body:    body,
 	})
-}
-
-// addField adds a new field to a message.
-func addField(file *ast.File, target, name, typeName, tag string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	msgBody := findMessageBody(file, target)
-	if msgBody.IsZero() {
-		return fmt.Errorf("message %q not found", target)
-	}
-
-	fieldDecl := createFieldDecl(stream, nodes, typeName, name, tag)
-	seq.Append(msgBody.Decls(), fieldDecl.AsAny())
-	return nil
 }
 
 // createFieldDecl creates a new field declaration.
@@ -637,27 +696,6 @@ func createFieldDecl(stream *token.Stream, nodes *ast.Nodes, typeName, name, tag
 	})
 }
 
-// addEnum adds a new enum to the file or to a target message.
-func addEnum(file *ast.File, target, name string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	enumDecl := createEnumDecl(stream, nodes, name)
-
-	if target == "" {
-		// Add to file level
-		seq.Append(file.Decls(), enumDecl.AsAny())
-	} else {
-		// Add to target message
-		msgBody := findMessageBody(file, target)
-		if msgBody.IsZero() {
-			return fmt.Errorf("message %q not found", target)
-		}
-		seq.Append(msgBody.Decls(), enumDecl.AsAny())
-	}
-	return nil
-}
-
 // createEnumDecl creates a new enum declaration.
 func createEnumDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.DeclDef {
 	enumKw := stream.NewIdent(keyword.Enum.String())
@@ -678,21 +716,6 @@ func createEnumDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.Dec
 		Name:    enumNamePath,
 		Body:    body,
 	})
-}
-
-// addEnumValue adds a new value to an enum.
-func addEnumValue(file *ast.File, target, name, tag string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	enumBody := findEnumBody(file, target)
-	if enumBody.IsZero() {
-		return fmt.Errorf("enum %q not found", target)
-	}
-
-	valueDecl := createEnumValueDecl(stream, nodes, name, tag)
-	seq.Append(enumBody.Decls(), valueDecl.AsAny())
-	return nil
 }
 
 // createEnumValueDecl creates a new enum value declaration.
@@ -718,16 +741,6 @@ func createEnumValueDecl(stream *token.Stream, nodes *ast.Nodes, name, tag strin
 	})
 }
 
-// addService adds a new service to the file.
-func addService(file *ast.File, name string) error {
-	stream := file.Stream()
-	nodes := file.Nodes()
-
-	svcDecl := createServiceDecl(stream, nodes, name)
-	seq.Append(file.Decls(), svcDecl.AsAny())
-	return nil
-}
-
 // createServiceDecl creates a new service declaration.
 func createServiceDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.DeclDef {
 	svcKw := stream.NewIdent(keyword.Service.String())
@@ -748,98 +761,4 @@ func createServiceDecl(stream *token.Stream, nodes *ast.Nodes, name string) ast.
 		Name:    svcNamePath,
 		Body:    body,
 	})
-}
-
-// deleteDecl deletes a declaration by path.
-func deleteDecl(file *ast.File, targetPath string) error {
-	parts := strings.Split(targetPath, ".")
-
-	if len(parts) == 1 {
-		// Top-level declaration
-		return deleteFromDecls(file.Decls(), parts[0])
-	}
-
-	// Nested declaration - find the parent
-	parentPath := strings.Join(parts[:len(parts)-1], ".")
-	name := parts[len(parts)-1]
-
-	// Try to find parent as message
-	msgBody := findMessageBody(file, parentPath)
-	if !msgBody.IsZero() {
-		return deleteFromDecls(msgBody.Decls(), name)
-	}
-
-	// Try to find parent as enum
-	enumBody := findEnumBody(file, parentPath)
-	if !enumBody.IsZero() {
-		return deleteFromDecls(enumBody.Decls(), name)
-	}
-
-	return fmt.Errorf("parent %q not found", parentPath)
-}
-
-// deleteFromDecls deletes a declaration with the given name from a decl list.
-func deleteFromDecls(decls seq.Inserter[ast.DeclAny], name string) error {
-	for i := range decls.Len() {
-		decl := decls.At(i)
-		def := decl.AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if def.Name().IsZero() {
-			continue
-		}
-		if defName(def) == name {
-			decls.Delete(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("declaration %q not found", name)
-}
-
-// moveDecl moves the declaration named target so that it appears before the
-// declaration named before. Both must be top-level declarations.
-func moveDecl(file *ast.File, target, before string) error {
-	decls := file.Decls()
-
-	// Find the target declaration and save it.
-	srcIdx := -1
-	var saved ast.DeclAny
-	for i := range decls.Len() {
-		def := decls.At(i).AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if !def.Name().IsZero() && defName(def) == target {
-			srcIdx = i
-			saved = decls.At(i)
-			break
-		}
-	}
-	if srcIdx < 0 {
-		return fmt.Errorf("declaration %q not found", target)
-	}
-
-	// Delete the source declaration.
-	decls.Delete(srcIdx)
-
-	// Find the "before" declaration in the (now shorter) list.
-	dstIdx := -1
-	for i := range decls.Len() {
-		def := decls.At(i).AsDef()
-		if def.IsZero() {
-			continue
-		}
-		if !def.Name().IsZero() && defName(def) == before {
-			dstIdx = i
-			break
-		}
-	}
-	if dstIdx < 0 {
-		return fmt.Errorf("declaration %q not found", before)
-	}
-
-	// Insert the saved declaration before the target position.
-	decls.Insert(dstIdx, saved)
-	return nil
 }

@@ -2,6 +2,7 @@
 
 // b
 syntax = "proto3"; // c
+
 package test; // d
 
 // e

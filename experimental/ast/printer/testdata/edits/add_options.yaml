@@ -43,14 +43,6 @@ source: |
     ACTIVE = 1;
     INACTIVE = 2 [debug_redact = true];
   }
-  message MultiLineOptions {
-    string field = 1 [
-      debug_redact = true
-    ];
-  }
-  message TrailingComma {
-    string field = 1 [debug_redact = true,];
-  }
 
 edits:
   # Add option to simple message
@@ -72,27 +64,7 @@ edits:
     target: Outer.Inner
     option: deprecated
     value: "true"
-  # Add compact options to fields
-  - kind: add_compact_option
-    target: Simple.name
-    option: deprecated
-    value: "true"
-  - kind: add_compact_option
-    target: Simple.age
-    option: deprecated
-    value: "true"
-  # Add compact option to enum value that already has an option
-  - kind: add_compact_option
-    target: Status.INACTIVE
-    option: deprecated
-    value: "true"
-  # Add compact option to field with multi-line options
-  - kind: add_compact_option
-    target: MultiLineOptions.field
-    option: deprecated
-    value: "true"
-  # Add compact option to field with trailing comma
-  - kind: add_compact_option
-    target: TrailingComma.field
-    option: deprecated
-    value: "true"
+  # NOTE: compact-option editing (`add_compact_option`) is not
+  # supported by the current printer.Edit API; mutating an existing
+  # field/enum-value's [...] block is a sub-decl operation outside
+  # the decl-tree mutations Edit handles.
