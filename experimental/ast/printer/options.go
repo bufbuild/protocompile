@@ -204,6 +204,33 @@ func LegacyBufFormat() Formatting {
 	}
 }
 
+// Default returns the recommended Formatting options for new callers.
+// Use as:
+//
+//	printer.PrintFile(printer.Options{
+//	    Format:     true,
+//	    Formatting: printer.Default(),
+//	}, file)
+//
+// Compared to [LegacyBufFormat], Default uses [LayoutDynamic] for body
+// and literal scopes (preserving source intent for flat-vs-broken
+// decisions) and turns off the comment-rewriting/repositioning knobs
+// that legacy enabled. MaxWidth remains [math.MaxInt] until
+// width-aware layout strategies land.
+func Default() Formatting {
+	return Formatting{
+		MaxWidth:                           math.MaxInt,
+		TabstopWidth:                       2,
+		BodyLayout:                         LayoutDynamic,
+		LiteralLayout:                      LayoutDynamic,
+		CanonicalizeFileOrder:              true,
+		RewriteTrailingLineCommentsToBlock: false,
+		NormalizeBlockComments:             false,
+		TrailingBlockCommentsOnNewLine:     false,
+		PairLeadingBlockComments:           false,
+	}
+}
+
 // withDefaults returns a copy of opts with default values applied.
 func (opts Options) withDefaults() Options {
 	opts.Formatting = opts.Formatting.withDefaults()

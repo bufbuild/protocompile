@@ -124,24 +124,12 @@ func TestFormat(t *testing.T) {
 		},
 	}
 
-	// Modern default preset. Constructed from LegacyBufFormat with
-	// every knob flipped to its modern value. Once a Default()
-	// constructor lands (Step 4 of the migration plan), this becomes
-	// `printer.Default()`.
-	def := printer.LegacyBufFormat()
-	def.BodyLayout = printer.LayoutDynamic
-	def.LiteralLayout = printer.LayoutDynamic
-	def.RewriteTrailingLineCommentsToBlock = false
-	def.NormalizeBlockComments = false
-	def.TrailingBlockCommentsOnNewLine = false
-	def.PairLeadingBlockComments = false
-
 	presets := []struct {
 		label string
 		opts  printer.Options
 	}{
 		{"legacy", printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}},
-		{"default", printer.Options{Format: true, Formatting: def}},
+		{"default", printer.Options{Format: true, Formatting: printer.Default()}},
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
