@@ -239,7 +239,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
-	defer p.ctx.with(trailingBlockOnNewLine(true))()
+	defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(true))()
 
 	p.printToken(openTok, gap)
 	p.withIndent(func(indented *printer) {
@@ -342,7 +342,7 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
-	defer p.ctx.with(trailingBlockOnNewLine(true))()
+	defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(true))()
 
 	// Check if the open brace has trailing comments that should be
 	// moved inside the indented block.

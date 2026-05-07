@@ -34,6 +34,14 @@ type context struct {
 	// [printer.emitTrailing] only when
 	// [Formatting.TrailingBlockCommentsOnNewLine] is true.
 	trailingBlockOnNewLine bool
+
+	// pairLeadingBlock indicates the surrounding scope is a broken
+	// bracket scope where leading /* */ block comments on elements
+	// should be paired with their element on the same line, rather
+	// than placed on their own line above. Honored by
+	// [printer.emitTrivia] only when
+	// [Formatting.PairLeadingBlockComments] is true.
+	pairLeadingBlock bool
 }
 
 // modifier mutates a [context]. Modifiers are applied in order via
@@ -55,6 +63,12 @@ func indentExpr(v bool) modifier {
 // [context.trailingBlockOnNewLine].
 func trailingBlockOnNewLine(v bool) modifier {
 	return func(c *context) { c.trailingBlockOnNewLine = v }
+}
+
+// pairLeadingBlock returns a [modifier] that sets
+// [context.pairLeadingBlock].
+func pairLeadingBlock(v bool) modifier {
+	return func(c *context) { c.pairLeadingBlock = v }
 }
 
 // with applies the given modifiers to the context and returns a function

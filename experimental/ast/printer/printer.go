@@ -538,6 +538,23 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	p.pending = p.pending[:0]
 
 	if hasComment {
+		// When the surrounding scope wants leading block comments
+		// paired with their element, override the post-comment gap
+		// to gapSpace so the element follows on the same line.
+		// Conditions:
+		//   - gap == gapNewline: only fire on element-leading
+		//     positions (broken-scope per-element gap), not on
+		//     punctuation gaps like gapInline (commas, colons).
+		//   - !prevIsLine: line comments must end with a newline.
+		//   - newlineRun < 2: preserve blank-line boundaries.
+		if gap == gapNewline &&
+			!prevIsLine &&
+			newlineRun < 2 &&
+			p.options.Formatting.PairLeadingBlockComments &&
+			p.ctx.pairLeadingBlock {
+			p.emitGap(gapSpace)
+			return
+		}
 		// Use the actual newlineRun from trailing tokens after the last
 		// comment. When the source had a blank line (2+ newlines) after
 		// the last comment, this preserves it.
