@@ -87,7 +87,7 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// that one emit. The restorer is idempotent, so the deferred call
 	// at function exit is safe regardless.
 	indented := p.ctx.indentExpr
-	restore := p.ctx.with(lineToBlock(false))
+	restore := p.ctx.with(lineToBlock(false), trailingBlockOnNewLine(true))
 	defer restore()
 
 	printParts := func(pp *printer) {
@@ -239,6 +239,8 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
+	defer p.ctx.with(trailingBlockOnNewLine(true))()
+
 	p.printToken(openTok, gap)
 	p.withIndent(func(indented *printer) {
 		for i := range elements.Len() {
@@ -339,6 +341,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 	}
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
+
+	defer p.ctx.with(trailingBlockOnNewLine(true))()
 
 	// Check if the open brace has trailing comments that should be
 	// moved inside the indented block.

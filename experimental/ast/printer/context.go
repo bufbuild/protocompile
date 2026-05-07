@@ -26,6 +26,14 @@ type context struct {
 	// value contexts after `=` or `:` so multi-part strings break
 	// under the assignment.
 	indentExpr bool
+
+	// trailingBlockOnNewLine indicates the surrounding scope renders
+	// vertically (e.g. a broken bracket scope, or compound-string
+	// parts), so trailing /* */ block comments should be placed on
+	// their own line rather than inline with the value. Honored by
+	// [printer.emitTrailing] only when
+	// [Formatting.TrailingBlockCommentsOnNewLine] is true.
+	trailingBlockOnNewLine bool
 }
 
 // modifier mutates a [context]. Modifiers are applied in order via
@@ -41,6 +49,12 @@ func lineToBlock(v bool) modifier {
 // indentExpr returns a [modifier] that sets [context.indentExpr].
 func indentExpr(v bool) modifier {
 	return func(c *context) { c.indentExpr = v }
+}
+
+// trailingBlockOnNewLine returns a [modifier] that sets
+// [context.trailingBlockOnNewLine].
+func trailingBlockOnNewLine(v bool) modifier {
+	return func(c *context) { c.trailingBlockOnNewLine = v }
 }
 
 // with applies the given modifiers to the context and returns a function

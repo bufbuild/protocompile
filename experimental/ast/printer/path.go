@@ -43,7 +43,14 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	// // comment on any component would eat subsequent components.
 	// Convert to /* */ to keep the path intact for the duration of
 	// this call.
-	defer p.ctx.with(lineToBlock(true))()
+	//
+	// Path scopes also reset trailingBlockOnNewLine: paths sit inside
+	// broken bracket/brace scopes that may set the flag, but a path
+	// is itself a tight scope where mid-traversal block comments must
+	// stay inline. (As a consequence, the trailing block comment on
+	// a path used as a value position is also kept inline; that is a
+	// known limitation tied to bufformat-diff item 1.)
+	defer p.ctx.with(lineToBlock(true), trailingBlockOnNewLine(false))()
 
 	first := true
 	for pc := range path.Components() {

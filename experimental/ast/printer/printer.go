@@ -253,10 +253,18 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 
 	if p.options.Format {
 		rewriteToBlock := p.options.Formatting.RewriteTrailingLineCommentsToBlock
+		blockOnNewLine := p.options.Formatting.TrailingBlockCommentsOnNewLine && p.ctx.trailingBlockOnNewLine
 		for _, t := range trailing {
 			if t.Kind() == token.Comment {
-				p.push(dom.Text(" "))
 				isLine := strings.HasPrefix(t.Text(), "//")
+				// Choose the gap before the comment. Block comments
+				// in a vertical scope go on their own line; everything
+				// else gets a single space.
+				if !isLine && blockOnNewLine {
+					p.push(tagNewline)
+				} else {
+					p.push(tagSpace)
+				}
 				switch {
 				case rewriteToBlock && p.ctx.lineToBlock && isLine:
 					// Convert // comment to /* comment */ for inline contexts.
