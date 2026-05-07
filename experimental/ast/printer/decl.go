@@ -498,7 +498,11 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			// When the open bracket has trailing comments, suppress
 			// them from the inline position and emit them as the first
 			// line inside the indented block instead.
-			defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(true))()
+			//
+			// pairLeadingBlock is intentionally NOT set here: legacy
+			// buf format does not pair leading block comments with
+			// compact option entries (only with array elements).
+			defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(false))()
 			if len(openTrailing) > 0 {
 				p.printTokenSuppressTrailing(openTok, gapSpace)
 			} else {

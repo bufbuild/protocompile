@@ -34,80 +34,62 @@ used everywhere else in our output.
 The four remaining failures are placement-only differences. The
 printer output is valid Protobuf in every case.
 
-### A. Compound-string interior block comments paired inline
+### A. Trailing block comment on value in compact-options not on own line
 
-When a block comment appears between two parts of a compound string,
-ours pairs it inline with one part instead of keeping it on its own
-line.
+Compact options inside an expanded `[...]` scope want the trailing
+block comment on the value to land on its own line (legacy preset
+honors `Formatting.TrailingBlockCommentsOnNewLine = true`). It does
+for most scopes, but not when the value is a path: `printPath`
+resets `trailingBlockOnNewLine` to keep paths tight.
 
-Appears in: `literal_comments.proto`, `option_complex_array_literal.proto`,
-`message_options.proto`.
-
-```
-golden:  "one"
-         /* One */
-         "two"
-
-ours:    "one"
-         /* One */ "two"
-```
-
-**Cause:** [`Formatting.PairLeadingBlockComments`][pair] (legacy
-default `true`) is set in the broken paths of `printArray`,
-`printDict`, and `printCompactOptions`. When a compound string is
-emitted within those scopes, the flag leaks in and `emitTrivia`
-inline-pairs leading block comments on subsequent string parts.
-`printCompoundString` should reset the flag for its body.
-
-### B. Dict/compact-options leading block comments paired inline
-
-The same `PairLeadingBlockComments` over-application paints leading
-block comments onto the same line as their dict field or compact
-option, where the legacy golden keeps them separate.
-
-Appears in: `message_options.proto`, `literal_comments.proto`.
+Appears in: `message_options.proto`, `option_complex_array_literal.proto`.
 
 ```
-golden:  /* Leading comment on the 'foo' element */
-         foo: 1
+golden:  packed = false
+         /* trailing comment */
 
-ours:    /* Leading comment on the 'foo' element */ foo: 1
+ours:    packed = false /* trailing comment */
 ```
 
-**Cause:** `PairLeadingBlockComments` should fire for *array*
-elements only (matches the original `bufformat-diff` item 6 case).
-The flag is currently set in all three literal scopes
-(`printArray`/`printDict`/`printCompactOptions`); it should be
-narrowed to `printArray` only.
+**Cause:** `printPath` resets `trailingBlockOnNewLine(false)` to
+prevent breaks mid-path (avoids a different idempotency regression
+documented in Step 2.6). A path used as a *value* should still get
+the on-own-line treatment, but the printer can't distinguish path-
+as-value from path-as-key without more plumbing.
 
-### C. Missing blank lines between dict entries (newline-separator case)
+### B. Blank lines lost in dicts with newline separators or trailing comments
 
-When dict fields are separated by newlines instead of commas (a
-permitted protobuf syntax), blank lines between fields collapse to a
-single newline.
+When dict fields aren't comma-separated (or have trailing comments
+near commas), pass1 preserves blank lines but pass2 doesn't.
 
-Appears in: `option_message_field.proto` (1 site).
+Appears in: `option_complex_array_literal.proto` (idempotency only),
+`option_message_field.proto`.
 
 ```
-golden:  foo: "goo"
+pass1:   ]
 
-         [...]: "boo"
+         values: [
+           ...
+         ]
 
-ours:    foo: "goo"
-         [...]: "boo"
+pass2:   ]
+         values: [
+           ...
+         ]
 ```
 
 **Cause:** The trivia walker (literal mode) breaks decls at `,`. For
-dicts that use newline separators it doesn't break, so per-element
-`blankBefore` is never recorded. The comma-separated case (most
-fixtures, including comma-separated dict fields) was fixed and now
-preserves blank lines correctly.
+dicts that use newline-only separators it doesn't break, so
+per-element `blankBefore` isn't recorded. Even for comma-separated
+fields, post-comma trailing comments shift trivia between pass1 and
+pass2 enough to lose blank-line tracking. The simple comma case
+(most fixtures) was fixed and now preserves blank lines correctly;
+the messy edge cases remain.
 
-### D. `//` vs `/* */` after `}` / `]`
+### C. `//` vs `/* */` after `}` / `]`
 
-Compact options with a single option and a trailing `//` line comment
-that already terminates on a newline stay as `//`; the golden rewrites
-to `/* */`.
+Compact options or dict values with a trailing `//` line comment that
+terminates on a newline stay as `//`; the golden rewrites to `/* */`.
 
 Appears in: `literal_comments.proto`.
 
@@ -122,14 +104,38 @@ rewrites them to `/* */`. Stylistic choice — keeping `//` is safe
 when nothing else follows on the line and preserves the original
 comment style.
 
+### D. Trailing comment placement on commas in array literals
+
+When a `,` between array elements has a trailing block comment
+(`{rule: "child"}, /* child node */`), legacy keeps it inline on the
+comma's line. Our `TrailingBlockCommentsOnNewLine` pushes it to its
+own line.
+
+Appears in: `literal_comments.proto`.
+
+```
+golden:  /* Before */ {rule: "child"}, /* child node */
+         {
+
+ours:    /* Before */ {rule: "child"},
+         /* child node */
+         {
+```
+
+**Cause:** With Step 9's walker change, post-comma trailing comments
+attach to the comma. Step 2.6's `TrailingBlockCommentsOnNewLine`
+flag fires for those, putting the comment on its own line. Legacy
+buf format treats trailing-on-comma differently from trailing-on-
+value: only the latter gets the own-line treatment.
+
 ## Summary
 
 | Category | Tests affected | Status |
 |----------|---------------|--------|
-| (A) Compound-string interior block paired inline | `literal_comments`, `option_complex_array_literal`, `message_options` | regression from `PairLeadingBlockComments` over-application |
-| (B) Dict/compact-opts leading block paired inline | `message_options`, `literal_comments` | regression from `PairLeadingBlockComments` over-application |
-| (C) Blank lines between dict entries (newline-separator case) | `option_message_field` | walker doesn't recognize newlines as element boundaries |
-| (D) `//` vs `/* */` after `}`/`]` | `literal_comments` | stylistic; keep `//` when safe |
+| (A) Trailing block on value-position path | `message_options`, `option_complex_array_literal` | path-context limitation |
+| (B) Dict blank-lines around trailing comments / newline separators | `option_complex_array_literal` (idempotency), `option_message_field` | walker limitation |
+| (C) `//` vs `/* */` after `}`/`]` | `literal_comments` | stylistic; keep `//` when safe |
+| (D) Trailing-on-comma block placement | `literal_comments` | own-line treatment over-applies to commas |
 
 No comments are dropped, no syntax is broken, and all passing tests
 are idempotent. The remaining diffs are placement-only.
@@ -153,9 +159,13 @@ are idempotent. The remaining diffs are placement-only.
   dicts remain — see Remaining (C).)
 - **Leading block comment paired with array element** — the
   `Formatting.PairLeadingBlockComments` knob (legacy `true`) inlines
-  leading block comments with their array element. (Step 2.7. Note:
-  the same flag is over-applied to dict/compact-opts/compound-string
-  scopes — see Remaining (A) and (B).)
+  leading block comments with their array element. (Step 2.7,
+  narrowed to `printArray` only.) Dict fields, compact options, and
+  compound-string parts now keep their leading block comments on
+  their own line, matching legacy.
+- **Compound-string interior block comments paired inline** —
+  resolved by resetting `pairLeadingBlock` in `printCompoundString`
+  so the surrounding scope's flag doesn't leak between parts.
 - **Empty `;` decl** (e.g. `message M {};`) no longer collides with
   blank-line preservation; the trivia walker recognizes `;` after a
   body as a separate empty decl.

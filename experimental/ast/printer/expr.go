@@ -86,8 +86,13 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// requested conversion, so we rewind to the caller's state for
 	// that one emit. The restorer is idempotent, so the deferred call
 	// at function exit is safe regardless.
+	// pairLeadingBlock is reset for the compound-string body: a
+	// surrounding broken array sets it true to inline-pair leading
+	// block comments with the array element (the compound string as
+	// a whole), but interior block comments between parts must stay
+	// on their own line.
 	indented := p.ctx.indentExpr
-	restore := p.ctx.with(lineToBlock(false), trailingBlockOnNewLine(true))
+	restore := p.ctx.with(lineToBlock(false), trailingBlockOnNewLine(true), pairLeadingBlock(false))
 	defer restore()
 
 	printParts := func(pp *printer) {
@@ -350,7 +355,10 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
 
-	defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(true))()
+	// pairLeadingBlock is intentionally NOT set here: legacy buf
+	// format does not pair leading block comments with dict fields
+	// (only with array elements).
+	defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(false))()
 
 	// Check if the open brace has trailing comments that should be
 	// moved inside the indented block.
