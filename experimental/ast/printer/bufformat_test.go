@@ -29,19 +29,19 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 )
 
+//go:generate go run ./testdata/gen de176125bc1a22a3d9a3a17b9b84dc502c7dd6c9
+
 // TestBufFormat runs the buf format golden tests against our printer.
 //
-// It walks the buf repo's bufformat testdata directory, parsing each .proto
-// file and comparing the formatted output against the corresponding .golden
-// file.
+// It walks the vendored bufformat testdata under testdata/bufformat,
+// parsing each .proto file and comparing the formatted output against
+// the corresponding .golden file. The testdata is sourced from
+// bufbuild/buf at the commit pinned by the //go:generate directive
+// above; re-run `go generate` in this package to refresh.
 func TestBufFormat(t *testing.T) {
 	t.Parallel()
 
-	// The buf repo is expected to be a sibling of the protocompile repo.
-	bufTestdata := filepath.Join(testBufRepoRoot(), "private", "buf", "bufformat", "testdata")
-	if _, err := os.Stat(bufTestdata); err != nil {
-		t.Skipf("buf testdata not found at %s: %v", bufTestdata, err)
-	}
+	bufTestdata := filepath.Join("testdata", "bufformat")
 
 	// Collect all .proto files.
 	var protoFiles []string
@@ -79,7 +79,7 @@ func TestBufFormat(t *testing.T) {
 
 			// Skip: our formatter keeps detached comments at section boundaries
 			// during sorting rather than permuting them with declarations.
-			// This is intentional -- see PLAN.md.
+			// This is intentional -- see bufformat-diff.md.
 			if strings.Contains(relPath, "all/v1/all") || strings.Contains(relPath, "customoptions/") {
 				t.Skip("detached comment placement differs from old buf format during sort")
 			}
@@ -150,28 +150,4 @@ func TestBufFormat(t *testing.T) {
 			}
 		})
 	}
-}
-
-// testBufRepoRoot returns the root of the buf repo, assumed to be a sibling
-// of the protocompile repo.
-func testBufRepoRoot() string {
-	// Walk up from the current working directory to find the protocompile repo root,
-	// then look for ../buf.
-	wd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	// The test runs from the package directory. Walk up to find go.mod.
-	dir := wd
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
-	return filepath.Join(filepath.Dir(dir), "buf")
 }
