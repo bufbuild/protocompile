@@ -42,6 +42,15 @@ type context struct {
 	// [printer.emitTrivia] only when
 	// [Formatting.PairLeadingBlockComments] is true.
 	pairLeadingBlock bool
+
+	// pathInValueContext indicates the current [printer.printPath]
+	// emission is for a path used as a value (e.g. `false` in
+	// `packed = false`), not as a key, decl name, or extension
+	// name. printPath usually resets trailingBlockOnNewLine to keep
+	// paths tight, but value-position paths should let a trailing
+	// block comment on the path's final token respect the
+	// surrounding broken scope's policy.
+	pathInValueContext bool
 }
 
 // modifier mutates a [context]. Modifiers are applied in order via
@@ -69,6 +78,12 @@ func trailingBlockOnNewLine(v bool) modifier {
 // [context.pairLeadingBlock].
 func pairLeadingBlock(v bool) modifier {
 	return func(c *context) { c.pairLeadingBlock = v }
+}
+
+// pathInValueContext returns a [modifier] that sets
+// [context.pathInValueContext].
+func pathInValueContext(v bool) modifier {
+	return func(c *context) { c.pathInValueContext = v }
 }
 
 // with applies the given modifiers to the context and returns a function

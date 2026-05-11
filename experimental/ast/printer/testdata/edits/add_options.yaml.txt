@@ -1,7 +1,5 @@
 syntax = "proto3";
-
 package test;
-
 message Simple {
   string name = 1;
   int32 age = 2;

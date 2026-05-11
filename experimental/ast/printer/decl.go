@@ -495,39 +495,30 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 
 		default:
 			// Multiple options or comments force expand: one-per-line.
-			// When the open bracket has trailing comments, suppress
-			// them from the inline position and emit them as the first
-			// line inside the indented block instead.
-			//
 			// pairLeadingBlock is intentionally NOT set here: legacy
 			// buf format does not pair leading block comments with
 			// compact option entries (only with array elements).
 			defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(false))()
-			if len(openTrailing) > 0 {
-				p.printTokenSuppressTrailing(openTok, gapSpace)
-			} else {
-				p.printToken(openTok, gapSpace)
-			}
+			// Print the open bracket inline, including its trailing
+			// trivia. A trailing `// note` after `[` ends the line
+			// naturally and the first entry follows on a new
+			// indented line via gapNewline; a trailing block comment
+			// `/* note */` also stays inline with the bracket. This
+			// matches legacy buf format's `[ // note\n  ...` style.
+			p.printToken(openTok, gapSpace)
 			closeComments, closeAtt := p.extractCloseComments(closeTok)
 			p.withIndent(func(indented *printer) {
-				if len(openTrailing) > 0 {
-					// Emit the trailing comments from the open bracket
-					// on their own indented lines. The first option's
-					// gapNewline provides separation, so we only need
-					// to emit the comments themselves.
-					for _, t := range openTrailing {
-						if t.Kind() == token.Comment {
-							indented.emitGap(gapNewline)
-							indented.emitComment(t)
-						}
-					}
-				}
 				for i := range entries.Len() {
 					// Emit the comma (and its trailing) first; then the
 					// detached slot[i] between comma and this entry;
 					// then the entry itself.
+					//
+					// Suppress trailingBlockOnNewLine for the comma's
+					// emit so a trailing `*/` on it stays inline.
 					if i > 0 {
+						restore := indented.ctx.with(trailingBlockOnNewLine(false))
 						indented.printToken(entries.Comma(i-1), p.semiGap())
+						restore()
 					}
 					indented.emitTriviaSlot(slots, i)
 					opt := entries.At(i)
@@ -538,7 +529,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					indented.printPath(opt.Path, optGap)
 					if !opt.Equals.IsZero() {
 						indented.printToken(opt.Equals, gapSpace)
-						restore := p.ctx.with(indentExpr(true))
+						restore := p.ctx.with(indentExpr(true), pathInValueContext(true))
 						indented.printExpr(opt.Value, gapSpace)
 						restore()
 					}

@@ -98,12 +98,18 @@ type Formatting struct {
 	CanonicalizeFileOrder bool
 
 	// RewriteTrailingLineCommentsToBlock controls how the printer
-	// handles trailing `//` line comments.
+	// handles trailing `//` line comments in "tight" contexts —
+	// positions where the `//` would consume a following inline
+	// token (paths, single-option compact-options values, option
+	// values before `;`).
 	//
-	// When true, every trailing `//` comment is rewritten as `/* foo */`
-	// (with `*/` in the body escaped to `* /` to keep the synthesized
-	// block comment sound). Matches legacy `buf format` behavior;
-	// modifies user comment text as a side effect.
+	// When true, trailing `//` comments in those tight contexts are
+	// rewritten as `/* foo */` (with `*/` in the body escaped to
+	// `* /` to keep the synthesized block comment sound). Trailing
+	// `//` comments in safe positions (at end of line, where the
+	// next token is on a new line) are left as `//`. Matches legacy
+	// `buf format` behavior; modifies user comment text as a side
+	// effect.
 	//
 	// When false, trailing `//` comments are emitted verbatim. If the
 	// layout would otherwise render a scope flat such that a `//`

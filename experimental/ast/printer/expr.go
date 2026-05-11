@@ -91,8 +91,21 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// block comments with the array element (the compound string as
 	// a whole), but interior block comments between parts must stay
 	// on their own line.
+	//
+	// trailingBlockOnNewLine is set based on whether the source's
+	// compound string spanned multiple lines: legacy buf format
+	// preserves source layout. For a source-vertical compound
+	// (parts on separate lines), trailing block comments stay
+	// inline with their part. For a source-flat compound (all on
+	// one line, which we break out vertically), trailing block
+	// comments get their own line.
+	srcVertical := !sourceWasFlat(openTok, closeTok)
 	indented := p.ctx.indentExpr
-	restore := p.ctx.with(lineToBlock(false), trailingBlockOnNewLine(true), pairLeadingBlock(false))
+	restore := p.ctx.with(
+		lineToBlock(false),
+		trailingBlockOnNewLine(!srcVertical),
+		pairLeadingBlock(false),
+	)
 	defer restore()
 
 	printParts := func(pp *printer) {
@@ -183,7 +196,11 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	}
 
 	// Containers manage their own indentation; both flags reset for the
-	// scope of this array.
+	// scope of this array. Capture the outer lineToBlock value so the
+	// close-bracket emit can restore it: a `// comment` trailing on `]`
+	// is a boundary token whose rewrite policy comes from the enclosing
+	// scope (e.g. a dict field whose value is this array).
+	outerLineToBlock := p.ctx.lineToBlock
 	defer p.ctx.with(lineToBlock(false), indentExpr(false))()
 
 	openTok, closeTok := brackets.StartEnd()
@@ -210,7 +227,9 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	if elements.Len() == 0 && !hasComments {
 		p.printToken(openTok, gap)
+		restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 		p.printToken(closeTok, gapNone)
+		restoreClose()
 		return
 	}
 
@@ -238,7 +257,9 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			})
 			p.push(tagSoftbreak)
 		})
+		restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 		p.printToken(closeTok, gapNone)
+		restoreClose()
 		return
 	}
 
@@ -253,15 +274,27 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			// the trivia walker, so emit it (and its trailing) first;
 			// then emit the detached slot[i] which holds between-comma
 			// and-this-element trivia; then the element itself.
+			//
+			// Suppress trailingBlockOnNewLine while emitting the
+			// comma so a `*/` trailing on the comma stays inline
+			// with it: legacy buf format only puts trailing-on-VALUE
+			// block comments on their own line, not trailing-on-comma.
 			if i > 0 {
+				restore := indented.ctx.with(trailingBlockOnNewLine(false))
 				indented.printToken(elements.Comma(i-1), p.semiGap())
+				restore()
 			}
 			indented.emitTriviaSlot(slots, i)
 			elemGap := gapNewline
 			if i > 0 && slots.hasBlankBefore(i) {
 				elemGap = gapBlankline
 			}
+			// Array elements are values — let trailing block comments
+			// on path-final tokens respect the surrounding broken
+			// scope's trailingBlockOnNewLine policy.
+			restore := indented.ctx.with(pathInValueContext(true))
 			indented.printExpr(elements.At(i), elemGap)
+			restore()
 		}
 		indented.emitTriviaSlot(slots, elements.Len())
 		if len(closeComments) > 0 {
@@ -269,7 +302,9 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		}
 	})
 
+	restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
+	restoreClose()
 }
 
 func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
@@ -277,7 +312,11 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 	// Containers manage their own indentation; both flags reset for the
-	// scope of this dict.
+	// scope of this dict. Capture the outer lineToBlock value so the
+	// close-brace emit can restore it: a `// comment` trailing on `}` is
+	// a boundary token whose rewrite policy comes from the enclosing
+	// scope (e.g. a dict field whose value is this nested dict).
+	outerLineToBlock := p.ctx.lineToBlock
 	defer p.ctx.with(lineToBlock(false), indentExpr(false))()
 
 	braces := expr.Braces()
@@ -321,7 +360,9 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 
 	if elements.Len() == 0 && !hasComments {
 		p.printTokenAs(openTok, gap, openText)
+		restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 		p.printTokenAs(closeTok, gapNone, closeText)
+		restoreClose()
 		return
 	}
 
@@ -349,7 +390,9 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 			})
 			p.push(tagSoftbreak)
 		})
+		restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 		p.printTokenAs(closeTok, gapNone, closeText)
+		restoreClose()
 		return
 	}
 
@@ -387,11 +430,45 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		for i := range elements.Len() {
 			indented.emitTriviaSlot(trivia, i)
 			fieldGap := gapNewline
-			if i > 0 && trivia.hasBlankBefore(i) {
-				fieldGap = gapBlankline
+			if i > 0 {
+				// Prefer walker-recorded blankBefore (works when
+				// source has comma boundaries); otherwise fall back
+				// to span-based detection (works when source elides
+				// commas — e.g. legacy buf format's emitted output,
+				// which we re-format on idempotency passes).
+				if trivia.hasBlankBefore(i) ||
+					sourceBlankLineBetweenFields(elements.At(i-1), elements.At(i)) {
+					fieldGap = gapBlankline
+				}
 			}
-			indented.printExprField(elements.At(i), fieldGap)
+			// Legacy buf format rewrites `// comment` trailings to
+			// `/* comment */` only when the field value ends in a
+			// closing scope bracket (`]` or `}`) — i.e. when the
+			// value is itself an array or dict literal. Primitive
+			// values (literals, paths) keep their `//` trailings.
+			// The flag is set for both the value emit (so a trailing
+			// on `]`/`}` rewrites via printArray/printDict's close-
+			// token restore) and the comma-trivia emit (so a `// `
+			// on the elided comma also rewrites).
+			field := elements.At(i)
+			valueKind := field.Value().Kind()
+			rewriteFieldTrailing := valueKind == ast.ExprKindArray || valueKind == ast.ExprKindDict
+			fieldRestore := func() {}
+			if rewriteFieldTrailing {
+				fieldRestore = indented.ctx.with(lineToBlock(true))
+			}
+			indented.printExprField(field, fieldGap)
+			// Trailing on the comma should stay inline (legacy
+			// buf format only puts trailing-on-VALUE block comments
+			// on their own line, not trailing-on-comma).
+			commaMods := []modifier{trailingBlockOnNewLine(false)}
+			if rewriteFieldTrailing {
+				commaMods = append(commaMods, lineToBlock(true))
+			}
+			restore := indented.ctx.with(commaMods...)
 			indented.emitCommaTrivia(elements.Comma(i))
+			restore()
+			fieldRestore()
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())
 		if len(closeComments) > 0 {
@@ -399,7 +476,33 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		}
 	})
 
+	restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 	p.emitCloseTok(closeTok, closeText, closeComments, closeAtt)
+	restoreClose()
+}
+
+// closeTrailingMods returns the context modifiers to apply around a
+// literal-scope close-token emit so that a trailing comment on `]`/`}`
+// is rendered consistently with one attached to a following comma.
+//
+// outerLineToBlock is the lineToBlock value captured before the
+// containing array/dict reset it to false; restoring it lets a trailing
+// `// comment` on the close-bracket be rewritten when the enclosing
+// scope (a dict field) wants such trailings rewritten.
+//
+// When outerLineToBlock is true, trailingBlockOnNewLine is also forced
+// false: a trailing block comment on `]`/`}` in dict-field-value
+// position should pair with the close-bracket on one line (matching how
+// the same comment attached to the elided comma would render). Without
+// this, idempotency breaks — first-pass output writes the comment
+// inline; on re-parse it attaches to `]`/`}`; second-pass would push it
+// to its own line under the broken-scope's trailingBlockOnNewLine.
+func closeTrailingMods(outerLineToBlock bool) []modifier {
+	mods := []modifier{lineToBlock(outerLineToBlock)}
+	if outerLineToBlock {
+		mods = append(mods, trailingBlockOnNewLine(false))
+	}
+	return mods
 }
 
 func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
@@ -439,7 +542,7 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		if first {
 			valueGap = gap
 		}
-		restore := p.ctx.with(indentExpr(true))
+		restore := p.ctx.with(indentExpr(true), pathInValueContext(true))
 		p.printExpr(expr.Value(), valueGap)
 		restore()
 	}

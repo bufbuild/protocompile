@@ -2,8 +2,9 @@
 
 This document summarizes the intentional differences between the
 protocompile printer (`LegacyBufFormat` preset) and the legacy
-`buf format` golden files in `TestBufFormat`. It also lists the
-remaining mechanical issues that still cause test failures.
+`buf format` golden files in `TestBufFormat`. With the work tracked
+here, `TestBufFormat` passes — every divergence is either fixed or
+explicitly skipped with a documented reason.
 
 ## Skipped Tests
 
@@ -15,7 +16,7 @@ These tests require AST transforms (adding `deprecated` options)
 performed by buf's `FormatModuleSet`, not by the printer. The printer
 only formats what the AST contains.
 
-### all/v1/all.proto, customoptions/options.proto
+### all/v1/all.proto, customoptions/options.proto (TestBufFormat) and ordering_section_comments.proto (TestFormat)
 Our formatter keeps detached comments at section boundaries during
 declaration sorting rather than permuting them with declarations. When
 declarations are reordered, comments that were between two
@@ -23,149 +24,131 @@ declarations stay at the section boundary rather than moving with the
 following declaration. This prevents comments from being silently
 associated with the wrong declaration.
 
+Example from `all/v1/all.proto` — the source has comments like
+`// between-package-and-import comment` BEFORE the imports section.
+Legacy `buf format` attaches the comment to the *first* import as a
+leading comment so it travels with that import when imports are
+sorted; we keep it at the section boundary instead:
+
+```diff
+ package all.v1;
++// between-package-and-import comment
++
+ import ".../a.proto";
+-
+-// between-package-and-import comment
+ import ".../b.proto";
+```
+
+(`+` = legacy golden, `-` = our output.)
+
+`TestFormat/ordering_section_comments.proto` is the same divergence
+on a fixture we own.
+
 ### service/v1/service.proto, service/v1/service_options.proto
 Our formatter always inserts a space before trailing block comments:
 `M /* comment */` vs the golden's `M/* comment */`. Consistent spacing
 before trailing comments is more readable and matches the convention
 used everywhere else in our output.
 
-## Remaining Failing Tests (4)
+Example from `service/v1/service.proto`:
 
-The four remaining failures are placement-only differences. The
-printer output is valid Protobuf in every case.
-
-### A. Trailing block comment on value in compact-options not on own line
-
-Compact options inside an expanded `[...]` scope want the trailing
-block comment on the value to land on its own line (legacy preset
-honors `Formatting.TrailingBlockCommentsOnNewLine = true`). It does
-for most scopes, but not when the value is a path: `printPath`
-resets `trailingBlockOnNewLine` to keep paths tight.
-
-Appears in: `message_options.proto`, `option_complex_array_literal.proto`.
-
-```
-golden:  packed = false
-         /* trailing comment */
-
-ours:    packed = false /* trailing comment */
+```diff
+-  rpc Ping(/* Before Request */Message/* After Request */) returns ...
++  rpc Ping(/* Before Request */Message /* After Request */) returns ...
 ```
 
-**Cause:** `printPath` resets `trailingBlockOnNewLine(false)` to
-prevent breaks mid-path (avoids a different idempotency regression
-documented in Step 2.6). A path used as a *value* should still get
-the on-own-line treatment, but the printer can't distinguish path-
-as-value from path-as-key without more plumbing.
+(`-` = legacy golden, `+` = our output — note the space before
+`/* After Request */`.)
 
-### B. Blank lines lost in dicts with newline separators or trailing comments
+## Correctness Improvements Over Legacy
 
-When dict fields aren't comma-separated (or have trailing comments
-near commas), pass1 preserves blank lines but pass2 doesn't.
+These are cases where our output is intentionally not byte-equivalent
+to legacy `buf format` because the legacy output is broken or
+unconventional. Each is exercised by both a `TestBufFormat` skip
+(against buf's own testdata) and a `TestFormat` fixture we own.
 
-Appears in: `option_complex_array_literal.proto` (idempotency only),
-`option_message_field.proto`.
+- **Inline `//` comment containing `*/` in its body**
+  (e.g. `// foo */ bar`) is escaped to `/* foo * / bar */` when
+  converting to a block comment. Legacy `bufformat/formatter.go` does
+  not check for embedded `*/` and produces `/* foo */ bar */`, which
+  terminates the synthesized block comment prematurely and leaks
+  `bar */` as text. Our escape preserves syntactic validity at the
+  cost of a one-character visual difference in the body. Visible in
+  `TestFormat/compact_options.proto` (`with_terminator` case).
 
-```
-pass1:   ]
-
-         values: [
-           ...
-         ]
-
-pass2:   ]
-         values: [
-           ...
-         ]
-```
-
-**Cause:** The trivia walker (literal mode) breaks decls at `,`. For
-dicts that use newline-only separators it doesn't break, so
-per-element `blankBefore` isn't recorded. Even for comma-separated
-fields, post-comma trailing comments shift trivia between pass1 and
-pass2 enough to lose blank-line tracking. The simple comma case
-(most fixtures) was fixed and now preserves blank lines correctly;
-the messy edge cases remain.
-
-### C. `//` vs `/* */` after `}` / `]`
-
-Compact options or dict values with a trailing `//` line comment that
-terminates on a newline stay as `//`; the golden rewrites to `/* */`.
-
-Appears in: `literal_comments.proto`.
-
-```
-golden:  additional_rules: [] /* comment on , */
-ours:    additional_rules: [] // comment on ,
-```
-
-**Cause:** Our printer keeps `//` line comments that already terminate
-on a newline (e.g. after `}` or `]`) as `//`; the legacy formatter
-rewrites them to `/* */`. Stylistic choice — keeping `//` is safe
-when nothing else follows on the line and preserves the original
-comment style.
-
-### D. Trailing comment placement on commas in array literals
-
-When a `,` between array elements has a trailing block comment
-(`{rule: "child"}, /* child node */`), legacy keeps it inline on the
-comma's line. Our `TrailingBlockCommentsOnNewLine` pushes it to its
-own line.
-
-Appears in: `literal_comments.proto`.
-
-```
-golden:  /* Before */ {rule: "child"}, /* child node */
-         {
-
-ours:    /* Before */ {rule: "child"},
-         /* child node */
-         {
-```
-
-**Cause:** With Step 9's walker change, post-comma trailing comments
-attach to the comma. Step 2.6's `TrailingBlockCommentsOnNewLine`
-flag fires for those, putting the comment on its own line. Legacy
-buf format treats trailing-on-comma differently from trailing-on-
-value: only the latter gets the own-line treatment.
-
-## Summary
-
-| Category | Tests affected | Status |
-|----------|---------------|--------|
-| (A) Trailing block on value-position path | `message_options`, `option_complex_array_literal` | path-context limitation |
-| (B) Dict blank-lines around trailing comments / newline separators | `option_complex_array_literal` (idempotency), `option_message_field` | walker limitation |
-| (C) `//` vs `/* */` after `}`/`]` | `literal_comments` | stylistic; keep `//` when safe |
-| (D) Trailing-on-comma block placement | `literal_comments` | own-line treatment over-applies to commas |
-
-No comments are dropped, no syntax is broken, and all passing tests
-are idempotent. The remaining diffs are placement-only.
+- **Close `]` placement in broken array literals**: when source
+  glues the close bracket to the last element on the same line
+  (`{foo: 98}]`), legacy `buf format` preserves that gluing.
+  We always emit `]` on its own line in broken layout, which is
+  more conventional and easier to read. Visible in
+  `TestFormat/message_literals.proto`.
 
 ## Recently Fixed
 
-- **Trailing block comment placement in expanded brackets** —
-  the `Formatting.TrailingBlockCommentsOnNewLine` knob (legacy `true`)
-  now drives placement: trailing block comments inside expanded
-  bracket scopes go on their own line under the legacy preset. (Step
-  2.6.)
+Changelog of legacy-divergence work landed in the printer (kept as a
+running record to help track the migration). Items here are *not*
+the durable spec — see the sections above for that.
+
+- **Trailing block comment placement in expanded brackets** — the
+  `Formatting.TrailingBlockCommentsOnNewLine` knob (legacy `true`)
+  drives placement: trailing block comments inside expanded bracket
+  scopes go on their own line under the legacy preset.
 - **Missing space before `:` after bracketed extension key with a
   trailing block comment** — `printExprField` peeks at the colon's
   leading trivia and uses `gapSpace` instead of `gapInline` when the
-  trivia ends in an inline block comment. (Step 10.)
-- **Missing blank lines between comma-separated dict/array entries**
-  — the trivia walker in literal scope mode now breaks at `,`,
-  producing per-element trivia slots. `printArray`/`printDict`/
-  `printCompactOptions` consult `slots.hasBlankBefore(i)` to choose
-  `gapBlankline` vs `gapNewline`. (Step 9. Newline-only-separator
-  dicts remain — see Remaining (C).)
+  trivia ends in an inline block comment.
+- **Missing blank lines between dict/array entries** — the trivia
+  walker in literal scope mode breaks at `,`, producing per-element
+  trivia slots with `blankBefore` indicators; `printArray`/
+  `printDict`/`printCompactOptions` consult them. For the dict case
+  where source elides commas (legacy buf format's emitted output
+  drops separators), `printDict` falls back to a span-based
+  blank-line check (`sourceBlankLineBetweenFields`) so idempotency
+  passes.
 - **Leading block comment paired with array element** — the
   `Formatting.PairLeadingBlockComments` knob (legacy `true`) inlines
-  leading block comments with their array element. (Step 2.7,
-  narrowed to `printArray` only.) Dict fields, compact options, and
-  compound-string parts now keep their leading block comments on
-  their own line, matching legacy.
+  leading block comments with their array element when they were
+  paired in source (`newlineRun == 0` AND `preCommentNewline`).
+  Narrowed to `printArray` only; dict fields, compact options, and
+  compound-string parts keep their leading block comments separate,
+  matching legacy.
 - **Compound-string interior block comments paired inline** —
   resolved by resetting `pairLeadingBlock` in `printCompoundString`
   so the surrounding scope's flag doesn't leak between parts.
+- **Trailing block comment on a value-position path** — paths in
+  value position (set via `pathInValueContext` in compactOptions
+  value-emit, array elements, and `printExprField` value-emit) keep
+  the surrounding scope's `trailingBlockOnNewLine` so a path's
+  final-token trailing block comment respects the broken scope's
+  policy. Other path uses (keys, decl names, extension names) reset
+  the flag to keep paths tight.
+- **Trailing-on-comma block placement** — comma-emit sites in
+  literal scopes (`printArray`/`printDict`/`printCompactOptions`)
+  suppress `trailingBlockOnNewLine` so a `*/` trailing on the comma
+  stays inline. Legacy buf format only puts trailing-on-VALUE block
+  comments on their own line, not trailing-on-comma.
+- **Trailing `//` on dict-field scope value rewritten to `/* */`** —
+  legacy buf format rewrites `// comment` to `/* comment */` when
+  the comment trails a dict field whose value is itself an array or
+  dict literal (i.e. ends in `]` or `}`), but keeps `//` for trailings
+  on primitive values. `printDict`'s broken loop inspects each field's
+  `Value().Kind()`; when it's `ExprKindArray`/`ExprKindDict`, it sets
+  `lineToBlock(true)` so both the value's close-token trailing and the
+  following comma's trailing rewrite. `printArray`/`printDict` capture
+  the outer `lineToBlock` at entry (before the scope-reset defer
+  fires) and apply `closeTrailingMods` around their close emit so the
+  outer policy reaches the boundary token. The same helper forces
+  `trailingBlockOnNewLine(false)` for that emit, keeping idempotency:
+  on a re-parse where the comma was elided, the comment attaches to
+  `]`/`}` directly and must still render inline with its bracket.
+- **Source newline preservation between leading block comment and
+  element** — `emitTrivia` now correctly counts newlines in
+  multi-character space tokens (`"\n  "` is `\n` + indent), and
+  preserves `newlineRun >= 1` in the post-comment gap when the outer
+  gap was `gapNewline`. Without this, the element + leading block
+  comment from source would always render inline regardless of
+  layout.
 - **Empty `;` decl** (e.g. `message M {};`) no longer collides with
   blank-line preservation; the trivia walker recognizes `;` after a
   body as a separate empty decl.
@@ -176,18 +159,3 @@ are idempotent. The remaining diffs are placement-only.
   (e.g. `[/* leading */ packed = false]`) now expand to multi-line
   correctly instead of emitting a broken half-expanded form.
 - **Single-element dicts** stay inline when they fit.
-
-## Correctness Improvements Over Legacy
-
-These are cases where our output is intentionally not byte-equivalent
-to legacy `buf format` because the legacy output is broken protobuf.
-
-- **Inline `//` comment containing `*/` in its body**
-  (e.g. `// foo */ bar`) is escaped to `/* foo * / bar */` when
-  converting to a block comment. Legacy `bufformat/formatter.go` does
-  not check for embedded `*/` and produces `/* foo */ bar */`, which
-  terminates the synthesized block comment prematurely and leaks
-  `bar */` as text. Our escape preserves syntactic validity at the
-  cost of a one-character visual difference in the body.
-
-[pair]: ./options.go

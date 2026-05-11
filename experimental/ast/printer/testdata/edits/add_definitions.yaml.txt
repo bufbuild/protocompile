@@ -1,7 +1,5 @@
 syntax = "proto3";
-
 package test;
-
 message Outer {
   string name = 1;
   message Inner {}

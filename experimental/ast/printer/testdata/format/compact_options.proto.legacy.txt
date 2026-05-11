@@ -22,8 +22,7 @@ message Foo {
   ];
 
   // Issue 3: Comment after [ opener.
-  optional string opener = 5 [
-    // After bracket
+  optional string opener = 5 [ // After bracket
     deprecated = true
   ];
 

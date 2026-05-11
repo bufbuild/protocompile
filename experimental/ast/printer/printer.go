@@ -143,6 +143,14 @@ type printer struct {
 	// ctx stores expected formatting behaviours based on the scope of the
 	// printed entity.
 	ctx *context
+
+	// declSourceIdx maps a sorted-iteration index to the original
+	// source-order index for the file's top-level decls. Set during
+	// printFile when CanonicalizeFileOrder reorders decls; nil at
+	// other times (in which case sorted index = source index).
+	// Consulted by [printer.declGap] to look up the right
+	// [detachedTrivia.hasBlankBefore] entry.
+	declSourceIdx []int
 }
 
 // newPrinter constructs a printer for the given options, trivia index,
@@ -164,8 +172,27 @@ func (p *printer) printFile(file *ast.File) {
 	decls := seq.Indexer[ast.DeclAny](file.Decls())
 
 	if p.options.Format && p.options.Formatting.CanonicalizeFileOrder {
-		sorted := seq.ToSlice(decls)
+		sourceOrder := seq.ToSlice(decls)
+		// Build a lookup from each decl to its source-order index
+		// before sorting. After sortFileDeclsForFormat, the iteration
+		// order changes but trivia.hasBlankBefore is keyed by source
+		// position, so we need to translate sorted index -> source
+		// index when consulting it.
+		srcIdxByDecl := make(map[ast.DeclAny]int, len(sourceOrder))
+		for i, d := range sourceOrder {
+			srcIdxByDecl[d] = i
+		}
+		sorted := append([]ast.DeclAny(nil), sourceOrder...)
 		sortFileDeclsForFormat(sorted)
+		p.declSourceIdx = make([]int, len(sorted))
+		for i, d := range sorted {
+			if idx, ok := srcIdxByDecl[d]; ok {
+				p.declSourceIdx[i] = idx
+			} else {
+				p.declSourceIdx[i] = i
+			}
+		}
+		defer func() { p.declSourceIdx = nil }()
 		decls = seq.NewFunc(len(sorted), func(i int) ast.DeclAny {
 			return sorted[i]
 		})
@@ -368,15 +395,38 @@ func (p *printer) declGap(
 		return gapNewline
 	}
 
-	// File level: blank line between different sections (syntax ->
-	// package, imports -> options, etc.). For body declarations,
-	// preserve blank lines from the source rather than always adding them.
+	// File level: legacy buf format adds blank lines around the
+	// "header sections" (imports, options) and after `syntax` —
+	// otherwise transitions preserve source adjacency.
+	//
+	// Specifically auto-blank when:
+	//   - entering the imports or options section (the visually
+	//     distinct header groupings), or
+	//   - leaving syntax for anything other than package (so
+	//     `syntax = ""; message M {}` still gets a header gap).
+	//
+	// Within sorted sections (imports, file-level options),
+	// canonicalization reorders entries, so hasBlankBefore (keyed
+	// by source position) doesn't line up with the sorted output;
+	// suppress source blanks there. For body decls, translate the
+	// sorted index back to the source index before consulting
+	// hasBlankBefore.
 	if scope == scopeFile {
 		prev, curr := rankDecl(decls.At(i-1)), rankDecl(decls.At(i))
-		if prev != curr {
+		if prev != curr && (curr == rankImport || curr == rankOption) {
 			return gapBlankline
 		}
-		if curr == rankBody && trivia.hasBlankBefore(i) {
+		if prev == rankSyntax && curr != rankPackage {
+			return gapBlankline
+		}
+		if curr == rankImport || curr == rankOption {
+			return gapNewline
+		}
+		srcIdx := i
+		if p.declSourceIdx != nil && i < len(p.declSourceIdx) {
+			srcIdx = p.declSourceIdx[i]
+		}
+		if trivia.hasBlankBefore(srcIdx) {
 			return gapBlankline
 		}
 		return gapNewline
@@ -511,11 +561,26 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	prevIsLine := false
 	newlineRun := 0
 	hasNonNewlineSpace := false
+	// preCommentNewline tracks whether a newline appeared BEFORE the
+	// first comment in pending. Pair-leading-block needs this: legacy
+	// buf format pairs `/* Before */ element` only when the comment
+	// sat on its own line in source (newline before it), not when the
+	// comment came directly after an open bracket on the same line.
+	preCommentNewline := false
 	for _, tok := range p.pending {
 		if tok.Kind() == token.Space {
-			if tok.Text() == "\n" {
-				newlineRun++
-			} else {
+			// A space token's text may combine newlines and spaces
+			// (e.g. "\n  " for a newline followed by indent), so
+			// count newlines and detect non-newline whitespace
+			// independently rather than expecting a bare "\n".
+			text := tok.Text()
+			if n := strings.Count(text, "\n"); n > 0 {
+				newlineRun += n
+				if !hasComment {
+					preCommentNewline = true
+				}
+			}
+			if strings.TrimLeft(text, "\n") != "" {
 				hasNonNewlineSpace = true
 			}
 			continue
@@ -557,19 +622,32 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		//     positions (broken-scope per-element gap), not on
 		//     punctuation gaps like gapInline (commas, colons).
 		//   - !prevIsLine: line comments must end with a newline.
-		//   - newlineRun < 2: preserve blank-line boundaries.
+		//   - newlineRun == 0: comment and element on same line
+		//     in source.
+		//   - preCommentNewline: comment sat on its own line in
+		//     source (newline before it). Without this, legacy
+		//     buf format separates the comment from the element
+		//     even when they share a line in a source-flat array.
 		if gap == gapNewline &&
 			!prevIsLine &&
-			newlineRun < 2 &&
+			newlineRun == 0 &&
+			preCommentNewline &&
 			p.options.Formatting.PairLeadingBlockComments &&
 			p.ctx.pairLeadingBlock {
 			p.emitGap(gapSpace)
 			return
 		}
-		// Use the actual newlineRun from trailing tokens after the last
-		// comment. When the source had a blank line (2+ newlines) after
-		// the last comment, this preserves it.
-		p.emitGap(commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, newlineRun))
+		// Compute post-comment gap. When the surrounding gap is
+		// gapNewline (broken-element position) and the source had
+		// at least one newline between the last block comment and
+		// the next token, preserve that newline — otherwise the
+		// inheritGap promotion to gapSpace would inline content the
+		// user wrote on separate lines.
+		finalGap := commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, newlineRun)
+		if gap == gapNewline && !prevIsLine && newlineRun >= 1 && finalGap == gapSpace {
+			finalGap = gapNewline
+		}
+		p.emitGap(finalGap)
 		return
 	}
 

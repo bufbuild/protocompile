@@ -42,6 +42,37 @@ func sourceWasFlat(openTok, closeTok token.Token) bool {
 	return openSpan.StartLoc().Line == closeSpan.StartLoc().Line
 }
 
+// sourceBlankLineBetweenFields reports whether the source had a
+// blank line (an empty or whitespace-only line) between two adjacent
+// dict-literal fields. Used by `printDict` as a fallback when
+// [detachedTrivia.hasBlankBefore] can't track per-element blank lines
+// (e.g. when source elides commas, so the trivia walker doesn't see
+// element boundaries).
+func sourceBlankLineBetweenFields(prev, curr ast.ExprField) bool {
+	prevSpan, currSpan := prev.Span(), curr.Span()
+	if prevSpan.IsZero() || currSpan.IsZero() || prevSpan.File != currSpan.File {
+		return false
+	}
+	between := prevSpan.File.Text()[prevSpan.End:currSpan.Start]
+	// A blank line is two newlines separated only by horizontal
+	// whitespace. Walk forward looking for that pattern.
+	afterNewline := false
+	for i := range len(between) {
+		switch between[i] {
+		case '\n':
+			if afterNewline {
+				return true
+			}
+			afterNewline = true
+		case ' ', '\t':
+			// preserve afterNewline across horizontal whitespace
+		default:
+			afterNewline = false
+		}
+	}
+	return false
+}
+
 // literalShouldBreak applies the configured [LayoutStrategy] to a
 // literal scope (compact options bracket, array literal, dict literal).
 //

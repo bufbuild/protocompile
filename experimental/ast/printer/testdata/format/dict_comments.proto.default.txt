@@ -1,7 +1,6 @@
 syntax = "proto2";
 
 import "custom.proto";
-
 message Foo {
   optional string a = 1 [
     (custom) = {
