@@ -443,24 +443,49 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 
 		switch {
 		case !wantBroken && entries.Len() == 1:
-			// Single option, flat: stays inline. No group wrapping,
-			// so message literal values expand naturally while keeping
-			// [ and ] on the field line. Convert any trailing //
-			// comments to /* */ so they don't eat the closing bracket.
+			// Single option, flat. Convert any trailing // comments to
+			// /* */ so they don't eat the closing bracket.
+			//
+			// Under [LayoutDynamic], wrap the entry in a [dom.Group] so
+			// an inner break (from a width-broken nested literal, or a
+			// hard newline) propagates upward and the brackets follow:
+			//   [(opt) = {                          [
+			//     long: "value"           becomes     (opt) = {
+			//   }]                                      long: "value"
+			//                                         }
+			//                                       ]
+			// Under [LayoutStrict], the brackets stay flush with the
+			// field line and the value expands naturally inside,
+			// matching the legacy formatter byte-for-byte.
 			singleRestore := p.ctx.with(lineToBlock(true))
-			p.printToken(openTok, gapSpace)
 			opt := entries.At(0)
-			p.emitTriviaSlot(slots, 0)
-			p.printPath(opt.Path, gapNone)
-			if !opt.Equals.IsZero() {
-				p.printToken(opt.Equals, gapSpace)
-				valueRestore := p.ctx.with(indentExpr(true))
-				p.printExpr(opt.Value, gapSpace)
-				valueRestore()
+			emitEntry := func(p *printer) {
+				p.emitTriviaSlot(slots, 0)
+				p.printPath(opt.Path, gapNone)
+				if !opt.Equals.IsZero() {
+					p.printToken(opt.Equals, gapSpace)
+					valueRestore := p.ctx.with(indentExpr(true))
+					p.printExpr(opt.Value, gapSpace)
+					valueRestore()
+				}
+				p.emitTriviaSlot(slots, 1)
+				p.emitTrivia(gapNone)
 			}
-			p.emitTriviaSlot(slots, 1)
-			p.emitTrivia(gapNone)
-			p.printToken(closeTok, gapNone)
+			if p.options.Formatting.LiteralLayout == LayoutDynamic {
+				p.printToken(openTok, gapSpace)
+				p.withGroup(func(p *printer) {
+					p.withIndent(func(indented *printer) {
+						indented.push(tagSoftbreak)
+						emitEntry(indented)
+					})
+					p.push(tagSoftbreak)
+				})
+				p.printToken(closeTok, gapNone)
+			} else {
+				p.printToken(openTok, gapSpace)
+				emitEntry(p)
+				p.printToken(closeTok, gapNone)
+			}
 			singleRestore()
 
 		case !wantBroken:

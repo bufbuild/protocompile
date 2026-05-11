@@ -56,10 +56,12 @@ type Formatting struct {
 	// decisions: [dom.Group] breaks a group whose flat width exceeds
 	// this value. Consulted wherever the printer wraps content in
 	// [dom.Group]. Zero is treated as unset and replaced by the
-	// default.
+	// default; set to [math.MaxInt] explicitly to disable width-based
+	// breaking.
 	//
-	// Default: [math.MaxInt] (no width-based breaking).
-	// Legacy: [math.MaxInt].
+	// Default: 100.
+	// Legacy: [math.MaxInt] (the legacy formatter makes no width-based
+	// layout decisions).
 	MaxWidth int
 
 	// TabstopWidth is the number of spaces in a single indentation
@@ -235,7 +237,7 @@ func Legacy() Formatting {
 // comment-repositioning knobs that the legacy formatter enabled.
 func Default() Formatting {
 	return Formatting{
-		MaxWidth:                           math.MaxInt,
+		MaxWidth:                           100,
 		TabstopWidth:                       2,
 		BodyLayout:                         LayoutDynamic,
 		LiteralLayout:                      LayoutDynamic,
@@ -260,7 +262,7 @@ func (opts Options) withDefaults() Options {
 // [Default] or [Legacy] when those fields matter.
 func (f Formatting) withDefaults() Formatting {
 	if f.MaxWidth == 0 {
-		f.MaxWidth = math.MaxInt
+		f.MaxWidth = 100
 	}
 	if f.TabstopWidth == 0 {
 		f.TabstopWidth = 2

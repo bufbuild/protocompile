@@ -1,0 +1,80 @@
+// width_layout.proto exercises width-driven flat-vs-broken decisions.
+//
+// Legacy formatting uses [printer.LayoutStrict]: any multi-element
+// scope (compact options, array literal, dict literal) breaks across
+// lines regardless of width.
+//
+// Default formatting uses [printer.LayoutDynamic] with MaxWidth = 100:
+// a multi-element source-flat scope stays flat when its rendered width
+// fits within the budget and is broken across lines only when it
+// exceeds the budget. When a nested scope is forced to break (by
+// width or by hard newlines), the break propagates upward through
+// any enclosing [dom.Group] so the parent's brackets land on their
+// own lines too.
+//
+// Each construct below appears in two forms — a short case that fits
+// within the budget, and a long case that exceeds it — so the two
+// presets diverge on the short case and converge on the long case.
+
+syntax = "proto3";
+
+import "custom.proto";
+
+message WidthLayout {
+  // Short multi-entry compact options. Default: flat. Legacy: broken.
+  string short_opts = 1 [
+    deprecated = true,
+    json_name = "v1"
+  ];
+
+  // Long multi-entry compact options. Both presets: broken.
+  string long_opts = 2 [
+    deprecated = true,
+    json_name = "verbose_field_name_with_descriptive_text",
+    debug_redact = false
+  ];
+
+  // Short multi-element array literal. Default: flat. Legacy: broken.
+  string short_array = 3 [(custom.nums) = {
+    values: [
+      1,
+      2,
+      3
+    ]
+  }];
+
+  // Long multi-element array literal. Both presets break the array.
+  // Under Default the inner break propagates upward through the dict
+  // and compact options so each closing bracket lands on its own line.
+  string long_array = 4 [(custom.nums) = {
+    values: [
+      100000000,
+      200000000,
+      300000000,
+      400000000,
+      500000000,
+      600000000,
+      700000000,
+      800000000,
+      900000000,
+      1000000000
+    ]
+  }];
+
+  // Short multi-field dict literal. Default: flat. Legacy: broken.
+  string short_dict = 5 [(custom.cfg) = {
+    a: 1
+    b: 2
+  }];
+
+  // Long multi-field dict literal. Under Default, only the outer
+  // compact options breaks (the source line exceeds 100 cols); the
+  // dict itself fits in the budget at its indented column and stays
+  // flat. Under Legacy, the dict breaks too via LayoutStrict's count-
+  // based rule.
+  string long_dict = 6 [(custom.cfg) = {
+    alpha_value: "first"
+    bravo_value: "second"
+    charlie_value: "third"
+  }];
+}
