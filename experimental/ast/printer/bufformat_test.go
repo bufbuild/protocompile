@@ -107,7 +107,7 @@ func TestBufFormat(t *testing.T) {
 				t.Logf("parse warning: %q", diagnostic)
 			}
 
-			opts := printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}
+			opts := printer.Options{Format: true, Formatting: printer.Legacy()}
 			got, err := printer.PrintFile(opts, file)
 			if err != nil {
 				t.Fatalf("PrintFile: %v", err)

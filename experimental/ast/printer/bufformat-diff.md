@@ -1,7 +1,7 @@
 # Bufformat Golden Test Differences
 
 This document summarizes the intentional differences between the
-protocompile printer (`LegacyBufFormat` preset) and the legacy
+protocompile printer (`Legacy` preset) and the legacy
 `buf format` golden files in `TestBufFormat`. With the work tracked
 here, `TestBufFormat` passes — every divergence is either fixed or
 explicitly skipped with a documented reason.

@@ -107,7 +107,7 @@ func TestPrint(t *testing.T) {
 // TestFormat exercises the printer's format mode against goldens in
 // testdata/format. Each <name>.proto is formatted under two presets
 // and compared against the corresponding golden:
-//   - <name>.proto.legacy.txt: [printer.LegacyBufFormat], matches
+//   - <name>.proto.legacy.txt: [printer.Legacy], matches
 //     legacy `buf format` behavior.
 //   - <name>.proto.default.txt: the eventual modern default — every
 //     knob flipped to its modern value (LayoutDynamic for body/literal,
@@ -136,7 +136,7 @@ func TestFormat(t *testing.T) {
 		label string
 		opts  printer.Options
 	}{
-		{"legacy", printer.Options{Format: true, Formatting: printer.LegacyBufFormat()}},
+		{"legacy", printer.Options{Format: true, Formatting: printer.Legacy()}},
 		{"default", printer.Options{Format: true, Formatting: printer.Default()}},
 	}
 

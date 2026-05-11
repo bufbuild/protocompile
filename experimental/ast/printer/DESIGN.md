@@ -17,7 +17,7 @@ from legacy `buf format`).
    reproduce the source byte-for-byte.
 2. **Configurable formatting** — formatting opinions are exposed as options;
    the printer itself contains no hardcoded style decisions.
-3. **Buf format replacement** — a preset configuration (`LegacyBufFormat`)
+3. **Buf format replacement** — a preset configuration (`Legacy`)
    replicates the legacy formatter's behavior, enabling migration without
    churn for existing users.
 4. **Clear separation of concerns** — printing (AST traversal + dom emission)
@@ -315,16 +315,16 @@ it explicitly.
 For "behave like legacy buf format" use the preset:
 
 ```go
-// LegacyBufFormat returns a Formatting value that matches the legacy
+// Legacy returns a Formatting value that matches the legacy
 // `buf format` formatter's behavior. Use as:
 //
 //   printer.PrintFile(printer.Options{
 //       Format:     true,
-//       Formatting: printer.LegacyBufFormat(),
+//       Formatting: printer.Legacy(),
 //   }, file)
 //
 // This is the migration target for buf format replacement.
-func LegacyBufFormat() Formatting {
+func Legacy() Formatting {
     return Formatting{
         MaxWidth:                           math.MaxInt,
         TabstopWidth:                       2,
@@ -346,7 +346,7 @@ comment handling.
 ### Schema summary
 
 At-a-glance view of all `Formatting` fields, with their default values
-and the values used by `LegacyBufFormat()`:
+and the values used by `Legacy()`:
 
 | Field                                | Type             | Default         | Legacy           |
 |--------------------------------------|------------------|-----------------|------------------|
@@ -389,7 +389,7 @@ This makes it visible to a reader that:
 
 The transition from the current code to this design is incremental: each
 option lands as a self-contained change. At every step, default behavior
-preserves the existing output (the `LegacyBufFormat` preset captures
+preserves the existing output (the `Legacy` preset captures
 "act like today").
 
 ### Step 0: groundwork (after current sweep)
@@ -399,10 +399,10 @@ preserves the existing output (the `LegacyBufFormat` preset captures
 ### Step 1: introduce `Formatting` struct, deprecate single `Format` boolean
 - Add `Formatting` field to `Options`.
 - `Format=true` now requires explicit Formatting (or defaults to a
-  no-op Formatting). LegacyBufFormat preset replicates current behavior.
+  no-op Formatting). Legacy preset replicates current behavior.
 - Update internal usage to consult `Formatting.X` instead of
   `Options.Format` for specific decisions.
-- Tests pass with no golden updates (LegacyBufFormat is the default-or-
+- Tests pass with no golden updates (Legacy is the default-or-
   near-default).
 
 ### Step 2: per-knob migrations
@@ -438,7 +438,7 @@ point — these benefit both presets and don't need configuration:
 Each step:
 - Adds a new option with default = current behavior.
 - Adds a test case exercising the alternative behavior.
-- Updates `LegacyBufFormat()` if a default differs from legacy.
+- Updates `Legacy()` if a default differs from legacy.
 - May add a section to `bufformat-diff.md` for new divergences.
 
 ### Step 3: implement Edits
@@ -448,8 +448,8 @@ Each step:
 
 ### Step 4: settle the modern Default preset
 - Enumerate the printer's preferred defaults.
-- Document the divergences from `LegacyBufFormat`.
-- Provide as a preset alongside `LegacyBufFormat`.
+- Document the divergences from `Legacy`.
+- Provide as a preset alongside `Legacy`.
 
 ## Open questions
 
@@ -465,7 +465,7 @@ Each step:
 3. **Legacy-conformance test corpus**: do we vendor a curated subset of
    buf format's testdata into this repo (per earlier "TestBufFormat
    vendoring" discussion), and run it under
-   `Options{Format: true, Formatting: LegacyBufFormat()}`? Lean: yes,
+   `Options{Format: true, Formatting: Legacy()}`? Lean: yes,
    once Step 1 lands; it becomes the conformance test for the legacy
    preset.
 
