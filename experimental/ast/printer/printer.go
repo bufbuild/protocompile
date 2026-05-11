@@ -46,12 +46,22 @@ const (
 	scopeBody
 )
 
-// PrintFile renders an AST file to protobuf source text.
+// PrintFile renders an [ast.File] to protobuf source text.
 //
-// If [Options.Edits] is non-empty, the edits are applied to file in
-// order before formatting; failures to apply an edit return an error
-// without producing output. Edits mutate file in place; clone it
-// first if the caller needs the unedited AST.
+// Behavior is controlled by [Options]:
+//
+//   - [Options.Format] = false (round-trip mode): the file is
+//     emitted as-is, with source whitespace and comments preserved
+//     verbatim from token trivia.
+//
+//   - [Options.Format] = true: AST transforms and layout decisions
+//     run. See [Formatting] for the configurable knobs; [Default]
+//     and [Legacy] are ready-made presets.
+//
+// If [Options.Edits] is non-empty, the edits are applied in order
+// before any formatting; an edit failure returns an error without
+// producing output. Edits mutate file in place — clone it first if
+// the caller needs the unedited AST.
 func PrintFile(options Options, file *ast.File) (string, error) {
 	options = options.withDefaults()
 
@@ -78,17 +88,19 @@ func PrintFile(options Options, file *ast.File) (string, error) {
 	}), nil
 }
 
-// Print renders a snippet for an AST declaration to protobuf source text.
+// Print renders a single declaration to protobuf source text as a
+// snippet. The result has no trailing newline, leaving the caller to
+// manage spacing between snippets.
 //
-// The output reflects the declaration in its source position, including the
-// [detachedTrivia] at that position (e.g. a section comment that preceded
-// the decl).
+// When decl is a top-level declaration, the output includes the
+// detached leading trivia at its source position (e.g. a section
+// comment that preceded it). Nested declarations (inside a message
+// body, for example) emit their attached leading trivia only —
+// Print has no broader file context for resolving the surrounding
+// body scope's detached slot.
 //
-// Currently only top-level declarations preserve their leading detached trivia.
-// Nested declarations (inside a message body, for example) emit their attached
-// leading trivia but not the body scope's detached slot at their position.
-//
-// For printing entire files, use [PrintFile] instead.
+// [Options.Edits] is ignored by Print; use [PrintFile] for whole-
+// file rendering with edits applied.
 func Print(options Options, decl ast.DeclAny) string {
 	options = options.withDefaults()
 	domOpts := options.domOptions()
@@ -229,29 +241,6 @@ func (p *printer) printToken(tok token.Token, gap gapStyle) {
 		return
 	}
 	p.printTokenAs(tok, gap, tok.Text())
-}
-
-// printTokenSuppressTrailing prints a token with its leading trivia but
-// suppresses its trailing trivia. The caller is responsible for emitting
-// the trailing trivia elsewhere (e.g., inside an indented block).
-func (p *printer) printTokenSuppressTrailing(tok token.Token, gap gapStyle) {
-	if tok.IsZero() {
-		return
-	}
-
-	att, hasTrivia := p.trivia.tokenTrivia(tok.ID())
-	if hasTrivia {
-		p.appendPending(att.leading)
-		if !p.options.Format {
-			gap = gapNone
-		}
-		p.emitTrivia(gap)
-	} else {
-		p.emitGap(gap)
-	}
-
-	p.push(dom.Text(tok.Text()))
-	// Trailing trivia intentionally not emitted.
 }
 
 // printTokenAs prints a token using replacement text instead of the token's

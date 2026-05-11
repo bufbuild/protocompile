@@ -63,6 +63,11 @@ func (k EditKind) String() string {
 // constants. An invalid edit (target not found, insertion not allowed
 // in target container, etc.) causes [PrintFile] to return an error
 // without producing output.
+//
+// Edits currently operate on decl-bearing bodies (file, message,
+// enum, service, oneof, extend, and method bodies). Modifying the
+// compact-options bracket on a field or enum value (e.g. adding
+// `[deprecated = true]`) is not yet supported.
 type Edit struct {
 	// Kind selects the operation.
 	Kind EditKind
@@ -75,10 +80,10 @@ type Edit struct {
 	Target ast.DeclAny
 
 	// Insertions are the decls to append to Target's body, in order.
-	// Honored only by EditAdd.
+	// Honored only by [EditAdd].
 	//
 	// Allowed insertion-vs-container pairings:
-	//   - option:               any body
+	//   - option:               file or any decl-bearing body
 	//   - message, enum:        file or message body
 	//   - field:                message body, oneof body
 	//   - enum value:           enum body
@@ -307,6 +312,8 @@ func findInFile(file *ast.File, target ast.DeclAny) (seq.Inserter[ast.DeclAny], 
 	return nil, 0, false
 }
 
+// findInDecl is the recursive worker for [findInFile]: searches decl's
+// own body and any nested body decls for target.
 func findInDecl(decl, target ast.DeclAny) (seq.Inserter[ast.DeclAny], int, bool) {
 	var body ast.DeclBody
 	if b := decl.AsBody(); !b.IsZero() {
