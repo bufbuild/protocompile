@@ -61,6 +61,7 @@ func TestBufFormat(t *testing.T) {
 	for _, protoPath := range protoFiles {
 		goldenPath := strings.TrimSuffix(protoPath, ".proto") + ".golden"
 		relPath, _ := filepath.Rel(bufTestdata, protoPath)
+		relPath = filepath.ToSlash(relPath)
 
 		t.Run(relPath, func(t *testing.T) {
 			t.Parallel()
