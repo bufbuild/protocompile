@@ -90,12 +90,10 @@ func TestPrint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("PrintFile: %v", err)
 		}
-		// Trim the trailing newline from the printed decls to check against the
-		// [printer.PrintFile] output.
-		// trimmed := strings.TrimRight(actual.String(), "\n")
-		// We check that the trimmed output is a prefix of the whole file, since
-		// printing the whole file may emit any trailing detached trivia (e.g. EOF
-		// comments) that are not printed along with any decls.
+		// The concatenated per-decl output must be a prefix of the
+		// whole-file output. [printer.PrintFile] may emit trailing
+		// detached trivia (e.g. EOF comments) that are not associated
+		// with any decl, so it can have content after this prefix.
 		if !strings.HasPrefix(whole, actual.String()) {
 			if msg := golden.CompareAndDiff(actual.String(), whole); msg != "" {
 				t.Errorf("Print over decls is not a prefix of PrintFile:\n%s", msg)
@@ -107,11 +105,12 @@ func TestPrint(t *testing.T) {
 // TestFormat exercises the printer's format mode against goldens in
 // testdata/format. Each <name>.proto is formatted under two presets
 // and compared against the corresponding golden:
-//   - <name>.proto.legacy.txt: [printer.Legacy], matches
-//     legacy `buf format` behavior.
-//   - <name>.proto.default.txt: the eventual modern default — every
-//     knob flipped to its modern value (LayoutDynamic for body/literal,
-//     and false for the comment-handling knobs that legacy sets true).
+//
+//   - <name>.proto.legacy.txt: [printer.Legacy] — reproduces the
+//     legacy protobuf formatter's behavior byte-for-byte.
+//   - <name>.proto.default.txt: [printer.Default] — the recommended
+//     modern preset (dynamic layout, width-aware breaking at 100
+//     cols, no comment-text rewriting).
 //
 // Each preset's output must re-parse cleanly and be idempotent under
 // a second format pass.

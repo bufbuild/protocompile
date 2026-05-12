@@ -81,14 +81,14 @@ func TestBufFormat(t *testing.T) {
 			// during sorting rather than permuting them with declarations.
 			// This is intentional -- see bufformat-diff.md.
 			if strings.Contains(relPath, "all/v1/all") || strings.Contains(relPath, "customoptions/") {
-				t.Skip("detached comment placement differs from old buf format during sort")
+				t.Skip("detached comment placement differs from the legacy formatter during sort")
 			}
 
 			// Skip: our formatter always inserts a space before trailing
 			// block comments (e.g., `M /* comment */` vs `M/* comment */`).
 			// This is intentional -- consistent trailing comment spacing.
 			if strings.Contains(relPath, "service/v1/service") {
-				t.Skip("trailing block comment spacing policy differs from old buf format")
+				t.Skip("trailing block comment spacing policy differs from the legacy formatter")
 			}
 
 			protoData, err := os.ReadFile(protoPath)
