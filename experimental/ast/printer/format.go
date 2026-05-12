@@ -74,12 +74,17 @@ func sourceBlankLineBetweenFields(prev, curr ast.ExprField) bool {
 }
 
 // literalShouldBreak applies the configured [LayoutStrategy] to a
-// literal scope (compact options bracket, array literal, dict literal).
+// literal scope (compact options bracket, array literal, dict
+// literal):
 //
-// It returns true when the scope should be rendered broken (multi-line)
-// based on the strategy alone, irrespective of comments or other
-// scope-specific force-broken conditions; callers should OR the result
-// with their own forceBroken signal.
+//   - [LayoutStrict]: broken if and only if the scope has 2 or more elements,
+//     matching the legacy formatter's "expand if non-trivial" rule.
+//
+//   - [LayoutDynamic]: broken if and only if source had a newline between open
+//     and close, deferring width-driven breaks to [dom.Group].
+//
+// Callers should OR the result with their own forceBroken signal
+// (e.g. for scope-attached comments that require expansion).
 func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) bool {
 	switch p.options.Formatting.LiteralLayout {
 	case LayoutDynamic:
@@ -90,13 +95,17 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 }
 
 // bodyShouldBreak applies the configured [LayoutStrategy] to a
-// decl-bearing body scope (`{ ... }`).
+// decl-bearing body scope (`{ ... }` on message, enum, service,
+// oneof, extend, or RPC method):
 //
-// LayoutStrict always returns true (legacy behavior: any non-empty body
-// is rendered multi-line). LayoutDynamic preserves source intent: a
-// body that was flat in source stays flat, otherwise broken. Callers
-// should OR the result with their own forceBroken signal (e.g. for
-// scope-attached comments).
+//   - [LayoutStrict]: always broken. Callers handle the empty-body
+//     case (rendered as `{}`) before consulting this helper.
+//
+//   - [LayoutDynamic]: broken if and only if source had a newline between open
+//     and close brace.
+//
+// Callers should OR the result with their own forceBroken signal
+// (e.g. for scope-attached comments that require expansion).
 func (p *printer) bodyShouldBreak(openTok, closeTok token.Token) bool {
 	switch p.options.Formatting.BodyLayout {
 	case LayoutDynamic:
@@ -120,9 +129,11 @@ func sortFileDeclsForFormat(decls []ast.DeclAny) {
 	slices.SortStableFunc(decls, compareDecl)
 }
 
-// compareDecl compares two declarations for sorting. Declarations are
-// first ordered by rank (syntax < package < import < option < body),
-// then by name within the same rank.
+// compareDecl compares two declarations for sorting. Declarations
+// are first ordered by rank (syntax < package < import < option <
+// body). Within the import and option ranks, ties are broken by
+// sort name (see [importSortName] and [optionSortName]); decls at
+// the body rank preserve their source order via the stable sort.
 func compareDecl(a, b ast.DeclAny) int {
 	aRank, bRank := rankDecl(a), rankDecl(b)
 	if c := cmp.Compare(aRank, bRank); c != 0 {

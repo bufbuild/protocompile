@@ -18,8 +18,9 @@ package printer
 // the printed entity.
 type context struct {
 	// lineToBlock converts trailing // comments to /* */ in contexts
-	// where inline tokens follow without a newline break (paths,
-	// compact options, option values before `;`).
+	// where inline tokens follow without a newline break — paths,
+	// single-option compact-options values, option values before
+	// `;`, and the close bracket of a dict-field-value scope.
 	lineToBlock bool
 
 	// indentExpr indents compound string parts one level. Set in
