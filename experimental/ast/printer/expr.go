@@ -93,7 +93,7 @@ func (p *printer) printCompoundString(tok token.Token, gap gapStyle) {
 	// on their own line.
 	//
 	// trailingBlockOnNewLine is set based on whether the source's
-	// compound string spanned multiple lines: legacy buf format
+	// compound string spanned multiple lines: the legacy formatter
 	// preserves source layout. For a source-vertical compound
 	// (parts on separate lines), trailing block comments stay
 	// inline with their part. For a source-flat compound (all on
@@ -277,8 +277,9 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			//
 			// Suppress trailingBlockOnNewLine while emitting the
 			// comma so a `*/` trailing on the comma stays inline
-			// with it: legacy buf format only puts trailing-on-VALUE
-			// block comments on their own line, not trailing-on-comma.
+			// with it: the legacy formatter only puts trailing-on-
+			// VALUE block comments on their own line, not trailing-
+			// on-comma.
 			if i > 0 {
 				restore := indented.ctx.with(trailingBlockOnNewLine(false))
 				indented.printToken(elements.Comma(i-1), p.semiGap())
@@ -434,14 +435,14 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				// Prefer walker-recorded blankBefore (works when
 				// source has comma boundaries); otherwise fall back
 				// to span-based detection (works when source elides
-				// commas — e.g. legacy buf format's emitted output,
-				// which we re-format on idempotency passes).
+				// commas — e.g. the legacy formatter's emitted
+				// output, which we re-format on idempotency passes).
 				if trivia.hasBlankBefore(i) ||
 					sourceBlankLineBetweenFields(elements.At(i-1), elements.At(i)) {
 					fieldGap = gapBlankline
 				}
 			}
-			// Legacy buf format rewrites `// comment` trailings to
+			// The legacy formatter rewrites `// comment` trailings to
 			// `/* comment */` only when the field value ends in a
 			// closing scope bracket (`]` or `}`) — i.e. when the
 			// value is itself an array or dict literal. Primitive
@@ -458,8 +459,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				fieldRestore = indented.ctx.with(lineToBlock(true))
 			}
 			indented.printExprField(field, fieldGap)
-			// Trailing on the comma should stay inline (legacy
-			// buf format only puts trailing-on-VALUE block comments
+			// Trailing on the comma should stay inline (the legacy
+			// formatter only puts trailing-on-VALUE block comments
 			// on their own line, not trailing-on-comma).
 			commaMods := []modifier{trailingBlockOnNewLine(false)}
 			if rewriteFieldTrailing {

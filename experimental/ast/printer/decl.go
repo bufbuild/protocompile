@@ -286,6 +286,14 @@ func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia
 	p.emitRemainingTrivia(trivia, list.Len())
 }
 
+// printBody prints a decl-bearing body scope (`{ ... }` on message,
+// enum, service, oneof, extend, or RPC method).
+//
+// In non-format mode, decls are emitted as-is with their source
+// trivia. In format mode, the layout decision is governed by
+// [printer.bodyShouldBreak] modulo a force-broken signal raised when
+// the scope contains comments anywhere (which need their own lines).
+// An empty body collapses to `{}`.
 func (p *printer) printBody(body ast.DeclBody) {
 	if body.IsZero() || body.Braces().IsZero() {
 		return
@@ -404,6 +412,24 @@ func (p *printer) printRange(r ast.DeclRange, gap gapStyle) {
 	p.printToken(r.Semicolon(), p.semiGap())
 }
 
+// printCompactOptions prints a `[ ... ]` compact-options bracket
+// attached to a field, enum value, range, or other decl that carries
+// inline options.
+//
+// In format mode the helper picks one of three layouts:
+//
+//   - Single-entry inline: `[opt = value]` on the field line. Under
+//     [LayoutDynamic] the entry is wrapped in a [dom.Group] so that
+//     an inner break (a width-broken nested literal, a hard newline)
+//     propagates upward and the brackets follow.
+//
+//   - Multi-entry flat: `[a = 1, b = 2]` inside a [dom.Group] with
+//     softline separators, breaking on width.
+//
+//   - Expanded (one entry per line): triggered by 2+ entries under
+//     [LayoutStrict], by scope-attached comments, or by `//` line
+//     comments that would otherwise consume the closing bracket
+//     when [Formatting.RewriteTrailingLineCommentsToBlock] is false.
 func (p *printer) printCompactOptions(co ast.CompactOptions) {
 	if co.IsZero() {
 		return
@@ -520,16 +546,16 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 
 		default:
 			// Multiple options or comments force expand: one-per-line.
-			// pairLeadingBlock is intentionally NOT set here: legacy
-			// buf format does not pair leading block comments with
-			// compact option entries (only with array elements).
+			// pairLeadingBlock is intentionally NOT set here: the
+			// legacy formatter does not pair leading block comments
+			// with compact option entries (only with array elements).
 			defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(false))()
 			// Print the open bracket inline, including its trailing
 			// trivia. A trailing `// note` after `[` ends the line
 			// naturally and the first entry follows on a new
 			// indented line via gapNewline; a trailing block comment
 			// `/* note */` also stays inline with the bracket. This
-			// matches legacy buf format's `[ // note\n  ...` style.
+			// matches the legacy formatter's `[ // note\n  ...` style.
 			p.printToken(openTok, gapSpace)
 			closeComments, closeAtt := p.extractCloseComments(closeTok)
 			p.withIndent(func(indented *printer) {
