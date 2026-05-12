@@ -65,28 +65,68 @@ func TestBufFormat(t *testing.T) {
 		t.Run(relPath, func(t *testing.T) {
 			t.Parallel()
 
-			// Skip editions/2024 -- that's a parser error test, not a printer test.
+			// editions/2024 is a parser error test corpus, not a
+			// printer test corpus: the proto files contain
+			// deliberately invalid edition syntax for the parser to
+			// diagnose. There is no formatted output to compare
+			// against.
 			if strings.Contains(relPath, "editions/2024") {
 				t.Skip("editions/2024 is a parser error test")
 			}
 
-			// Skip deprecate tests -- those require AST transforms (adding
-			// deprecated options) that are done by buf's FormatModuleSet,
-			// not by the printer itself.
+			// deprecate/* requires adding `deprecated` options to
+			// existing declarations as an AST transform. The legacy
+			// formatter does this in buf's FormatModuleSet wrapper,
+			// not in the formatter itself; this printer's [printer.Edit]
+			// API doesn't yet support modifying compact-options
+			// brackets on fields or enum values either. The printer
+			// only formats what the AST already contains.
 			if strings.Contains(relPath, "deprecate/") {
 				t.Skip("deprecate tests require buf-specific AST transforms")
 			}
 
-			// Skip: our formatter keeps detached comments at section boundaries
-			// during sorting rather than permuting them with declarations.
-			// This is intentional -- see bufformat-diff.md.
+			// Detached comments at section boundaries stay at the
+			// boundary during declaration sorting rather than
+			// permuting with the surrounding declarations.
+			//
+			// When file declarations are reordered (imports sorted,
+			// options grouped, etc.), comments that sat between two
+			// declarations stay at the section boundary in our
+			// output, while the legacy formatter attaches them to
+			// the next declaration so they travel along with the
+			// sort. Our behavior prevents comments from being
+			// silently re-associated with the wrong declaration.
+			//
+			// Example from all/v1/all.proto:
+			//
+			//	package all.v1;
+			//	// between-package-and-import comment  <-- our output
+			//	                                           keeps the
+			//	                                           comment here
+			//	import ".../a.proto";
+			//	// (legacy moves it onto a.proto so it sorts with that
+			//	//  import; we leave it at the section boundary)
+			//	import ".../b.proto";
+			//
+			// TestFormat/ordering_section_comments.proto exercises
+			// the same divergence on a fixture we own.
 			if strings.Contains(relPath, "all/v1/all") || strings.Contains(relPath, "customoptions/") {
 				t.Skip("detached comment placement differs from the legacy formatter during sort")
 			}
 
-			// Skip: our formatter always inserts a space before trailing
-			// block comments (e.g., `M /* comment */` vs `M/* comment */`).
-			// This is intentional -- consistent trailing comment spacing.
+			// We always insert a space before trailing block
+			// comments (`M /* comment */`), whereas the legacy
+			// formatter elides the space (`M/* comment */`).
+			// Consistent spacing before trailing comments is more
+			// readable and matches the convention used everywhere
+			// else in our output.
+			//
+			// Example from service/v1/service.proto:
+			//
+			//	// legacy golden:
+			//	rpc Ping(/* Before */Message/* After */) returns ...
+			//	// our output:
+			//	rpc Ping(/* Before */Message /* After */) returns ...
 			if strings.Contains(relPath, "service/v1/service") {
 				t.Skip("trailing block comment spacing policy differs from the legacy formatter")
 			}

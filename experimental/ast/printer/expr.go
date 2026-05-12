@@ -303,6 +303,12 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		}
 	})
 
+	// Always emit `]` on its own line in broken layout, even when
+	// source glued the bracket to the last element. This is a
+	// style divergence from the legacy formatter, which preserves
+	// the source's glued placement (e.g. `{foo: 98}]`). Consistent
+	// newline placement is more readable. Exercised by
+	// TestFormat/message_literals.proto.
 	restoreClose := p.ctx.with(closeTrailingMods(outerLineToBlock)...)
 	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
 	restoreClose()

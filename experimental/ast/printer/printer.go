@@ -296,8 +296,15 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				case rewriteToBlock && p.ctx.lineToBlock && isLine:
 					// Convert // comment to /* comment */ for inline contexts.
 					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
-					// If the body contains "*/", insert a space to keep
-					// it from prematurely terminating the block comment.
+					// Escape any `*/` in the body to `* /` so it
+					// cannot prematurely terminate the synthesized
+					// block comment. This is a correctness divergence
+					// from the legacy formatter, which skips the
+					// escape and produces invalid output for bodies
+					// containing `*/` (e.g. `// foo */ bar` becomes
+					// `/* foo */ bar */`, parsed as a comment plus
+					// leaked text `bar */`). Exercised by
+					// TestFormat/compact_options.proto, with_terminator.
 					body = strings.ReplaceAll(body, "*/", "* /")
 					p.push(dom.Text("/*" + body + " */"))
 				case !rewriteToBlock && p.ctx.lineToBlock && isLine:
