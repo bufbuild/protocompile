@@ -320,7 +320,7 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 }
 
 // emitCommaTrivia emits trailing trivia from a comma token that is not
-// itself printed (e.g., commas removed from message literal fields in
+// itself printed (e.g., commas elided from message literal fields in
 // format mode). This ensures comments attached to skipped commas are
 // never lost.
 func (p *printer) emitCommaTrivia(comma token.Token) {
@@ -384,7 +384,7 @@ func (p *printer) declGap(
 		return gapNewline
 	}
 
-	// File level: legacy buf format adds blank lines around the
+	// File level: the legacy formatter adds blank lines around the
 	// "header sections" (imports, options) and after `syntax` —
 	// otherwise transitions preserve source adjacency.
 	//
@@ -551,10 +551,11 @@ func (p *printer) emitTrivia(gap gapStyle) {
 	newlineRun := 0
 	hasNonNewlineSpace := false
 	// preCommentNewline tracks whether a newline appeared BEFORE the
-	// first comment in pending. Pair-leading-block needs this: legacy
-	// buf format pairs `/* Before */ element` only when the comment
-	// sat on its own line in source (newline before it), not when the
-	// comment came directly after an open bracket on the same line.
+	// first comment in pending. Pair-leading-block needs this: the
+	// legacy formatter pairs `/* Before */ element` only when the
+	// comment sat on its own line in source (newline before it), not
+	// when the comment came directly after an open bracket on the
+	// same line.
 	preCommentNewline := false
 	for _, tok := range p.pending {
 		if tok.Kind() == token.Space {
@@ -614,8 +615,8 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		//   - newlineRun == 0: comment and element on same line
 		//     in source.
 		//   - preCommentNewline: comment sat on its own line in
-		//     source (newline before it). Without this, legacy
-		//     buf format separates the comment from the element
+		//     source (newline before it). Without this, the legacy
+		//     formatter separates the comment from the element
 		//     even when they share a line in a source-flat array.
 		if gap == gapNewline &&
 			!prevIsLine &&
@@ -869,7 +870,7 @@ func (p *printer) emitComment(tok token.Token) {
 // verbatim (with trailing whitespace per line stripped for cleanliness)
 // rather than rewritten to a canonical prefix or plain style.
 //
-// The normalization algorithm matches buf format's behavior:
+// The normalization algorithm matches the legacy formatter's behavior:
 //   - Detect if all non-empty interior lines share a common non-alphanumeric
 //     prefix character (e.g., *, =). If so, strip all whitespace and re-add
 //     " " before each line (prefix style). If the prefix is *, the closing
@@ -1015,7 +1016,7 @@ func isCommentPrefix(ch byte) bool {
 }
 
 // computeVisualIndent returns the visual indentation of a line, expanding
-// tabs to 8-column tab stops (matching buf format behavior).
+// tabs to 8-column tab stops (matching the legacy formatter's behavior).
 func computeVisualIndent(line string) int {
 	indent := 0
 	for _, r := range line {

@@ -34,8 +34,18 @@ type attachedTrivia struct {
 	trailing []token.Token
 }
 
-// detachedTrivia holds a set of trivia runs as slots within a scope.
+// detachedTrivia holds trivia not bound to any specific token —
+// trivia that survives reordering or deletion of the surrounding
+// declarations.
 type detachedTrivia struct {
+	// slots is one trivia run per "gap" in the scope. For a scope
+	// with N declarations:
+	//   - slots[i] for i in [0, N) is the detached trivia between
+	//     the scope's prior boundary (open brace, or the previous
+	//     declaration's end) and declaration i. slots[0] captures
+	//     any header trivia inside the scope.
+	//   - slots[N] is the trivia between the last declaration and
+	//     the scope's closing boundary.
 	slots [][]token.Token
 
 	// blankBefore[i] is true when there was a blank line between
@@ -240,6 +250,23 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID, mode s
 	idx.detached[scopeID] = trivia
 }
 
+// walkFused processes a fused (non-leaf) token by recursing into its
+// children with a [scopeMode] chosen by bracket kind:
+//
+//   - `[...]` (brackets): always [scopeModeLiteral] — compact options
+//     or array literal.
+//   - `{...}` / `<...>` (braces, angles): [scopeModeLiteral] when the
+//     enclosing decl already saw `=` (a value expression like
+//     `option x = {...}`); otherwise [scopeModeDecl] (a decl-bearing
+//     body).
+//   - `(...)` (parens): [scopeModeDecl]. Parens hold paths, not
+//     element lists, so commas inside are not boundaries.
+//
+// After the recursion, the residual trailing portion of the final
+// slot is split off as the close token's leading trivia so a leading
+// comment on `}` stays attached to `}` rather than floating in the
+// slot. Returns the close token so the caller can update its
+// endToken cursor.
 func (idx *triviaIndex) walkFused(leafToken token.Token, parentSawAssign bool) token.Token {
 	openToken, closeToken := leafToken.StartEnd()
 	// Determine the child scope's mode based on the bracket kind and
@@ -299,7 +326,7 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 			// "2 // comment") should be trailing trivia on the previous
 			// token, not leading on the next. This is especially
 			// important for message literal fields where commas are
-			// removed during formatting -- without this, the comment
+			// elided during formatting -- without this, the comment
 			// on the comma's line would be lost or misplaced.
 			firstNewline := firstNewlineIndex(leading)
 			if sliceHasComment(leading[:firstNewline]) && firstNewline < len(leading) {
