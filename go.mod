@@ -6,7 +6,7 @@ require (
 	buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.11-20250109164928-1da0de137947.1
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/google/go-cmp v0.7.0
-	github.com/petermattis/goid v0.0.0-20250319124200-ccd6737f222a
+	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/protocolbuffers/protoscope v0.0.0-20221109213918-8e7a6aafa2c9
 	github.com/rivo/uniseg v0.4.7

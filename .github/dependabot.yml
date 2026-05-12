@@ -8,10 +8,18 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Not a direct dep of the root module; pinned to v1.14.1 in
+      # /internal/benchmarks and can leak in via go.work resolution.
+      - dependency-name: "github.com/jhump/protoreflect"
   - package-ecosystem: "gomod"
     directory: "/internal/tools/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Not a direct dep of the tools module; pinned to v1.14.1 in
+      # /internal/benchmarks and can leak in via go.work resolution.
+      - dependency-name: "github.com/jhump/protoreflect"
   - package-ecosystem: "gomod"
     directory: "/internal/benchmarks/"
     schedule:
