@@ -12,11 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package printer renders AST nodes to protobuf source text.
+// Package printer renders an [ast.File] (or an individual [ast.DeclAny]) back
+// to protobuf source text. It is designed for two distinct uses:
 //
-// The main entry point is [PrintFile], which renders an entire [ast.File] while
-// preserving original formatting (whitespace, comments, blank lines).
-// Use [Print] for rendering individual AST declarations.
+//   - Round-trip fidelity: replay parsed source verbatim, preserving the
+//     original whitespace, comments, and structure exactly as written.
 //
-// TODO: Add [Edits] to this after implementing
+//   - Formatting: apply layout decisions and optional AST transforms to
+//     produce canonicalized output.
+//
+// # Entry points
+//
+// [PrintFile] renders an entire file; this should be the usual entry point.
+// [Print] renders a single declaration as a snippet with no trailing
+// newline — useful for LSP edit previews or for building output
+// incrementally one decl at a time.
+//
+// Both entry points take an [Options] value that configures the printed output:
+//
+//   - With Options.Format = false (the zero value, round-trip mode), the
+//     file is emitted as-is. Source whitespace and comments are preserved
+//     verbatim from the token trivia attached during parsing. Options.Formatting
+//     is ignored in this case.
+//
+//   - With Options.Format = true (format mode), [Options.Formatting]
+//     drives layout decisions and formats the printed ouptut.
+//
+// # Formatting presets
+//
+// Format mode is configured via [Formatting]. Two ready-made presets are
+// provided:
+//
+//   - [Default] is the recommended preset: dynamic layout that respects
+//     source intent (e.g. a scope written flat stays flat; width-aware
+//     breaking kicks in at 100 columns), and no rewriting of comment text.
+//
+//   - [Legacy] is the set of configurations that conforms to the legacy
+//     protobuf formatter.
+//
+// See the [Formatting] type for the individual knobs.
+//
+// # Edits
+//
+// [Options.Edits] holds an ordered list of [Edit] values applied to
+// the file before rendering. Edits run regardless of [Options.Format] —
+// round-trip mode emits the edited tree as-is, format mode runs its
+// layout decisions on top.
+//
+// Edits support adding, deleting, and moving declarations within
+// decl-bearing bodies (file, message, enum, service, oneof, extend, or
+// RPC method). Each operation's validity rules are documented on its
+// [EditKind] constant.
+//
+// Edits mutate the [ast.File] in place — clone it first if the caller
+// needs the unedited AST.
 package printer

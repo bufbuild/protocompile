@@ -53,11 +53,11 @@ func (k EditKind) String() string {
 	}
 }
 
-// Edit describes a single mutation applied to an [ast.File] before
-// formatting. Edits are supplied via [Options.Edits] and applied in
-// order by [PrintFile]. The mutation is applied directly to the file
-// passed to [PrintFile]; a caller wishing to preserve the unedited AST
-// must clone it first.
+// Edit describes a single mutation applied to an [ast.File] before it
+// is rendered. Edits are supplied via [Options.Edits] and applied in
+// order by [PrintFile] regardless of [Options.Format]. The mutation
+// happens on the file passed to [PrintFile]; a caller wishing to
+// preserve the unedited AST must clone it first.
 //
 // Validity rules for each [EditKind] are documented on the kind
 // constants. An invalid edit (target not found, insertion not allowed

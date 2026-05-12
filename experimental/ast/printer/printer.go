@@ -59,9 +59,9 @@ const (
 //     and [Legacy] are ready-made presets.
 //
 // If [Options.Edits] is non-empty, the edits are applied in order
-// before any formatting; an edit failure returns an error without
-// producing output. Edits mutate file in place — clone it first if
-// the caller needs the unedited AST.
+// before rendering, regardless of [Options.Format]; an edit failure
+// returns an error without producing output. Edits mutate file in
+// place — clone it first if the caller needs the unedited AST.
 func PrintFile(options Options, file *ast.File) (string, error) {
 	options = options.withDefaults()
 

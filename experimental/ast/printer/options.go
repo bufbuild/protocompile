@@ -24,10 +24,10 @@ import (
 // ordered by pipeline phase: edits run first, then formatting
 // decisions (when enabled by [Options.Format]).
 type Options struct {
-	// Edits are applied to the AST in order before any formatting
-	// decisions are made. The mutations happen on the [ast.File]
-	// passed to [PrintFile]; callers wishing to preserve the original
-	// AST must clone it first.
+	// Edits are applied to the AST in order before rendering,
+	// regardless of [Options.Format]. The mutations happen on the
+	// [ast.File] passed to [PrintFile]; callers wishing to preserve
+	// the original AST must clone it first.
 	Edits []Edit
 
 	// Formatting controls behavior in format mode. Honored only when
