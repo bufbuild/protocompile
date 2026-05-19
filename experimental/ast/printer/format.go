@@ -22,6 +22,33 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
+type declSortRank int
+
+const (
+	rankSyntax  declSortRank = iota // syntax/edition
+	rankPackage                     // package
+	rankImport                      // import
+	rankOption                      // option
+	rankBody                        // body
+)
+
+// rankDecl returns the sort rank for a declaration.
+func rankDecl(decl ast.DeclAny) declSortRank {
+	switch decl.Kind() {
+	case ast.DeclKindSyntax:
+		return rankSyntax
+	case ast.DeclKindPackage:
+		return rankPackage
+	case ast.DeclKindImport:
+		return rankImport
+	case ast.DeclKindDef:
+		if decl.AsDef().Classify() == ast.DefKindOption {
+			return rankOption
+		}
+	}
+	return rankBody
+}
+
 // sourceWasFlat reports whether the source had open and close on the
 // same line, i.e. the bracketed scope was written without any newline
 // between its opening and closing tokens. Returns false if either token
@@ -163,33 +190,6 @@ func compareDecl(a, b ast.DeclAny) int {
 	default:
 		return 0
 	}
-}
-
-type declSortRank int
-
-const (
-	rankSyntax  declSortRank = iota // syntax/edition
-	rankPackage                     // package
-	rankImport                      // import
-	rankOption                      // option
-	rankBody                        // body
-)
-
-// rankDecl returns the sort rank for a declaration.
-func rankDecl(decl ast.DeclAny) declSortRank {
-	switch decl.Kind() {
-	case ast.DeclKindSyntax:
-		return rankSyntax
-	case ast.DeclKindPackage:
-		return rankPackage
-	case ast.DeclKindImport:
-		return rankImport
-	case ast.DeclKindDef:
-		if decl.AsDef().Classify() == ast.DefKindOption {
-			return rankOption
-		}
-	}
-	return rankBody
 }
 
 // importSortName returns the sort name for an import declaration.
