@@ -29,15 +29,15 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 )
 
-//go:generate go run ./testdata/gen de176125bc1a22a3d9a3a17b9b84dc502c7dd6c9
-
-// TestBufFormat runs the buf format golden tests against our printer.
+// TestBufFormat is the legacy-formatter conformance suite for the
+// printer's [printer.Legacy] preset.
 //
 // It walks the vendored bufformat testdata under testdata/bufformat,
 // parsing each .proto file and comparing the formatted output against
-// the corresponding .golden file. The testdata is sourced from
-// bufbuild/buf at the commit pinned by the //go:generate directive
-// above; re-run `go generate` in this package to refresh.
+// the corresponding .golden file. The corpus was originally seeded
+// from buf's upstream bufformat testdata (de176125bc1a22a3d9a3a17b9b84dc502c7dd6c9)
+// and is now maintained directly in this repo; updates should land here,
+// not be re-imported from upstream.
 func TestBufFormat(t *testing.T) {
 	t.Parallel()
 
