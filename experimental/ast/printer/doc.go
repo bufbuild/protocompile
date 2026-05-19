@@ -52,18 +52,10 @@
 //
 // See the [Formatting] type for the individual knobs.
 //
-// # Edits
+// # Editing the AST
 //
-// [Options.Edits] holds an ordered list of [Edit] values applied to
-// the file before rendering. Edits run regardless of [Options.Format] —
-// round-trip mode emits the edited tree as-is, format mode runs its
-// layout decisions on top.
-//
-// Edits support adding, deleting, and moving declarations within
-// decl-bearing bodies (file, message, enum, service, oneof, extend, or
-// RPC method). Each operation's validity rules are documented on its
-// [EditKind] constant.
-//
-// Edits mutate the [ast.File] in place — clone it first if the caller
-// needs the unedited AST.
+// To mutate the AST before rendering (insert, delete, or move
+// declarations), use the companion
+// [github.com/bufbuild/protocompile/experimental/ast/edit] package.
+// Apply edits first, then call [PrintFile] on the resulting file.
 package printer

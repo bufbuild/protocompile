@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package printer
+package edit
 
 import (
 	"errors"
@@ -53,16 +53,14 @@ func (k EditKind) String() string {
 	}
 }
 
-// Edit describes a single mutation applied to an [ast.File] before it
-// is rendered. Edits are supplied via [Options.Edits] and applied in
-// order by [PrintFile] regardless of [Options.Format]. The mutation
-// happens on the file passed to [PrintFile]; a caller wishing to
-// preserve the unedited AST must clone it first.
+// Edit describes a single mutation applied to an [ast.File] by
+// [ApplyEdits]. The mutation happens on the file in place; callers
+// wishing to preserve the unedited AST must clone it first.
 //
 // Validity rules for each [EditKind] are documented on the kind
 // constants. An invalid edit (target not found, insertion not allowed
-// in target container, etc.) causes [PrintFile] to return an error
-// without producing output.
+// in target container, etc.) causes [ApplyEdits] to return an error;
+// any edits already applied remain in place.
 //
 // Edits currently operate on decl-bearing bodies (file, message,
 // enum, service, oneof, extend, and method bodies). Modifying the
@@ -98,9 +96,17 @@ type Edit struct {
 	Before ast.DeclAny
 }
 
-// applyEdits applies edits to file in order, stopping at the first
-// error.
-func applyEdits(file *ast.File, edits []Edit) error {
+// ApplyEdits applies edits to file in order, stopping at the first
+// error. Edits mutate file in place — clone it first if the caller
+// needs the unedited AST.
+//
+// Typical use is to apply edits before rendering with the printer:
+//
+//	if err := edit.ApplyEdits(file, edits); err != nil {
+//	    return err
+//	}
+//	out, err := printer.PrintFile(opts, file)
+func ApplyEdits(file *ast.File, edits []Edit) error {
 	for i, edit := range edits {
 		if err := applyEdit(file, edit); err != nil {
 			return fmt.Errorf("edit[%d] %s: %w", i, edit.Kind, err)

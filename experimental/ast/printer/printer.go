@@ -58,18 +58,11 @@ const (
 //     run. See [Formatting] for the configurable knobs; [Default]
 //     and [Legacy] are ready-made presets.
 //
-// If [Options.Edits] is non-empty, the edits are applied in order
-// before rendering, regardless of [Options.Format]; an edit failure
-// returns an error without producing output. Edits mutate file in
-// place — clone it first if the caller needs the unedited AST.
+// To apply mutations to the AST before rendering, use the companion
+// [github.com/bufbuild/protocompile/experimental/ast/edit] package
+// and pass the resulting file to PrintFile.
 func PrintFile(options Options, file *ast.File) (string, error) {
 	options = options.withDefaults()
-
-	if len(options.Edits) > 0 {
-		if err := applyEdits(file, options.Edits); err != nil {
-			return "", err
-		}
-	}
 
 	// In format mode, a file with no declarations and no comments
 	// produces empty output. The dom renderer always appends a trailing
@@ -98,9 +91,6 @@ func PrintFile(options Options, file *ast.File) (string, error) {
 // body, for example) emit their attached leading trivia only —
 // Print has no broader file context for resolving the surrounding
 // body scope's detached slot.
-//
-// [Options.Edits] is ignored by Print; use [PrintFile] for whole-
-// file rendering with edits applied.
 func Print(options Options, decl ast.DeclAny) string {
 	options = options.withDefaults()
 	domOpts := options.domOptions()

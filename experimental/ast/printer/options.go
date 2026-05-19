@@ -20,16 +20,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/dom"
 )
 
-// Options controls the printer's overall behavior. Fields are
-// ordered by pipeline phase: edits run first, then formatting
-// decisions (when enabled by [Options.Format]).
+// Options controls the printer's overall behavior.
 type Options struct {
-	// Edits are applied to the AST in order before rendering,
-	// regardless of [Options.Format]. The mutations happen on the
-	// [ast.File] passed to [PrintFile]; callers wishing to preserve
-	// the original AST must clone it first.
-	Edits []Edit
-
 	// Formatting controls behavior in format mode. Honored only when
 	// [Options.Format] is true. Start from a preset such as [Default]
 	// or [Legacy] and override individual fields as needed.
