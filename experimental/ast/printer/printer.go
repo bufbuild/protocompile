@@ -154,7 +154,7 @@ type printer struct {
 
 	// ctx stores expected formatting behaviours based on the scope of the
 	// printed entity.
-	ctx *context
+	ctx context
 
 	// declSourceIdx maps a sorted-iteration index to the original
 	// source-order index for the file's top-level decls. Set during
@@ -174,7 +174,6 @@ func newPrinter(options Options, trivia *triviaIndex, push dom.Sink) *printer {
 		trivia:  trivia,
 		push:    push,
 		indent:  strings.Repeat(" ", options.Formatting.TabstopWidth),
-		ctx:     new(context),
 	}
 }
 
