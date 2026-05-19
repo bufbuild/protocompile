@@ -22,34 +22,34 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
-// EditKind is the kind of operation an [Edit] performs.
-type EditKind int
+// Kind is the kind of operation an [Edit] performs.
+type Kind int
 
 const (
-	// EditAdd appends [Edit.Insertions] to the body decls of
+	// KindAdd appends [Edit.Insertions] to the body decls of
 	// [Edit.Target]. If Target is the zero value, insertions are
 	// appended to the file's top-level decls.
-	EditAdd EditKind = iota
-	// EditDelete removes [Edit.Target] from its parent's decl list.
-	EditDelete
-	// EditMove moves [Edit.Target] so that it appears immediately
+	KindAdd Kind = iota
+	// KindDelete removes [Edit.Target] from its parent's decl list.
+	KindDelete
+	// KindMove moves [Edit.Target] so that it appears immediately
 	// before [Edit.Before] in their shared parent's decl list.
 	// Currently both must be top-level decls.
-	EditMove
+	KindMove
 )
 
 // String returns a human-readable name for the kind, used in
 // diagnostics.
-func (k EditKind) String() string {
+func (k Kind) String() string {
 	switch k {
-	case EditAdd:
+	case KindAdd:
 		return "add"
-	case EditDelete:
+	case KindDelete:
 		return "delete"
-	case EditMove:
+	case KindMove:
 		return "move"
 	default:
-		return fmt.Sprintf("EditKind(%d)", int(k))
+		return fmt.Sprintf("Kind(%d)", int(k))
 	}
 }
 
@@ -57,7 +57,7 @@ func (k EditKind) String() string {
 // [ApplyEdits]. The mutation happens on the file in place; callers
 // wishing to preserve the unedited AST must clone it first.
 //
-// Validity rules for each [EditKind] are documented on the kind
+// Validity rules for each [Kind] are documented on the kind
 // constants. An invalid edit (target not found, insertion not allowed
 // in target container, etc.) causes [ApplyEdits] to return an error;
 // any edits already applied remain in place.
@@ -68,17 +68,17 @@ func (k EditKind) String() string {
 // `[deprecated = true]`) is not yet supported.
 type Edit struct {
 	// Kind selects the operation.
-	Kind EditKind
+	Kind Kind
 
 	// Target serves a different role depending on Kind:
-	//   - EditAdd:    the container to insert into. Zero means
+	//   - KindAdd:    the container to insert into. Zero means
 	//                 the file's top-level decl list.
-	//   - EditDelete: the decl to remove.
-	//   - EditMove:   the decl to relocate.
+	//   - KindDelete: the decl to remove.
+	//   - KindMove:   the decl to relocate.
 	Target ast.DeclAny
 
 	// Insertions are the decls to append to Target's body, in order.
-	// Honored only by [EditAdd].
+	// Honored only by [KindAdd].
 	//
 	// Allowed insertion-vs-container pairings:
 	//   - option:               file or any decl-bearing body
@@ -90,9 +90,9 @@ type Edit struct {
 	//   - oneof, extend, group: message body
 	Insertions []ast.DeclAny
 
-	// Before is the destination anchor for EditMove: the moved decl
+	// Before is the destination anchor for KindMove: the moved decl
 	// is reinserted immediately before Before. Honored only by
-	// EditMove.
+	// KindMove.
 	Before ast.DeclAny
 }
 
@@ -117,11 +117,11 @@ func ApplyEdits(file *ast.File, edits []Edit) error {
 
 func applyEdit(file *ast.File, edit Edit) error {
 	switch edit.Kind {
-	case EditAdd:
+	case KindAdd:
 		return applyAdd(file, edit)
-	case EditDelete:
+	case KindDelete:
 		return applyDelete(file, edit)
-	case EditMove:
+	case KindMove:
 		return applyMove(file, edit)
 	default:
 		return fmt.Errorf("unknown kind %d", edit.Kind)

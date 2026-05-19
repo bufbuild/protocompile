@@ -78,8 +78,8 @@ func TestBufFormat(t *testing.T) {
 			// deprecate/* requires adding `deprecated` options to
 			// existing declarations as an AST transform. The legacy
 			// formatter does this in buf's FormatModuleSet wrapper,
-			// not in the formatter itself; this printer's [printer.Edit]
-			// API doesn't yet support modifying compact-options
+			// not in the formatter itself; the companion ast/edit
+			// package doesn't yet support modifying compact-options
 			// brackets on fields or enum values either. The printer
 			// only formats what the AST already contains.
 			if strings.Contains(relPath, "deprecate/") {

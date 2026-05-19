@@ -185,7 +185,7 @@ func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (edit.Edit, 
 		}
 		opt := createOptionDecl(stream, nodes, spec.Option, spec.Value)
 		return edit.Edit{
-			Kind:       edit.EditAdd,
+			Kind:       edit.KindAdd,
 			Target:     target,
 			Insertions: []ast.DeclAny{opt.AsAny()},
 		}, nil
@@ -216,7 +216,7 @@ func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (edit.Edit, 
 			return edit.Edit{}, fmt.Errorf("decl %q not found", spec.Target)
 		}
 		return edit.Edit{
-			Kind:   edit.EditDelete,
+			Kind:   edit.KindDelete,
 			Target: target,
 		}, nil
 
@@ -230,7 +230,7 @@ func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (edit.Edit, 
 			return edit.Edit{}, fmt.Errorf("decl %q not found", spec.Name)
 		}
 		return edit.Edit{
-			Kind:   edit.EditMove,
+			Kind:   edit.KindMove,
 			Target: target,
 			Before: before,
 		}, nil
@@ -240,7 +240,7 @@ func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (edit.Edit, 
 	}
 }
 
-// buildAdd builds an EditAdd targeting the decl at targetPath (file
+// buildAdd builds a KindAdd targeting the decl at targetPath (file
 // when empty), inserting the prebuilt decl ins. The new decl is
 // registered in pending under "<targetPath>.<name>" (or just "name"
 // at file level) so subsequent edits can target it.
@@ -259,7 +259,7 @@ func buildAdd(file *ast.File, pending pendingDecls, targetPath, name string, ins
 	}
 	pending.register(fullPath, ins)
 	return edit.Edit{
-		Kind:       edit.EditAdd,
+		Kind:       edit.KindAdd,
 		Target:     target,
 		Insertions: []ast.DeclAny{ins},
 	}, nil
