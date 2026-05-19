@@ -53,6 +53,14 @@ type Options struct {
 	// If true, prints all of the tags in an HTML-like format. Intended for
 	// debugging.
 	HTML bool
+
+	// If true, [Render] does not append a trailing newline to ensure the
+	// output ends with one. Trailing break tags are still flushed, so
+	// the output ends in whatever explicit whitespace was emitted (or
+	// none, if the last tag was non-whitespace). Useful for callers that
+	// render snippets to be concatenated, where the safeguard newline
+	// would introduce an artifact between adjacent renders.
+	OmitTrailingNewline bool
 }
 
 // WithDefaults replaces any unset (read: zero value) fields of an Options which

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package foo.bar.baz;
+
+enum One {
+  ONE_UNSPECIFIED = 0;
+  ONE_ONE = 1;
+}
+
+message Two {
+  enum Three {
+    THREE_UNSPECIFIED = 0;
+    THREE_ONE = 1;
+  }
+  message Four {}
+  message Five { }
+  
+  string id = 1;
+}
+
+service FiveService {
+  rpc Six(Two) returns (Two);
+}

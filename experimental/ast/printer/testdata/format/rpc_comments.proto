@@ -1,0 +1,5 @@
+syntax = "proto3";
+message M {}
+service S {
+  rpc Foo(/* before */ M /* after */) returns (/* before */ stream M);
+}

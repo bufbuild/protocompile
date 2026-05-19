@@ -1,0 +1,24 @@
+// File header.
+
+
+option optimize_for = SPEED;
+
+  // Datetime import.
+import "google/type/datetime.proto";
+
+import option "custom_option.proto";
+package acme.v1.weather;
+
+option cc_enable_arenas =   true;  // trailing comment
+
+/* Multi line comment
+  * invalid indent
+ */   
+import "acme/payment/v1/payment.proto";        /* trailing */
+
+  edition = "2024";
+
+  // A message.
+message  Foo { /* Foo */
+  string name = 1;
+}

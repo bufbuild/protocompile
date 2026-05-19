@@ -1,0 +1,28 @@
+// a
+
+// b
+syntax = "proto3"; // c
+package test; // d
+
+// e
+
+// Attached to Beta
+message Beta {
+  // g
+
+  int32 id = 1;
+}
+
+// f
+
+// Attached to Alpha
+message Alpha {
+  string name = 1;
+}
+
+// h
+
+// Attached to Gamma
+message Gamma {}
+
+// i

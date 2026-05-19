@@ -1,0 +1,102 @@
+// Copyright 2020-2026 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package printer
+
+import (
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+)
+
+// pathFirstToken returns the separator of the first component if set,
+// otherwise its name. Returns the zero token if the path has no components.
+func pathFirstToken(path ast.Path) token.Token {
+	pc, ok := iterx.First(path.Components())
+	if !ok {
+		return token.Zero
+	}
+	if !pc.Separator().IsZero() {
+		return pc.Separator()
+	}
+	return pc.Name()
+}
+
+// printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
+func (p *printer) printPath(path ast.Path, gap gapStyle) {
+	if path.IsZero() {
+		return
+	}
+
+	// Path components are bound tightly (gapPreserve), so a trailing
+	// // comment on any component would eat subsequent components.
+	// Convert to /* */ to keep the path intact for the duration of
+	// this call.
+	//
+	// Paths also reset trailingBlockOnNewLine for tight key/component
+	// contexts so mid-path block comments stay inline. Value-position
+	// paths (set by [printer.printExpr] via pathInValueContext) skip
+	// this reset, letting a trailing block comment on the path's
+	// final token respect the surrounding broken scope's policy.
+	// Recursive calls (e.g. inside extension brackets) re-enter as
+	// non-value context — see the extension component handler below.
+	if p.ctx.pathInValueContext {
+		defer p.ctx.with(lineToBlock(true), pathInValueContext(false))()
+	} else {
+		defer p.ctx.with(lineToBlock(true), trailingBlockOnNewLine(false))()
+	}
+
+	first := true
+	for pc := range path.Components() {
+		// Print separator (dot or slash) if present.
+		// The first separator uses the caller's gap (e.g., gapSpace
+		// after "extend" for fully-qualified paths like ".google").
+		// Subsequent separators use gapPreserve for tight binding.
+		sepGap := gapPreserve
+		if first && !pc.Separator().IsZero() {
+			sepGap = gap
+		}
+		if !pc.Separator().IsZero() {
+			p.printToken(pc.Separator(), sepGap)
+		}
+
+		// Print the name component
+		if !pc.Name().IsZero() {
+			componentGap := gapPreserve
+			if first && pc.Separator().IsZero() {
+				// Only use the caller's gap for the first NAME if
+				// there was no separator before it.
+				componentGap = gap
+			}
+			first = false
+
+			if extn := pc.AsExtension(); !extn.IsZero() {
+				// Extension path component like (foo.bar).
+				// The parens are a scope.
+				parens := pc.Name()
+				openTok, closeTok := parens.StartEnd()
+				trivia := p.trivia.scopeTrivia(parens.ID())
+
+				p.printToken(openTok, componentGap)
+				p.emitTriviaSlot(trivia, 0)
+				p.printPath(extn, gapPreserveTight)
+				p.emitTriviaSlot(trivia, 1)
+				p.printToken(closeTok, gapPreserve)
+			} else {
+				// Simple identifier
+				p.printToken(pc.Name(), componentGap)
+			}
+		}
+	}
+}

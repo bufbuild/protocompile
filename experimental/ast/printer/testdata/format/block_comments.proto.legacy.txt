@@ -1,0 +1,31 @@
+/*
+ * Asterisk style with inconsistent indent.
+ * Second line.
+ */
+syntax /* inline */ = "proto3";
+
+message Foo {
+  /*
+   * Body comment.
+   * Second line.
+   */
+  string name = 1;
+}
+
+/*
+   This is plain style.
+
+   More content here.
+*/
+message Bar {}
+
+/*
+ * Line before blank.
+ *
+ * Line after blank.
+ */
+message Baz {}
+
+/* Degenerate
+   comment. */
+message Qux {}

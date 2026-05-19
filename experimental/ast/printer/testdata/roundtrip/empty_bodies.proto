@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package empty;
+
+message Empty {}
+message AlsoEmpty { }
+message HasSpace {  }
+
+enum EmptyEnum {}
+
+service EmptyService {}
+
+message WithContent {
+  string name = 1;
+}

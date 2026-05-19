@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package example.v1;
+
+import "google/protobuf/descriptor.proto";
+
+message Person {
+  required string name = 1;
+  optional int32 id = 2;
+  optional string email = 3;
+
+  repeated PhoneNumber phones = 4;
+
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  message PhoneNumber {
+    required string number = 1;
+    optional PhoneType type = 2 [default = HOME];
+  }
+
+  extensions 100 to 199;
+
+  oneof contact {
+    string phone = 5;
+    string address = 6;
+  }
+
+  reserved 8, 9 to 11;
+  reserved "foo", "bar";
+}
+
+extend Person {
+  optional string nickname = 100;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message {}
+message M {
+  int32 = 1;
+}
+service S {
+  rpc (Req) returns (Resp);
+}

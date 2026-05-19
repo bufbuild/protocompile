@@ -1,0 +1,14 @@
+syntax="proto3";
+package   unusual  ;
+
+message   Foo   {
+   string   name   =   1   ;
+   int32 id=2;
+}
+
+
+
+enum Bar {
+  BAR_UNSPECIFIED=0;
+  BAR_ONE = 1 ;
+}
