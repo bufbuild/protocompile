@@ -15,6 +15,7 @@
 package edit_test
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -388,7 +389,7 @@ func resolveAnchor(file *ast.File, target ast.DeclAny, name string) (ast.DeclAny
 	} else {
 		def := target.AsDef()
 		if def.IsZero() || def.Body().IsZero() {
-			return ast.DeclAny{}, fmt.Errorf("target has no body")
+			return ast.DeclAny{}, errors.New("target has no body")
 		}
 		decls = def.Body().Decls()
 	}
