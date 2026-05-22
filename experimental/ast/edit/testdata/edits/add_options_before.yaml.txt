@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package test;
+
+option deprecated = true;
+
+// Outer message.
+message OuterMessage {
+  option deprecated = true;
+  string name = 1;
+
+  // Nested message.
+  message NestedMessage {
+    string value = 1;
+  }
+
+  // Nested enum.
+  enum NestedEnum {
+    NESTED_ENUM_UNSPECIFIED = 0;
+    NESTED_ENUM_VALUE = 1;
+  }
+}
+
+// Top-level enum.
+enum TopLevelEnum {
+  TOP_LEVEL_ENUM_UNSPECIFIED = 0;
+  TOP_LEVEL_ENUM_VALUE = 1;
+}

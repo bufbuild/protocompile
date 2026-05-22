@@ -1,0 +1,66 @@
+# Copyright 2020-2026 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Regression test for trivia/blankBefore handling when synthetic
+# decls are inserted ahead of existing source decls.
+#
+# Mirrors the downstream `bufformat` deprecation flow: a synthetic
+# `option deprecated = true;` is inserted at index 0 of OuterMessage's
+# body (before the existing fields/nested types) and at the file level
+# (before the first message). The printer must translate AST
+# iteration indices to source decl indices when consulting
+# trivia.blankBefore — otherwise the inserted decl shifts the index,
+# and the source-level blank-line layout drifts off by one around the
+# surrounding source decls.
+
+source: |
+  syntax = "proto3";
+
+  package test;
+
+  // Outer message.
+  message OuterMessage {
+    string name = 1;
+
+    // Nested message.
+    message NestedMessage {
+      string value = 1;
+    }
+
+    // Nested enum.
+    enum NestedEnum {
+      NESTED_ENUM_UNSPECIFIED = 0;
+      NESTED_ENUM_VALUE = 1;
+    }
+  }
+
+  // Top-level enum.
+  enum TopLevelEnum {
+    TOP_LEVEL_ENUM_UNSPECIFIED = 0;
+    TOP_LEVEL_ENUM_VALUE = 1;
+  }
+
+edits:
+  # File-scope: insert option before the first source decl after package.
+  - kind: add_option
+    target: ""
+    before: OuterMessage
+    option: deprecated
+    value: "true"
+  # Body-scope: insert option before the first field of OuterMessage.
+  - kind: add_option
+    target: OuterMessage
+    before: name
+    option: deprecated
+    value: "true"

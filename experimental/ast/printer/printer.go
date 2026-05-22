@@ -178,10 +178,17 @@ func (p *printer) printFile(file *ast.File) {
 		// before sorting. After sortFileDeclsForFormat, the iteration
 		// order changes but trivia.hasBlankBefore is keyed by source
 		// position, so we need to translate sorted index -> source
-		// index when consulting it.
+		// index when consulting it. Synthetic decls (no source span)
+		// map to -1 so they do not consume a slot in blankBefore.
 		srcIdxByDecl := make(map[ast.DeclAny]int, len(sourceOrder))
-		for i, d := range sourceOrder {
-			srcIdxByDecl[d] = i
+		natCounter := 0
+		for _, d := range sourceOrder {
+			if d.Span().IsZero() {
+				srcIdxByDecl[d] = -1
+				continue
+			}
+			srcIdxByDecl[d] = natCounter
+			natCounter++
 		}
 		sorted := append([]ast.DeclAny(nil), sourceOrder...)
 		sortFileDeclsForFormat(sorted)
@@ -190,7 +197,7 @@ func (p *printer) printFile(file *ast.File) {
 			if idx, ok := srcIdxByDecl[d]; ok {
 				p.declSourceIdx[i] = idx
 			} else {
-				p.declSourceIdx[i] = i
+				p.declSourceIdx[i] = -1
 			}
 		}
 		defer func() { p.declSourceIdx = nil }()
@@ -346,18 +353,55 @@ func (p *printer) appendPending(tokens []token.Token) {
 //
 // Attached trivia (leading on first token, trailing on last) is handled by
 // [printer.printDecl] via [printer.printTokenAs].
+//
+// AST decls may include synthetic decls (those without a source span,
+// e.g. inserted via the edit package). Synthetic decls do not consume
+// entries in trivia.slots or trivia.blankBefore, so iteration indices
+// are translated through scopeSourceIdx before consulting trivia.
 func (p *printer) printScopeDecls(
 	trivia detachedTrivia,
 	decls seq.Indexer[ast.DeclAny],
 	scope scopeKind,
 ) {
+	sourceIdx := p.scopeSourceIdx(decls, scope)
+	lastSrc := -1
 	for i := range decls.Len() {
-		p.emitTriviaSlot(trivia, i)
-		gap := p.declGap(decls, trivia, i, scope)
+		src := sourceIdx[i]
+		if src >= 0 {
+			for s := lastSrc + 1; s <= src; s++ {
+				p.emitTriviaSlot(trivia, s)
+			}
+			if src > lastSrc {
+				lastSrc = src
+			}
+		}
+		gap := p.declGap(decls, trivia, i, src, scope)
 		p.printDecl(decls.At(i), gap)
 	}
 
-	p.emitRemainingTrivia(trivia, decls.Len())
+	p.emitRemainingTrivia(trivia, lastSrc+1)
+}
+
+// scopeSourceIdx returns a slice mapping each AST decl iteration index
+// to its source decl index, or -1 if the decl is synthetic (has no
+// source span). For the file scope under CanonicalizeFileOrder, the
+// pre-computed mapping from printFile is reused.
+func (p *printer) scopeSourceIdx(decls seq.Indexer[ast.DeclAny], scope scopeKind) []int {
+	n := decls.Len()
+	if scope == scopeFile && p.declSourceIdx != nil && len(p.declSourceIdx) == n {
+		return p.declSourceIdx
+	}
+	out := make([]int, n)
+	counter := 0
+	for i := range n {
+		if decls.At(i).Span().IsZero() {
+			out[i] = -1
+			continue
+		}
+		out[i] = counter
+		counter++
+	}
+	return out
 }
 
 // declGap computes the gap before declaration i in a scope.
@@ -366,10 +410,15 @@ func (p *printer) printScopeDecls(
 // comments (copyright headers at file level, or comments between '{'
 // and the first member at body level). For subsequent declarations, it
 // determines whether a blank line or regular newline separates them.
+//
+// srcIdx is the source decl index for decls.At(i), or -1 if the decl
+// is synthetic (no source span). Synthetic decls never consult
+// trivia.hasBlankBefore because they have no source position to
+// compare against.
 func (p *printer) declGap(
 	decls seq.Indexer[ast.DeclAny],
 	trivia detachedTrivia,
-	i int,
+	i, srcIdx int,
 	scope scopeKind,
 ) gapStyle {
 	if i == 0 {
@@ -393,9 +442,7 @@ func (p *printer) declGap(
 	// Within sorted sections (imports, file-level options),
 	// canonicalization reorders entries, so hasBlankBefore (keyed
 	// by source position) doesn't line up with the sorted output;
-	// suppress source blanks there. For body decls, translate the
-	// sorted index back to the source index before consulting
-	// hasBlankBefore.
+	// suppress source blanks there.
 	if scope == scopeFile {
 		prev, curr := rankDecl(decls.At(i-1)), rankDecl(decls.At(i))
 		if prev != curr && (curr == rankImport || curr == rankOption) {
@@ -407,18 +454,14 @@ func (p *printer) declGap(
 		if curr == rankImport || curr == rankOption {
 			return gapNewline
 		}
-		srcIdx := i
-		if p.declSourceIdx != nil && i < len(p.declSourceIdx) {
-			srcIdx = p.declSourceIdx[i]
-		}
-		if trivia.hasBlankBefore(srcIdx) {
+		if srcIdx >= 0 && trivia.hasBlankBefore(srcIdx) {
 			return gapBlankline
 		}
 		return gapNewline
 	}
 
 	// Body level: preserve blank lines from the original source.
-	if trivia.hasBlankBefore(i) {
+	if srcIdx >= 0 && trivia.hasBlankBefore(srcIdx) {
 		return gapBlankline
 	}
 

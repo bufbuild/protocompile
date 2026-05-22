@@ -139,6 +139,12 @@ type editSpec struct {
 	Tag    string `yaml:"tag"`
 	Option string `yaml:"option"`
 	Value  string `yaml:"value"`
+	// Before names the existing decl in Target before which the
+	// insertion should land. Honored by `add_option`. The value is
+	// the simple name of an existing decl in the target body (or
+	// dotted path for `move_decl`). When empty, the insertion
+	// appends.
+	Before string `yaml:"before"`
 }
 
 // pendingDecls maps a dotted path to a [ast.DeclAny] that has been
@@ -184,10 +190,19 @@ func buildEdit(file *ast.File, pending pendingDecls, spec editSpec) (edit.Edit, 
 			return edit.Edit{}, err
 		}
 		opt := createOptionDecl(stream, nodes, spec.Option, spec.Value)
+		var before ast.DeclAny
+		if spec.Before != "" {
+			anchor, err := resolveAnchor(file, target, spec.Before)
+			if err != nil {
+				return edit.Edit{}, fmt.Errorf("before %q: %w", spec.Before, err)
+			}
+			before = anchor
+		}
 		return edit.Edit{
 			Kind:       edit.KindAdd,
 			Target:     target,
 			Insertions: []ast.DeclAny{opt.AsAny()},
+			Before:     before,
 		}, nil
 
 	case "add_message":
@@ -271,6 +286,11 @@ func buildAdd(file *ast.File, pending pendingDecls, targetPath, name string, ins
 // method without an existing `{}` body, one is created and attached
 // so the resulting target has a body.
 func ensureOptionTarget(file *ast.File, pending pendingDecls, targetPath string) (ast.DeclAny, error) {
+	if targetPath == "" {
+		// File-level target: edit.Edit treats Target.IsZero() as the
+		// file's top-level decl list.
+		return ast.DeclAny{}, nil
+	}
 	if d, ok := pending.resolve(file, targetPath); ok {
 		return d, nil
 	}
@@ -355,6 +375,33 @@ func findDeclByPath(file *ast.File, targetPath string) (ast.DeclAny, bool) {
 		}
 	}
 	return ast.DeclAny{}, false
+}
+
+// resolveAnchor returns the decl named `name` in the target container.
+// For a file-level target (zero), searches file.Decls(); otherwise
+// searches the target def's body decls. Used to resolve `before:` in
+// add_option specs.
+func resolveAnchor(file *ast.File, target ast.DeclAny, name string) (ast.DeclAny, error) {
+	var decls seq.Indexer[ast.DeclAny]
+	if target.IsZero() {
+		decls = file.Decls()
+	} else {
+		def := target.AsDef()
+		if def.IsZero() || def.Body().IsZero() {
+			return ast.DeclAny{}, fmt.Errorf("target has no body")
+		}
+		decls = def.Body().Decls()
+	}
+	for d := range seq.Values(decls) {
+		dd := d.AsDef()
+		if dd.IsZero() {
+			continue
+		}
+		if defName(dd) == name {
+			return d, nil
+		}
+	}
+	return ast.DeclAny{}, fmt.Errorf("decl %q not found in target", name)
 }
 
 // findTopLevelDeclByName returns the file-level decl with the given
