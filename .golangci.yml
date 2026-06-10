@@ -1,6 +1,8 @@
 version: "2"
 linters:
   default: all
+  enable:
+    - gomodguard_v2
   disable:
     # TODO: TCN-350 - initial exclusions for failing linters.
     # Should enable all of these?
@@ -20,6 +22,7 @@ linters:
     - goconst
     - gocyclo
     - godoclint
+    - gomodguard
     - interfacebloat
     - modernize
     - nestif
