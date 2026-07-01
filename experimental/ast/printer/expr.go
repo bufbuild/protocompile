@@ -225,7 +225,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	hasComments := triviaHasComments(slots)
 	// Also check for comments attached to any token in the scope
-	// (trailing on open brace, leading on close brace, or on any
+	// (trailing on open bracket, leading on close bracket, or on any
 	// interior token). These force multi-line expansion.
 	if !hasComments {
 		hasComments = p.scopeHasAttachedComments(brackets)
