@@ -32,7 +32,11 @@ message Foo {
     foo: "goo" // Trailing comment on foo
 
     // Leading comment on extension name.
-    [/* One */ foo.bar.Test.Nested._NestedNested._garblez /* Two */] /* Three */ : "boo" // Trailing comment on extension name.
+    [
+      /* One */
+      foo.bar.Test.Nested._NestedNested._garblez
+      /* Two */
+    ] /* Three */ : "boo" // Trailing comment on extension name.
 
     // Leading comment on '}'.
   };
