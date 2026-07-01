@@ -40,6 +40,12 @@ file:
       type: TYPE_STRING
       oneof_index: 0
       json_name: "choiceA"
+    - name: "badChoice"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "badChoice"
     oneof_decl: [{ name: "TestChoice" }]
   - name: "LegacyStyleMessage"
     field:
