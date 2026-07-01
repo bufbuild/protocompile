@@ -41,7 +41,7 @@ message bad_message_but_ok {
 
   oneof BadChoice {
     string opt_a = 4;
-    int32 BadName = 5;    // CamelCase, allowed inherited STYLE_LEGACY.
+    int32 BadName = 5;    // PascalCase, allowed inherited STYLE_LEGACY.
     int32 anotherBad = 6; // camelCase, allowed inherited STYLE_LEGACY.
   }
 
