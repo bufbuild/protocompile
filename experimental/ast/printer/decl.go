@@ -340,6 +340,8 @@ func (p *printer) printBody(body ast.DeclBody) {
 			p.scopeHasAttachedComments(body.Braces())
 		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok, body.Decls().Len()) {
 			decls := body.Decls()
+			// Only create the indented [dom.Group] in the case where there are decls
+			// to avoid an indent in the flat case with no decls.
 			if decls.Len() > 0 {
 				p.withGroup(func(p *printer) {
 					p.withIndent(func(indented *printer) {
