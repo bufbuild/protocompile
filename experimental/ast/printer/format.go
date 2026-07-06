@@ -125,7 +125,7 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 // decl-bearing body scope (`{ ... }` on message, enum, service,
 // oneof, extend, or RPC method):
 //
-//   - [LayoutStrict]: always broken. Callers handle the empty-body
+//   - [LayoutStrict]: always broken for >0 decls. Callers handle the empty-body
 //     case (rendered as `{}`) before consulting this helper.
 //
 //   - [LayoutDynamic]: broken if and only if source had a newline between open
@@ -133,12 +133,12 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 //
 // Callers should OR the result with their own forceBroken signal
 // (e.g. for scope-attached comments that require expansion).
-func (p *printer) bodyShouldBreak(openTok, closeTok token.Token) bool {
+func (p *printer) bodyShouldBreak(openTok, closeTok token.Token, declsLen int) bool {
 	switch p.options.Formatting.BodyLayout {
 	case LayoutDynamic:
 		return !sourceWasFlat(openTok, closeTok)
 	default: // LayoutStrict
-		return true
+		return declsLen > 0
 	}
 }
 
