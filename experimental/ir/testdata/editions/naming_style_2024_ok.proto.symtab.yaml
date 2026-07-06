@@ -93,15 +93,35 @@ tables:
       file: "testdata/editions/naming_style_2024_ok.proto"
       index: 14
       visible: true
-    - fqn: "buf.test.bad_message_but_ok.nested_message.AnyName"
+    - fqn: "buf.test.bad_message_but_ok.BadName"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_ok.proto"
       index: 15
       visible: true
-    - fqn: "buf.test.bad_message_but_ok.GoodNested.good_field"
+    - fqn: "buf.test.bad_message_but_ok.anotherBad"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_ok.proto"
       index: 16
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.nested_message.AnyName"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 17
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested.good_field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 18
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested.oneof_e_1"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 19
+      visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested.oneofE2"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 20
       visible: true
     - fqn: "buf.test.MY_ENUM_UNSPECIFIED"
       kind: KIND_ENUM_VALUE
@@ -126,17 +146,17 @@ tables:
     - fqn: "buf.test.unspecified"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_ok.proto"
-      index: 17
+      index: 21
       visible: true
     - fqn: "buf.test.valueOne"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_ok.proto"
-      index: 18
+      index: 22
       visible: true
     - fqn: "buf.test._VALUE"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_ok.proto"
-      index: 19
+      index: 23
       visible: true
     - fqn: "buf.test.MyMessage.my_choice"
       kind: KIND_ONEOF
@@ -148,6 +168,13 @@ tables:
       file: "testdata/editions/naming_style_2024_ok.proto"
       index: 2
       visible: true
+    - fqn: "buf.test.bad_message_but_ok.GoodNested.BadChoice"
+      kind: KIND_ONEOF
+      file: "testdata/editions/naming_style_2024_ok.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
     - fqn: "buf.test.MyService"
       kind: 9
       file: "testdata/editions/naming_style_2024_ok.proto"

@@ -66,54 +66,59 @@ tables:
       file: "testdata/editions/naming_style_2024_bad.proto"
       index: 7
       visible: true
+    - fqn: "Buf.Test.my_message.badChoice"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 8
+      visible: true
     - fqn: "Buf.Test.LegacyStyleMessage._allowed"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 13
+      index: 14
       visible: true
     - fqn: "Buf.Test.LegacyStyleMessage.BadField"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 14
+      index: 15
       visible: true
       options.message.fields:
         "features": { message.fields: { "enforce_naming_style": { i32: 1 } } }
     - fqn: "Buf.Test.LegacyStyleMessage.bad_nested._bad_field"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 15
+      index: 16
       visible: true
     - fqn: "Buf.Test.LegacyStyleMessage.bad_nested._another_field"
       kind: KIND_FIELD
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 16
+      index: 17
       visible: true
       options.message.fields:
         "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
     - fqn: "Buf.Test.unspecified"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 8
+      index: 9
       visible: true
     - fqn: "Buf.Test.valueOne"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 9
+      index: 10
       visible: true
     - fqn: "Buf.Test._VALUE"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 10
+      index: 11
       visible: true
     - fqn: "Buf.Test.VALUE_"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 11
+      index: 12
       visible: true
     - fqn: "Buf.Test.VALUE_1"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/naming_style_2024_bad.proto"
-      index: 12
+      index: 13
       visible: true
     - fqn: "Buf.Test.my_message.TestChoice"
       kind: KIND_ONEOF
