@@ -22,3 +22,8 @@ import "acme/payment/v1/payment.proto";        /* trailing */
 message  Foo { /* Foo */
   string name = 1;
 }
+
+message Bar {
+
+
+}

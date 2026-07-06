@@ -338,16 +338,20 @@ func (p *printer) printBody(body ast.DeclBody) {
 		forceBroken := triviaHasComments(trivia) ||
 			len(closeComments) > 0 ||
 			p.scopeHasAttachedComments(body.Braces())
-		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok) {
+		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok, body.Decls().Len()) {
 			decls := body.Decls()
-			p.withGroup(func(p *printer) {
-				p.withIndent(func(indented *printer) {
-					for i := range decls.Len() {
-						indented.printDecl(decls.At(i), gapSoftline)
-					}
+			// Only create the indented [dom.Group] in the case where there are decls
+			// to avoid an indent in the flat case with no decls.
+			if decls.Len() > 0 {
+				p.withGroup(func(p *printer) {
+					p.withIndent(func(indented *printer) {
+						for i := range decls.Len() {
+							indented.printDecl(decls.At(i), gapSoftline)
+						}
+					})
+					p.push(tagSoftlineFlat, tagSoftbreak)
 				})
-				p.push(tagSoftlineFlat, tagSoftbreak)
-			})
+			}
 			p.printToken(closeTok, gapNone)
 			return
 		}
