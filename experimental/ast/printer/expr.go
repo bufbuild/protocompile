@@ -239,7 +239,17 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+	// Under LayoutStrict the legacy formatter expands a single-element
+	// array whose element is itself a message or array literal.
+	hasNestedComposite := false
+	for i := range elements.Len() {
+		if kind := elements.At(i).Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
+			hasNestedComposite = true
+			break
+		}
+	}
+
+	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len(), hasNestedComposite)
 
 	if !wantBroken {
 		// Flat path: emit the elements inside a group with softbreak
@@ -379,7 +389,17 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+	// Under LayoutStrict the legacy formatter expands a single-field
+	// message literal whose value is itself a message or array literal.
+	hasNestedComposite := false
+	for i := range elements.Len() {
+		if kind := elements.At(i).Value().Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
+			hasNestedComposite = true
+			break
+		}
+	}
+
+	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len(), hasNestedComposite)
 
 	if !wantBroken {
 		// Flat path: emit fields inside a group with softbreak padding

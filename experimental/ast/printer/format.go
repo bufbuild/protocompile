@@ -105,19 +105,25 @@ func sourceBlankLineBetweenFields(prev, curr ast.ExprField) bool {
 // literal):
 //
 //   - [LayoutStrict]: broken if and only if the scope has 2 or more elements,
-//     matching the legacy formatter's "expand if non-trivial" rule.
+//     or has a single element that is itself a nested message or array
+//     literal, matching the legacy formatter's "expand if non-trivial" rule.
 //
 //   - [LayoutDynamic]: broken if and only if source had a newline between open
 //     and close, deferring width-driven breaks to [dom.Group].
 //
+// hasNestedComposite reports whether the scope has an element whose value
+// is itself a message or array literal; it is consulted only under
+// [LayoutStrict] (the legacy formatter keeps a single scalar element flat
+// but expands a single composite element).
+//
 // Callers should OR the result with their own forceBroken signal
 // (e.g. for scope-attached comments that require expansion).
-func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) bool {
+func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int, hasNestedComposite bool) bool {
 	switch p.options.Formatting.LiteralLayout {
 	case LayoutDynamic:
 		return !sourceWasFlat(openTok, closeTok)
 	default: // LayoutStrict
-		return count >= 2
+		return count >= 2 || hasNestedComposite
 	}
 }
 

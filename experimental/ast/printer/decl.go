@@ -484,7 +484,10 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			p.scopeHasLineTrailingComments(brackets) {
 			forceExpand = true
 		}
-		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len())
+		// Compact options do not apply the nested-composite break rule:
+		// the legacy formatter keeps a single-entry `[opt = {...}]` bracket
+		// inline and lets the value expand within.
+		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len(), false)
 
 		switch {
 		case !wantBroken && entries.Len() == 1:
