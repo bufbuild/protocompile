@@ -29,3 +29,14 @@ option (custom.service_thing_option) = {
   foo: 1
   bar: 2
 };
+option (custom.single_nested_array) = {
+  not_in: [1]
+};
+// A single-field literal whose value is itself a message or array
+// literal expands under the legacy (strict) layout even when the source
+// is flat, matching the legacy formatter; a single scalar field stays
+// inline (see custom.message_thing_option above). Under the dynamic
+// layout the flat source is preserved.
+option (custom.single_nested_message) = {
+  gt: {}
+};
