@@ -16,6 +16,7 @@ package printer
 
 import (
 	"cmp"
+	"iter"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -111,19 +112,35 @@ func sourceBlankLineBetweenFields(prev, curr ast.ExprField) bool {
 //   - [LayoutDynamic]: broken if and only if source had a newline between open
 //     and close, deferring width-driven breaks to [dom.Group].
 //
-// hasNestedComposite reports whether the scope has an element whose value
-// is itself a message or array literal; it is consulted only under
-// [LayoutStrict] (the legacy formatter keeps a single scalar element flat
-// but expands a single composite element).
+// values yields the element values consulted for the nested-composite
+// rule under [LayoutStrict]: the scope breaks when any value is itself a
+// message or array literal (the legacy formatter keeps a single scalar
+// element flat but expands a single composite element). It may be nil for
+// scopes that do not apply the rule (e.g. compact options, which keep
+// `[opt = {...}]` inline and expand the value within).
 //
 // Callers should OR the result with their own forceBroken signal
 // (e.g. for scope-attached comments that require expansion).
-func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int, hasNestedComposite bool) bool {
+func (p *printer) literalShouldBreak(
+	openTok, closeTok token.Token,
+	count int,
+	values iter.Seq[ast.ExprAny],
+) bool {
 	switch p.options.Formatting.LiteralLayout {
 	case LayoutDynamic:
 		return !sourceWasFlat(openTok, closeTok)
 	default: // LayoutStrict
-		return count >= 2 || hasNestedComposite
+		if count >= 2 {
+			return true
+		}
+		if values != nil {
+			for value := range values {
+				if kind := value.Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
+					return true
+				}
+			}
+		}
+		return false
 	}
 }
 

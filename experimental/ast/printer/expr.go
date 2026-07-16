@@ -17,6 +17,7 @@ package printer
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -239,17 +240,8 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	// Under LayoutStrict the legacy formatter expands a single-element
-	// array whose element is itself a message or array literal.
-	hasNestedComposite := false
-	for i := range elements.Len() {
-		if kind := elements.At(i).Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
-			hasNestedComposite = true
-			break
-		}
-	}
-
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len(), hasNestedComposite)
+	wantBroken := hasComments ||
+		p.literalShouldBreak(openTok, closeTok, elements.Len(), seq.Values(elements))
 
 	if !wantBroken {
 		// Flat path: emit the elements inside a group with softbreak
@@ -389,17 +381,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
-	// Under LayoutStrict the legacy formatter expands a single-field
-	// message literal whose value is itself a message or array literal.
-	hasNestedComposite := false
-	for i := range elements.Len() {
-		if kind := elements.At(i).Value().Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
-			hasNestedComposite = true
-			break
-		}
-	}
-
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len(), hasNestedComposite)
+	wantBroken := hasComments ||
+		p.literalShouldBreak(openTok, closeTok, elements.Len(), seq.Map(elements, ast.ExprField.Value))
 
 	if !wantBroken {
 		// Flat path: emit fields inside a group with softbreak padding
