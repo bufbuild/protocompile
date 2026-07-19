@@ -179,12 +179,28 @@ func buildTriviaIndex(stream *token.Stream) *triviaIndex {
 // `{...}`. Literal scopes (compact options `[...]`, array literals,
 // dict literals) additionally end "elements" at `,`, so per-element
 // trivia slots and blankBefore indicators get recorded.
+//
+// The two literal modes differ only in what happens to their commas
+// when printing: a dict's separators are elided, so trivia may not be
+// left attached to them, while a bracketed list prints its commas and
+// their trivia along with them.
 type scopeMode int
 
 const (
 	scopeModeDecl scopeMode = iota
+	// scopeModeLiteral is a bracketed list: `[...]`, whether a compact
+	// option list or an array literal. Commas are printed.
 	scopeModeLiteral
+	// scopeModeDict is a message literal body: `{...}` or `<...>` used
+	// as a value. Commas are elided when printing.
+	scopeModeDict
 )
+
+// isLiteral reports whether the scope holds a comma-separated element
+// list, in either of the two literal flavors.
+func (m scopeMode) isLiteral() bool {
+	return m == scopeModeLiteral || m == scopeModeDict
+}
 
 // walkScope processes all tokens within one scope.
 //
@@ -284,7 +300,7 @@ func (idx *triviaIndex) walkFused(leafToken token.Token, parentSawAssign bool) t
 		childMode = scopeModeLiteral
 	case keyword.Braces, keyword.Angles:
 		if parentSawAssign {
-			childMode = scopeModeLiteral
+			childMode = scopeModeDict
 		}
 	}
 	idx.walkScope(leafToken.Children(), openToken.ID(), childMode)
@@ -329,7 +345,18 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 			// elided during formatting -- without this, the comment
 			// on the comma's line would be lost or misplaced.
 			firstNewline := firstNewlineIndex(leading)
-			if sliceHasComment(leading[:firstNewline]) && firstNewline < len(leading) {
+			// Normally an inline run only hoists when a newline follows
+			// it. A brace-valued dict element is the exception: the
+			// element deliberately runs through to its own comma (see
+			// the boundary rules below), and a dict's commas are elided
+			// when printing, so a comment sitting between the closing
+			// brace and that comma has nowhere to go unless it hoists
+			// here.
+			hoistInline := firstNewline < len(leading) ||
+				(mode == scopeModeDict &&
+					tok.Keyword() == keyword.Comma &&
+					endToken.Keyword() == keyword.Braces)
+			if sliceHasComment(leading[:firstNewline]) && hoistInline {
 				att := idx.attached[endToken.ID()]
 				att.trailing = leading[:firstNewline]
 				idx.attached[endToken.ID()] = att
@@ -362,11 +389,24 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 		// ends the decl; any following `;` is a separate empty decl.
 		atDeclBoundary := tok.Keyword() == keyword.Semi
 		if tok.Keyword() == keyword.Braces {
-			atDeclBoundary = !sawAssign || !idx.nextNonSkippableIsSemi(cursor)
+			next := cursor.Peek().Keyword()
+			atDeclBoundary = !sawAssign || next != keyword.Semi
+			if mode.isLiteral() && next == keyword.Comma {
+				// This element has a `,` of its own coming up, so let
+				// that comma end it. Ending the element at the brace
+				// would leave the comma to open a slot of its own,
+				// shifting every later slot past the element index the
+				// printers use to look them up.
+				//
+				// Separators are optional between message literal
+				// fields, so a brace with no following comma must still
+				// end the element.
+				atDeclBoundary = false
+			}
 		}
 		// In a literal scope, `,` is also a boundary so each element
 		// gets its own trivia slot and blankBefore indicator.
-		if mode == scopeModeLiteral && tok.Keyword() == keyword.Comma {
+		if mode.isLiteral() && tok.Keyword() == keyword.Comma {
 			atDeclBoundary = true
 		}
 		if atDeclBoundary {
@@ -470,24 +510,26 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 	return hasBlankLine
 }
 
-// nextNonSkippableIsSemi peeks ahead in the cursor to check if the next
-// non-skippable token is `;`. Used to distinguish definition bodies
-// (message Foo { ... }) from value expressions (option x = { ... };).
-// The cursor is restored to its original position after peeking.
-func (*triviaIndex) nextNonSkippableIsSemi(cursor *token.Cursor) bool {
+// nextNonSkippableIs peeks ahead in the cursor to check whether the next
+// non-skippable token has the given keyword. With `;` it distinguishes
+// definition bodies (message Foo { ... }) from value expressions
+// (option x = { ... };); with `,` it detects whether a literal element
+// has a separator of its own. The cursor is restored to its original
+// position after peeking.
+func (*triviaIndex) nextNonSkippableIs(cursor *token.Cursor, kw keyword.Keyword) bool {
 	var count int
-	isSemi := false
+	matches := false
 	for next := cursor.NextSkippable(); !next.IsZero(); next = cursor.NextSkippable() {
 		count++
 		if !next.Kind().IsSkippable() {
-			isSemi = next.Keyword() == keyword.Semi
+			matches = next.Keyword() == kw
 			break
 		}
 	}
 	for range count {
 		cursor.PrevSkippable()
 	}
-	return isSemi
+	return matches
 }
 
 // splitDetached splits a trivia token slice at the last blank line boundary.
