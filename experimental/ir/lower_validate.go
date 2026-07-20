@@ -758,6 +758,24 @@ func validatePresence(m Member, r *report.Report) {
 		return
 	}
 
+	// Extensions cannot be required. In non-editions files this comes from the
+	// `required` keyword, which is not an editions feature, so it bypasses the
+	// feature-gated checks below; catch it here. (In editions, `LEGACY_REQUIRED`
+	// on an extension is expressed as a feature and is caught by the
+	// `case m.IsExtension()` branch below instead.)
+	if m.IsExtension() && m.Presence() == presence.Required {
+		d := r.Errorf("%s cannot be required", taxa.Extension)
+		if _, required := iterx.Find(m.AST().Type().Prefixes(), func(ty ast.TypePrefixed) bool {
+			return ty.Prefix() == keyword.Required
+		}); !required.IsZero() {
+			d.Apply(report.Snippet(required.PrefixToken()))
+		} else {
+			d.Apply(report.Snippet(m.AST()))
+		}
+		d.Apply(report.Helpf("extensions cannot use the `required` label"))
+		return
+	}
+
 	builtins := m.Context().builtins()
 	feature := m.FeatureSet().Lookup(builtins.FeaturePresence)
 	if !feature.IsExplicit() {
