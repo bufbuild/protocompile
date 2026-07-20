@@ -188,9 +188,9 @@ type scopeMode int
 
 const (
 	scopeModeDecl scopeMode = iota
-	// scopeModeLiteral is a bracketed list: `[...]`, whether a compact
+	// scopeModeList is a bracketed list: `[...]`, whether a compact
 	// option list or an array literal. Commas are printed.
-	scopeModeLiteral
+	scopeModeList
 	// scopeModeDict is a message literal body: `{...}` or `<...>` used
 	// as a value. Commas are elided when printing.
 	scopeModeDict
@@ -199,7 +199,7 @@ const (
 // isLiteral reports whether the scope holds a comma-separated element
 // list, in either of the two literal flavors.
 func (m scopeMode) isLiteral() bool {
-	return m == scopeModeLiteral || m == scopeModeDict
+	return m == scopeModeList || m == scopeModeDict
 }
 
 // walkScope processes all tokens within one scope.
@@ -269,9 +269,9 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID, mode s
 // walkFused processes a fused (non-leaf) token by recursing into its
 // children with a [scopeMode] chosen by bracket kind:
 //
-//   - `[...]` (brackets): always [scopeModeLiteral] — compact options
+//   - `[...]` (brackets): always [scopeModeList] — compact options
 //     or array literal.
-//   - `{...}` / `<...>` (braces, angles): [scopeModeLiteral] when the
+//   - `{...}` / `<...>` (braces, angles): [scopeModeDict] when the
 //     enclosing decl already saw `=` (a value expression like
 //     `option x = {...}`); otherwise [scopeModeDecl] (a decl-bearing
 //     body).
@@ -285,19 +285,10 @@ func (idx *triviaIndex) walkScope(cursor *token.Cursor, scopeID token.ID, mode s
 // endToken cursor.
 func (idx *triviaIndex) walkFused(leafToken token.Token, parentSawAssign bool) token.Token {
 	openToken, closeToken := leafToken.StartEnd()
-	// Determine the child scope's mode based on the bracket kind and
-	// the parent's `=` state:
-	//   - [...]   : literal (compact options or array). Always.
-	//   - {...}/<>: dict literal (literal mode) when the parent saw
-	//               `=` (e.g. `option foo = {...}`); otherwise a body.
-	//   - (...)   : parens — typically extension names like
-	//               `(ext.name)`; treat as decl mode (no comma
-	//               boundary since the contents are paths, not
-	//               element lists).
 	childMode := scopeModeDecl
 	switch leafToken.Keyword() {
 	case keyword.Brackets:
-		childMode = scopeModeLiteral
+		childMode = scopeModeList
 	case keyword.Braces, keyword.Angles:
 		if parentSawAssign {
 			childMode = scopeModeDict
@@ -508,28 +499,6 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 		idx.attached[endToken.ID()] = att
 	}
 	return hasBlankLine
-}
-
-// nextNonSkippableIs peeks ahead in the cursor to check whether the next
-// non-skippable token has the given keyword. With `;` it distinguishes
-// definition bodies (message Foo { ... }) from value expressions
-// (option x = { ... };); with `,` it detects whether a literal element
-// has a separator of its own. The cursor is restored to its original
-// position after peeking.
-func (*triviaIndex) nextNonSkippableIs(cursor *token.Cursor, kw keyword.Keyword) bool {
-	var count int
-	matches := false
-	for next := cursor.NextSkippable(); !next.IsZero(); next = cursor.NextSkippable() {
-		count++
-		if !next.Kind().IsSkippable() {
-			matches = next.Keyword() == kw
-			break
-		}
-	}
-	for range count {
-		cursor.PrevSkippable()
-	}
-	return matches
 }
 
 // splitDetached splits a trivia token slice at the last blank line boundary.
