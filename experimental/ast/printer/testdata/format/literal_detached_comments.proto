@@ -1,0 +1,79 @@
+syntax = "proto2";
+
+package test;
+
+import "google/protobuf/descriptor.proto";
+
+message Item {
+  optional string name = 1;
+}
+
+message ItemList {
+  repeated Item items = 1;
+  repeated Item entry = 2;
+}
+
+extend google.protobuf.FieldOptions {
+  optional ItemList item_list_field = 50003;
+}
+
+extend google.protobuf.MethodOptions {
+  optional ItemList item_list = 50001;
+}
+
+message Request {}
+message Response {}
+
+service ExampleService {
+  // A comment detached by a blank line from the element it annotates
+  // must stay with that element, and must survive repeated formatting.
+  rpc Get(Request) returns (Response) {
+    option (test.item_list) = {
+      items: [
+        {name: "first"},
+        /* detached block comment */
+
+        {name: "second"},
+        // detached line comment
+
+        {name: "third"},
+        /* leading one */
+        /* leading two */
+        {
+          name: "fourth"
+        },
+
+        {name: "fifth"}
+      ]
+    };
+  }
+}
+
+// Compact options are the other literal scope with per-element trivia
+// slots, and a brace-valued option there is the same shape.
+message Compact {
+  optional string field = 1 [
+    (test.item_list_field) = {entry {name: "a"}},
+    /* detached before deprecated */
+
+    deprecated = true,
+    json_name = "field"
+  ];
+}
+
+// Separators are optional between message literal fields, so a
+// brace-valued field with no comma of its own must still get its own
+// trivia slot.
+extend google.protobuf.MessageOptions {
+  optional ItemList msg_item_list = 50002;
+}
+
+message CommaLess {
+  option (test.msg_item_list) = {
+    entry {name: "one"}
+
+    /* detached, no separators anywhere */
+
+    entry {name: "two"}
+  };
+}
