@@ -339,6 +339,21 @@ func (p *printer) emitCommaTrivia(comma token.Token) {
 	p.emitTrailing(att.trailing)
 }
 
+// emitEmptyDeclTrivia flushes an empty declaration's attached trivia
+// without emitting its `;`, which format mode elides entirely. A
+// comment can land on either side of the `;`, so both leading and
+// trailing are flushed, in token order.
+func (p *printer) emitEmptyDeclTrivia(semi token.Token, gap gapStyle) {
+	att, ok := p.trivia.tokenTrivia(semi.ID())
+	if !ok {
+		return
+	}
+
+	p.appendPending(att.leading)
+	p.emitTrivia(gap)
+	p.emitTrailing(att.trailing)
+}
+
 // appendPending buffers trivia tokens for later processing by emitTrivia.
 func (p *printer) appendPending(tokens []token.Token) {
 	p.pending = append(p.pending, tokens...)

@@ -47,6 +47,7 @@ func (p *printer) printDecl(decl ast.DeclAny, gap gapStyle) {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		if p.options.Format {
+			p.emitEmptyDeclTrivia(decl.AsEmpty().Semicolon(), gap)
 			return
 		}
 		p.printToken(decl.AsEmpty().Semicolon(), gap)

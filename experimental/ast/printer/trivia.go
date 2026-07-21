@@ -202,6 +202,19 @@ func (m scopeMode) isLiteral() bool {
 	return m == scopeModeList || m == scopeModeDict
 }
 
+// isSeparator reports whether kw is a valid inter-element separator
+// for this scope mode: `,` in either literal flavor, `;` in dict only.
+func (m scopeMode) isSeparator(kw keyword.Keyword) bool {
+	switch kw {
+	case keyword.Comma:
+		return m.isLiteral()
+	case keyword.Semi:
+		return m == scopeModeDict
+	default:
+		return false
+	}
+}
+
 // walkScope processes all tokens within one scope.
 //
 // scopeID is 0 for the file-level scope, or the fused bracket's
@@ -372,27 +385,20 @@ func (idx *triviaIndex) walkDecl(cursor *token.Cursor, startToken token.Token, m
 		// and must not split it. Splitting at parens would cause the cursor
 		// to land on an interior close bracket after PrevSkippable, making
 		// walkScope register trivia under the wrong token ID.
-		//
-		// For `{...}`, the meaning depends on whether we have seen `=`:
-		// after `=` (e.g. `option x = {...};`), the braces are a value
-		// expression and the `;` closes the same decl, so we keep going.
-		// Without `=` (e.g. `message M {}`), the braces are a body that
-		// ends the decl; any following `;` is a separate empty decl.
 		atDeclBoundary := tok.Keyword() == keyword.Semi
 		if tok.Keyword() == keyword.Braces {
-			next := cursor.Peek().Keyword()
-			atDeclBoundary = !sawAssign || next != keyword.Semi
-			if mode.isLiteral() && next == keyword.Comma {
-				// This element has a `,` of its own coming up, so let
-				// that comma end it. Ending the element at the brace
-				// would leave the comma to open a slot of its own,
-				// shifting every later slot past the element index the
-				// printers use to look them up.
-				//
-				// Separators are optional between message literal
-				// fields, so a brace with no following comma must still
-				// end the element.
+			switch next := cursor.Peek().Keyword(); {
+			case mode.isSeparator(next):
+				// Let the upcoming separator end the element, not the
+				// brace, so it doesn't open a slot of its own.
 				atDeclBoundary = false
+			case sawAssign && next == keyword.Semi:
+				// `option x = {...};` -- the `;` closes this decl.
+				atDeclBoundary = false
+			default:
+				// A body ends here (`message M {}`), and so does a
+				// separator-less literal field/element.
+				atDeclBoundary = true
 			}
 		}
 		// In a literal scope, `,` is also a boundary so each element
