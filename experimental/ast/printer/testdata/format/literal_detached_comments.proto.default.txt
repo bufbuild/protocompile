@@ -77,3 +77,15 @@ message CommaLess {
     entry: {name: "two"}
   };
 }
+
+// `;` is also a legal message-literal field separator, and hits the
+// same slot shift a comma would.
+message SemicolonSeparated {
+  option (test.msg_item_list) = {
+    entry: {name: "one"}
+
+    /* detached, semicolon separator */
+
+    entry: {name: "two"}
+  };
+}

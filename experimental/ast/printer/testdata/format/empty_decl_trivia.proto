@@ -1,0 +1,44 @@
+// A comment attached to an empty decl (bare `;`) must survive even
+// though format mode elides the decl itself.
+
+syntax = "proto3";
+
+package test;
+
+// File-level, tight semicolons.
+;;;/* file-level */;;;;
+
+message Foo {
+  // Tight, no whitespace.
+  int32 a = 1;;;/* tight */;;;;
+
+  // Spaced, still no newlines.
+  int32 b = 2;; /* spaced */ ;;
+
+  // Own line, single newlines (not detached scope trivia).
+  int32 c = 3;;
+  /* own line */
+  ;;
+
+  // Glued to one semicolon on both sides.
+  int32 d = 4;/* before */;/* after */;
+
+  // Two comments stacked between empty decls.
+  int32 e = 5;;;/* first */;;/* second */;;;
+
+  // Line comment among tight semicolons.
+  int32 f = 6;;; // line comment
+  ;;;
+
+  // Blank-line separated (detached trivia; covered for parity).
+  int32 g = 7;;
+
+  /* blank-line separated */
+
+  ;;
+  int32 h = 8;
+
+  // No comment: should still collapse away cleanly.
+  int32 i = 9;;;;;;
+  int32 j = 10;
+}
