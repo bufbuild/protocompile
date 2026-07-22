@@ -35,8 +35,8 @@ func FuzzAssemble(f *testing.F) {
 		framing := framings[uint(framingVal)%uint(len(framings))]
 
 		// Assemble
-		binary, diags := protoscope.AssembleWithOptions("fuzz.protoscope", []byte(text), protoscope.AssembleOptions{Framing: framing})
-		if len(diags) > 0 || len(binary) == 0 {
+		binary, rep := protoscope.AssembleWithOptions("fuzz.protoscope", []byte(text), protoscope.AssembleOptions{Framing: framing})
+		if (rep != nil && len(rep.Diagnostics) > 0) || len(binary) == 0 {
 			return
 		}
 

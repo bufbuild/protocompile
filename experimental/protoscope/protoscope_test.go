@@ -19,6 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 func TestAssembleAndDisassemble(t *testing.T) {
@@ -27,8 +29,9 @@ func TestAssembleAndDisassemble(t *testing.T) {
   1: "hello"
 }
 `
-	binary, diags := Assemble("test.protoscope", []byte(input))
-	require.Empty(t, diags)
+	binary, rep := Assemble("test.protoscope", []byte(input))
+	require.NotNil(t, rep)
+	require.Empty(t, rep.Diagnostics)
 	require.NotEmpty(t, binary)
 
 	// Verify disassembled output matches input
@@ -44,8 +47,9 @@ func TestAssembleAndDisassemble(t *testing.T) {
   }
 }
 `
-	nestedBinary, nestedDiags := Assemble("nested.protoscope", []byte(nestedInput))
-	require.Empty(t, nestedDiags)
+	nestedBinary, nestedRep := Assemble("nested.protoscope", []byte(nestedInput))
+	require.NotNil(t, nestedRep)
+	require.Empty(t, nestedRep.Diagnostics)
 	require.NotEmpty(t, nestedBinary)
 
 	// Disassembling with default options should work
@@ -63,16 +67,19 @@ func TestDiagnostics(t *testing.T) {
 	invalidInput := `1: 
 2: {
 `
-	diags := Diagnostics("invalid.protoscope", []byte(invalidInput))
-	assert.NotEmpty(t, diags)
+	rep := Diagnostics("invalid.protoscope", []byte(invalidInput))
+	require.NotNil(t, rep)
+	require.NotEmpty(t, rep.Diagnostics)
 
 	var hasError bool
-	for _, diag := range diags {
-		if diag.Level == SeverityError {
+	for _, diag := range rep.Diagnostics {
+		if diag.Level() >= report.Error {
 			hasError = true
 		}
-		assert.NotEmpty(t, diag.Message)
-		assert.Positive(t, diag.Range.Start.Line)
+		assert.NotEmpty(t, diag.Message())
+		span := diag.Primary()
+		require.False(t, span.IsZero())
+		assert.Positive(t, span.StartLoc().Line)
 	}
 	assert.True(t, hasError)
 }
@@ -246,18 +253,20 @@ func TestMultiFrameAndVariants(t *testing.T) {
 2: {
 # syntax error in second frame
 `
-	diagsErr := Diagnostics("test.protoscope", []byte(invalidInput))
-	require.NotEmpty(t, diagsErr)
+	diagsErrRep := Diagnostics("test.protoscope", []byte(invalidInput))
+	require.NotNil(t, diagsErrRep)
+	require.NotEmpty(t, diagsErrRep.Diagnostics)
 	// The error should be in the second frame (after line 2)
-	assert.Greater(t, diagsErr[0].Range.Start.Line, 2)
+	assert.Greater(t, diagsErrRep.Diagnostics[0].Primary().StartLoc().Line, 2)
 
 	// 5. Test DocumentSymbols and Hover on multi-frame inputs
 	symbolInput := `1: 150
 ---
 2: 30
 `
-	symbols, diagsSym := DocumentSymbols("symbols.protoscope", []byte(symbolInput))
-	require.Empty(t, diagsSym)
+	symbols, diagsSymRep := DocumentSymbols("symbols.protoscope", []byte(symbolInput))
+	require.NotNil(t, diagsSymRep)
+	require.Empty(t, diagsSymRep.Diagnostics)
 	require.Len(t, symbols, 2)
 	// Symbol 1 starts on line 1
 	assert.Equal(t, 1, symbols[0].Range.Start.Line)
@@ -277,10 +286,11 @@ func TestMultiFrameAndVariants(t *testing.T) {
 
 	// 6. Test multi-frame raw framing error (no framing)
 	multiRawInput := "1: 150\n---\n2: \"hello\"\n"
-	_, rawDiags := AssembleWithOptions("raw.protoscope", []byte(multiRawInput), AssembleOptions{Framing: FramingNone})
-	require.NotEmpty(t, rawDiags)
-	assert.Equal(t, "multiple frames are not supported for no framing", rawDiags[0].Message)
-	assert.Equal(t, 2, rawDiags[0].Range.Start.Line)
+	_, rawDiagsRep := AssembleWithOptions("raw.protoscope", []byte(multiRawInput), AssembleOptions{Framing: FramingNone})
+	require.NotNil(t, rawDiagsRep)
+	require.NotEmpty(t, rawDiagsRep.Diagnostics)
+	assert.Equal(t, "multiple frames are not supported for no framing", rawDiagsRep.Diagnostics[0].Message())
+	assert.Equal(t, 2, rawDiagsRep.Diagnostics[0].Primary().StartLoc().Line)
 }
 
 func TestAllVariantsRoundtrip(t *testing.T) {
@@ -356,11 +366,12 @@ func TestParseFraming(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
 			actual, err := ParseFraming(tc.input)
 			if tc.hasErr {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tc.expected, actual)
 			}
 		})

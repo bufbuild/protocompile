@@ -34,15 +34,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// Severity represents diagnostic severity levels.
-type Severity int
-
-const (
-	SeverityInfo Severity = iota
-	SeverityWarning
-	SeverityError
-)
-
 // Position represents a 1-indexed line and column position.
 type Position struct {
 	Line, Column int
@@ -51,13 +42,6 @@ type Position struct {
 // Range represents a span between two positions.
 type Range struct {
 	Start, End Position
-}
-
-// Diagnostic represents a syntax or validation diagnostic.
-type Diagnostic struct {
-	Range   Range
-	Message string
-	Level   Severity
 }
 
 // Framing represents the message framing format.
@@ -121,50 +105,45 @@ type AssembleOptions struct {
 }
 
 // Assemble parses and compiles protoscope text directly to protobuf wire binary.
-func Assemble(path string, text []byte) ([]byte, []Diagnostic) {
+func Assemble(path string, text []byte) ([]byte, *report.Report) {
 	return AssembleWithOptions(path, text, AssembleOptions{})
 }
 
 // AssembleWithOptions compiles protoscope text directly to protobuf wire binary with options.
-func AssembleWithOptions(path string, text []byte, opts AssembleOptions) ([]byte, []Diagnostic) {
+func AssembleWithOptions(path string, text []byte, opts AssembleOptions) ([]byte, *report.Report) {
 	frames := splitFrames(text)
 	parentFile := source.NewFile(path, string(text))
-	allDiags := make([]Diagnostic, 0, len(frames))
+	rep := &report.Report{}
 	var payloads [][]byte
 	var flags []byte
 
 	if len(frames) > 1 && opts.Framing == FramingNone {
 		line := frames[1].lineOffset
-		allDiags = append(allDiags, Diagnostic{
-			Range: Range{
-				Start: Position{Line: line, Column: 1},
-				End:   Position{Line: line, Column: 4},
-			},
-			Message: "multiple frames are not supported for no framing",
-			Level:   SeverityError,
-		})
-		return nil, allDiags
+		start, _ := parentFile.LineOffsets(line)
+		span := parentFile.Span(start, start+3)
+		rep.Errorf("multiple frames are not supported for no framing").Apply(report.Snippet(span))
+		return nil, rep
 	}
 
 	hasError := false
 	for _, frame := range frames {
 		// Extract flags comment from this frame if present.
 		var frameFlags byte
-		frameLines := strings.Split(frame.text, "\n")
-		for _, line := range frameLines {
+		frameLines := strings.SplitSeq(frame.text, "\n")
+		for line := range frameLines {
 			trimmed := strings.TrimSpace(line)
 			if trimmed == "" {
 				continue
 			}
-			if strings.HasPrefix(trimmed, "#") {
-				comment := strings.TrimSpace(strings.TrimPrefix(trimmed, "#"))
-				if strings.HasPrefix(comment, "flags:") {
-					valStr := strings.TrimSpace(strings.TrimPrefix(comment, "flags:"))
+			if after, commentOK := strings.CutPrefix(trimmed, "#"); commentOK {
+				comment := strings.TrimSpace(after)
+				if after0, flagsOK := strings.CutPrefix(comment, "flags:"); flagsOK {
+					valStr := strings.TrimSpace(after0)
 					if val, err := strconv.ParseUint(valStr, 10, 8); err == nil {
 						frameFlags = byte(val)
 					}
-				} else if strings.HasPrefix(comment, "flag:") {
-					valStr := strings.TrimSpace(strings.TrimPrefix(comment, "flag:"))
+				} else if after1, flagsOK := strings.CutPrefix(comment, "flag:"); flagsOK {
+					valStr := strings.TrimSpace(after1)
 					if val, err := strconv.ParseUint(valStr, 10, 8); err == nil {
 						frameFlags = byte(val)
 					}
@@ -176,13 +155,11 @@ func AssembleWithOptions(path string, text []byte, opts AssembleOptions) ([]byte
 		flags = append(flags, frameFlags)
 
 		src := source.NewFile(path, frame.text)
-		r := &report.Report{}
-		file, ok := parser.Parse(path, src, r)
+		frameReport := &report.Report{}
+		file, ok := parser.Parse(path, src, frameReport)
 
-		report.ShiftReportSpans(r, parentFile, frame.byteOffset)
-
-		diags := convertDiagnostics(r)
-		allDiags = append(allDiags, diags...)
+		report.ShiftReportSpans(frameReport, parentFile, frame.byteOffset)
+		rep.Diagnostics = append(rep.Diagnostics, frameReport.Diagnostics...)
 		if !ok || file == nil {
 			hasError = true
 			continue
@@ -193,7 +170,7 @@ func AssembleWithOptions(path string, text []byte, opts AssembleOptions) ([]byte
 	}
 
 	if hasError {
-		return nil, allDiags
+		return nil, rep
 	}
 
 	// Apply the framing
@@ -221,7 +198,7 @@ func AssembleWithOptions(path string, text []byte, opts AssembleOptions) ([]byte
 		}
 	}
 
-	return result, allDiags
+	return result, rep
 }
 
 // Disassemble converts protobuf wire binary back to protoscope text.
@@ -308,18 +285,18 @@ func Disassemble(data []byte, opts DisassembleOptions) (string, error) {
 }
 
 // Diagnostics parses the text and returns any syntactic or structural diagnostics.
-func Diagnostics(path string, text []byte) []Diagnostic {
+func Diagnostics(path string, text []byte) *report.Report {
 	frames := splitFrames(text)
 	parentFile := source.NewFile(path, string(text))
-	allDiags := make([]Diagnostic, 0, len(frames))
+	rep := &report.Report{}
 	for _, frame := range frames {
 		src := source.NewFile(path, frame.text)
-		r := &report.Report{}
-		_, _ = parser.Parse(path, src, r)
-		report.ShiftReportSpans(r, parentFile, frame.byteOffset)
-		allDiags = append(allDiags, convertDiagnostics(r)...)
+		frameReport := &report.Report{}
+		_, _ = parser.Parse(path, src, frameReport)
+		report.ShiftReportSpans(frameReport, parentFile, frame.byteOffset)
+		rep.Diagnostics = append(rep.Diagnostics, frameReport.Diagnostics...)
 	}
-	return allDiags
+	return rep
 }
 
 // DocumentSymbol represents a simplified symbol hierarchy (e.g. fields, groups, blocks).
@@ -332,19 +309,18 @@ type DocumentSymbol struct {
 }
 
 // DocumentSymbols returns a hierarchy of symbols within the protoscope file.
-func DocumentSymbols(path string, text []byte) ([]DocumentSymbol, []Diagnostic) {
+func DocumentSymbols(path string, text []byte) ([]DocumentSymbol, *report.Report) {
 	frames := splitFrames(text)
 	parentFile := source.NewFile(path, string(text))
 	allSymbols := make([]DocumentSymbol, 0, len(frames))
-	allDiags := make([]Diagnostic, 0, len(frames))
+	rep := &report.Report{}
 
 	for _, frame := range frames {
 		src := source.NewFile(path, frame.text)
-		r := &report.Report{}
-		file, ok := parser.Parse(path, src, r)
-		report.ShiftReportSpans(r, parentFile, frame.byteOffset)
-		diags := convertDiagnostics(r)
-		allDiags = append(allDiags, diags...)
+		frameReport := &report.Report{}
+		file, ok := parser.Parse(path, src, frameReport)
+		report.ShiftReportSpans(frameReport, parentFile, frame.byteOffset)
+		rep.Diagnostics = append(rep.Diagnostics, frameReport.Diagnostics...)
 
 		if ok && file != nil {
 			var symbols []DocumentSymbol
@@ -359,7 +335,7 @@ func DocumentSymbols(path string, text []byte) ([]DocumentSymbol, []Diagnostic) 
 			allSymbols = append(allSymbols, symbols...)
 		}
 	}
-	return allSymbols, allDiags
+	return allSymbols, rep
 }
 
 type InspectKind int
@@ -657,37 +633,6 @@ func findNode(file *ast.File, offset int) ast.DeclAny {
 	return best
 }
 
-func convertDiagnostics(r *report.Report) []Diagnostic {
-	diagnostics := make([]Diagnostic, 0, len(r.Diagnostics))
-	for _, diag := range r.Diagnostics {
-		severity := SeverityError
-		switch diag.Level() {
-		case report.Warning:
-			severity = SeverityWarning
-		case report.Remark:
-			severity = SeverityInfo
-		}
-
-		span := diag.Primary()
-		var rangeVal Range
-		if !span.IsZero() {
-			startLoc := span.StartLoc()
-			endLoc := span.EndLoc()
-			rangeVal = Range{
-				Start: Position{Line: startLoc.Line, Column: startLoc.Column},
-				End:   Position{Line: endLoc.Line, Column: endLoc.Column},
-			}
-		}
-
-		diagnostics = append(diagnostics, Diagnostic{
-			Range:   rangeVal,
-			Message: diag.Message(),
-			Level:   severity,
-		})
-	}
-	return diagnostics
-}
-
 // Representation represents a possible translation/formatting of a protobuf value.
 type Representation struct {
 	Type        string  // E.g., "message", "string", "bytes", "varint", "zigzag", "bool", "fixed32", "float32", "fixed64", "float64", "packed_varint", "packed_fixed32", "packed_fixed64"
@@ -718,12 +663,15 @@ func Possibilities(wireType int, payload []byte) []Representation {
 	return mapRepresentations(disassembler.Possibilities(wireType, payload))
 }
 
+// frameInfo tracks text content along with byte and 0-indexed line offsets of a frame within a multi-frame protoscope document.
 type frameInfo struct {
 	text       string
 	byteOffset int
 	lineOffset int
 }
 
+// splitFrames splits a multi-frame protoscope payload (separated by "---" lines) into individual frameInfo structs,
+// recording the byte and line offsets of each frame relative to the original document.
 func splitFrames(text []byte) []frameInfo {
 	var frames []frameInfo
 	s := string(text)
