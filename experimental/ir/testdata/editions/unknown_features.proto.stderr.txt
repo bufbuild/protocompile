@@ -1,0 +1,8 @@
+error: feature field `json_format` must resolve to a known value
+  --> testdata/editions/unknown_features.proto:10:33
+   |
+10 |   option features.json_format = JSON_FORMAT_UNKNOWN;
+   |                                 ^^^^^^^^^^^^^^^^^^^
+   = help: `JSON_FORMAT_UNKNOWN` is only a placeholder for an unset feature
+
+encountered 1 error
