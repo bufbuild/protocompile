@@ -380,6 +380,17 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			continue
 		}
 
+		// A base feature must never resolve to its `*_UNKNOWN` sentinel (zero).
+		if field := feature.Field(); field.Container() == builtins.FeatureSet && !field.IsExtension() {
+			if sentinel := feature.AsEnum(); !sentinel.IsZero() && sentinel.Number() == 0 {
+				r.Errorf("feature field `%s` must resolve to a known value", field.Name()).Apply(
+					report.Snippet(feature.ValueAST()),
+					report.Helpf("`%s` is only a placeholder for an unset feature", sentinel.Name()),
+				)
+				continue
+			}
+		}
+
 		// We check these in reverse order, because the user might have set
 		// introduced == deprecated == removed, and protoc doesn't enforce
 		// any relationship between these.
