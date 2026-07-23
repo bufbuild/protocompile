@@ -863,13 +863,13 @@ func validateClosedEnumUse(m Member, r *report.Report) {
 	switch syn := m.Context().Syntax(); {
 	case syn == syntax.Proto3:
 		r.Errorf("closed enum `%s` cannot be used in a \"proto3\" message", enum.FullName()).Apply(
-			report.Snippet(m.TypeAST()),
+			report.Snippet(m.TypeAST().RemovePrefixes()),
 			closedEnumNote(enum),
 			report.Helpf("fields in a \"proto3\" message must use open enums, which always define a zero value"),
 		)
 	case hasImplicitPresence(m):
 		r.Errorf("closed enum `%s` cannot be used in an implicit-presence field", enum.FullName()).Apply(
-			report.Snippet(m.TypeAST()),
+			report.Snippet(m.TypeAST().RemovePrefixes()),
 			closedEnumNote(enum),
 			report.Helpf("an unset implicit-presence field falls back to the enum's zero value, which a closed enum need not define"),
 		)

@@ -40,10 +40,10 @@ error: closed enum `example.Proto2Enum` cannot be used in a "proto3" message
            a zero value
 
 error: closed enum `example.Proto2Enum` cannot be used in a "proto3" message
-  --> proto3_message.proto:8:3
+  --> proto3_message.proto:8:12
    |
  8 |   optional Proto2Enum optional_proto2 = 2; // reject: closed, even optional
-   |   ^^^^^^^^^^^^^^^^^^^
+   |            ^^^^^^^^^^
   ::: proto2_enum.proto:1:10
    |
  1 | syntax = "proto2"; // proto2 enums are always closed
@@ -66,10 +66,10 @@ error: closed enum `example.ClosedEnum` cannot be used in a "proto3" message
            a zero value
 
 error: closed enum `example.ClosedEnum` cannot be used in a "proto3" message
-  --> proto3_message.proto:12:3
+  --> proto3_message.proto:12:12
    |
 12 |   optional ClosedEnum optional_closed = 6; // reject: closed, even optional
-   |   ^^^^^^^^^^^^^^^^^^^
+   |            ^^^^^^^^^^
   ::: editions_enums.proto:4:31
    |
  4 |   option features.enum_type = CLOSED;
