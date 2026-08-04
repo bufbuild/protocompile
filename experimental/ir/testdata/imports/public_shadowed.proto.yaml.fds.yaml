@@ -1,0 +1,31 @@
+file:
+- { name: "leaf.proto", package: "buf.test", message_type: [{ name: "Leaf" }] }
+- name: "public_leaf.proto"
+  package: "buf.test"
+  dependency: ["leaf.proto"]
+  public_dependency: [0]
+- name: "reexport.proto"
+  package: "buf.test"
+  dependency: ["leaf.proto", "public_leaf.proto"]
+  public_dependency: [1]
+  message_type:
+  - name: "Reexport"
+    field:
+    - name: "leaf"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Leaf"
+      json_name: "leaf"
+- name: "main.proto"
+  package: "buf.test"
+  dependency: ["reexport.proto"]
+  message_type:
+  - name: "Main"
+    field:
+    - name: "leaf"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Leaf"
+      json_name: "leaf"

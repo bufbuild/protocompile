@@ -1,0 +1,55 @@
+# A file can be re-exported through more than one public import, with
+# differing public-ness along each path. Here main.proto sees Leaf because
+# reexport.proto re-exports public_leaf.proto, which re-exports leaf.proto.
+# plain_leaf.proto also reaches leaf.proto, but not publicly, and it is
+# declared first; that must not stop leaf.proto from being re-exported.
+descriptor: true
+exclude: "unused import"
+files:
+- path: "main.proto"
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "reexport.proto";
+
+    message Main {
+      optional Leaf leaf = 1;
+    }
+
+- path: "reexport.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import public "plain_leaf.proto";
+    import public "public_leaf.proto";
+
+- path: "plain_leaf.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "leaf.proto";
+
+    message PlainLeaf {
+      optional Leaf leaf = 1;
+    }
+
+- path: "public_leaf.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import public "leaf.proto";
+
+- path: "leaf.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    message Leaf {}

@@ -1,0 +1,46 @@
+# A plain import of a file that is also re-exported by a public import is
+# still re-exported. Here reexport.proto imports leaf.proto directly and
+# non-publicly, but it also re-exports public_leaf.proto, which re-exports
+# leaf.proto, so main.proto can name Leaf.
+descriptor: true
+exclude: "unused import"
+files:
+- path: "main.proto"
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "reexport.proto";
+
+    message Main {
+      optional Leaf leaf = 1;
+    }
+
+- path: "reexport.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "leaf.proto";
+    import public "public_leaf.proto";
+
+    message Reexport {
+      optional Leaf leaf = 1;
+    }
+
+- path: "public_leaf.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import public "leaf.proto";
+
+- path: "leaf.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    message Leaf {}

@@ -75,9 +75,9 @@ type imports struct {
 	// be imported. This is used for marking which imports are used.
 	causes intern.Map[uint32]
 
-	// NOTE: public imports always come first. This ensures that when
-	// recursively determining public imports, we consider public imports'
-	// recursive imports first. Consider the following sequence of files:
+	// The transitive public segment exists because public-ness has to be
+	// propagated to files that are not directly imported at all. Consider the
+	// following sequence of files:
 	//
 	//  // a.proto
 	//  message A {}
@@ -98,29 +98,44 @@ type imports struct {
 	//  message B { A foo = 1; }
 	//
 	// Because b imports a publicly, we need a to wind up as a transitive
-	// public import so that when we search the transitive public imports of d
-	// for symbols, we pick up "a.proto".
+	// public import of d, so that when we search the transitive public imports
+	// of d for symbols, we pick up "a.proto".
 	//
 	// There is a test in ir_imports_test.go that validates this behavior. So
 	// much pain for a little-used feature...
+	//
+	// NOTE: these segments cannot classify every public import on their own. A
+	// direct import has to stay in one of the direct segments even when it is
+	// also re-exported by some other direct import, so whether an import is
+	// public is recorded on [imported] rather than derived from these offsets.
 	publicEnd, importEnd, transPublicEnd uint32
 }
 
 // imported wraps an imported [File] and the import statement declaration [ast.DeclImport].
 type imported struct {
-	file          *File
-	decl          ast.DeclImport
-	weak, option  bool
+	file         *File
+	decl         ast.DeclImport
+	weak, option bool
+
+	// Whether the importing file re-exports this file, i.e. whether this file
+	// is reachable from the importing file by following public imports only.
+	// Importers of the importing file can name symbols from such files.
+	//
+	// This is not the same as the import being declared `import public`: a
+	// plain `import` of a file that is also re-exported by a public import is
+	// still re-exported.
+	public bool
+
 	visible, used bool
 }
 
 // AddDirect appends a direct import to this imports table.
 func (i *imports) AddDirect(imp Import) {
 	if imp.Public {
-		i.Insert(imp, int(i.publicEnd), true)
+		i.Insert(imp, int(i.publicEnd), true, true)
 		i.publicEnd++
 	} else {
-		i.Insert(imp, int(i.importEnd), true)
+		i.Insert(imp, int(i.importEnd), true, false)
 	}
 
 	i.importEnd++
@@ -132,7 +147,13 @@ func (i *imports) AddDirect(imp Import) {
 //
 // Must only be called once, after all direct imports are added.
 func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
-	seenPublicImport := make(map[intern.ID]struct{})
+	// The same file can be reached through more than one direct import, and
+	// the public-ness of each of those paths can differ, so a transitive
+	// import cannot be classified by looking only at whichever direct import
+	// happens to pull it in first. Instead, classify every transitive import
+	// up front, quantifying over all direct imports.
+	public, visible := i.classifyTransitive()
+
 	for k, file := range seq.All(i.Directs()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
 			if !mapsx.AddZero(dedup, imp.InternedPath()) {
@@ -140,23 +161,28 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 				// treat this import as non-option, because this overrides it.
 				if imp.Public {
 					i.files[k].option = false
-					// For public transitive imports that we have already seen, we need to override
-					// the visibility after all imports have been added and indexed by path.
-					seenPublicImport[imp.InternedPath()] = struct{}{}
 				}
 				continue
 			}
 
-			// Transitive imports are public to us if and only if they are
-			// imported through a public import.
-			if file.Public && imp.Public {
-				i.Insert(imp, int(i.transPublicEnd), true)
+			// Files we re-export go in the transitive public segment.
+			if public.ContainsID(imp.InternedPath()) {
+				i.Insert(imp, int(i.transPublicEnd), true, true)
 				i.transPublicEnd++
 				continue
 			}
 
 			// Public imports of direct imports are visible in the current file.
-			i.Insert(imp, -1, imp.Public)
+			i.Insert(imp, -1, visible.ContainsID(imp.InternedPath()), false)
+		}
+	}
+
+	// A direct import can be re-exported by another direct import, which the
+	// segments above cannot express, because a direct import has to stay in
+	// one of the direct segments. Mark those separately.
+	for n := range i.files[:i.importEnd] {
+		if public.ContainsID(i.files[n].file.InternedPath()) {
+			i.files[n].public = true
 		}
 	}
 
@@ -166,9 +192,6 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 
 	for n, imp := range i.files {
 		i.byPath[imp.file.InternedPath()] = uint32(n)
-		if _, ok := seenPublicImport[imp.file.InternedPath()]; ok {
-			i.files[n].visible = true
-		}
 	}
 
 	for k, file := range seq.All(i.Directs()) {
@@ -180,10 +203,41 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 	}
 }
 
+// classifyTransitive computes, for the transitive imports of every direct
+// import, whether the current file re-exports them and whether their symbols
+// are nameable from the current file.
+//
+// public is the set of files the current file re-exports: those re-exported by
+// a direct import that is itself public. visible is the set of files whose
+// symbols the current file can name because some direct import re-exports
+// them; unlike public, this does not require the direct import to be public.
+// public is therefore a subset of visible.
+//
+// Neither set includes the direct imports themselves, which are always
+// visible, nor files reached only through non-public imports, which are
+// neither.
+func (i *imports) classifyTransitive() (public, visible intern.Set) {
+	public = make(intern.Set)
+	visible = make(intern.Set)
+	for file := range seq.Values(i.Directs()) {
+		for imp := range seq.Values(file.TransitiveImports()) {
+			if !imp.Public {
+				continue
+			}
+
+			visible.AddID(imp.InternedPath())
+			if file.Public {
+				public.AddID(imp.InternedPath())
+			}
+		}
+	}
+	return public, visible
+}
+
 // Insert inserts a new import at the given position. It also builds up the path map for lookups.
 //
 // If pos is < 0, appends at the end.
-func (i *imports) Insert(imp Import, pos int, visible bool) {
+func (i *imports) Insert(imp Import, pos int, visible, public bool) {
 	if pos < 0 {
 		pos = len(i.files)
 	}
@@ -193,6 +247,7 @@ func (i *imports) Insert(imp Import, pos int, visible bool) {
 		decl:    imp.Decl,
 		weak:    imp.Weak,
 		option:  imp.Option,
+		public:  public,
 		visible: visible,
 	})
 }
@@ -252,12 +307,10 @@ func (i *imports) Transitive() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		slice,
 		func(j int, imported imported) Import {
-			n := uint32(j)
 			return Import{
-				File: imported.file,
-				Public: n < i.publicEnd ||
-					(n >= i.importEnd && n < i.transPublicEnd),
-				Direct:  n < i.importEnd,
+				File:    imported.file,
+				Public:  imported.public,
+				Direct:  uint32(j) < i.importEnd,
 				Visible: imported.visible,
 				Decl:    imported.decl,
 			}
