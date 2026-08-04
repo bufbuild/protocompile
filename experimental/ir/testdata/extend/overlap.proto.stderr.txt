@@ -8,7 +8,8 @@ error: unexpected extension range within enum definition
 21 | | }
    | \_- ...cannot be declared within this enum definition
    |
-   = help: this extension range can only appear within a message definition
+   = help: this extension range can only appear within one of message definition
+           or group definition
 
 error: use of reserved field number `2`
   --> testdata/extend/overlap.proto:7:25

@@ -1,0 +1,37 @@
+syntax = "proto2";
+
+package test;
+
+message Foo {
+    extensions 100 to 200;
+
+    optional group Bar = 1 {
+        extensions 10 to 20;
+
+        reserved 5;
+        reserved 6, 7 to 8;
+        reserved "a", "b";
+
+        optional group Baz = 9 {
+            extensions 10 to max;
+            reserved 2;
+            reserved "c";
+        }
+    }
+
+    oneof O {
+        group Quux = 2 {
+            extensions 10 to max;
+            reserved 2;
+            reserved "d";
+        }
+    }
+}
+
+extend Foo {
+    optional group Extn = 100 {
+        extensions 10 to max;
+        reserved 2;
+        reserved "e";
+    }
+}

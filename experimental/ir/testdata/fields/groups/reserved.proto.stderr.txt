@@ -1,0 +1,21 @@
+error: use of reserved field number `5`
+  --> testdata/fields/groups/reserved.proto:12:34
+   |
+ 9 |         reserved 5;
+   |                  - field number reserved here
+10 |         reserved "a";
+11 |
+12 |         optional int32 bad_tag = 5;
+   |                                  ^ used here
+
+error: use of reserved message field name
+  --> testdata/fields/groups/reserved.proto:13:24
+   |
+10 |         reserved "a";
+   |                  --- `a` reserved here
+11 |
+12 |         optional int32 bad_tag = 5;
+13 |         optional int32 a = 6;
+   |                        ^
+
+encountered 2 errors

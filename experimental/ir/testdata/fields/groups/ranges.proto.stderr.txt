@@ -1,0 +1,29 @@
+warning: group syntax is deprecated
+  --> testdata/fields/groups/ranges.proto:9:14
+   |
+ 9 |     optional group Bar = 1 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/ranges.proto:16:18
+   |
+16 |         optional group Baz = 9 {
+   |                  ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/ranges.proto:24:9
+   |
+24 |         group Quux = 2 {
+   |         ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/ranges.proto:33:14
+   |
+33 |     optional group Extn = 100 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+encountered 4 warnings

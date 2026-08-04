@@ -1,0 +1,29 @@
+warning: group syntax is deprecated
+  --> testdata/parser/range/group.proto:8:14
+   |
+ 8 |     optional group Bar = 1 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/range/group.proto:15:18
+   |
+15 |         optional group Baz = 9 {
+   |                  ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/range/group.proto:23:9
+   |
+23 |         group Quux = 2 {
+   |         ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/range/group.proto:32:14
+   |
+32 |     optional group Extn = 100 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+encountered 4 warnings

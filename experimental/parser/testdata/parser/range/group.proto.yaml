@@ -1,0 +1,92 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - range:
+        kind: KIND_EXTENSIONS
+        ranges:
+        - range: { start.literal.int_value: 100, end.literal.int_value: 200 }
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "Bar" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 1
+        body.decls:
+        - range:
+            kind: KIND_EXTENSIONS
+            ranges:
+            - range: { start.literal.int_value: 10, end.literal.int_value: 20 }
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 5 }] }
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+            - literal.int_value: 6
+            - range: { start.literal.int_value: 7, end.literal.int_value: 8 }
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+            - literal.string_value: "a"
+            - literal.string_value: "b"
+        - def:
+            kind: KIND_GROUP
+            name.components: [{ ident: "Baz" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "group" }]
+            value.literal.int_value: 9
+            body.decls:
+            - range:
+                kind: KIND_EXTENSIONS
+                ranges:
+                - range:
+                    start.literal.int_value: 10
+                    end.path.components: [{ ident: "max" }]
+            - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 2 }] }
+            - range:
+                kind: KIND_RESERVED
+                ranges: [{ literal.string_value: "c" }]
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "O" }]
+        body.decls:
+        - def:
+            kind: KIND_GROUP
+            name.components: [{ ident: "Quux" }]
+            type.path.components: [{ ident: "group" }]
+            value.literal.int_value: 2
+            body.decls:
+            - range:
+                kind: KIND_EXTENSIONS
+                ranges:
+                - range:
+                    start.literal.int_value: 10
+                    end.path.components: [{ ident: "max" }]
+            - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 2 }] }
+            - range:
+                kind: KIND_RESERVED
+                ranges: [{ literal.string_value: "d" }]
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "Extn" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 100
+        body.decls:
+        - range:
+            kind: KIND_EXTENSIONS
+            ranges:
+            - range:
+                start.literal.int_value: 10
+                end.path.components: [{ ident: "max" }]
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 2 }] }
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.string_value: "e" }] }
