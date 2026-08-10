@@ -574,12 +574,14 @@ func (g *generator) method(m ir.Method, mdp *descriptorpb.MethodDescriptorProto)
 			*streamField = addr(stream)
 		}
 
-		// Methods only have a single input/output, see [descriptorpb.MethodDescriptorProto].
-		ast := tys.At(0)
-		if prefixed := ast.AsPrefixed(); !prefixed.IsZero() {
-			g.debug.span(prefixed.PrefixToken(), streamTag)
+		if !ty.IsZero() {
+			// Methods only have a single input/output, see [descriptorpb.MethodDescriptorProto].
+			ast := tys.At(0)
+			if prefixed := ast.AsPrefixed(); !prefixed.IsZero() {
+				g.debug.span(prefixed.PrefixToken(), streamTag)
+			}
+			g.debug.span(ast.RemovePrefixes(), typeTag)
 		}
-		g.debug.span(ast.RemovePrefixes(), typeTag)
 	}
 
 	ast := m.AST().AsMethod()

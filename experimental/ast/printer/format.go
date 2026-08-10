@@ -16,6 +16,7 @@ package printer
 
 import (
 	"cmp"
+	"iter"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -105,19 +106,41 @@ func sourceBlankLineBetweenFields(prev, curr ast.ExprField) bool {
 // literal):
 //
 //   - [LayoutStrict]: broken if and only if the scope has 2 or more elements,
-//     matching the legacy formatter's "expand if non-trivial" rule.
+//     or has a single element that is itself a nested message or array
+//     literal, matching the legacy formatter's "expand if non-trivial" rule.
 //
 //   - [LayoutDynamic]: broken if and only if source had a newline between open
 //     and close, deferring width-driven breaks to [dom.Group].
 //
+// values yields the element values consulted for the nested-composite
+// rule under [LayoutStrict]: the scope breaks when any value is itself a
+// message or array literal (the legacy formatter keeps a single scalar
+// element flat but expands a single composite element). It may be nil for
+// scopes that do not apply the rule (e.g. compact options, which keep
+// `[opt = {...}]` inline and expand the value within).
+//
 // Callers should OR the result with their own forceBroken signal
 // (e.g. for scope-attached comments that require expansion).
-func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) bool {
+func (p *printer) literalShouldBreak(
+	openTok, closeTok token.Token,
+	count int,
+	values iter.Seq[ast.ExprAny],
+) bool {
 	switch p.options.Formatting.LiteralLayout {
 	case LayoutDynamic:
 		return !sourceWasFlat(openTok, closeTok)
 	default: // LayoutStrict
-		return count >= 2
+		if count >= 2 {
+			return true
+		}
+		if values != nil {
+			for value := range values {
+				if kind := value.Kind(); kind == ast.ExprKindDict || kind == ast.ExprKindArray {
+					return true
+				}
+			}
+		}
+		return false
 	}
 }
 
@@ -125,7 +148,7 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 // decl-bearing body scope (`{ ... }` on message, enum, service,
 // oneof, extend, or RPC method):
 //
-//   - [LayoutStrict]: always broken. Callers handle the empty-body
+//   - [LayoutStrict]: always broken for >0 decls. Callers handle the empty-body
 //     case (rendered as `{}`) before consulting this helper.
 //
 //   - [LayoutDynamic]: broken if and only if source had a newline between open
@@ -133,12 +156,12 @@ func (p *printer) literalShouldBreak(openTok, closeTok token.Token, count int) b
 //
 // Callers should OR the result with their own forceBroken signal
 // (e.g. for scope-attached comments that require expansion).
-func (p *printer) bodyShouldBreak(openTok, closeTok token.Token) bool {
+func (p *printer) bodyShouldBreak(openTok, closeTok token.Token, declsLen int) bool {
 	switch p.options.Formatting.BodyLayout {
 	case LayoutDynamic:
 		return !sourceWasFlat(openTok, closeTok)
 	default: // LayoutStrict
-		return true
+		return declsLen > 0
 	}
 }
 

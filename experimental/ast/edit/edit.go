@@ -90,9 +90,13 @@ type Edit struct {
 	//   - oneof, extend, group: message body
 	Insertions []ast.DeclAny
 
-	// Before is the destination anchor for KindMove: the moved decl
-	// is reinserted immediately before Before. Honored only by
-	// KindMove.
+	// Before is the destination anchor for positional inserts:
+	//   - KindAdd:  when non-zero, Insertions are placed immediately
+	//               before Before in Target's decl list (in the order
+	//               given). Before must be a current member of Target.
+	//               When zero, Insertions are appended (default).
+	//   - KindMove: the moved decl is reinserted immediately before
+	//               Before. Required.
 	Before ast.DeclAny
 }
 
@@ -128,12 +132,21 @@ func applyEdit(file *ast.File, edit Edit) error {
 	}
 }
 
-// applyAdd appends insertions to the target's decl list, validating
-// each insertion against the target container.
+// applyAdd appends insertions to the target's decl list (or inserts
+// them before edit.Before when set), validating each insertion against
+// the target container.
 func applyAdd(file *ast.File, edit Edit) error {
 	decls, container, err := targetDecls(file, edit.Target)
 	if err != nil {
 		return err
+	}
+	insertIdx := -1
+	if !edit.Before.IsZero() {
+		idx := indexOf(decls, edit.Before)
+		if idx < 0 {
+			return errors.New("before not found in target")
+		}
+		insertIdx = idx
 	}
 	for j, ins := range edit.Insertions {
 		if ins.IsZero() {
@@ -142,7 +155,11 @@ func applyAdd(file *ast.File, edit Edit) error {
 		if err := validateInsertion(container, ins); err != nil {
 			return fmt.Errorf("insertion[%d]: %w", j, err)
 		}
-		seq.Append(decls, ins)
+		if insertIdx >= 0 {
+			decls.Insert(insertIdx+j, ins)
+		} else {
+			seq.Append(decls, ins)
+		}
 	}
 	return nil
 }

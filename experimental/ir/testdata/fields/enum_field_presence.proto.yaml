@@ -1,0 +1,107 @@
+# An enum field that has no explicit presence falls back to the enum's zero
+# value when unset, so it may only use an OPEN enum (open enums always define a
+# zero value). Closedness, not the absence of a zero value, is what matters:
+# every enum below defines a zero value, yet the closed ones are still rejected.
+#
+# Open enums are accepted everywhere, but the rule for closed enums differs by
+# syntax:
+#
+# - proto2: fields are always explicit-presence, so closed enums are fine.
+# - proto3: every singular field is rejected for a closed enum, even the
+#   explicit-presence `optional` ones.
+# - editions: only implicit-presence fields are rejected; explicit is fine.
+#
+exclude:
+- "unused import"
+- "required fields are deprecated"
+files:
+# Enum definitions (leaf files, imported by the messages below).
+- path: "proto2_enum.proto"
+  import: true
+  text: |
+    syntax = "proto2"; // proto2 enums are always closed
+    package example;
+    enum Proto2Enum {
+      PROTO2_ENUM_UNKNOWN = 0;
+      PROTO2_ENUM_A = 1;
+    }
+- path: "proto3_enum.proto"
+  import: true
+  text: |
+    syntax = "proto3"; // proto3 enums are always open
+    package example;
+    enum Proto3Enum {
+      PROTO3_ENUM_UNKNOWN = 0;
+      PROTO3_ENUM_A = 1;
+    }
+- path: "editions_enums.proto"
+  import: true
+  text: |
+    edition = "2023";
+    package example;
+    enum ClosedEnum {
+      option features.enum_type = CLOSED;
+      CLOSED_ENUM_UNKNOWN = 0;
+      CLOSED_ENUM_A = 1;
+    }
+    enum OpenEnum {
+      OPEN_ENUM_UNKNOWN = 0;
+      OPEN_ENUM_A = 1;
+    }
+
+# proto2 message: all fields explicit-presence, so all are accepted.
+- path: "proto2_message.proto"
+  text: |
+    syntax = "proto2";
+    package example;
+    import "proto2_enum.proto";
+    import "proto3_enum.proto";
+    import "editions_enums.proto";
+    message Proto2Message {
+      required Proto2Enum required_proto2 = 1; // accept
+      optional Proto2Enum optional_proto2 = 2; // accept
+      required Proto3Enum required_proto3 = 3; // accept
+      optional Proto3Enum optional_proto3 = 4; // accept
+      required ClosedEnum required_closed = 5; // accept
+      optional ClosedEnum optional_closed = 6; // accept
+      required OpenEnum   required_open   = 7; // accept
+      optional OpenEnum   optional_open   = 8; // accept
+    }
+
+# proto3 message: every singular closed-enum field is rejected.
+- path: "proto3_message.proto"
+  text: |
+    syntax = "proto3";
+    package example;
+    import "proto2_enum.proto";
+    import "proto3_enum.proto";
+    import "editions_enums.proto";
+    message Proto3Message {
+      Proto2Enum          regular_proto2  = 1; // reject: closed
+      optional Proto2Enum optional_proto2 = 2; // reject: closed, even optional
+      Proto3Enum          regular_proto3  = 3; // accept: open
+      optional Proto3Enum optional_proto3 = 4; // accept: open
+      ClosedEnum          regular_closed  = 5; // reject: closed
+      optional ClosedEnum optional_closed = 6; // reject: closed, even optional
+      OpenEnum            regular_open    = 7; // accept: open
+      optional OpenEnum   optional_open   = 8; // accept: open
+    }
+
+# editions message: only implicit-presence closed-enum fields rejected.
+- path: "editions_message.proto"
+  text: |
+    edition = "2023";
+    package example;
+    import "proto2_enum.proto";
+    import "proto3_enum.proto";
+    import "editions_enums.proto";
+    message EditionsMessage {
+      Proto2Enum explicit_proto2 = 1 [features.field_presence = EXPLICIT]; // accept
+      Proto2Enum implicit_proto2 = 2 [features.field_presence = IMPLICIT]; // reject: closed
+      Proto3Enum explicit_proto3 = 3 [features.field_presence = EXPLICIT]; // accept: open
+      Proto3Enum implicit_proto3 = 4 [features.field_presence = IMPLICIT]; // accept: open
+      ClosedEnum explicit_closed = 5 [features.field_presence = EXPLICIT]; // accept
+      ClosedEnum implicit_closed = 6 [features.field_presence = IMPLICIT]; // reject: closed
+      OpenEnum   explicit_open   = 7 [features.field_presence = EXPLICIT]; // accept: open
+      OpenEnum   implicit_open   = 8 [features.field_presence = IMPLICIT]; // accept: open
+    }

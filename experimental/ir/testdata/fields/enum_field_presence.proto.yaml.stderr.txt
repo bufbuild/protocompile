@@ -1,0 +1,81 @@
+error: closed enum `example.Proto2Enum` cannot be used in an implicit-presence
+       field
+  --> editions_message.proto:8:3
+   |
+ 8 |   Proto2Enum implicit_proto2 = 2 [features.field_presence = IMPLICIT]; // reject: closed
+   |   ^^^^^^^^^^
+  ::: proto2_enum.proto:1:10
+   |
+ 1 | syntax = "proto2"; // proto2 enums are always closed
+   |          -------- `example.Proto2Enum` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `example.ClosedEnum` cannot be used in an implicit-presence
+       field
+  --> editions_message.proto:12:3
+   |
+12 |   ClosedEnum implicit_closed = 6 [features.field_presence = IMPLICIT]; // reject: closed
+   |   ^^^^^^^^^^
+  ::: editions_enums.proto:4:31
+   |
+ 4 |   option features.enum_type = CLOSED;
+   |                               ------ `example.ClosedEnum` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `example.Proto2Enum` cannot be used in a "proto3" message
+  --> proto3_message.proto:7:3
+   |
+ 7 |   Proto2Enum          regular_proto2  = 1; // reject: closed
+   |   ^^^^^^^^^^
+  ::: proto2_enum.proto:1:10
+   |
+ 1 | syntax = "proto2"; // proto2 enums are always closed
+   |          -------- `example.Proto2Enum` is a closed enum
+   |
+   = help: fields in a "proto3" message must use open enums, which always define
+           a zero value
+
+error: closed enum `example.Proto2Enum` cannot be used in a "proto3" message
+  --> proto3_message.proto:8:12
+   |
+ 8 |   optional Proto2Enum optional_proto2 = 2; // reject: closed, even optional
+   |            ^^^^^^^^^^
+  ::: proto2_enum.proto:1:10
+   |
+ 1 | syntax = "proto2"; // proto2 enums are always closed
+   |          -------- `example.Proto2Enum` is a closed enum
+   |
+   = help: fields in a "proto3" message must use open enums, which always define
+           a zero value
+
+error: closed enum `example.ClosedEnum` cannot be used in a "proto3" message
+  --> proto3_message.proto:11:3
+   |
+11 |   ClosedEnum          regular_closed  = 5; // reject: closed
+   |   ^^^^^^^^^^
+  ::: editions_enums.proto:4:31
+   |
+ 4 |   option features.enum_type = CLOSED;
+   |                               ------ `example.ClosedEnum` is a closed enum
+   |
+   = help: fields in a "proto3" message must use open enums, which always define
+           a zero value
+
+error: closed enum `example.ClosedEnum` cannot be used in a "proto3" message
+  --> proto3_message.proto:12:12
+   |
+12 |   optional ClosedEnum optional_closed = 6; // reject: closed, even optional
+   |            ^^^^^^^^^^
+  ::: editions_enums.proto:4:31
+   |
+ 4 |   option features.enum_type = CLOSED;
+   |                               ------ `example.ClosedEnum` is a closed enum
+   |
+   = help: fields in a "proto3" message must use open enums, which always define
+           a zero value
+
+encountered 6 errors

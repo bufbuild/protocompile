@@ -41,6 +41,8 @@ message bad_message_but_ok {
 
   oneof BadChoice {
     string opt_a = 4;
+    int32 BadName = 5;    // PascalCase, allowed inherited STYLE_LEGACY.
+    int32 anotherBad = 6; // camelCase, allowed inherited STYLE_LEGACY.
   }
 
   // Nested message inherits STYLE_LEGACY from parent
@@ -51,6 +53,13 @@ message bad_message_but_ok {
   message GoodNested {
     option features.enforce_naming_style = STYLE2024;
     string good_field = 1; // Must follow STYLE2024 rules
+
+    oneof BadChoice {
+      option features.enforce_naming_style = STYLE_LEGACY;
+
+      int32 oneof_e_1 = 2; // Underscore-before-digit, allowed under STYLE_LEGACY.
+      int32 oneofE2 = 3;   // camelCase, allowed under STYLE_LEGACY.
+    }
   }
 }
 

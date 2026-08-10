@@ -1,0 +1,16 @@
+warning: required fields are deprecated
+  --> testdata/extend/required.proto:11:5
+   |
+11 |     required string color = 100;
+   |     ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+error: message extension cannot be required
+  --> testdata/extend/required.proto:11:5
+   |
+11 |     required string color = 100;
+   |     ^^^^^^^^
+   = help: extensions cannot use the `required` label
+
+encountered 1 error and 1 warning

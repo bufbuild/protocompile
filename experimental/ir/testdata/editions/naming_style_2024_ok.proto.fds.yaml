@@ -60,6 +60,18 @@ file:
       type: TYPE_STRING
       oneof_index: 0
       json_name: "optA"
+    - name: "BadName"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+      json_name: "BadName"
+    - name: "anotherBad"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+      json_name: "anotherBad"
     nested_type:
     - name: "nested_message"
       field:
@@ -75,6 +87,21 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_STRING
         json_name: "goodField"
+      - name: "oneof_e_1"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        oneof_index: 0
+        json_name: "oneofE1"
+      - name: "oneofE2"
+        number: 3
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        oneof_index: 0
+        json_name: "oneofE2"
+      oneof_decl:
+      - name: "BadChoice"
+        options.features.enforce_naming_style: STYLE_LEGACY
       options.features.enforce_naming_style: STYLE2024
     oneof_decl: [{ name: "BadChoice" }]
     options.features.enforce_naming_style: STYLE_LEGACY

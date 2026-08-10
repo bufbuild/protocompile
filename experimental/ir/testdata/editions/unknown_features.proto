@@ -1,0 +1,14 @@
+edition = "2023";
+
+package buf.test;
+
+// A feature explicitly set to its `*_UNKNOWN` sentinel (the zero value) is a
+// placeholder that must never survive feature resolution. protoc rejects it;
+// so should we. `json_format` is used here because, unlike `enum_type`, it
+// feeds no other validation, so the sentinel is all that is under test.
+enum Color {
+  option features.json_format = JSON_FORMAT_UNKNOWN;
+
+  COLOR_UNSPECIFIED = 0;
+  COLOR_RED = 1;
+}

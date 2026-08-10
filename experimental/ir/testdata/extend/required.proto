@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package example;
+
+message Widget {
+    extensions 100 to 200;
+}
+
+extend Widget {
+    // Rejected: extensions cannot be required.
+    required string color = 100;
+
+    // Accepted: an optional extension is fine.
+    optional string label = 101;
+}

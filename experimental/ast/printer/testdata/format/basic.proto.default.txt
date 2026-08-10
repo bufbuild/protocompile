@@ -18,3 +18,6 @@ option optimize_for = SPEED;
 message Foo { /* Foo */
   string name = 1;
 }
+
+message Bar {
+}

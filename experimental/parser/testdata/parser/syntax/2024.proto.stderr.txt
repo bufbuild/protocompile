@@ -1,7 +1,0 @@
-error: sorry, Edition 2024 is not fully implemented
-  --> testdata/parser/syntax/2024.proto:15:11
-   |
-15 | edition = "2024";
-   |           ^^^^^^
-
-encountered 1 error

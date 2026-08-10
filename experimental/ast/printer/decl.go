@@ -47,6 +47,7 @@ func (p *printer) printDecl(decl ast.DeclAny, gap gapStyle) {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		if p.options.Format {
+			p.emitEmptyDeclTrivia(decl.AsEmpty().Semicolon(), gap)
 			return
 		}
 		p.printToken(decl.AsEmpty().Semicolon(), gap)
@@ -89,6 +90,18 @@ func (p *printer) printImport(decl ast.DeclImport, gap gapStyle) {
 	p.printExpr(decl.ImportPath(), gapSpace)
 	p.printCompactOptions(decl.Options())
 	p.printToken(decl.Semicolon(), p.semiGap())
+}
+
+// printDefPrefixes emits modifiers (optional/required/repeated/export/local)
+// that live on the underlying DeclDef's type chain. Def projections expose
+// only the bare keyword (`message`, `group`, etc.), so the prefixes have to
+// be drained from DeclDef before that keyword is printed.
+func (p *printer) printDefPrefixes(d ast.DeclDef, gap gapStyle) gapStyle {
+	for prefix := range d.Prefixes() {
+		p.printToken(prefix.PrefixToken(), gap)
+		gap = gapSpace
+	}
+	return gap
 }
 
 func (p *printer) printDef(decl ast.DeclDef, gap gapStyle) {
@@ -153,42 +166,45 @@ func (p *printer) printOption(opt ast.DefOption, gap gapStyle) {
 }
 
 func (p *printer) printMessage(msg ast.DefMessage, gap gapStyle) {
+	gap = p.printDefPrefixes(msg.Decl, gap)
 	p.printToken(msg.Keyword, gap)
 	p.printPath(msg.Decl.Name(), gapSpace)
 	p.printBody(msg.Body)
 }
 
 func (p *printer) printEnum(e ast.DefEnum, gap gapStyle) {
+	gap = p.printDefPrefixes(e.Decl, gap)
 	p.printToken(e.Keyword, gap)
 	p.printPath(e.Decl.Name(), gapSpace)
 	p.printBody(e.Body)
 }
 
 func (p *printer) printService(svc ast.DefService, gap gapStyle) {
+	gap = p.printDefPrefixes(svc.Decl, gap)
 	p.printToken(svc.Keyword, gap)
 	p.printPath(svc.Decl.Name(), gapSpace)
 	p.printBody(svc.Body)
 }
 
 func (p *printer) printExtend(ext ast.DefExtend, gap gapStyle) {
+	gap = p.printDefPrefixes(ext.Decl, gap)
 	p.printToken(ext.Keyword, gap)
 	p.printPath(ext.Extendee, gapSpace)
 	p.printBody(ext.Body)
 }
 
 func (p *printer) printOneof(o ast.DefOneof, gap gapStyle) {
+	gap = p.printDefPrefixes(o.Decl, gap)
 	p.printToken(o.Keyword, gap)
 	p.printPath(o.Decl.Name(), gapSpace)
 	p.printBody(o.Body)
 }
 
 func (p *printer) printGroup(g ast.DefGroup, gap gapStyle) {
-	// Print type prefixes (optional/required/repeated) from the underlying
-	// DeclDef, since DefGroup.Keyword is the "group" keyword itself.
-	for prefix := range g.Decl.Prefixes() {
-		p.printToken(prefix.PrefixToken(), gap)
-		gap = gapSpace
-	}
+	// DefGroup.Keyword is the "group" keyword itself, so the modifiers
+	// (optional/required/repeated) sit on the underlying DeclDef's type
+	// chain rather than on the projection.
+	gap = p.printDefPrefixes(g.Decl, gap)
 
 	p.printToken(g.Keyword, gap)
 	p.printPath(g.Decl.Name(), gapSpace)
@@ -323,16 +339,20 @@ func (p *printer) printBody(body ast.DeclBody) {
 		forceBroken := triviaHasComments(trivia) ||
 			len(closeComments) > 0 ||
 			p.scopeHasAttachedComments(body.Braces())
-		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok) {
+		if !forceBroken && !p.bodyShouldBreak(openTok, closeTok, body.Decls().Len()) {
 			decls := body.Decls()
-			p.withGroup(func(p *printer) {
-				p.withIndent(func(indented *printer) {
-					for i := range decls.Len() {
-						indented.printDecl(decls.At(i), gapSoftline)
-					}
+			// Only create the indented [dom.Group] in the case where there are decls
+			// to avoid an indent in the flat case with no decls.
+			if decls.Len() > 0 {
+				p.withGroup(func(p *printer) {
+					p.withIndent(func(indented *printer) {
+						for i := range decls.Len() {
+							indented.printDecl(decls.At(i), gapSoftline)
+						}
+					})
+					p.push(tagSoftlineFlat, tagSoftbreak)
 				})
-				p.push(tagSoftlineFlat, tagSoftbreak)
-			})
+			}
 			p.printToken(closeTok, gapNone)
 			return
 		}
@@ -465,7 +485,10 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			p.scopeHasLineTrailingComments(brackets) {
 			forceExpand = true
 		}
-		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len())
+		// Compact options do not apply the nested-composite break rule
+		// (nil values): the legacy formatter keeps a single-entry
+		// `[opt = {...}]` bracket inline and lets the value expand within.
+		wantBroken := forceExpand || p.literalShouldBreak(openTok, closeTok, entries.Len(), nil)
 
 		switch {
 		case !wantBroken && entries.Len() == 1:

@@ -278,25 +278,33 @@ func validateAllFeatures(file *File, r *report.Report) {
 			parent:  parent,
 		}))
 
-		for member := range seq.Values(ty.Members()) {
-			option := builtins.FieldFeatures
-			if member.IsEnumValue() {
-				option = builtins.EnumFeatures
-			}
-
-			features := member.Options().Field(option)
-			validateFeatures(features.AsMessage(), r)
-			member.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
-				options: features.ID(),
-				parent:  ty.Raw().features,
-			}))
-		}
+		// Oneof features must be resolved before member features, since a field
+		// declared inside a oneof inherits from the oneof.
 		for oneof := range seq.Values(ty.Oneofs()) {
 			features := oneof.Options().Field(builtins.OneofFeatures)
 			validateFeatures(features.AsMessage(), r)
 			oneof.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 				options: features.ID(),
 				parent:  ty.Raw().features,
+			}))
+		}
+		for member := range seq.Values(ty.Members()) {
+			option := builtins.FieldFeatures
+			if member.IsEnumValue() {
+				option = builtins.EnumFeatures
+			}
+
+			// A field belonging to a oneof inherits features from the oneof.
+			parent := ty.Raw().features
+			if oneof := member.Oneof(); !oneof.IsZero() {
+				parent = oneof.Raw().features
+			}
+
+			features := member.Options().Field(option)
+			validateFeatures(features.AsMessage(), r)
+			member.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+				options: features.ID(),
+				parent:  parent,
 			}))
 		}
 		for extns := range seq.Values(ty.ExtensionRanges()) {
@@ -370,6 +378,17 @@ func validateFeatures(features MessageValue, r *report.Report) {
 				),
 			)
 			continue
+		}
+
+		// A base feature must never resolve to its `*_UNKNOWN` sentinel (zero).
+		if field := feature.Field(); field.Container() == builtins.FeatureSet && !field.IsExtension() {
+			if sentinel := feature.AsEnum(); !sentinel.IsZero() && sentinel.Number() == 0 {
+				r.Errorf("feature field `%s` must resolve to a known value", field.Name()).Apply(
+					report.Snippet(feature.ValueAST()),
+					report.Helpf("`%s` is only a placeholder for an unset feature", sentinel.Name()),
+				)
+				continue
+			}
 		}
 
 		// We check these in reverse order, because the user might have set

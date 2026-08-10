@@ -66,15 +66,6 @@ func TestBufFormat(t *testing.T) {
 		t.Run(relPath, func(t *testing.T) {
 			t.Parallel()
 
-			// editions/2024 is a parser error test corpus, not a
-			// printer test corpus: the proto files contain
-			// deliberately invalid edition syntax for the parser to
-			// diagnose. There is no formatted output to compare
-			// against.
-			if strings.Contains(relPath, "editions/2024") {
-				t.Skip("editions/2024 is a parser error test")
-			}
-
 			// deprecate/* requires adding `deprecated` options to
 			// existing declarations as an AST transform. The legacy
 			// formatter does this in buf's FormatModuleSet wrapper,

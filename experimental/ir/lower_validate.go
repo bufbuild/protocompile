@@ -104,6 +104,7 @@ func validateConstraints(f *File, r *report.Report) {
 		validateDefault(m, r)
 
 		validatePresence(m, r)
+		validateClosedEnumUse(m, r)
 		validateUTF8(m, r)
 		validateMessageEncoding(m, r)
 
@@ -758,6 +759,24 @@ func validatePresence(m Member, r *report.Report) {
 		return
 	}
 
+	// Extensions cannot be required. In non-editions files this comes from the
+	// `required` keyword, which is not an editions feature, so it bypasses the
+	// feature-gated checks below; catch it here. (In editions, `LEGACY_REQUIRED`
+	// on an extension is expressed as a feature and is caught by the
+	// `case m.IsExtension()` branch below instead.)
+	if m.IsExtension() && m.Presence() == presence.Required {
+		d := r.Errorf("%s cannot be required", taxa.Extension)
+		if _, required := iterx.Find(m.AST().Type().Prefixes(), func(ty ast.TypePrefixed) bool {
+			return ty.Prefix() == keyword.Required
+		}); !required.IsZero() {
+			d.Apply(report.Snippet(required.PrefixToken()))
+		} else {
+			d.Apply(report.Snippet(m.AST()))
+		}
+		d.Apply(report.Helpf("extensions cannot use the `required` label"))
+		return
+	}
+
 	builtins := m.Context().builtins()
 	feature := m.FeatureSet().Lookup(builtins.FeaturePresence)
 	if !feature.IsExplicit() {
@@ -829,6 +848,56 @@ func validatePresence(m Member, r *report.Report) {
 					"already in-use; doing so is a wire protocol break"),
 		)
 	}
+}
+
+// validateClosedEnumUse rejects fields that use a closed enum where the field
+// would fall back to the enum's zero value, which a closed enum need not
+// define. A "proto3" message may not reference a closed enum at all; editions
+// restricts this to implicit-presence fields.
+func validateClosedEnumUse(m Member, r *report.Report) {
+	enum := m.Element()
+	if !enum.IsClosedEnum() {
+		return
+	}
+
+	switch syn := m.Context().Syntax(); {
+	case syn == syntax.Proto3:
+		r.Errorf("closed enum `%s` cannot be used in a \"proto3\" message", enum.FullName()).Apply(
+			report.Snippet(m.TypeAST().RemovePrefixes()),
+			closedEnumNote(enum),
+			report.Helpf("fields in a \"proto3\" message must use open enums, which always define a zero value"),
+		)
+	case hasImplicitPresence(m):
+		r.Errorf("closed enum `%s` cannot be used in an implicit-presence field", enum.FullName()).Apply(
+			report.Snippet(m.TypeAST().RemovePrefixes()),
+			closedEnumNote(enum),
+			report.Helpf("an unset implicit-presence field falls back to the enum's zero value, which a closed enum need not define"),
+		)
+	}
+}
+
+// hasImplicitPresence reports whether m is a singular field with implicit
+// presence. Editions field-presence features are not reflected by
+// [Member.Presence], so the resolved feature value is consulted directly.
+func hasImplicitPresence(m Member) bool {
+	if !m.IsSingular() || m.Presence() == presence.Shared {
+		return false // repeated, map, or oneof member
+	}
+	builtins := m.Context().builtins()
+	v, _ := m.FeatureSet().Lookup(builtins.FeaturePresence).Value().AsInt()
+	return v == tags.FeatureSet_FieldPresence_Implicit
+}
+
+// closedEnumNote points at whatever makes an enum closed: its proto2 syntax
+// keyword, or its explicit `enum_type` feature.
+func closedEnumNote(enum Type) report.DiagnosticOption {
+	builtins := enum.Context().builtins()
+	feature := enum.FeatureSet().Lookup(builtins.FeatureEnum)
+	why := feature.Value().ValueAST().Span()
+	if feature.IsDefault() {
+		why = enum.Context().AST().Syntax().Value().Span()
+	}
+	return report.Snippetf(why, "`%s` is a closed enum", enum.FullName())
 }
 
 // validatePacked validates constraints on the packed option and feature.

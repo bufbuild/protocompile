@@ -13,6 +13,7 @@ message my_message {
   string field__name = 6; // Consecutive underscores
   oneof TestChoice {      // PascalCase oneof
     string choice_a = 7;
+    string badChoice = 8; // camelCase field name
   }
 }
 

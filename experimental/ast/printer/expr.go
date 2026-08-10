@@ -17,6 +17,7 @@ package printer
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -224,6 +225,12 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 	}
 
 	hasComments := triviaHasComments(slots)
+	// Also check for comments attached to any token in the scope
+	// (trailing on open bracket, leading on close bracket, or on any
+	// interior token). These force multi-line expansion.
+	if !hasComments {
+		hasComments = p.scopeHasAttachedComments(brackets)
+	}
 
 	if elements.Len() == 0 && !hasComments {
 		p.printToken(openTok, gap)
@@ -233,7 +240,8 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 		return
 	}
 
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+	wantBroken := hasComments ||
+		p.literalShouldBreak(openTok, closeTok, elements.Len(), seq.Values(elements))
 
 	if !wantBroken {
 		// Flat path: emit the elements inside a group with softbreak
@@ -373,7 +381,8 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 		return
 	}
 
-	wantBroken := hasComments || p.literalShouldBreak(openTok, closeTok, elements.Len())
+	wantBroken := hasComments ||
+		p.literalShouldBreak(openTok, closeTok, elements.Len(), seq.Map(elements, ast.ExprField.Value))
 
 	if !wantBroken {
 		// Flat path: emit fields inside a group with softbreak padding
