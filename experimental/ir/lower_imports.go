@@ -118,7 +118,7 @@ func buildImports(file *File, r *report.Report, importer Importer) {
 	// If this is descriptor.proto itself, use it. This step is necessary to
 	// avoid cycles.
 	if file.IsDescriptorProto() {
-		file.imports.Insert(Import{File: file}, -1, false)
+		file.imports.Insert(Import{File: file}, -1, false, false)
 		file.imports.byPath[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 		file.imports.causes[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 		return
@@ -135,7 +135,7 @@ func buildImports(file *File, r *report.Report, importer Importer) {
 		panic(fmt.Errorf("importing %q produced an invalid file", DescriptorProtoPath))
 	}
 
-	file.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false)
+	file.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false, false)
 	file.imports.byPath[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 	file.imports.causes[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 }
