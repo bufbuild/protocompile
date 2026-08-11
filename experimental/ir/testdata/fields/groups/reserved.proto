@@ -1,0 +1,15 @@
+//% exclude: ["group syntax is deprecated"]
+syntax = "proto2";
+
+package test;
+
+// Reserved tags and names must still be enforced inside a group body.
+message Foo {
+    optional group Bar = 1 {
+        reserved 5;
+        reserved "a";
+
+        optional int32 bad_tag = 5;
+        optional int32 a = 6;
+    }
+}

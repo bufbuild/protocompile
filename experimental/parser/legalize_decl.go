@@ -83,7 +83,9 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 // legalizeDecl legalizes an extension or reserved range.
 func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	in := taxa.Extensions
-	validParents := taxa.Message.AsSet()
+	// A group defines a nested message, so its body permits ranges just like a
+	// message body does.
+	validParents := taxa.NewSet(taxa.Message, taxa.Group)
 	if decl.IsReserved() {
 		in = taxa.Reserved
 		validParents = validParents.With(taxa.Enum)

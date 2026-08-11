@@ -1,0 +1,57 @@
+file:
+- name: "testdata/fields/groups/ranges.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "bar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Foo.Bar"
+      json_name: "bar"
+    - name: "quux"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Foo.Quux"
+      oneof_index: 0
+      json_name: "quux"
+    nested_type:
+    - name: "Bar"
+      field:
+      - name: "baz"
+        number: 9
+        label: LABEL_OPTIONAL
+        type: TYPE_GROUP
+        type_name: ".test.Foo.Bar.Baz"
+        json_name: "baz"
+      nested_type:
+      - name: "Baz"
+        extension_range: [{ start: 10, end: 536870912 }]
+        reserved_range: [{ start: 2, end: 3 }]
+        reserved_name: ["c"]
+      extension_range: [{ start: 10, end: 21 }]
+      reserved_range:
+      - { start: 5, end: 6 }
+      - { start: 6, end: 7 }
+      - { start: 7, end: 9 }
+      reserved_name: ["a", "b"]
+    - name: "Quux"
+      extension_range: [{ start: 10, end: 536870912 }]
+      reserved_range: [{ start: 2, end: 3 }]
+      reserved_name: ["d"]
+    extension_range: [{ start: 100, end: 201 }]
+    oneof_decl: [{ name: "O" }]
+  - name: "Extn"
+    extension_range: [{ start: 10, end: 536870912 }]
+    reserved_range: [{ start: 2, end: 3 }]
+    reserved_name: ["e"]
+  extension:
+  - name: "extn"
+    number: 100
+    label: LABEL_OPTIONAL
+    type: TYPE_GROUP
+    type_name: ".test.Extn"
+    extendee: ".test.Foo"
+    json_name: "extn"

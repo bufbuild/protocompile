@@ -8,7 +8,8 @@ error: unexpected extension range within service definition
  8 | | }
    | \_- ...cannot be declared within this service definition
    |
-   = help: this extension range can only appear within a message definition
+   = help: this extension range can only appear within one of message definition
+           or group definition
 
 error: unexpected reserved range within service definition
   --> testdata/parser/range/invalid_parent.proto:7:5
@@ -20,8 +21,8 @@ error: unexpected reserved range within service definition
  8 | | }
    | \_- ...cannot be declared within this service definition
    |
-   = help: this reserved range can only appear within one of message definition
-           or enum definition
+   = help: this reserved range can only appear within one of message definition,
+           enum definition, or group definition
 
 error: unexpected extension range within message extension block
   --> testdata/parser/range/invalid_parent.proto:11:5
@@ -33,7 +34,8 @@ error: unexpected extension range within message extension block
 13 | | }
    | \_- ...cannot be declared within this message extension block
    |
-   = help: this extension range can only appear within a message definition
+   = help: this extension range can only appear within one of message definition
+           or group definition
 
 error: unexpected reserved range within message extension block
   --> testdata/parser/range/invalid_parent.proto:12:5
@@ -45,8 +47,8 @@ error: unexpected reserved range within message extension block
 13 | | }
    | \_- ...cannot be declared within this message extension block
    |
-   = help: this reserved range can only appear within one of message definition
-           or enum definition
+   = help: this reserved range can only appear within one of message definition,
+           enum definition, or group definition
 
 error: unexpected extension range within enum definition
   --> testdata/parser/range/invalid_parent.proto:16:5
@@ -57,6 +59,7 @@ error: unexpected extension range within enum definition
 17 | | }
    | \_- ...cannot be declared within this enum definition
    |
-   = help: this extension range can only appear within a message definition
+   = help: this extension range can only appear within one of message definition
+           or group definition
 
 encountered 5 errors
