@@ -98,9 +98,9 @@ linters:
       - linters: [govet]
         path: _test\.go
         text: 'fieldalignment:'
-      # exclude fieldalignment "pointer bytes" failures
+      # exclude fieldalignment pointer data failures
       - linters: [govet]
-        text: pointer bytes
+        text: leading bytes of pointer data
     paths:
       - .*\.y\.go$
 formatters:
