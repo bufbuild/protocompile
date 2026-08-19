@@ -568,8 +568,14 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 // waitUntilDone waits for this task to be completed by another goroutine.
 func (t *task) waitUntilDone(caller *Task, output *result, q *AnyQuery, async bool) *result {
 	if err := t.checkCycle(caller, q); err != nil {
-		output.Fatal = err
-		return output
+		// Return a new result rather than writing to the shared one, which the
+		// leader and other waiters may be accessing concurrently.
+		done := make(chan struct{})
+		close(done)
+		return &result{
+			Result: Result[any]{Fatal: err},
+			done:   done,
+		}
 	}
 
 	// If this task is being executed synchronously with its caller, we need to
@@ -595,8 +601,15 @@ func (t *task) waitUntilDone(caller *Task, output *result, q *AnyQuery, async bo
 	}
 
 	// Reload the result pointer. This is needed if the leader panics,
-	// because the result will be set to nil.
-	return t.result.Load()
+	// because the result will be set to nil (and possibly replaced by a
+	// new leader).
+	output = t.result.Load()
+	if output == nil || !closed(output.done) {
+		// The leader panicked, or the caller's context was cancelled while
+		// the leader was still executing, so the result is not safe to read.
+		return nil
+	}
+	return output
 }
 
 // underlying returns the tasks query underlying key.
