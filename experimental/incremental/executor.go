@@ -98,8 +98,7 @@ func WithDebugEvict(wait time.Duration) ExecutorOption {
 func (e *Executor) Keys() (keys []string) {
 	e.tasks.Range(func(k, t any) bool {
 		task := t.(*task) //nolint:errcheck // All values in this map are tasks.
-		result := task.result.Load()
-		if result == nil || !closed(result.done) {
+		if task.completed() == nil {
 			return true
 		}
 		keys = append(keys, fmt.Sprintf("%#v", k))
@@ -131,17 +130,21 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	e.dirty.RLock()
 	defer e.dirty.RUnlock()
 
-	// Verify we haven't reëntrantly called Run.
-	if callers, ok := ctx.Value(&runExecutorKey).(*[]*Executor); ok {
-		if slices.Contains(*callers, e) {
-			panic("protocompile/incremental: reentrant call to Run")
-		}
-		*callers = append(*callers, e)
-	} else {
-		ctx = context.WithValue(ctx, &runExecutorKey, &[]*Executor{e})
+	// Verify we haven't reëntrantly called Run. The slice is cloned, not
+	// mutated in place, so that concurrent nested Runs do not race and
+	// entries do not outlive their call.
+	callers, _ := ctx.Value(&runExecutorKey).([]*Executor)
+	if slices.Contains(callers, e) {
+		panic("protocompile/incremental: reentrant call to Run")
 	}
+	ctx = context.WithValue(ctx, &runExecutorKey, append(slices.Clip(slices.Clone(callers)), e))
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
+
+	var timings *timer
+	if m, ok := ctx.Value(&timingsKey).(map[any]time.Duration); ok && m != nil {
+		timings = &timer{m: m}
+	}
 
 	generation := e.counter.Add(1)
 	root := &Task{
@@ -150,6 +153,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		exec:            e,
 		result:          &result{done: make(chan struct{})},
 		runID:           generation,
+		timer:           timings,
 		onRootGoroutine: true,
 	}
 
@@ -185,12 +189,20 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		if _, ok := dedup[node]; ok {
 			continue
 		}
+		dedup[node] = struct{}{}
+
+		// The append-only deps graph may lead to tasks only requested by
+		// withdrawn attempts; their reports are leftovers at best, and may be
+		// concurrently rewritten by another Run at worst.
+		if node.completed() == nil {
+			continue
+		}
+
 		node.deps.Range(func(depAny any, _ any) bool {
 			dep := depAny.(*task) //nolint:errcheck
 			tasks = append(tasks, dep)
 			return true
 		})
-		dedup[node] = struct{}{}
 		report.Diagnostics = append(report.Diagnostics, node.report.Diagnostics...)
 	}
 	report.Canonicalize()

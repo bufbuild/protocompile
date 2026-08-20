@@ -131,6 +131,12 @@ func (t *Task) release() {
 // transferFrom acquires a hold on the global semaphore from the given task.
 func (t *Task) transferFrom(that *Task) {
 	if t.holding || !that.holding {
+		if context.Cause(t.ctx) != nil {
+			// This context was cancelled, so acquires prior to this transfer
+			// may have failed, in which case we do nothing instead of panic.
+			return
+		}
+
 		t.abort(errBadAcquire)
 	}
 
@@ -229,6 +235,18 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (Results[T], error) {
 	anyQueries := make([]*AnyQuery, len(queries))
 	deps := make([]*task, len(queries))
 
+	if caller.task != nil {
+		// Remove the waiting edges stored below once the caller is no longer
+		// blocked on them.
+		defer func() {
+			for _, dep := range deps {
+				if dep != nil {
+					caller.task.waiting.Delete(dep)
+				}
+			}
+		}()
+	}
+
 	// We use a semaphore here instead of a WaitGroup so that when we block
 	// on it later in this function, we can bail if caller.ctx is cancelled.
 	join := semaphore.NewWeighted(int64(len(queries)))
@@ -255,6 +273,10 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (Results[T], error) {
 		}
 		callerTask.deps.Store(dep, struct{}{})
 		dep.callers.Store(callerTask, struct{}{})
+
+		// The query is stored as the value so that cycle errors can name the
+		// request that produced each edge.
+		callerTask.waiting.Store(dep, q)
 	}
 
 	// Schedule all but the first query to run asynchronously.
@@ -323,6 +345,10 @@ type task struct {
 	// Written by multiple tasks concurrently.
 	// TODO: See the comment on Executor.tasks.
 	callers sync.Map // [*task]struct{}
+	// The tasks this task is currently blocked on, mapped to the query that
+	// requested each of them. Maintained by [Resolve], which removes edges
+	// once it returns; used for cycle detection in [task.checkCycle].
+	waiting sync.Map // [*task]*AnyQuery
 
 	// If this task has not been started yet, this is nil.
 	// Otherwise, if it is complete, result.done will be closed.
@@ -406,8 +432,7 @@ type result struct {
 // the computation is in fact executing asynchronously as a result.
 func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (async bool) {
 	// Common case for cached values; no need to spawn a separate goroutine.
-	r := t.result.Load()
-	if r != nil && closed(r.done) {
+	if r := t.completed(); r != nil {
 		caller.logf("cache hit", "%[1]T/%[1]v", q.Underlying())
 		caller.timer.record(q.Key(), 0)
 		done(r)
@@ -428,10 +453,21 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 
 // checkCycle checks for a potential cycle. This is only possible if output is
 // pending; if it isn't, it can't be in our history path.
+//
+// This searches the waiting graph rather than deps: deps edges are never
+// removed, so edges left over from a previously-diagnosed cycle would make
+// unrelated waiters appear to be part of a cycle.
 func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
+	// edge records the task each node was reached from, and the query for
+	// that edge, which carries request information the memoized query lacks.
+	type edge struct {
+		from  *task
+		query *AnyQuery
+	}
+
 	deps := slicesx.NewQueue[*task](1)
 	deps.PushFront(t)
-	parent := make(map[*task]*task)
+	parent := make(map[*task]edge)
 	hasCycle := false
 
 	for node, ok := deps.PopFront(); ok; node, ok = deps.PopFront() {
@@ -439,10 +475,10 @@ func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
 			hasCycle = true
 			break
 		}
-		node.deps.Range(func(depAny any, _ any) bool {
+		node.waiting.Range(func(depAny, queryAny any) bool {
 			dep := depAny.(*task) //nolint:errcheck
 			if _, ok := parent[dep]; !ok {
-				parent[dep] = node
+				parent[dep] = edge{from: node, query: queryAny.(*AnyQuery)} //nolint:errcheck
 				deps.PushBack(dep)
 			}
 			return true
@@ -453,46 +489,90 @@ func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
 		return nil
 	}
 
-	// Reconstruct the cycle path from t.task back to target.
-	var cycle []*AnyQuery
-	cycle = append(cycle, caller.task.query)
-	for current := parent[caller.task]; current != nil && current != t; current = parent[current] {
-		cycle = append(cycle, current.query)
+	// Reconstruct the cycle from the edge queries along t -> ... -> caller.
+	// The edge into t is q, which begins and ends the cycle.
+	var reversed []*AnyQuery
+	for current := caller.task; current != nil && current != t; current = parent[current].from {
+		reversed = append(reversed, parent[current].query)
 	}
-	cycle = append(cycle, t.query)
+	slices.Reverse(reversed)
 
-	// Reverse to get the correct dependency order (target -> ... -> t.task).
-	slices.Reverse(cycle)
-
-	// Add q at the end to complete the cycle (target -> ... -> t.task -> targetQuery).
-	// We use q instead of t.query because it has the import request info.
+	cycle := make([]*AnyQuery, 0, len(reversed)+2)
+	cycle = append(cycle, q)
+	cycle = append(cycle, reversed...)
 	cycle = append(cycle, q)
 
 	return &ErrCycle{Cycle: cycle}
 }
 
-// run actually executes the query passed to start. It is called on its own
-// goroutine.
-func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
-	output = t.result.Load()
-	if output != nil {
-		if closed(output.done) {
-			return output
-		}
-		return t.waitUntilDone(caller, output, q, async)
-	}
-
-	// Try to become the leader (the task responsible for computing the result).
-	output = &result{done: make(chan struct{})}
-	if !t.result.CompareAndSwap(nil, output) {
-		// We failed to become the executor, so we're gonna go to sleep
-		// until it's done.
+// run either waits for or computes the result of the query passed to start,
+// retrying as necessary if attempts by other tasks' leaders fail.
+//
+// Returns nil if, and only if, the caller's context is cancelled.
+func (t *task) run(caller *Task, q *AnyQuery, async bool) *result {
+	for {
 		output := t.result.Load()
 		if output == nil {
-			return nil // Leader panicked but we did see a result.
+			// Try to become the leader (the task responsible for computing
+			// the result).
+			output = &result{done: make(chan struct{})}
+			if t.result.CompareAndSwap(nil, output) {
+				return t.lead(caller, q, async, output)
+			}
+			// Someone else became the leader; retry and wait on their result.
+			continue
 		}
-		return t.waitUntilDone(caller, output, q, async)
+
+		if closed(output.done) {
+			if r := t.completed(); r != nil {
+				return r
+			}
+			continue // This attempt was withdrawn, retry.
+		}
+
+		output = t.waitUntilDone(caller, output, q, async)
+		if output != nil {
+			return output
+		}
+		if context.Cause(caller.ctx) != nil {
+			return nil // Our own run is being torn down.
+		}
+		// The leader failed but our run is still live; retry.
 	}
+}
+
+// completed returns this task's completed result, or nil if the task never
+// started, is pending, or its last attempt was withdrawn.
+func (t *task) completed() *result {
+	r := t.result.Load()
+	if r == nil || !closed(r.done) {
+		return nil
+	}
+	// A withdrawn attempt is unpublished before done is closed, so a result
+	// still published after done was observed closed must have completed.
+	// Attempts are never republished, so there is no ABA hazard.
+	if t.result.Load() != r {
+		return nil
+	}
+	return r
+}
+
+// withdraw unpublishes a failed pending attempt and wakes its waiters, who
+// will retry rather than read it. Unpublishing before closing done is what
+// distinguishes a withdrawn attempt from a completed one. See
+// [task.completed].
+func (t *task) withdraw(r *result) {
+	t.result.CompareAndSwap(r, nil)
+	close(r.done)
+}
+
+// lead computes the result of a query as the leader of the pending attempt,
+// and records it by closing pending.done.
+//
+// Returns nil if, and only if, the caller's context is cancelled. The attempt
+// is then withdrawn rather than published.
+func (t *task) lead(caller *Task, q *AnyQuery, async bool, pending *result) (output *result) {
+	output = pending
 
 	callee := &Task{
 		ctx:    caller.ctx,
@@ -506,13 +586,22 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
 
+	// Discard leftovers from a withdrawn attempt so its diagnostics are not
+	// duplicated. Reports are only read from completed tasks, which are never
+	// re-executed, so this cannot race.
+	t.report = report.Report{Options: caller.exec.reportOptions}
+
 	defer func() {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
 				caller.logf("panic", "%[1]T/%[1]v, %[2]v", q.Underlying(), panicked)
 
-				t.result.CompareAndSwap(output, nil)
-				output = nil
+				// output is nil if the attempt was already withdrawn and a
+				// deferred call panicked.
+				if output != nil {
+					t.withdraw(output)
+					output = nil
+				}
 
 				caller.cancel(&ErrPanic{
 					Query:     q,
@@ -522,10 +611,11 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 			}
 		} else {
 			// If this task is pending and we're the leader, do not allow it to
-			// stick around. This will cause future calls to the same failed
-			// query to hit the cache.
-			t.result.CompareAndSwap(output, nil)
-			output = nil
+			// stick around.
+			if output != nil {
+				t.withdraw(output)
+				output = nil
+			}
 
 			if !callee.onRootGoroutine {
 				// For Gs spawned by the executor, we just kill them here without
@@ -545,6 +635,8 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	if async {
 		// If synchronous, this is executing under the hold of the caller query.
 		if !callee.acquire() {
+			// Cancelled while queued on the semaphore, withdraw it.
+			t.withdraw(output)
 			return nil
 		}
 		defer callee.release()
@@ -559,6 +651,14 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	output.Value, output.Fatal = t.query.Execute(callee)
 	output.Elapsed = callee.stopwatch.Stop()
 	output.runID = callee.runID
+
+	if context.Cause(callee.ctx) != nil {
+		// The result may have been influenced by the cancellation, withdraw
+		// it rather than memoize it.
+		t.withdraw(output)
+		return nil
+	}
+
 	callee.timer.record(q.Key(), output.Elapsed)
 	callee.logf("returning", "%[1]T/%[1]v, took %v", q.Underlying(), output.Elapsed)
 
@@ -566,6 +666,9 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 }
 
 // waitUntilDone waits for this task to be completed by another goroutine.
+//
+// Returns nil if the caller's context was cancelled, or if the leader
+// withdrew the attempt, in which case the caller should retry.
 func (t *task) waitUntilDone(caller *Task, output *result, q *AnyQuery, async bool) *result {
 	if err := t.checkCycle(caller, q); err != nil {
 		// Return a new result rather than writing to the shared one, which the
@@ -600,16 +703,8 @@ func (t *task) waitUntilDone(caller *Task, output *result, q *AnyQuery, async bo
 		return nil
 	}
 
-	// Reload the result pointer. This is needed if the leader panics,
-	// because the result will be set to nil (and possibly replaced by a
-	// new leader).
-	output = t.result.Load()
-	if output == nil || !closed(output.done) {
-		// The leader panicked, or the caller's context was cancelled while
-		// the leader was still executing, so the result is not safe to read.
-		return nil
-	}
-	return output
+	// Reload the result, since the leader may have withdrawn the attempt.
+	return t.completed()
 }
 
 // underlying returns the tasks query underlying key.

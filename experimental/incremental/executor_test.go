@@ -206,6 +206,7 @@ func TestTimings(t *testing.T) {
 		assert.Equal(t, time.Millisecond, results[0].Elapsed)
 		assert.Equal(t, 2*time.Millisecond, results[1].Elapsed)
 
+		assert.Len(t, timings, 7) // One entry per Wait query executed.
 		for k, v := range timings {
 			id := k.(int) //nolint:errcheck
 			assert.Equal(t, time.Duration(id)*time.Millisecond, v)
