@@ -25,15 +25,15 @@ import (
 //
 // If count is zero, uses GOMAXPROCS instead.
 func Hammer(count int, f func()) {
-	if count == 0 {
+	if count <= 0 {
 		count = runtime.GOMAXPROCS(0)
 	}
 
 	start := new(sync.WaitGroup)
+	start.Add(count)
 	end := new(sync.WaitGroup)
+	end.Add(count)
 	for range count {
-		start.Add(1)
-		end.Add(1)
 		go func() {
 			defer end.Done()
 
