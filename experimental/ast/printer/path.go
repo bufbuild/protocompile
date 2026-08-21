@@ -33,6 +33,47 @@ func pathFirstToken(path ast.Path) token.Token {
 	return pc.Name()
 }
 
+// fusedEnd returns tok's close token when tok is fused, otherwise tok.
+func fusedEnd(tok token.Token) token.Token {
+	if !tok.IsZero() && !tok.IsLeaf() {
+		_, tok = tok.StartEnd()
+	}
+	return tok
+}
+
+// pathLastToken returns the token that carries the path's trailing
+// trivia. For a fused extension component this is its close paren.
+func pathLastToken(path ast.Path) token.Token {
+	last := token.Zero
+	for pc := range path.Components() {
+		if !pc.Name().IsZero() {
+			last = pc.Name()
+		} else if !pc.Separator().IsZero() {
+			last = pc.Separator()
+		}
+	}
+	return fusedEnd(last)
+}
+
+// exprLastToken returns the token that carries the expression's
+// trailing trivia, or the zero token for kinds where it is not needed.
+func exprLastToken(expr ast.ExprAny) token.Token {
+	switch expr.Kind() {
+	case ast.ExprKindPath:
+		return pathLastToken(expr.AsPath().Path)
+	case ast.ExprKindLiteral:
+		return fusedEnd(expr.AsLiteral().Token)
+	case ast.ExprKindPrefixed:
+		return exprLastToken(expr.AsPrefixed().Expr())
+	case ast.ExprKindArray:
+		return fusedEnd(expr.AsArray().Brackets())
+	case ast.ExprKindDict:
+		return fusedEnd(expr.AsDict().Braces())
+	default:
+		return token.Zero
+	}
+}
+
 // printPath prints a path (e.g., "foo.bar.baz" or "(custom.option)") with a leading gap.
 func (p *printer) printPath(path ast.Path, gap gapStyle) {
 	if path.IsZero() {
@@ -88,7 +129,10 @@ func (p *printer) printPath(path ast.Path, gap gapStyle) {
 				openTok, closeTok := parens.StartEnd()
 				trivia := p.trivia.scopeTrivia(parens.ID())
 
-				p.printToken(openTok, componentGap)
+				// Reroute trailing comments on `(` through the
+				// interior's leading trivia path, matching a reparse.
+				openTrailing := p.printTokenSplitTrailing(openTok, componentGap)
+				p.appendPending(openTrailing)
 				p.emitTriviaSlot(trivia, 0)
 				p.printPath(extn, gapPreserveTight)
 				p.emitTriviaSlot(trivia, 1)

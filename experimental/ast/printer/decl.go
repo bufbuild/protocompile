@@ -255,38 +255,35 @@ func (p *printer) printSignature(sig ast.Signature) {
 		return
 	}
 
-	inputs := sig.Inputs()
-	if !inputs.Brackets().IsZero() {
-		p.withGroup(func(p *printer) {
-			openTok, closeTok := inputs.Brackets().StartEnd()
-			slots := p.trivia.scopeTrivia(inputs.Brackets().ID())
-			p.printToken(openTok, gapPreserve)
-			p.withIndent(func(indented *printer) {
-				indented.push(tagSoftbreak)
-				indented.printTypeListContents(inputs, slots)
-				p.push(tagSoftbreak)
-			})
-			p.printToken(closeTok, gapPreserve)
-		})
+	if !sig.Inputs().Brackets().IsZero() {
+		p.printSignatureList(sig.Inputs(), gapPreserve)
 	}
 
 	if !sig.Returns().IsZero() {
 		p.printToken(sig.Returns(), gapSpace)
-		outputs := sig.Outputs()
-		if !outputs.Brackets().IsZero() {
-			p.withGroup(func(p *printer) {
-				openTok, closeTok := outputs.Brackets().StartEnd()
-				slots := p.trivia.scopeTrivia(outputs.Brackets().ID())
-				p.printToken(openTok, gapSpace)
-				p.withIndent(func(indented *printer) {
-					indented.push(tagSoftbreak)
-					indented.printTypeListContents(outputs, slots)
-					p.push(tagSoftbreak)
-				})
-				p.printToken(closeTok, gapPreserve)
-			})
+		if !sig.Outputs().Brackets().IsZero() {
+			p.printSignatureList(sig.Outputs(), gapSpace)
 		}
 	}
+}
+
+// printSignatureList prints one bracketed type list of a signature.
+// Bracket trivia stays outside the group so a comment's forced
+// newline cannot break it.
+func (p *printer) printSignatureList(list ast.TypeList, openGap gapStyle) {
+	openTok, closeTok := list.Brackets().StartEnd()
+	slots := p.trivia.scopeTrivia(list.Brackets().ID())
+	p.printToken(openTok, openGap)
+	var closeTrailing []token.Token
+	p.withGroup(func(p *printer) {
+		p.withIndent(func(indented *printer) {
+			indented.push(tagSoftbreak)
+			indented.printTypeListContents(list, slots)
+			p.push(tagSoftbreak)
+		})
+		closeTrailing = p.printTokenSplitTrailing(closeTok, gapPreserve)
+	})
+	p.emitTrailing(closeTrailing)
 }
 
 func (p *printer) printTypeListContents(list ast.TypeList, trivia detachedTrivia) {
@@ -369,6 +366,17 @@ func (p *printer) printBody(body ast.DeclBody) {
 	})
 
 	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
+}
+
+// emitCloseTrivia emits a close bracket's leading comments or any
+// pending slot comments inside the indent.
+func (p *printer) emitCloseTrivia(closeComments []token.Token, blankBeforeClose bool) {
+	switch {
+	case len(closeComments) > 0:
+		p.emitCloseComments(closeComments, blankBeforeClose)
+	case p.pendingHasComments():
+		p.flushSlotComments()
+	}
 }
 
 // emitCloseComments emits close-brace leading comments inside an
@@ -475,9 +483,21 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 		// rest of the line, and block comments produce softline gaps that break
 		// outside the indent wrapper.
 		forceExpand := len(openTrailing) > 0 ||
-			triviaHasComments(slots) ||
-			p.scopeHasUninlineableLeadingComments(brackets) ||
 			p.firstOptionKeyHasLeadingComment(entries)
+		// Under trailing rewrite, mid entry and final slot comments
+		// render inline and must not force expansion. Slots before an
+		// entry still expand.
+		if p.options.Formatting.RewriteTrailingLineCommentsToBlock {
+			for i := 0; i < len(slots.slots) && i < entries.Len(); i++ {
+				if sliceHasComment(slots.slots[i]) {
+					forceExpand = true
+					break
+				}
+			}
+		} else if triviaHasComments(slots) ||
+			p.scopeHasUninlineableLeadingComments(brackets) {
+			forceExpand = true
+		}
 		// Layout fallback: when trailing `//` rewrite is disabled, a `//`
 		// inside an inline `[...]` would consume the closing bracket.
 		// Force broken so the comment terminates safely on its own line.
@@ -518,8 +538,11 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					valueRestore()
 				}
 				p.emitTriviaSlot(slots, 1)
-				p.emitTrivia(gapNone)
+				// gapInline renders a final slot comment inline
+				// after the value, as a reparse would.
+				p.emitTrivia(gapInline)
 			}
+			// Same for the close bracket.
 			if p.options.Formatting.LiteralLayout == LayoutDynamic {
 				p.printToken(openTok, gapSpace)
 				p.withGroup(func(p *printer) {
@@ -529,11 +552,11 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					})
 					p.push(tagSoftbreak)
 				})
-				p.printToken(closeTok, gapNone)
+				p.printToken(closeTok, gapInline)
 			} else {
 				p.printToken(openTok, gapSpace)
 				emitEntry(p)
-				p.printToken(closeTok, gapNone)
+				p.printToken(closeTok, gapInline)
 			}
 			singleRestore()
 
@@ -609,9 +632,7 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 					}
 				}
 				indented.emitTriviaSlot(slots, entries.Len())
-				if len(closeComments) > 0 {
-					indented.emitCloseComments(closeComments, slots.blankBeforeClose)
-				}
+				indented.emitCloseTrivia(closeComments, slots.blankBeforeClose)
 			})
 			p.emitTrivia(gapNone)
 			p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
