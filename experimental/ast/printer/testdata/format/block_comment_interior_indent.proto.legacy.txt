@@ -1,0 +1,19 @@
+// Relative interior indentation of block comments must be preserved.
+syntax = "proto3";
+
+service ExampleService {
+  /**
+     Reverse lookup a user from an identifier.
+
+     - OK - response contains the resolved user id
+     - NOT_FOUND - identifier was not found
+     - INVALID_ARGUMENT - invalid identifier type
+                        - missing identifier
+                        - provided identifier is already USER_ID
+  */
+  rpc GetUserId(GetUserIdRequest) returns (GetUserIdResponse);
+}
+
+message GetUserIdRequest {}
+
+message GetUserIdResponse {}

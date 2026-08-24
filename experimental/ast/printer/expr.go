@@ -306,9 +306,7 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 			restore()
 		}
 		indented.emitTriviaSlot(slots, elements.Len())
-		if len(closeComments) > 0 {
-			indented.emitCloseComments(closeComments, slots.blankBeforeClose)
-		}
+		indented.emitCloseTrivia(closeComments, slots.blankBeforeClose)
 	})
 
 	// Always emit `]` on its own line in broken layout, even when
@@ -474,12 +472,12 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 				fieldRestore = indented.ctx.with(lineToBlock(true))
 			}
 			indented.printExprField(field, fieldGap)
-			// Trailing on the comma should stay inline (the legacy
-			// formatter only puts trailing-on-VALUE block comments
-			// on their own line, not trailing-on-comma).
-			commaMods := []modifier{trailingBlockOnNewLine(false)}
+			// The elided comma's trailing comment reparses as
+			// trailing on the value, so emit it under the value's
+			// policy.
+			var commaMods []modifier
 			if rewriteFieldTrailing {
-				commaMods = append(commaMods, lineToBlock(true))
+				commaMods = append(commaMods, lineToBlock(true), trailingBlockOnNewLine(false))
 			}
 			restore := indented.ctx.with(commaMods...)
 			indented.emitCommaTrivia(elements.Comma(i))
@@ -487,8 +485,13 @@ func (p *printer) printDict(expr ast.ExprDict, gap gapStyle) {
 			fieldRestore()
 		}
 		indented.emitTriviaSlot(trivia, elements.Len())
-		if len(closeComments) > 0 {
+		switch {
+		case len(closeComments) > 0:
 			indented.emitCloseComments(closeComments, trivia.blankBeforeClose)
+		case indented.pendingHasComments():
+			// No blank preserved. With commas elided a reparse cannot
+			// reslot a blank detached comment to the right element.
+			indented.emitTrivia(gapNewline)
 		}
 	})
 
@@ -532,20 +535,19 @@ func (p *printer) printExprField(expr ast.ExprField, gap gapStyle) {
 		first = false
 	}
 	if !expr.Colon().IsZero() {
-		// gapInline ensures comments between the key and colon get a
-		// space before them but the colon follows immediately after the
-		// last comment with no gap. This prevents an idempotency issue
-		// where trivia between ] and : gets assigned differently on
-		// reparse (leading vs trailing) depending on line breaks.
-		//
-		// Exception: when the colon's leading trivia ends in an inline
-		// block comment (e.g. extension key `[ ... ] /* Three */ :`),
-		// gapInline would emit `*/:` glued. Switch to gapSpace so the
-		// `:` follows a separating space.
+		// A comment rendering as `*/` before the colon needs a
+		// separating space, whether attached to the colon or the key.
 		colonGap := gapInline
-		if att, ok := p.trivia.tokenTrivia(expr.Colon().ID()); ok {
-			if pendingEndsWithInlineBlockComment(att.leading) {
+		if p.options.Format {
+			if att, ok := p.trivia.tokenTrivia(expr.Colon().ID()); ok &&
+				p.endsWithInlineBlockComment(att.leading) {
 				colonGap = gapSpace
+			}
+			if keyTok := exprLastToken(expr.Key()); !keyTok.IsZero() {
+				if att, ok := p.trivia.tokenTrivia(keyTok.ID()); ok &&
+					p.endsWithInlineBlockComment(att.trailing) {
+					colonGap = gapSpace
+				}
 			}
 		}
 		p.printToken(expr.Colon(), colonGap)

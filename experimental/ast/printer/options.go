@@ -99,10 +99,11 @@ type Formatting struct {
 	//
 	// When true, trailing `//` comments in those tight contexts are
 	// rewritten as `/* ... */` (with `*/` in the body escaped to
-	// `* /` to keep the synthesized block comment sound). Trailing
+	// `* /` to keep the synthesized block comment sound), as are
+	// leading `//` comments that render inline after code. Trailing
 	// `//` comments in safe positions (where the next token is on a
 	// new line) are left as `//`. Matches the legacy formatter's
-	// behavior; modifies user comment text as a side effect.
+	// behavior and modifies user comment text as a side effect.
 	//
 	// When false, trailing `//` comments are emitted verbatim. If
 	// the layout would otherwise render a scope flat such that a `//`
@@ -116,13 +117,14 @@ type Formatting struct {
 	// multi-line `/* ... */` comments to a canonical form.
 	//
 	// When true, the prefix-style normalization algorithm runs on
-	// every multi-line block comment: if every non-empty interior
-	// line begins with the same non-alphanumeric character (e.g.
-	// `*`), strip per-line whitespace and re-emit with one space
-	// before the prefix character; otherwise unindent by the minimum
-	// shared indent and re-indent every line with three spaces.
-	// Matches the legacy formatter's behavior; modifies user comment
-	// text as a side effect.
+	// every multi-line block comment: if the first interior line
+	// begins with a non-alphanumeric character (e.g. `*`) and every
+	// later line begins with the same character, strip per-line
+	// whitespace and re-emit with one space before the prefix
+	// character. Otherwise unindent by the minimum shared indent and
+	// re-indent with three spaces, preserving relative indentation.
+	// Matches the legacy formatter's behavior and modifies user
+	// comment text as a side effect.
 	//
 	// When false, multi-line block comments are emitted with their
 	// interior whitespace preserved verbatim from source.

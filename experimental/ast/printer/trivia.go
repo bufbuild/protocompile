@@ -82,23 +82,16 @@ func sliceHasComment(tokens []token.Token) bool {
 	return false
 }
 
-// pendingEndsWithInlineBlockComment reports whether the trailing
-// portion of pending will be emitted as an inline `/* ... */` block
-// comment — that is, the last comment in the slice is a block (not
-// `//`) comment with no following newline. Callers use this to decide
-// whether a following inline-bound token (e.g., `:`) needs a space
-// separator so it doesn't sit flush against `*/`.
-func pendingEndsWithInlineBlockComment(tokens []token.Token) bool {
-	endsInBlock := false
+// lastCommentIsLine reports whether the last comment in tokens is a
+// `//` line comment.
+func lastCommentIsLine(tokens []token.Token) bool {
+	isLine := false
 	for _, tok := range tokens {
-		switch {
-		case tok.Kind() == token.Comment:
-			endsInBlock = !strings.HasPrefix(tok.Text(), "//")
-		case tok.Kind() == token.Space && strings.Contains(tok.Text(), "\n"):
-			endsInBlock = false
+		if tok.Kind() == token.Comment {
+			isLine = strings.HasPrefix(tok.Text(), "//")
 		}
 	}
-	return endsInBlock
+	return isLine
 }
 
 // firstNewlineIndex returns the index of the first Space token containing

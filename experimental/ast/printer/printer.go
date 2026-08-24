@@ -231,6 +231,21 @@ func (p *printer) pendingHasComments() bool {
 	return sliceHasComment(p.pending)
 }
 
+// flushSlotComments flushes pending slot comments, each on its own
+// line, preserving a blank line before the first comment.
+func (p *printer) flushSlotComments() {
+	newlines := 0
+	for _, tok := range p.pending {
+		if tok.Kind() == token.Comment {
+			break
+		}
+		if tok.Kind() == token.Space {
+			newlines += strings.Count(tok.Text(), "\n")
+		}
+	}
+	p.emitTrivia(commentGap(gapNewline, false, newlines))
+}
+
 // printToken emits a token with its trivia.
 func (p *printer) printToken(tok token.Token, gap gapStyle) {
 	if tok.IsZero() {
@@ -290,26 +305,10 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 				}
 				switch {
 				case rewriteToBlock && p.ctx.lineToBlock && isLine:
-					// Convert // comment to /* comment */ for inline contexts.
-					body := strings.TrimPrefix(strings.TrimRight(t.Text(), " \t"), "//")
-					// Escape any `*/` in the body to `* /` so it
-					// cannot prematurely terminate the synthesized
-					// block comment. This is a correctness divergence
-					// from the legacy formatter, which skips the
-					// escape and produces invalid output for bodies
-					// containing `*/` (e.g. `// foo */ bar` becomes
-					// `/* foo */ bar */`, parsed as a comment plus
-					// leaked text `bar */`). Exercised by
-					// TestFormat/compact_options.proto, with_terminator.
-					body = strings.ReplaceAll(body, "*/", "* /")
-					p.push(dom.Text("/*" + body + " */"))
-				case !rewriteToBlock && p.ctx.lineToBlock && isLine:
-					// Verbatim emission inside a context where inline
-					// content (e.g. `;`, `]`, `.next`) follows. The
-					// `//` would consume that content, so push a
-					// newline after the comment to force a layout
-					// break. dom merges this with any adjacent newline
-					// from the surrounding broken layout.
+					p.push(dom.Text(lineCommentToBlock(t.Text())))
+				case isLine:
+					// A `//` comment consumes the rest of its line, so
+					// force a newline. dom merges adjacent whitespace.
 					p.emitComment(t)
 					p.push(tagNewline)
 				default:
@@ -320,6 +319,37 @@ func (p *printer) emitTrailing(trailing []token.Token) {
 	} else {
 		p.pending = append(p.pending, trailing...)
 	}
+}
+
+// lineCommentToBlock rewrites a `// ...` line comment as `/* ... */`,
+// escaping `*/` in the body so it cannot terminate the comment early.
+func lineCommentToBlock(text string) string {
+	body := strings.TrimPrefix(strings.TrimRight(text, " \t"), "//")
+	body = strings.ReplaceAll(body, "*/", "* /")
+	return "/*" + body + " */"
+}
+
+// printTokenSplitTrailing prints tok without its trailing comments,
+// returning them for the caller to emit at a safer boundary.
+func (p *printer) printTokenSplitTrailing(tok token.Token, gap gapStyle) []token.Token {
+	trailing := p.extractOpenTrailing(tok)
+	if !p.options.Format || len(trailing) == 0 {
+		p.printToken(tok, gap)
+		return nil
+	}
+	if att, ok := p.trivia.tokenTrivia(tok.ID()); ok {
+		p.appendPending(att.leading)
+	}
+	p.emitTrivia(gap)
+	p.push(dom.Text(tok.Text()))
+	return trailing
+}
+
+// endsWithInlineBlockComment reports whether the last comment in
+// tokens will render ending in `*/` on the current line.
+func (p *printer) endsWithInlineBlockComment(tokens []token.Token) bool {
+	return sliceHasComment(tokens) &&
+		(!lastCommentIsLine(tokens) || p.options.Formatting.RewriteTrailingLineCommentsToBlock)
 }
 
 // emitCommaTrivia emits trailing trivia from a comma token that is not
@@ -600,6 +630,12 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		return base
 	}
 
+	// inlineAfterCode gaps place comments on the current line after
+	// emitted code. Such comments reparse as trailing, so emission
+	// must match [printer.emitTrailing] or passes never stabilize.
+	inlineAfterCode := gap == gapSpace || gap == gapInline ||
+		gap == gapPreserve || gap == gapPreserveTight
+
 	hasComment := false
 	prevIsLine := false
 	newlineRun := 0
@@ -633,8 +669,11 @@ func (p *printer) emitTrivia(gap gapStyle) {
 			continue
 		}
 
-		fg := inheritGap(firstGap, hasNonNewlineSpace)
-		ag := inheritGap(afterGap, hasNonNewlineSpace)
+		// A newline counts as whitespace so an inlined comment keeps
+		// the space the trailing path would emit.
+		hadSpace := hasNonNewlineSpace || newlineRun > 0
+		fg := inheritGap(firstGap, hadSpace)
+		ag := inheritGap(afterGap, hadSpace)
 
 		// Suppress the inherited space before the first comment when
 		// gapPreserveTight is used (right after an open bracket).
@@ -642,16 +681,40 @@ func (p *printer) emitTrivia(gap gapStyle) {
 			fg = firstGap
 		}
 
+		isLine := strings.HasPrefix(tok.Text(), "//")
+
+		// Match the trailing path's space. gapPreserveTight stays
+		// tight against the open bracket.
+		forceSpace := isLine && inlineAfterCode && gap != gapPreserveTight
+		if forceSpace && !hasComment && fg != gapSpace {
+			fg = gapSpace
+		}
+
+		// Blank runs around inline comments collapse.
+		gapRun := newlineRun
+		if inlineAfterCode {
+			gapRun = 0
+		}
+
 		if !hasComment {
 			p.emitGap(fg)
 		} else {
-			p.emitGap(commentGap(ag, prevIsLine, newlineRun))
+			g := commentGap(ag, prevIsLine, gapRun)
+			if forceSpace && g == gapNone {
+				g = gapSpace
+			}
+			p.emitGap(g)
 		}
 
 		hasNonNewlineSpace = false
 		newlineRun = 0
-		isLine := strings.HasPrefix(tok.Text(), "//")
-		p.emitComment(tok)
+		// Rewrite as the trailing path would.
+		if isLine && inlineAfterCode && p.options.Formatting.RewriteTrailingLineCommentsToBlock {
+			p.push(dom.Text(lineCommentToBlock(tok.Text())))
+			isLine = false
+		} else {
+			p.emitComment(tok)
+		}
 		hasComment = true
 		prevIsLine = isLine
 	}
@@ -687,7 +750,12 @@ func (p *printer) emitTrivia(gap gapStyle) {
 		// the next token, preserve that newline — otherwise the
 		// inheritGap promotion to gapSpace would inline content the
 		// user wrote on separate lines.
-		finalGap := commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, newlineRun)
+		// Blank runs after inline comments collapse.
+		finalRun := newlineRun
+		if inlineAfterCode {
+			finalRun = 0
+		}
+		finalGap := commentGap(inheritGap(afterGap, hasNonNewlineSpace), prevIsLine, finalRun)
 		if gap == gapNewline && !prevIsLine && newlineRun >= 1 && finalGap == gapSpace {
 			finalGap = gapNewline
 		}
@@ -925,13 +993,13 @@ func (p *printer) emitComment(tok token.Token) {
 // rather than rewritten to a canonical prefix or plain style.
 //
 // The normalization algorithm matches the legacy formatter's behavior:
-//   - Detect if all non-empty interior lines share a common non-alphanumeric
-//     prefix character (e.g., *, =). If so, strip all whitespace and re-add
-//     " " before each line (prefix style). If the prefix is *, the closing
-//     line becomes " */".
+//   - Detect if the first interior line starts with a non-alphanumeric
+//     prefix character (e.g., *, =) that every later line shares. If so,
+//     strip all whitespace and re-add " " before each line (prefix
+//     style). If the prefix is *, the closing line becomes " */".
 //   - Otherwise (plain style), compute the minimum visual indentation of
 //     non-empty interior lines, unindent by that amount, then add "   "
-//     (3 spaces) before each line.
+//     (3 spaces) before each line, preserving relative indentation.
 func (p *printer) emitBlockComment(text string) {
 	lines := strings.Split(text, "\n")
 	if len(lines) <= 1 {
@@ -975,31 +1043,31 @@ func (p *printer) emitBlockComment(text string) {
 	lastTrimmed := strings.TrimLeft(lines[len(lines)-1], " \t")
 	standaloneClose := strings.HasPrefix(lastTrimmed, "*/") && strings.TrimRight(lastTrimmed, " \t") == "*/"
 
-	// Compute minimum indent and detect prefix character across all
-	// lines after the first (interior + closing).
+	// The first interior line seeds the prefix and any mismatching
+	// later line clears it for good, matching the legacy formatter.
 	minIndent := -1
 	var prefix byte
-	prefixSet := false
+	seeded := false
 	for i := 1; i < len(lines); i++ {
 		trimmed := strings.TrimLeft(lines[i], " \t")
-		if trimmed == "" || trimmed == "*/" {
+		if trimmed == "*/" {
 			continue
 		}
-
-		indent := computeVisualIndent(lines[i])
-		if minIndent < 0 || indent < minIndent {
-			minIndent = indent
+		if trimmed != "" {
+			indent := computeVisualIndent(lines[i])
+			if minIndent < 0 || indent < minIndent {
+				minIndent = indent
+			}
 		}
 
-		ch := trimmed[0]
-		if isCommentPrefix(ch) {
-			if !prefixSet {
-				prefix = ch
-				prefixSet = true
-			} else if ch != prefix {
-				prefix = 0
-			}
-		} else {
+		var ch byte
+		if trimmed != "" && isCommentPrefix(trimmed[0]) {
+			ch = trimmed[0]
+		}
+		if !seeded {
+			prefix = ch
+			seeded = true
+		} else if ch != prefix {
 			prefix = 0
 		}
 	}

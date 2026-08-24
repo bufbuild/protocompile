@@ -1,0 +1,73 @@
+// Comment placements that historically corrupted formatter output or
+// oscillated between format passes.
+syntax = "proto3" /* before the syntax semicolon */;
+
+import "google/protobuf/descriptor.proto";
+
+option java_package /* between path and equals */ = "com.foo";
+option (/* trailing on extension open paren */file_conf) = "x";
+
+extend google /* mid path */.protobuf.FileOptions {
+  string file_conf = 50000;
+}
+
+extend google.protobuf.FieldOptions {
+  Conf conf = 50001;
+}
+
+message Conf {
+  string key = 1;
+  repeated string vals = 2;
+}
+
+message Fields /* before the body brace */ {
+  bool /* between type and name */ a = 1;
+  bool b = 2 // before the semicolon
+  ;
+  bool c = 3 /* blank wrapped before the semicolon */;
+  bool d = 4 [deprecated = true /* trailing on the option value */];
+  bool e = 5 [deprecated = true /* before the close bracket */];
+  bool f = 6 [deprecated = true /* blank wrapped before the close bracket */];
+  bool g = 7 [
+    deprecated = true,
+    json_name = "g"
+    // final slot in expanded options
+  ];
+  bool h = 8 [(conf) = {
+    key /* before the colon */ : "v"
+    vals: [
+      "x" // trailing before the comma
+      ,
+      "y"
+    ]
+  }];
+  bool i = 9 [(conf) = {
+    key: "v"
+    /* after comma on a scalar value */
+    vals: ["x"]
+  }];
+  bool j = 10 [(conf) = {
+    vals: ["x"] /* after comma on a composite value */
+    key: "v"
+  }];
+  bool k = 11 [(conf) = {
+    key: "v"
+    // blank wrapped before the dict close
+  }];
+  bool l = 12 /* inline
+     multi line */;
+}
+
+service S {
+  rpc M /* before the inputs */ (In) returns /* before the outputs */ (Out) {}
+  rpc N(In) // trailing on the inputs close paren
+  returns (Out) {}
+}
+
+message In {}
+
+message Out {}
+
+enum E {
+  E_UNSPECIFIED = 0 /* blank wrapped before the enum semicolon */;
+}
