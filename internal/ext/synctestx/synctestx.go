@@ -23,7 +23,7 @@ import (
 // simultaneously, simulating a thundering herd. Returns once all spawned
 // goroutines have exited.
 //
-// If count is zero, uses GOMAXPROCS instead.
+// If count is zero or less, uses GOMAXPROCS instead.
 func Hammer(count int, f func()) {
 	if count <= 0 {
 		count = runtime.GOMAXPROCS(0)
