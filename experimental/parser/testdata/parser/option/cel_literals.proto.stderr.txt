@@ -1,3 +1,19 @@
+error: unrecognized suffix for integer literal
+  --> testdata/parser/option/cel_literals.proto:5:13
+  help: delete it
+   |
+ 5 | - option x = 0u;
+ 5 | + option x = 0;
+   |
+
+error: unrecognized suffix for integer literal
+  --> testdata/parser/option/cel_literals.proto:6:13
+  help: delete it
+   |
+ 6 | - option x = 0U;
+ 6 | + option x = 0;
+   |
+
 error: invalid digit in decimal integer literal
   --> testdata/parser/option/cel_literals.proto:7:14
    |
@@ -58,4 +74,4 @@ error: implicitly-concatenated string has incompatible prefix
    |        |
    |        must match this prefix
 
-encountered 8 errors
+encountered 10 errors

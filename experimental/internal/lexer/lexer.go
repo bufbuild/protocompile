@@ -92,6 +92,8 @@ type Lexer struct {
 	EscapePartialX        bool // Partial \xN escapes.
 	EscapeUppercaseX      bool // The unusual \XNN escape.
 	EscapeOldStyleUnicode bool // Old-style Unicode escapes \uXXXX and \UXXXXXXXX.
+
+	AllowBacktickStrings bool // If true, backticks ` can enclose string/hex literals.
 }
 
 // Lex runs lexical analysis on file and returns a new token stream as a result.
