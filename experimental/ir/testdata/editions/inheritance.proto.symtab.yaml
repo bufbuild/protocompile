@@ -9,6 +9,7 @@ tables:
       value: "false"
       explicit: true
     - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+    - { extn: "pb.cpp", name: "repeated_type", value: "LEGACY" }
     - { extn: "pb.cpp", name: "string_type", value: "STRING" }
     symbols:
     - fqn: "buf"
@@ -38,6 +39,7 @@ tables:
         "features": { message.fields: { "repeated_field_encoding": { i32: 1 } } }
       features:
       - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "repeated_type", value: "LEGACY" }
       - { extn: "pb.cpp", name: "string_type", value: "STRING" }
     - fqn: "buf.test.M.y"
       kind: KIND_FIELD
@@ -48,6 +50,7 @@ tables:
         "features": { message.fields: { "field_presence": { i32: 3 } } }
       features:
       - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "repeated_type", value: "LEGACY" }
       - { extn: "pb.cpp", name: "string_type", value: "STRING" }
     - fqn: "buf.test.M.z"
       kind: KIND_FIELD
@@ -56,6 +59,7 @@ tables:
       visible: true
       features:
       - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "repeated_type", value: "LEGACY" }
       - { extn: "pb.cpp", name: "string_type", value: "STRING" }
     - fqn: "buf.test.Z"
       kind: KIND_ENUM_VALUE

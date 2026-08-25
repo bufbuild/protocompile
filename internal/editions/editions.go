@@ -40,7 +40,7 @@ const (
 	MaxSupportedEdition = descriptorpb.Edition_EDITION_2023
 
 	// MaxKnownEdition is the most recent edition known by this module.
-	MaxKnownEdition = descriptorpb.Edition_EDITION_2024
+	MaxKnownEdition = descriptorpb.Edition_EDITION_2026
 )
 
 var (
