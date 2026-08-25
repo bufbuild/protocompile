@@ -64,9 +64,9 @@ warning: redundant custom option setting syntax
     |                       |
     |                       this field is not a message extension
     |
-   ::: <built-in>/google/protobuf/descriptor.proto:807:23
+   ::: <built-in>/google/protobuf/descriptor.proto:810:23
     |
-807 |   optional FeatureSet features = 21;
+810 |   optional FeatureSet features = 21;
     |                       --------
     |                        |
     |                        field declared inside of `google.protobuf.FieldOptions` here

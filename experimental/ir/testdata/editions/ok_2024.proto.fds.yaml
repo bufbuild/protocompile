@@ -45,6 +45,26 @@ file:
         edition_defaults:
         - { edition: EDITION_LEGACY, value: "STRIP_ENUM_PREFIX_KEEP" }
         feature_support.edition_introduced: EDITION_2024
+    - name: "optimize_mode"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.GoFeatures.OptimizeModeFeature.OptimizeMode"
+      json_name: "optimizeMode"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_MESSAGE, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "OPTIMIZE_MODE_UNSPECIFIED" }
+        feature_support.edition_introduced: EDITION_2024
+    nested_type:
+    - name: "OptimizeModeFeature"
+      enum_type:
+      - name: "OptimizeMode"
+        value:
+        - { name: "OPTIMIZE_MODE_UNSPECIFIED", number: 0 }
+        - { name: "SPEED", number: 1 }
+        - { name: "CODE_SIZE", number: 2 }
     enum_type:
     - name: "APILevel"
       value:
@@ -217,6 +237,17 @@ file:
         - { edition: EDITION_LEGACY, value: "false" }
         - { edition: EDITION_2024, value: "true" }
         feature_support.edition_introduced: EDITION_2024
+    - name: "repeated_type"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.CppFeatures.RepeatedType"
+      json_name: "repeatedType"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "LEGACY" }]
+        feature_support.edition_introduced: EDITION_UNSTABLE
     enum_type:
     - name: "StringType"
       value:
@@ -224,6 +255,11 @@ file:
       - { name: "VIEW", number: 1 }
       - { name: "CORD", number: 2 }
       - { name: "STRING", number: 3 }
+    - name: "RepeatedType"
+      value:
+      - { name: "REPEATED_TYPE_UNKNOWN", number: 0 }
+      - { name: "LEGACY", number: 1 }
+      - { name: "PROXY", number: 2 }
   extension:
   - name: "cpp"
     number: 1000

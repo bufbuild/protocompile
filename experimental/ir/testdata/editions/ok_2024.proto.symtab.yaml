@@ -13,7 +13,11 @@ tables:
     - { extn: "pb.cpp", name: "string_type", value: "STRING", explicit: true }
     - { extn: "pb.go", name: "api_level", value: "API_OPEN", explicit: true }
     - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+    - { extn: "pb.cpp", name: "repeated_type", value: "LEGACY" }
     - { extn: "pb.go", name: "legacy_unmarshal_json_enum", value: "false" }
+    - extn: "pb.go"
+      name: "optimize_mode"
+      value: "OPTIMIZE_MODE_UNSPECIFIED"
     - extn: "pb.go"
       name: "strip_enum_prefix"
       value: "STRIP_ENUM_PREFIX_KEEP"
@@ -45,6 +49,9 @@ tables:
         value: "YES"
         explicit: true
       - { extn: "pb.go", name: "api_level", value: "API_OPEN" }
+      - extn: "pb.go"
+        name: "optimize_mode"
+        value: "OPTIMIZE_MODE_UNSPECIFIED"
     - fqn: "buf.test.MyEnum"
       kind: KIND_ENUM
       file: "testdata/editions/ok_2024.proto"

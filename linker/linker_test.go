@@ -3521,14 +3521,18 @@ func TestLinkerValidation(t *testing.T) {
 							feature_support = {
 								edition_introduced: EDITION_PROTO2
 								edition_deprecated: EDITION_2024
+								deprecation_warning: "foo"
 								edition_removed: EDITION_99997_TEST_ONLY
+								removal_error: "foo"
 							}
 						];
 						optional bool other = 21 [
 							feature_support = {
 								edition_introduced: EDITION_PROTO2
 								edition_deprecated: EDITION_2024
+								deprecation_warning: "foo"
 								edition_removed: EDITION_99997_TEST_ONLY
+								removal_error: "foo"
 							}
 						];
 					}
@@ -3554,6 +3558,7 @@ func TestLinkerValidation(t *testing.T) {
 							feature_support = {
 								edition_introduced: EDITION_PROTO2
 								edition_removed: EDITION_2023
+								removal_error: "foo"
 							}
 						];
 					}
@@ -3694,7 +3699,9 @@ func TestLinkerValidation(t *testing.T) {
 							feature_support = {
 								edition_introduced: EDITION_2023
 								edition_deprecated: EDITION_2024
-								edition_removed: EDITION_2024
+								deprecation_warning: "foo"
+								edition_removed: EDITION_99997_TEST_ONLY
+								removal_error: "foo"
 							}
 						];
 					}
@@ -3744,7 +3751,9 @@ func TestLinkerValidation(t *testing.T) {
 							feature_support = {
 								edition_introduced: EDITION_2023
 								edition_deprecated: EDITION_2023
+								deprecation_warning: "foo"
 								edition_removed: EDITION_2024
+								removal_error: "foo"
 							}
 						];
 					}
