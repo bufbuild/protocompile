@@ -135,8 +135,8 @@ func TestBufFormat(t *testing.T) {
 
 			errs := &report.Report{}
 			file, _ := parser.Parse(relPath, source.NewFile(relPath, string(protoData)), errs)
-			for diagnostic := range errs.Diagnostics {
-				t.Logf("parse warning: %q", diagnostic)
+			for _, diagnostic := range errs.Diagnostics {
+				t.Logf("parse warning: %q", diagnostic.Message())
 			}
 
 			opts := printer.Options{Format: true, Formatting: printer.Legacy()}

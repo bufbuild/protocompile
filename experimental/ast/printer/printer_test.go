@@ -40,7 +40,7 @@ func TestRoundTrip(t *testing.T) {
 		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
 		for _, d := range errs.Diagnostics {
 			if d.Level() <= report.Warning {
-				t.Logf("parse warning: %q", d)
+				t.Logf("parse warning: %q", d.Message())
 			}
 		}
 
@@ -71,7 +71,7 @@ func TestPrint(t *testing.T) {
 		file, _ := parser.Parse(path, source.NewFile(path, text), errs)
 		for _, d := range errs.Diagnostics {
 			if d.Level() <= report.Warning {
-				t.Logf("parse warning: %q", d)
+				t.Logf("parse warning: %q", d.Message())
 			}
 		}
 
@@ -142,7 +142,7 @@ func TestFormat(t *testing.T) {
 				hasParseErrors = true
 			}
 			if d.Level() <= report.Warning {
-				t.Logf("parse warning: %q", d)
+				t.Logf("parse warning: %q", d.Message())
 			}
 		}
 

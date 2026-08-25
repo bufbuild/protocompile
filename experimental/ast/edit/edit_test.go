@@ -80,7 +80,7 @@ func TestApplyEdits(t *testing.T) {
 				hasParseErrors = true
 			}
 			if d.Level() <= report.Warning {
-				t.Logf("source parse: %q", d)
+				t.Logf("source parse: %q", d.Message())
 			}
 		}
 
