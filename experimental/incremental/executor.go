@@ -154,8 +154,12 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		result:          &result{done: make(chan struct{})},
 		runID:           generation,
 		timer:           timings,
+		wg:              new(sync.WaitGroup),
 		onRootGoroutine: true,
 	}
+	// Wait for spawned goroutines before releasing the dirty lock, even on
+	// cancellation, so Evict never runs concurrently with a query.
+	defer root.wg.Wait()
 
 	// Need to acquire a hold on the global semaphore to represent the root
 	// task we're about to execute.

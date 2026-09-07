@@ -106,6 +106,35 @@ func TestCancelWhileLeaderPanics(t *testing.T) {
 	}
 }
 
+func TestCancelledRunWaitsForLeaders(t *testing.T) {
+	t.Parallel()
+
+	exec := incremental.New(incremental.WithParallelism(4))
+	stubborn := Stubborn{
+		Started:  make(chan struct{}),
+		Release:  make(chan struct{}),
+		Finished: new(bool),
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	signal := Signal{Executed: make(chan struct{})}
+	runErr := make(chan error)
+	go func() {
+		_, _, err := incremental.Run(ctx, exec, incremental.Query[int](signal), incremental.Query[int](stubborn))
+		runErr <- err
+	}()
+	<-stubborn.Started
+
+	cancel()
+	close(stubborn.Release)
+	require.ErrorIs(t, <-runErr, context.Canceled)
+
+	// Run must not return before the leader it spawned has exited; otherwise
+	// this read is unsynchronized with the write in Stubborn.Execute, and
+	// Evict could run concurrently with a query.
+	assert.True(t, *stubborn.Finished)
+}
+
 // Blocking signals when it starts executing and then blocks until released.
 type Blocking struct {
 	Started chan struct{}
@@ -119,6 +148,25 @@ func (b Blocking) Key() any {
 func (b Blocking) Execute(_ *incremental.Task) (int, error) {
 	close(b.Started)
 	<-b.Release
+	return 42, nil
+}
+
+// Stubborn is like Blocking, but ignores cancellation and sets Finished on
+// its way out.
+type Stubborn struct {
+	Started  chan struct{}
+	Release  chan struct{}
+	Finished *bool
+}
+
+func (s Stubborn) Key() any {
+	return s
+}
+
+func (s Stubborn) Execute(_ *incremental.Task) (int, error) {
+	close(s.Started)
+	<-s.Release
+	*s.Finished = true
 	return 42, nil
 }
 

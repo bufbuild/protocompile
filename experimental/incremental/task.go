@@ -57,6 +57,9 @@ type Task struct {
 
 	timer *timer
 
+	// Counts goroutines spawned on behalf of this task's Run, so that Run
+	// does not return while any of them are still executing.
+	wg *sync.WaitGroup
 	// Set if we're currently holding the executor's semaphore. This exists to
 	// ensure that we do not violate concurrency assumptions, and is never
 	// itself mutated concurrently.
@@ -445,7 +448,9 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	}
 
 	// Complete the rest of the computation asynchronously.
+	caller.wg.Add(1)
 	go func() {
+		defer caller.wg.Done()
 		done(t.run(caller, q, true))
 	}()
 	return true
@@ -582,6 +587,7 @@ func (t *task) lead(caller *Task, q *AnyQuery, async bool, pending *result) (out
 		task:   t,
 		result: output,
 		timer:  caller.timer,
+		wg:     caller.wg,
 
 		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
