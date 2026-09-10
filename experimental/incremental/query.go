@@ -38,7 +38,7 @@ type Query[T any] interface {
 	// this query is not already in the [Executor]'s cache.
 	//
 	// The error return should only be used to signal if the query failed. For
-	// non-fatal errors, you should record that information with [Task.NonFatal].
+	// non-fatal errors, you should record diagnostics with [Task.Report].
 	//
 	// Implementations of this function MUST NOT call [Run] on the executor that
 	// is executing them. This will defeat correctness detection, and lead to

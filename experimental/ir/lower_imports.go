@@ -34,8 +34,9 @@ const DescriptorProtoPath = "google/protobuf/descriptor.proto"
 // Importer is a callback to resolve the imports of an [ast.File] being
 // lowered.
 //
-// If a cycle is encountered, should return an *[incremental.ErrCycle],
-// starting from decl and ending when the currently lowered file is imported.
+// If a cycle is encountered, should return an *[ErrCycle] containing the
+// chain of import declarations forming the cycle, beginning and ending with
+// decl itself.
 //
 // [Session.Lower] may not call this function on all imports; only those for
 // which it needs the caller to resolve a [File] for it.
@@ -141,18 +142,25 @@ func buildImports(file *File, r *report.Report, importer Importer) {
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each
-// import contributing to the cycle in turn.
+// import contributing to the cycle in turn. The chain begins and ends at the
+// same import, making the loop explicit.
 func diagnoseCycle(r *report.Report, cycle *ErrCycle) {
 	path := cycle.Cycle[0].ImportPath().AsLiteral().AsString().Text()
 	err := r.Errorf("detected cyclic import while importing %q", path)
 
-	for i, imp := range cycle.Cycle {
+	decls := cycle.Cycle
+	if len(decls) == 2 && decls[0] == decls[1] {
+		// A file that imports itself; the whole loop is a single import.
+		decls = decls[:1]
+	}
+
+	for i, imp := range decls {
 		var message string
 		if path := imp.ImportPath().AsLiteral().AsString(); !path.IsZero() {
 			switch i {
 			case 0:
 				message = "imported here"
-			case len(cycle.Cycle) - 1:
+			case len(decls) - 1:
 				message = fmt.Sprintf("...which imports %q, completing the cycle", path.Text())
 			default:
 				message = fmt.Sprintf("...which imports %q...", path.Text())

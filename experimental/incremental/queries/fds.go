@@ -64,7 +64,8 @@ func (l FDS) Execute(t *incremental.Task) (*descriptorpb.FileDescriptorSet, erro
 		return nil, linkResult[0].Fatal
 	}
 
-	irs := linkResult[0].Value
+	// Clone before filtering to avoid mutating memoized Link results.
+	irs := slices.Clone(linkResult[0].Value)
 	irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 	fdpQueries := slicesx.Transform(

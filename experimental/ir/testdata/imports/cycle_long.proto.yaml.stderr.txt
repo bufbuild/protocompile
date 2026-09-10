@@ -1,5 +1,5 @@
 error: detected cyclic import while importing "b1.proto"
-  --> a1.proto:4:1
+  --> d2.proto:4:1
    |
  4 | import "b1.proto";
    | ^^^^^^^^^^^^^^^^^^ imported here
@@ -14,9 +14,9 @@ error: detected cyclic import while importing "b1.proto"
  4 | import "d1.proto";
    | ------------------ ...which imports "d1.proto"...
    |
-  ::: a1.proto:5:1
+  ::: d1.proto:4:1
    |
- 5 | import "b2.proto";
+ 4 | import "b2.proto";
    | ------------------ ...which imports "b2.proto"...
    |
   ::: b2.proto:4:1
