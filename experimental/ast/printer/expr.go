@@ -275,8 +275,19 @@ func (p *printer) printArray(expr ast.ExprArray, gap gapStyle) {
 
 	defer p.ctx.with(trailingBlockOnNewLine(true), pairLeadingBlock(true))()
 
-	p.printToken(openTok, gap)
+	// Keep the first trailing comment inline with `[`. The bracket is
+	// printed outside the withIndent below, so any comment that breaks
+	// onto its own line here would land at the bracket's indent rather
+	// than the element's, and the next pass, which reparses it as
+	// leading trivia on the first element, would move it, causing it to
+	// be non-idempotent. The rest are held back for the indent.
+	openTrailing := p.printTokenSplitTrailing(openTok, gap)
+	inlineTrailing, indentedTrailing := splitAfterFirstComment(openTrailing)
+	openRestore := p.ctx.with(trailingBlockOnNewLine(false))
+	p.emitTrailing(inlineTrailing)
+	openRestore()
 	p.withIndent(func(indented *printer) {
+		indented.emitTrailing(indentedTrailing)
 		for i := range elements.Len() {
 			// Comma is the boundary token of the previous element in
 			// the trivia walker, so emit it (and its trailing) first;
