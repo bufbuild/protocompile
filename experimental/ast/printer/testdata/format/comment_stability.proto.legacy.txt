@@ -56,6 +56,22 @@ message Fields /* before the body brace */ {
   }];
   bool l = 12 /* inline
      multi line */;
+  bool m = 13 [ /* after the compact options open bracket */
+    deprecated = true,
+    json_name = "m"
+  ];
+  bool n = 14 [(conf) = {
+    vals: [ /* after the array open bracket */
+      "x",
+      "y"
+    ]
+  }];
+  bool o = 15 [(conf) = {
+    vals: [ /* one */
+      /* two */
+      "x"
+    ]
+  }];
 }
 
 service S {

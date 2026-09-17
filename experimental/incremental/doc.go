@@ -33,10 +33,10 @@ actually computing it. Queries can partially succeed: instead of a query
 returning (T, error), it only returns a T, and errors are flagged to the [Task]
 argument.
 
-If a query cannot proceed, it can call [Task.Fail], which will mark the query
-as failed and exit the goroutine dedicated to running that query. No queries
-that depend on it will be executed. Non-fatal errors can be recorded with
-[Task.Error].
+If a query cannot proceed, it can return a non-nil fatal error from
+[Query].Execute, which queries that depend on it will observe as
+[Result].Fatal. Non-fatal errors can be recorded as diagnostics on the
+[report.Report] returned by [Task.Report].
 
 This means that generally queries do not need to worry about propagating errors
 correctly; this happens automatically in the framework. The entry-point for

@@ -16,6 +16,7 @@ package printer
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -321,7 +322,9 @@ func (p *printer) printBody(body ast.DeclBody) {
 	p.printToken(openTok, gapSpace)
 
 	closeComments, closeAtt := p.extractCloseComments(closeTok)
-	hasContent := body.Decls().Len() > 0 || !trivia.isEmpty() || len(closeComments) > 0
+	hasContent := p.printableDeclCount(body) > 0 ||
+		p.bodyTriviaIsContent(body.Braces(), trivia) ||
+		len(closeComments) > 0
 	if !hasContent {
 		p.printToken(closeTok, gapNone)
 		return
@@ -366,6 +369,31 @@ func (p *printer) printBody(body ast.DeclBody) {
 	})
 
 	p.emitCloseTok(closeTok, closeTok.Text(), closeComments, closeAtt)
+}
+
+// printableDeclCount reports how many of body's declarations actually
+// emit code to prevent formatting empty bodies from emitting extra newlines.
+func (p *printer) printableDeclCount(body ast.DeclBody) int {
+	decls := body.Decls()
+	if !p.options.Format {
+		return decls.Len()
+	}
+	count := 0
+	for decl := range seq.Values(decls) {
+		if decl.Kind() != ast.DeclKindEmpty {
+			count++
+		}
+	}
+	return count
+}
+
+// bodyTriviaIsContent reports whether a body scope's trivia will emit
+// anything, and so must keep the body from collapsing to `{}`.
+func (p *printer) bodyTriviaIsContent(braces token.Token, trivia detachedTrivia) bool {
+	if !p.options.Format {
+		return !trivia.isEmpty()
+	}
+	return triviaHasComments(trivia) || p.scopeHasAttachedComments(braces)
 }
 
 // emitCloseTrivia emits a close bracket's leading comments or any
@@ -602,9 +630,23 @@ func (p *printer) printCompactOptions(co ast.CompactOptions) {
 			// indented line via gapNewline; a trailing block comment
 			// `/* note */` also stays inline with the bracket. This
 			// matches the legacy formatter's `[ // note\n  ...` style.
-			p.printToken(openTok, gapSpace)
+			//
+			// The bracket is printed outside the withIndent below, so
+			// its trailing comments cannot all be emitted here: any
+			// that break onto their own line would land at the
+			// bracket's indent rather than the entry's, and the next
+			// pass, which reparses them as leading trivia on the first
+			// entry, would move them, causing it to be non-idempotent.
+			// Only the first comment stays inline with the bracket; the
+			// rest are held back and emitted inside the indent.
+			openTrailing := p.printTokenSplitTrailing(openTok, gapSpace)
+			inlineTrailing, indentedTrailing := splitAfterFirstComment(openTrailing)
+			openRestore := p.ctx.with(trailingBlockOnNewLine(false))
+			p.emitTrailing(inlineTrailing)
+			openRestore()
 			closeComments, closeAtt := p.extractCloseComments(closeTok)
 			p.withIndent(func(indented *printer) {
+				indented.emitTrailing(indentedTrailing)
 				for i := range entries.Len() {
 					// Emit the comma (and its trailing) first; then the
 					// detached slot[i] between comma and this entry;
