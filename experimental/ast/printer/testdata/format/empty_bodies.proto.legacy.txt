@@ -15,3 +15,19 @@ message Bar {
 message Baz {
   // Body comment.
 }
+
+// Stray semicolons print nothing, so these bodies are empty.
+message Semi {}
+
+message Semis {}
+
+service SemiService {}
+
+// ... but a comment riding along with one still keeps the body open.
+message SemiComment {
+  /* Not dropped. */
+}
+
+message SemiLineComment {
+  // Also not dropped.
+}

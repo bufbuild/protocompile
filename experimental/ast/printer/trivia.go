@@ -94,6 +94,19 @@ func lastCommentIsLine(tokens []token.Token) bool {
 	return isLine
 }
 
+// splitAfterFirstComment splits tokens just past the first comment.
+// Tokens that are not comments are inert to [printer.emitTrailing], so
+// they ride along with the head and only the comments are partitioned.
+// A run with no comment at all is returned whole as the head.
+func splitAfterFirstComment(tokens []token.Token) (head, tail []token.Token) {
+	for i, tok := range tokens {
+		if tok.Kind() == token.Comment {
+			return tokens[:i+1], tokens[i+1:]
+		}
+	}
+	return tokens, nil
+}
+
 // firstNewlineIndex returns the index of the first Space token containing
 // a newline, or len(tokens) if none is found.
 func firstNewlineIndex(tokens []token.Token) int {
