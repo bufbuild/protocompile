@@ -187,14 +187,14 @@ func loop(l *lexer) {
 		r := l.pop()
 
 		switch {
-		case r == '"', r == '\'':
+		case r == '"', r == '\'', (r == '`' && l.AllowBacktickStrings):
 			l.cursor-- // Back up to behind the quote before resuming.
 			lexString(l, "")
 
 		case l.NumberCanStartWithDot && r == '.', unicode.IsDigit(r):
 			// Back up behind the rune we just popped.
 			l.cursor -= utf8.RuneLen(r)
-			lexNumber(l)
+			_ = lexNumber(l)
 
 		case unicodex.IsXIDStart(r):
 			// Back up behind the rune we just popped.

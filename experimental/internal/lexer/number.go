@@ -81,7 +81,7 @@ func lexNumber(l *lexer) token.Token {
 		token.MutateMeta[tokenmeta.Number](tok).Base = base
 	}
 
-	isFloat := taxa.IsFloatText(digits)
+	isFloat := taxa.IsFloatText(tok.Text())
 	expBase := 1
 	expIdx := -1
 	if isFloat {
@@ -190,6 +190,12 @@ func lexNumber(l *lexer) token.Token {
 			goto fail
 		}
 
+		// Cap the exponent to prevent extremely large values from causing hangs in v.Int()
+		// or other operations. 1,000,000 is still quite large but manageable.
+		if v.IsInf() || v.IsNaN() || v.Exp() > 1000000 || v.Exp() < -1000000 {
+			goto fail
+		}
+
 		// We want this to overflow to Infinity as needed, which Float64
 		// will do for us. Otherwise it will ties-to-even as the
 		// protobuf.com spec requires.
@@ -219,7 +225,7 @@ func lexNumber(l *lexer) token.Token {
 	case result.big != nil:
 		token.MutateMeta[tokenmeta.Number](tok).Big = new(decimal.Decimal).ReuseInt(result.big)
 
-	case base == 10 && !result.hasThousands:
+	case base == 10 && !result.hasThousands && suffix == "" && prefix == "":
 		// We explicitly do not call SetValue for the most common case of base
 		// 10 integers, because that is handled for us on-demand in AsInt. This
 		// is a memory consumption optimization.

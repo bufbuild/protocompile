@@ -491,3 +491,13 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 
 	return d
 }
+
+// ShiftReportSpans shifts all diagnostics in the report to use the new file and add the given byte offset.
+func ShiftReportSpans(r *Report, file *source.File, offset int) {
+	if r == nil {
+		return
+	}
+	for i := range r.Diagnostics {
+		r.Diagnostics[i].ShiftSpan(file, offset)
+	}
+}
