@@ -1,0 +1,169 @@
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user0.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user1.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user10.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user11.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user2.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user3.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user4.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user5.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user6.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user7.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user8.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+error: closed enum `buf.test.Closed` cannot be used in an implicit-presence
+       field
+  --> user9.proto:9:3
+   |
+ 9 |   Closed f = 1;
+   |   ^^^^^^
+  ::: base.proto:5:31
+   |
+ 5 |   option features.enum_type = CLOSED;
+   |                               ------ `buf.test.Closed` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
+encountered 12 errors
