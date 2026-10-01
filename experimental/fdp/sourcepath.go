@@ -91,6 +91,12 @@ func (d *debug) comments(s source.Spanner, path ...int32) {
 // If the last token is fused token, for example, the closing brace of a body, }, based
 // on protoc comment attribution semantics, it checks the opening brace for trailing comments.
 func (d *debug) maybeComments(s source.Spanner, comments bool, path ...int32) {
+	d.maybeCommentsAt(s, s, comments, path...)
+}
+
+// maybeCommentsAt is like [debug.maybeComments], but records at as the
+// location's span. Comments are still attributed using s.
+func (d *debug) maybeCommentsAt(s, at source.Spanner, comments bool, path ...int32) {
 	if d == nil || d.suppressed {
 		return
 	}
@@ -103,7 +109,7 @@ func (d *debug) maybeComments(s source.Spanner, comments bool, path ...int32) {
 	loc := new(descriptorpb.SourceCodeInfo_Location)
 	d.proto.Location = append(d.proto.Location, loc)
 
-	loc.Span = locationSpan(span)
+	loc.Span = locationSpan(source.GetSpan(at))
 	loc.Path = append(slices.Clone(d.path), path...)
 	if !comments {
 		return

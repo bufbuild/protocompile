@@ -291,7 +291,7 @@ func validateAllFeatures(file *File, r *report.Report) {
 		for member := range seq.Values(ty.Members()) {
 			option := builtins.FieldFeatures
 			if member.IsEnumValue() {
-				option = builtins.EnumFeatures
+				option = builtins.EnumValueFeatures
 			}
 
 			// A field belonging to a oneof inherits features from the oneof.

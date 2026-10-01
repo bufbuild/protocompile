@@ -203,7 +203,7 @@ func (g *generator) message(ty ir.Type, mdp *descriptorpb.DescriptorProto) {
 	}
 
 	ast := ty.AST().AsMessage()
-	g.debug.comments(ast)
+	g.debug.maybeCommentsAt(ast, typeSpan(ty, ast.Keyword), true)
 
 	mdp.Name = addr(ty.Name())
 	g.debug.span(ast.Name, tags.Message_Name)
@@ -465,7 +465,7 @@ func (g *generator) oneof(o ir.Oneof, odp *descriptorpb.OneofDescriptorProto) {
 
 func (g *generator) enum(ty ir.Type, edp *descriptorpb.EnumDescriptorProto) {
 	ast := ty.AST().AsEnum()
-	g.debug.comments(ast)
+	g.debug.maybeCommentsAt(ast, typeSpan(ty, ast.Keyword), true)
 
 	edp.Name = addr(ty.Name())
 	g.debug.span(ast.Name, tags.Enum_Name)
@@ -725,6 +725,16 @@ func (g *generator) rangeSourceCodeInfo(expr ast.ExprAny, startTag, endTag int32
 
 	g.debug.span(start, startTag)
 	g.debug.span(end, endTag)
+}
+
+// typeSpan returns the span protoc records for a message or enum definition,
+// which starts at its keyword, after any visibility modifier.
+func typeSpan(ty ir.Type, keyword token.Token) source.Span {
+	span := ty.AST().Span()
+	if _, explicit := ty.IsExported(); explicit && !keyword.IsZero() {
+		span.Start = keyword.Span().Start
+	}
+	return span
 }
 
 func visibility(ty ir.Type) *descriptorpb.SymbolVisibility {

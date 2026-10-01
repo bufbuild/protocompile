@@ -158,6 +158,27 @@ error: `enforce_naming_style` is not supported in Edition 2023
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: `enforce_naming_style` requires at least Edition 2024
 
+error: `strip_enum_prefix` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:39:5
+   |
+ 1 | edition = "2023";
+   |           ------ edition specified here
+...
+39 |     features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `strip_enum_prefix` requires at least Edition 2024
+
+error: `enforce_naming_style` is not supported in Edition 2023
+  --> testdata/editions/features_2024_in_2023.proto:40:5
+   |
+ 1 | edition = "2023";
+   |           ------ edition specified here
+...
+39 |     features.(pb.go).strip_enum_prefix = STRIP_ENUM_PREFIX_STRIP,
+40 |     features.enforce_naming_style = STYLE2024
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_naming_style` requires at least Edition 2024
+
 error: `nest_in_file_class` is not supported in Edition 2023
   --> testdata/editions/features_2024_in_2023.proto:45:10
    |
@@ -189,4 +210,4 @@ error: `enforce_naming_style` is not supported in Edition 2023
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: `enforce_naming_style` requires at least Edition 2024
 
-encountered 18 errors
+encountered 20 errors
