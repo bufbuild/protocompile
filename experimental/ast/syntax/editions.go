@@ -21,7 +21,7 @@ import (
 
 // LatestImplementedEdition is the most recent edition that the compiler
 // implements.
-const LatestImplementedEdition = Edition2024
+const LatestImplementedEdition = Edition2026
 
 // All returns an iterator over all known [Syntax] values.
 func All() iter.Seq[Syntax] {
@@ -29,7 +29,8 @@ func All() iter.Seq[Syntax] {
 		_ = yield(Proto2) &&
 			yield(Proto3) &&
 			yield(Edition2023) &&
-			yield(Edition2024)
+			yield(Edition2024) &&
+			yield(Edition2026)
 	}
 }
 
@@ -37,7 +38,8 @@ func All() iter.Seq[Syntax] {
 func Editions() iter.Seq[Syntax] {
 	return func(yield func(Syntax) bool) {
 		_ = yield(Edition2023) &&
-			yield(Edition2024)
+			yield(Edition2024) &&
+			yield(Edition2026)
 	}
 }
 
@@ -49,7 +51,7 @@ func (s Syntax) IsEdition() bool {
 // IsSupported returns whether this syntax is fully supported.
 func (s Syntax) IsSupported() bool {
 	switch s {
-	case Proto2, Proto3, Edition2023, Edition2024:
+	case Proto2, Proto3, Edition2023, Edition2024, Edition2026:
 		return true
 	default:
 		return false
@@ -60,7 +62,7 @@ func (s Syntax) IsSupported() bool {
 // syntax/edition declaration).
 func (s Syntax) IsValid() bool {
 	switch s {
-	case Proto2, Proto3, Edition2023, Edition2024:
+	case Proto2, Proto3, Edition2023, Edition2024, Edition2026:
 		return true
 	default:
 		return false
@@ -71,7 +73,7 @@ func (s Syntax) IsValid() bool {
 func (s Syntax) IsKnown() bool {
 	switch s {
 	case Unknown, EditionLegacy,
-		Proto2, Proto3, Edition2023, Edition2024,
+		Proto2, Proto3, Edition2023, Edition2024, Edition2026,
 		EditionTest1, EditionTest2, EditionTest99997, EditionTest99998, EditionTest99999,
 		EditionMax:
 		return true
@@ -84,7 +86,7 @@ func (s Syntax) IsKnown() bool {
 // google.protobuf.FieldOptions.feature_support.
 func (s Syntax) IsConstraint() bool {
 	switch s {
-	case Proto2, Proto3, Edition2023, Edition2024,
+	case Proto2, Proto3, Edition2023, Edition2024, Edition2026,
 		EditionLegacy:
 		return true
 	default:
@@ -111,6 +113,7 @@ var descriptorNames = map[Syntax]string{
 	Proto3:      "EDITION_PROTO3",
 	Edition2023: "EDITION_2023",
 	Edition2024: "EDITION_2024",
+	Edition2026: "EDITION_2026",
 
 	EditionTest1:     "EDITION_1_TEST_ONLY",
 	EditionTest2:     "EDITION_2_TEST_ONLY",

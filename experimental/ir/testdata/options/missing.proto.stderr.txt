@@ -31,9 +31,9 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: <built-in>/google/protobuf/descriptor.proto:616:12
+   ::: <built-in>/google/protobuf/descriptor.proto:623:12
     |
-616 |   optional bool deprecated = 3 [default = false];
+623 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.FieldOptions`
@@ -52,9 +52,9 @@ error: expected singular message, found scalar type `bool`
     |                                              |
     |                                              field selector requires singular message
     |
-   ::: <built-in>/google/protobuf/descriptor.proto:752:12
+   ::: <built-in>/google/protobuf/descriptor.proto:759:12
     |
-752 |   optional bool lazy = 5 [default = false];
+759 |   optional bool lazy = 5 [default = false];
     |            ---- type specified here
 
 error: expected singular message, found scalar type `int32`
@@ -87,9 +87,9 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: <built-in>/google/protobuf/descriptor.proto:880:12
+   ::: <built-in>/google/protobuf/descriptor.proto:887:12
     |
-880 |   optional bool deprecated = 3 [default = false];
+887 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.EnumValueOptions`
@@ -108,9 +108,9 @@ error: expected singular message, found scalar type `bool`
     |                                            |
     |                                            field selector requires singular message
     |
-   ::: <built-in>/google/protobuf/descriptor.proto:914:12
+   ::: <built-in>/google/protobuf/descriptor.proto:921:12
     |
-914 |   optional bool deprecated = 1 [default = false];
+921 |   optional bool deprecated = 1 [default = false];
     |            ---- type specified here
 
 encountered 12 errors

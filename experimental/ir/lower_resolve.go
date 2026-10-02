@@ -424,6 +424,9 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					}
 
 					d.Apply(report.Snippetf(span, "this implies `local`"))
+					if ty.Parent().IsZero() {
+						d.Apply(report.Helpf("mark `%s` as `export` to make it visible to other files", ty.Name()))
+					}
 				}
 				return d
 			}

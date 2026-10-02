@@ -1,0 +1,138 @@
+tables:
+  "testdata/editions/2026/ok.proto":
+    imports:
+    - { path: "google/protobuf/c_sharp_features.proto", visible: true }
+    - path: "google/protobuf/cpp_file_options.proto"
+      transitive: true
+      visible: true
+    - { path: "google/protobuf/cpp_options.proto", visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - path: "google/protobuf/json_enumvalue_options.proto"
+      transitive: true
+      visible: true
+    - { path: "google/protobuf/json_options.proto", visible: true }
+    features:
+    - extn: "pb.csharp"
+      name: "nullable_reference_types"
+      value: "true"
+      explicit: true
+    symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/2026/ok.proto"
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/2026/ok.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/2026/ok.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_proto_limits": { i32: 1 } } }
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Local"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/2026/ok.proto"
+      index: 3
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Namespace"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/2026/ok.proto"
+      index: 4
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Bar"
+      kind: KIND_ENUM
+      file: "testdata/editions/2026/ok.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Namespace.Kind"
+      kind: KIND_ENUM
+      file: "testdata/editions/2026/ok.proto"
+      index: 5
+      visible: true
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 1
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Foo.bar"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 2
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Foo.local"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 3
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Foo.kind"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 4
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Foo.a"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 5
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.Foo.b"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/ok.proto"
+      index: 6
+      visible: true
+      features:
+      - { extn: "pb.csharp", name: "nullable_reference_types", value: "true" }
+    - fqn: "buf.test.BAR_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/2026/ok.proto"
+      index: 7
+      visible: true
+      options.message.extns:
+        "pb.enumvalue.json":
+          message.fields: { "string": { string: "unspecified" } }
+    - fqn: "buf.test.BAR_ONE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/2026/ok.proto"
+      index: 8
+      visible: true
+      options.message.extns:
+        "pb.enumvalue.json": { message.fields: { "string": { string: "1" } } }
+    - fqn: "buf.test.BAR_TWO"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/2026/ok.proto"
+      index: 9
+      visible: true
+    - fqn: "buf.test.Namespace.KIND_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/2026/ok.proto"
+      index: 10
+      visible: true
+    - fqn: "buf.test.Foo.choice"
+      kind: KIND_ONEOF
+      file: "testdata/editions/2026/ok.proto"
+      index: 1
+      visible: true
+    options.message:
+      fields:
+        "features":
+          message.extns:
+            "pb.csharp":
+              message.fields: { "nullable_reference_types": { bool: true } }
+      extns:
+        "pb.file.cpp": { message.fields: { "namespace": { string: "buf::test" } } }

@@ -1,0 +1,61 @@
+tables:
+  "testdata/editions/2026/naming_style_ok.proto":
+    symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/2026/naming_style_ok.proto"
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/2026/naming_style_ok.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Legacy"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
+    - fqn: "buf.test.Foo.has_x"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Foo.get_y"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Foo.z_value"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.Foo.descriptors"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 4
+      visible: true
+    - fqn: "buf.test.Foo.hasx"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 5
+      visible: true
+    - fqn: "buf.test.Legacy.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 6
+      visible: true
+    - fqn: "buf.test.Legacy.has_x"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 7
+      visible: true
+    - fqn: "buf.test.Legacy.BadName"
+      kind: KIND_FIELD
+      file: "testdata/editions/2026/naming_style_ok.proto"
+      index: 8
+      visible: true

@@ -1,0 +1,46 @@
+error: `cc_enable_arenas` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:7:8
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+ 7 | option cc_enable_arenas = true;
+   |        ^^^^^^^^^^^^^^^^
+   = help: removed in Edition 2026
+   = help: cc_enable_arenas is enabled by default in every edition and overrides
+           are ignored.This option is removed in editions 2026 and above
+
+warning: expected feature field to set `edition_defaults`
+  --> testdata/editions/2026/option_lifetime.proto:21:25
+   |
+21 |       bool deprecated = 1 [feature_support = {
+   |  ________________________^
+...  /
+25 | |     }];
+   | \______^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+error: `old` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:29:12
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+29 |     option (old) = true;
+   |            ^^^^^
+   = help: deprecated since Edition 2024, removed in Edition 2026
+   = help: use `new` instead
+
+warning: `deprecated` is deprecated in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:30:12
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+29 |     option (old) = true;
+30 |     option (nested).deprecated = true;
+   |            ^^^^^^^^^^^^^^^^^^^
+   = help: deprecated since Edition 2026
+   = help: don't use this
+
+encountered 2 errors and 2 warnings

@@ -53,9 +53,13 @@ func buildFeatureInfo(field Member, r *report.Report) {
 
 	info := new(rawFeatureInfo)
 	if defaults.IsZero() {
-		r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
-			report.Snippet(field.AST().Options()), mistake,
-		)
+		// Ordinary options may set feature_support without edition_defaults,
+		// such as cc_enable_arenas.
+		if !isOptionsMessage(field.Container()) {
+			r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
+				report.Snippet(field.AST().Options()), mistake,
+			)
+		}
 	} else {
 		for def := range seq.Values(defaults.Elements()) {
 			def := def.AsMessage()
@@ -241,9 +245,31 @@ func buildFeatureInfo(field Member, r *report.Report) {
 
 		value = support.Field(builtins.EditionSupportWarning)
 		info.deprecationWarning, _ = value.AsString()
+
+		value = support.Field(builtins.EditionSupportRemovalErr)
+		info.removalErr, _ = value.AsString()
 	}
 
 	field.Raw().featureInfo = info
+}
+
+// isOptionsMessage returns whether ty is one of the *Options messages in
+// descriptor.proto.
+func isOptionsMessage(ty Type) bool {
+	if ty.IsZero() {
+		return false
+	}
+	builtins := ty.Context().builtins()
+	for _, options := range []Member{
+		builtins.FileOptions, builtins.MessageOptions, builtins.FieldOptions,
+		builtins.OneofOptions, builtins.RangeOptions, builtins.EnumOptions,
+		builtins.EnumValueOptions, builtins.ServiceOptions, builtins.MethodOptions,
+	} {
+		if !options.IsZero() && options.Element() == ty {
+			return true
+		}
+	}
+	return false
 }
 
 func validateAllFeatures(file *File, r *report.Report) {
@@ -361,7 +387,6 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	))
 
 	builtins := features.Context().builtins()
-	edition := features.Context().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
 			validateFeatures(msg, r)
@@ -391,29 +416,91 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			}
 		}
 
-		// We check these in reverse order, because the user might have set
-		// introduced == deprecated == removed, and protoc doesn't enforce
-		// any relationship between these.
-		switch {
-		case info.IsRemoved(edition), info.IsDeprecated(edition):
-			r.SoftError(info.IsRemoved(edition), erredition.TooNew{
-				Current:          features.Context().Syntax(),
-				Decl:             features.Context().AST().Syntax(),
-				Removed:          info.Removed(),
-				Deprecated:       info.Deprecated(),
-				DeprecatedReason: info.DeprecationWarning(),
-				What:             feature.Field().Name(),
-				Where:            feature.KeyAST(),
-			})
+		diagnoseLifetime(feature, info, r)
+	}
+}
 
-		case !info.IsIntroduced(edition):
-			r.Error(erredition.TooOld{
-				Current: features.Context().Syntax(),
-				Decl:    features.Context().AST().Syntax(),
-				Intro:   info.Introduced(),
-				What:    feature.Field().Name(),
-				Where:   feature.KeyAST(),
-			})
+// validateOptionLifetimes validates that options which declare a
+// feature_support, such as cc_enable_arenas, are compatible with the current
+// edition. Features are validated separately by [validateFeatures].
+func validateOptionLifetimes(file *File, r *report.Report) {
+	validateOptionLifetimesIn(file.Options(), r)
+	for ty := range seq.Values(file.AllTypes()) {
+		validateOptionLifetimesIn(ty.Options(), r)
+		for member := range seq.Values(ty.Members()) {
+			validateOptionLifetimesIn(member.Options(), r)
 		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			validateOptionLifetimesIn(oneof.Options(), r)
+		}
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			validateOptionLifetimesIn(extns.Options(), r)
+		}
+	}
+	for extn := range seq.Values(file.AllExtensions()) {
+		validateOptionLifetimesIn(extn.Options(), r)
+	}
+	for service := range seq.Values(file.Services()) {
+		validateOptionLifetimesIn(service.Options(), r)
+		for method := range seq.Values(service.Methods()) {
+			validateOptionLifetimesIn(method.Options(), r)
+		}
+	}
+}
+
+func validateOptionLifetimesIn(options MessageValue, r *report.Report) {
+	if options.IsZero() {
+		return
+	}
+
+	builtins := options.Context().builtins()
+	for value := range options.Fields() {
+		field := value.Field()
+		switch {
+		case field.Element() == builtins.FeatureSet:
+			continue // Validated by validateFeatures.
+		case field == builtins.JavaMultipleFiles:
+			continue // Has a more specific diagnostic in validateFileOptions.
+		}
+
+		diagnoseLifetime(value, field.FeatureInfo(), r)
+		validateOptionLifetimesIn(value.AsMessage(), r)
+	}
+}
+
+// diagnoseLifetime diagnoses value if its field's feature_support does not
+// permit it in the current edition.
+func diagnoseLifetime(value Value, info FeatureInfo, r *report.Report) {
+	if info.IsZero() {
+		return
+	}
+
+	file := value.Context()
+	edition := file.Syntax()
+
+	// We check these in reverse order, because the user might have set
+	// introduced == deprecated == removed, and protoc doesn't enforce
+	// any relationship between these.
+	switch {
+	case info.IsRemoved(edition), info.IsDeprecated(edition):
+		r.SoftError(info.IsRemoved(edition), erredition.TooNew{
+			Current:          edition,
+			Decl:             file.AST().Syntax(),
+			Removed:          info.Removed(),
+			Deprecated:       info.Deprecated(),
+			RemovedReason:    info.RemovalError(),
+			DeprecatedReason: info.DeprecationWarning(),
+			What:             value.Field().Name(),
+			Where:            value.KeyAST(),
+		})
+
+	case !info.IsIntroduced(edition):
+		r.Error(erredition.TooOld{
+			Current: edition,
+			Decl:    file.AST().Syntax(),
+			Intro:   info.Introduced(),
+			What:    value.Field().Name(),
+			Where:   value.KeyAST(),
+		})
 	}
 }

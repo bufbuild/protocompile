@@ -1,0 +1,126 @@
+error: field name cannot begin with `has_` if `x` exists
+  --> testdata/editions/2026/naming_style_bad.proto:7:11
+   |
+ 6 |     int32 x = 1;
+   |           - `x` declared here
+ 7 |     int32 has_x = 2;
+   |           ^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `x`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field name cannot begin with `get_` if `x` exists
+  --> testdata/editions/2026/naming_style_bad.proto:8:11
+   |
+ 6 |     int32 x = 1;
+   |           - `x` declared here
+ 7 |     int32 has_x = 2;
+ 8 |     int32 get_x = 3;
+   |           ^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `x`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field name cannot begin with `set_` if `x` exists
+  --> testdata/editions/2026/naming_style_bad.proto:9:11
+   |
+ 6 |     int32 x = 1;
+   |           - `x` declared here
+ 7 |     int32 has_x = 2;
+ 8 |     int32 get_x = 3;
+ 9 |     int32 set_x = 4;
+   |           ^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `x`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field name cannot begin with `clear_` if `x` exists
+  --> testdata/editions/2026/naming_style_bad.proto:10:11
+   |
+ 6 |     int32 x = 1;
+   |           - `x` declared here
+ 7 |     int32 has_x = 2;
+ 8 |     int32 get_x = 3;
+ 9 |     int32 set_x = 4;
+10 |     int32 clear_x = 5;
+   |           ^^^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `x`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field name cannot end with `_value` if `x` exists
+  --> testdata/editions/2026/naming_style_bad.proto:11:11
+   |
+ 6 |     int32 x = 1;
+   |           - `x` declared here
+ 7 |     int32 has_x = 2;
+...
+10 |     int32 clear_x = 5;
+11 |     int32 x_value = 6;
+   |           ^^^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `x`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field cannot be named `descriptor`
+  --> testdata/editions/2026/naming_style_bad.proto:12:12
+   |
+12 |     string descriptor = 7;
+   |            ^^^^^^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: field name should be snake_case
+  --> testdata/editions/2026/naming_style_bad.proto:15:11
+   |
+15 |     int32 BadName = 8;
+   |           ^^^^^^^ this name violates STYLE2024
+   |
+   = help: STYLE2024 requires field names to be snake_case (e.g., my_field)
+
+error: field name cannot begin with `has_` if `y` exists
+  --> testdata/editions/2026/naming_style_bad.proto:22:11
+   |
+19 |     oneof y {
+   |           - `y` declared here
+20 |         int32 a = 1;
+21 |     }
+22 |     int32 has_y = 2;
+   |           ^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `y`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: oneof name cannot end with `_value` if `y` exists
+  --> testdata/editions/2026/naming_style_bad.proto:23:11
+   |
+19 |     oneof y {
+   |           - `y` declared here
+...
+22 |     int32 has_y = 2;
+23 |     oneof y_value {
+   |           ^^^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code for `y`
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+error: oneof cannot be named `descriptor`
+  --> testdata/editions/2026/naming_style_bad.proto:26:11
+   |
+26 |     oneof descriptor {
+   |           ^^^^^^^^^^ this name violates STYLE2026
+   |
+   = help: this name can collide with generated code
+   = help: set `features.enforce_naming_style = STYLE2024` to opt out of this
+           check
+
+encountered 10 errors

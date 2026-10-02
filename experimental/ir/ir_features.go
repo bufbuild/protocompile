@@ -55,7 +55,7 @@ type rawFeature struct {
 type rawFeatureInfo struct {
 	defaults                        []featureDefault // Sorted by edition.
 	introduced, deprecated, removed syntax.Syntax
-	deprecationWarning              string
+	deprecationWarning, removalErr  string
 }
 
 type featureDefault struct {
@@ -232,6 +232,15 @@ func (f FeatureInfo) Removed() syntax.Syntax {
 // IsRemoved returns whether this feature has been removed yet.
 func (f FeatureInfo) IsRemoved(in syntax.Syntax) bool {
 	return f.Removed() != syntax.Unknown && f.Removed() <= in
+}
+
+// RemovalError returns the literal text of the removal error for this
+// feature, if it has been removed.
+func (f FeatureInfo) RemovalError() string {
+	if f.IsZero() {
+		return ""
+	}
+	return f.raw.removalErr
 }
 
 // DeprecationWarning returns the literal text of the deprecation warning for

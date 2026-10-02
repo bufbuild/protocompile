@@ -36,6 +36,7 @@ const (
 	Proto3           Syntax = 999
 	Edition2023      Syntax = 1000
 	Edition2024      Syntax = 1001
+	Edition2026      Syntax = 1002
 	EditionLegacy    Syntax = 900
 	EditionTest1     Syntax = 1
 	EditionTest2     Syntax = 2
@@ -76,6 +77,7 @@ var _table_Syntax_String = map[Syntax]string{
 	Proto3:           "proto3",
 	Edition2023:      "2023",
 	Edition2024:      "2024",
+	Edition2026:      "2026",
 	EditionLegacy:    "buf/legacy",
 	EditionTest1:     "buf/1",
 	EditionTest2:     "buf/2",
@@ -91,6 +93,7 @@ var _table_Syntax_GoString = map[Syntax]string{
 	Proto3:           "syntax.Proto3",
 	Edition2023:      "syntax.Edition2023",
 	Edition2024:      "syntax.Edition2024",
+	Edition2026:      "syntax.Edition2026",
 	EditionLegacy:    "syntax.EditionLegacy",
 	EditionTest1:     "syntax.EditionTest1",
 	EditionTest2:     "syntax.EditionTest2",
@@ -105,6 +108,7 @@ var _table_Syntax_Lookup = map[string]Syntax{
 	"proto3":     Proto3,
 	"2023":       Edition2023,
 	"2024":       Edition2024,
+	"2026":       Edition2026,
 	"buf/legacy": EditionLegacy,
 	"buf/1":      EditionTest1,
 	"buf/2":      EditionTest2,

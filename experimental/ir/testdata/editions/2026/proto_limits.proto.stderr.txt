@@ -1,0 +1,37 @@
+error: number of fields exceeds the limit of 1500
+    --> testdata/editions/2026/proto_limits.proto:1510:16
+     |
+1510 | export message OverLimit {
+     |                ^^^^^^^^^ this has 1501
+     |
+     = help: set `features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS` to
+             opt out of this check
+
+error: number of oneofs exceeds the limit of 1000
+    --> testdata/editions/2026/proto_limits.proto:4519:16
+     |
+4519 | export message Oneofs {
+     |                ^^^^^^ this has 1001
+     |
+     = help: set `features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS` to
+             opt out of this check
+
+error: number of fields in oneof exceeds the limit of 1200
+    --> testdata/editions/2026/proto_limits.proto:5525:11
+     |
+5525 |     oneof big {
+     |           ^^^ this has 1201
+     |
+     = help: set `features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS` to
+             opt out of this check
+
+error: number of enum values exceeds the limit of 1700
+    --> testdata/editions/2026/proto_limits.proto:9637:13
+     |
+9637 | export enum OverLimitEnum {
+     |             ^^^^^^^^^^^^^ this has 1701
+     |
+     = help: set `features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS` to
+             opt out of this check
+
+encountered 4 errors

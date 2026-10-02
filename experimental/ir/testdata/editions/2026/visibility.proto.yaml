@@ -1,0 +1,58 @@
+files:
+- path: "main.proto"
+  text: |
+    edition = "2026";
+    package test;
+
+    import "dep.proto";
+
+    message Main {
+      dep.Default default = 1;
+      dep.Exported exported = 2;
+      dep.Local local = 3;
+      dep.Exported.Nested nested = 4;
+      dep.Exported.LocalNested local_nested = 5;
+      dep.DefaultEnum default_enum = 6;
+      dep.ExportedEnum exported_enum = 7;
+      dep.Complete.Nested complete = 8;
+    }
+- path: "dep.proto"
+  import: true
+  text: |
+    edition = "2026";
+    package test.dep;
+
+    message Default {}
+    local message Local {}
+    export message Exported {
+      message Nested {}
+      local message LocalNested {}
+    }
+    enum DefaultEnum { DEFAULT_ENUM_UNSPECIFIED = 0; }
+    export enum ExportedEnum { EXPORTED_ENUM_UNSPECIFIED = 0; }
+
+    // Messages which reserve all of their field numbers may export nested enums.
+    message Complete {
+      export enum Nested { NESTED_UNSPECIFIED = 0; }
+      reserved 1 to max;
+    }
+
+    message Use {
+      Default default = 1;
+      Local local = 2;
+      Exported.Nested nested = 3;
+    }
+- path: "bad.proto"
+  text: |
+    edition = "2026";
+    package test.bad;
+
+    export message BadNested {
+      export message Nested {}
+      export enum NestedEnum { NESTED_ENUM_UNSPECIFIED = 0; }
+    }
+
+    export message Complete {
+      export message Nested {}
+      reserved 1 to max;
+    }
