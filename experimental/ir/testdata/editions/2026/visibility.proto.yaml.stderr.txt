@@ -1,0 +1,137 @@
+error: nested message type marked as exported
+  --> bad.proto:5:3
+   |
+ 4 | / export message BadNested {
+ 5 | |   export message Nested {}
+   | |   ^^^^^^ nested type exported here
+ 6 | |   export enum NestedEnum { NESTED_ENUM_UNSPECIFIED = 0; }
+ 7 | | }
+   | \_- ... within this type
+   |
+  ::: bad.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ `STRICT` specified here
+   |
+   = help: in strict mode, nested message types cannot be marked as exported,
+           even if all the field numbers of its parent are reserved
+
+error: nested enum type marked as exported
+  --> bad.proto:6:3
+   |
+ 4 | / export message BadNested {
+ 5 | |   export message Nested {}
+ 6 | |   export enum NestedEnum { NESTED_ENUM_UNSPECIFIED = 0; }
+   | |   ^^^^^^ nested type exported here
+ 7 | | }
+   | \_- ... within this type
+   |
+  ::: bad.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ `STRICT` specified here
+   |
+   = help: in strict mode, a nested enum type can only be marked as exported if
+           it is nested within a top-level `local` message that declares
+           `reserved 1 to max;`
+
+error: nested message type marked as exported
+  --> bad.proto:10:3
+   |
+ 9 | / export message Complete {
+10 | |   export message Nested {}
+   | |   ^^^^^^ nested type exported here
+11 | |   reserved 1 to max;
+12 | | }
+   | \_- ... within this type
+   |
+  ::: bad.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ `STRICT` specified here
+   |
+   = help: in strict mode, nested message types cannot be marked as exported,
+           even if all the field numbers of its parent are reserved
+
+warning: redundant visibility modifier
+  --> dep.proto:5:1
+   |
+ 5 | local message Local {}
+   | ^^^^^ specified here
+   |
+  ::: dep.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ this implies it
+
+warning: redundant visibility modifier
+  --> dep.proto:8:3
+   |
+ 8 |   local message LocalNested {}
+   |   ^^^^^ specified here
+   |
+  ::: dep.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ this implies it
+
+error: found unexported message type `test.dep.Default`
+  --> main.proto:7:3
+   |
+ 7 |   dep.Default default = 1;
+   |   ^^^^^^^^^^^ unexported type
+   |
+  ::: dep.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ this implies `local`
+   |
+   = help: mark `Default` as `export` to make it visible to other files
+
+error: found unexported message type `test.dep.Local`
+  --> main.proto:9:3
+   |
+ 9 |   dep.Local local = 3;
+   |   ^^^^^^^^^ unexported type
+   |
+  ::: dep.proto:5:1
+   |
+ 5 | local message Local {}
+   | ----- marked as local here
+
+error: found unexported message type `test.dep.Exported.Nested`
+  --> main.proto:10:3
+   |
+10 |   dep.Exported.Nested nested = 4;
+   |   ^^^^^^^^^^^^^^^^^^^ unexported type
+   |
+  ::: dep.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ this implies `local`
+
+error: found unexported message type `test.dep.Exported.LocalNested`
+  --> main.proto:11:3
+   |
+11 |   dep.Exported.LocalNested local_nested = 5;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^ unexported type
+   |
+  ::: dep.proto:8:3
+   |
+ 8 |   local message LocalNested {}
+   |   ----- marked as local here
+
+error: found unexported enum type `test.dep.DefaultEnum`
+  --> main.proto:12:3
+   |
+12 |   dep.DefaultEnum default_enum = 6;
+   |   ^^^^^^^^^^^^^^^ unexported type
+   |
+  ::: dep.proto:1:11
+   |
+ 1 | edition = "2026";
+   |           ------ this implies `local`
+   |
+   = help: mark `DefaultEnum` as `export` to make it visible to other files
+
+encountered 8 errors and 2 warnings

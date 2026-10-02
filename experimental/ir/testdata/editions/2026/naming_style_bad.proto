@@ -1,0 +1,41 @@
+edition = "2026";
+
+package buf.test;
+
+export message Fields {
+    int32 x = 1;
+    int32 has_x = 2;
+    int32 get_x = 3;
+    int32 set_x = 4;
+    int32 clear_x = 5;
+    int32 x_value = 6;
+    string descriptor = 7;
+
+    // STYLE2024 checks still apply in STYLE2026.
+    int32 BadName = 8;
+}
+
+export message Oneofs {
+    oneof y {
+        int32 a = 1;
+    }
+    int32 has_y = 2;
+    oneof y_value {
+        int32 b = 3;
+    }
+    oneof descriptor {
+        int32 c = 4;
+    }
+}
+
+export message OptOut {
+    option features.enforce_naming_style = STYLE2024;
+    int32 x = 1;
+    int32 has_x = 2;
+    string descriptor = 3;
+}
+
+export message FieldOptOut {
+    int32 x = 1;
+    int32 has_x = 2 [features.enforce_naming_style = STYLE2024];
+}

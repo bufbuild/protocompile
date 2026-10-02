@@ -86,6 +86,7 @@ type builtins struct {
 	EditionSupportDeprecated Member `builtin:"optional"`
 	EditionSupportWarning    Member `builtin:"optional"`
 	EditionSupportRemoved    Member `builtin:"optional"`
+	EditionSupportRemovalErr Member `builtin:"optional"`
 
 	FeatureSet         Type   `builtin:"optional"`
 	FeaturePresence    Member `builtin:"optional"`
@@ -97,6 +98,7 @@ type builtins struct {
 	FeatureJSON        Member `builtin:"optional"`
 	FeatureVisibility  Member `builtin:"optional"`
 	FeatureNamingStyle Member `builtin:"optional"`
+	FeatureProtoLimits Member `builtin:"optional"`
 
 	FileFeatures      Member `builtin:"optional"`
 	MessageFeatures   Member `builtin:"optional"`
@@ -114,6 +116,10 @@ type builtins struct {
 type builtinIDs struct {
 	DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
 	AnyPath        intern.ID `intern:"google.protobuf.Any"`
+
+	// These are not in descriptor.proto, so they are matched by name.
+	EnumValueJSON       intern.ID `intern:"pb.enumvalue.json"`
+	EnumValueJSONString intern.ID `intern:"pb.enumvalue.JsonEnumValueOptions.string"`
 
 	FileOptions      intern.ID `intern:"google.protobuf.FileDescriptorProto.options"`
 	MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
@@ -174,6 +180,7 @@ type builtinIDs struct {
 	EditionSupportDeprecated intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_deprecated"`
 	EditionSupportWarning    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.deprecation_warning"`
 	EditionSupportRemoved    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_removed"`
+	EditionSupportRemovalErr intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.removal_error"`
 
 	FeatureSet         intern.ID `intern:"google.protobuf.FeatureSet"`
 	FeaturePresence    intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
@@ -185,6 +192,7 @@ type builtinIDs struct {
 	FeatureJSON        intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
 	FeatureVisibility  intern.ID `intern:"google.protobuf.FeatureSet.default_symbol_visibility"`
 	FeatureNamingStyle intern.ID `intern:"google.protobuf.FeatureSet.enforce_naming_style"`
+	FeatureProtoLimits intern.ID `intern:"google.protobuf.FeatureSet.enforce_proto_limits"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

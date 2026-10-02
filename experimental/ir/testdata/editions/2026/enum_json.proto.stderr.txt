@@ -1,0 +1,74 @@
+error: JSON name `a` is used by multiple enum values
+  --> testdata/editions/2026/enum_json.proto:18:51
+   |
+17 |     CONFLICTS_A = 1 [(pb.enumvalue.json).string = "a"];
+   |                                                   --- previously used here
+18 |     CONFLICTS_B = 2 [(pb.enumvalue.json).string = "a"];
+   |                                                   ^^^ used here
+   |
+   = help: only aliases of the same number may share a JSON name
+
+error: JSON name `CONFLICTS_UNSPECIFIED` is used by multiple enum values
+  --> testdata/editions/2026/enum_json.proto:19:51
+   |
+16 |     CONFLICTS_UNSPECIFIED = 0;
+   |     --------------------- previously used here
+17 |     CONFLICTS_A = 1 [(pb.enumvalue.json).string = "a"];
+18 |     CONFLICTS_B = 2 [(pb.enumvalue.json).string = "a"];
+19 |     CONFLICTS_C = 3 [(pb.enumvalue.json).string = "CONFLICTS_UNSPECIFIED"];
+   |                                                   ^^^^^^^^^^^^^^^^^^^^^^^
+   |                                                    |
+   |                                                    used here
+   |
+   = help: only aliases of the same number may share a JSON name
+
+error: JSON name `x` is used by multiple enum values
+  --> testdata/editions/2026/enum_json.proto:21:5
+   |
+20 |     CONFLICTS_D = 4 [(pb.enumvalue.json).string = "x"];
+   |                                                   --- previously used here
+21 |     x = 5 [features.enforce_naming_style = STYLE_LEGACY];
+   |     ^ used here
+   |
+   = help: only aliases of the same number may share a JSON name
+
+error: custom JSON name `7` is a number that does not match
+  --> testdata/editions/2026/enum_json.proto:25:59
+   |
+25 |     NUMBERS_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "7"];
+   |                           -                               ^^^ this is `7`
+   |                           |
+   |                           but the value's number is `0`
+
+error: custom JSON name `-1` is a number that does not match
+  --> testdata/editions/2026/enum_json.proto:26:51
+   |
+26 |     NUMBERS_ONE = 1 [(pb.enumvalue.json).string = "-1"];
+   |                   -                               ^^^^ this is `-1`
+   |                   |
+   |                   but the value's number is `1`
+
+error: custom JSON name cannot contain NUL bytes
+  --> testdata/editions/2026/enum_json.proto:27:51
+   |
+27 |     NUMBERS_TWO = 2 [(pb.enumvalue.json).string = "nul\0"];
+   |                                                   ^^^^^^^
+
+error: aliases must have the same custom JSON name
+  --> testdata/editions/2026/enum_json.proto:34:5
+   |
+33 |     ALIASES_ONE = 1 [(pb.enumvalue.json).string = "one"];
+   |     ----------- but this has custom JSON name `one`
+34 |     ALIASES_UNO = 1 [(pb.enumvalue.json).string = "uno"];
+   |     ^^^^^^^^^^^ this has custom JSON name `uno`
+
+error: aliases must have the same custom JSON name
+  --> testdata/editions/2026/enum_json.proto:35:5
+   |
+33 |     ALIASES_ONE = 1 [(pb.enumvalue.json).string = "one"];
+   |     ----------- but this has custom JSON name `one`
+34 |     ALIASES_UNO = 1 [(pb.enumvalue.json).string = "uno"];
+35 |     ALIASES_EIN = 1;
+   |     ^^^^^^^^^^^ this has no custom JSON name
+
+encountered 8 errors

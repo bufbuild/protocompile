@@ -1,0 +1,11 @@
+error: `enforce_proto_limits` is not supported in Edition 2024
+  --> testdata/editions/2026/proto_limits_2024.proto:6:12
+   |
+ 1 | edition = "2024";
+   |           ------ edition specified here
+...
+ 6 |     option features.enforce_proto_limits = PROTO_LIMITS2026;
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `enforce_proto_limits` requires at least Edition 2026
+
+encountered 1 error

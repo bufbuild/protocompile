@@ -19,6 +19,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -75,6 +76,7 @@ func validateConstraints(f *File, r *report.Report) {
 	for ty := range seq.Values(f.AllTypes()) {
 		validateReservedNames(ty, r)
 		validateVisibility(ty, r)
+		validateProtoLimits(ty, r)
 		switch {
 		case ty.IsEnum():
 			validateEnum(ty, r)
@@ -188,6 +190,107 @@ func validateEnum(ty Type, r *report.Report) {
 	}
 
 	validateEnumValueNames(ty, r)
+	validateEnumValueJSON(ty, r)
+}
+
+// enumValueJSON returns the (pb.enumvalue.json) option on an enum value, and
+// its string field. ok is false if the option is not set at all.
+func enumValueJSON(m Member) (option, str Value, ok bool) {
+	ids := &m.Context().session.builtins
+	for option := range m.Options().Fields() {
+		if option.Field().InternedFullName() != ids.EnumValueJSON {
+			continue
+		}
+		for str := range option.AsMessage().Fields() {
+			if str.Field().InternedFullName() == ids.EnumValueJSONString {
+				return option, str, true
+			}
+		}
+		return option, Value{}, true
+	}
+	return Value{}, Value{}, false
+}
+
+// validateEnumValueJSON validates custom JSON strings set with
+// (pb.enumvalue.json).string, following protoc's rules.
+func validateEnumValueJSON(ty Type, r *report.Report) {
+	type entry struct {
+		member Member
+		span   source.Spanner
+	}
+	names := make(map[string]entry)
+	primaries := make(map[int32]Member)
+
+	insert := func(name string, member Member, span source.Spanner) {
+		prev, ok := names[name]
+		if !ok {
+			names[name] = entry{member, span}
+			return
+		}
+		if prev.member != member && prev.member.Number() != member.Number() {
+			r.Errorf("JSON name `%s` is used by multiple %ss", name, taxa.EnumValue).Apply(
+				report.Snippetf(span, "used here"),
+				report.Snippetf(prev.span, "previously used here"),
+				report.Helpf("only aliases of the same number may share a JSON name"),
+			)
+		}
+	}
+
+	for member := range seq.Values(ty.Members()) {
+		option, str, custom := enumValueJSON(member)
+		name, hasString := str.AsString()
+
+		var span source.Spanner
+		if custom {
+			span = option.OptionSpan()
+			if hasString {
+				span = str.ValueAST()
+			}
+
+			if strings.ContainsRune(name, 0) {
+				r.Errorf("custom JSON name cannot contain NUL bytes").Apply(
+					report.Snippet(span),
+				)
+			}
+
+			// A custom name that is a number would be ambiguous with the
+			// number of a different value.
+			n, err := strconv.ParseInt(strings.Trim(name, " \t\n\v\f\r"), 10, 32)
+			if err == nil && int32(n) != member.Number() {
+				r.Errorf("custom JSON name `%s` is a number that does not match", name).Apply(
+					report.Snippetf(span, "this is `%d`", n),
+					report.Snippetf(member.AST().Value(), "but the value's number is `%d`", member.Number()),
+				)
+			}
+		}
+
+		if ty.AllowsAlias() {
+			if primary, ok := primaries[member.Number()]; !ok {
+				primaries[member.Number()] = member
+			} else {
+				_, primaryStr, _ := enumValueJSON(primary)
+				primaryName, primaryHas := primaryStr.AsString()
+				if primaryHas != hasString || primaryName != name {
+					r.Errorf("aliases must have the same custom JSON name").Apply(
+						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, hasString)),
+						report.Snippetf(primary.AST().Name(), "but this has %s", describeJSONName(primaryName, primaryHas)),
+					)
+				}
+			}
+		}
+
+		insert(member.Name(), member, member.AST().Name())
+		if custom {
+			insert(name, member, span)
+		}
+	}
+}
+
+func describeJSONName(name string, ok bool) string {
+	if !ok {
+		return "no custom JSON name"
+	}
+	return fmt.Sprintf("custom JSON name `%s`", name)
 }
 
 // validateEnumValueNames checks that enum values don't collide after
@@ -1372,6 +1475,51 @@ func validateVisibility(ty Type, r *report.Report) {
 	)
 }
 
+// Limits enforced by PROTO_LIMITS2026. These match protoc's values.
+const (
+	limit2026FieldsPerMessage = 1500
+	limit2026OneofsPerMessage = 1000
+	limit2026FieldsPerOneof   = 1200
+	limit2026ValuesPerEnum    = 1700
+)
+
+// validateProtoLimits validates the limits set by features.enforce_proto_limits.
+func validateProtoLimits(ty Type, r *report.Report) {
+	key := ty.Context().builtins().FeatureProtoLimits
+	if key.IsZero() {
+		return // Feature doesn't exist (pre-2026)
+	}
+
+	enforced := func(featureSet FeatureSet) bool {
+		value, _ := featureSet.Lookup(key).Value().AsInt()
+		return value != tags.FeatureSet_ProtoLimitsFeature_EnforceProtoLimits_LegacyNoExplicitLimits
+	}
+	check := func(what string, span source.Spanner, count, limit int) {
+		if count <= limit {
+			return
+		}
+		r.Errorf("%s exceeds the limit of %d", what, limit).Apply(
+			report.Snippetf(span, "this has %d", count),
+			report.Helpf("set `features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS` to opt out of this check"),
+		)
+	}
+
+	switch {
+	case !enforced(ty.FeatureSet()):
+	case ty.IsEnum():
+		check("number of enum values", ty.AST().Name(), ty.Members().Len(), limit2026ValuesPerEnum)
+	default:
+		check("number of fields", ty.AST().Name(), ty.Members().Len(), limit2026FieldsPerMessage)
+		check("number of oneofs", ty.AST().Name(), ty.Oneofs().Len(), limit2026OneofsPerMessage)
+	}
+
+	for oneof := range seq.Values(ty.Oneofs()) {
+		if enforced(oneof.FeatureSet()) {
+			check("number of fields in oneof", oneof.AST().Name(), oneof.Members().Len(), limit2026FieldsPerOneof)
+		}
+	}
+}
+
 // isLocal returns whether a top-level type is local, either explicitly or
 // because the file's default_symbol_visibility makes it so. This matches the
 // check protoc uses for the STRICT nested enum exception.
@@ -1395,11 +1543,18 @@ func validateNamingStyle(f *File, r *report.Report) {
 		return // Feature doesn't exist (pre-2024)
 	}
 
-	// Helper to check if STYLE2024 is enabled at a given scope.
-	isStyle2024 := func(featureSet FeatureSet) bool {
+	// Helper to check if a style is enabled at a given scope. Like protoc,
+	// each style implies all earlier ones, and STYLE_LEGACY disables them all.
+	isStyle := func(featureSet FeatureSet, style int64) bool {
 		feature := featureSet.Lookup(key)
 		value, _ := feature.Value().AsInt()
-		return value == tags.FeatureSet_EnforceNamingStyle_2024
+		return value >= style && value != tags.FeatureSet_EnforceNamingStyle_Legacy
+	}
+	isStyle2024 := func(featureSet FeatureSet) bool {
+		return isStyle(featureSet, tags.FeatureSet_EnforceNamingStyle_2024)
+	}
+	isStyle2026 := func(featureSet FeatureSet) bool {
+		return isStyle(featureSet, tags.FeatureSet_EnforceNamingStyle_2026)
 	}
 
 	// Validate package name (file-level scope).
@@ -1479,6 +1634,8 @@ func validateNamingStyle(f *File, r *report.Report) {
 					)
 				}
 			}
+
+			validateNameCollisions(ty, isStyle2026, r)
 		case ty.IsEnum():
 			// PascalCase required for enums.
 			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
@@ -1502,6 +1659,66 @@ func validateNamingStyle(f *File, r *report.Report) {
 				}
 			}
 		}
+	}
+}
+
+// validateNameCollisions checks the STYLE2026 rules for field and oneof names
+// that are likely to collide in generated code.
+func validateNameCollisions(ty Type, enabled func(FeatureSet) bool, r *report.Report) {
+	// Fields and oneofs share a namespace for the purposes of this check.
+	names := make(map[string]source.Spanner)
+	for field := range seq.Values(ty.Members()) {
+		names[field.Name()] = field.AST().Name()
+	}
+	for oneof := range seq.Values(ty.Oneofs()) {
+		names[oneof.Name()] = oneof.AST().Name()
+	}
+
+	optOut := report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
+	check := func(noun, name string, span source.Spanner, fs FeatureSet) {
+		if !enabled(fs) {
+			return
+		}
+
+		if name == "descriptor" {
+			r.Errorf("%s cannot be named `descriptor`", noun).Apply(
+				report.Snippetf(span, "this name violates STYLE2026"),
+				report.Helpf("this name can collide with generated code"),
+				optOut,
+			)
+			return
+		}
+
+		for _, prefix := range []string{"has_", "get_", "set_", "clear_"} {
+			other, ok := strings.CutPrefix(name, prefix)
+			if prev := names[other]; ok && prev != nil {
+				r.Errorf("%s name cannot begin with `%s` if `%s` exists", noun, prefix, other).Apply(
+					report.Snippetf(span, "this name violates STYLE2026"),
+					report.Snippetf(prev, "`%s` declared here", other),
+					report.Helpf("this name can collide with generated code for `%s`", other),
+					optOut,
+				)
+				return
+			}
+		}
+
+		if other, ok := strings.CutSuffix(name, "_value"); ok {
+			if prev := names[other]; prev != nil {
+				r.Errorf("%s name cannot end with `_value` if `%s` exists", noun, other).Apply(
+					report.Snippetf(span, "this name violates STYLE2026"),
+					report.Snippetf(prev, "`%s` declared here", other),
+					report.Helpf("this name can collide with generated code for `%s`", other),
+					optOut,
+				)
+			}
+		}
+	}
+
+	for field := range seq.Values(ty.Members()) {
+		check("field", field.Name(), field.AST().Name(), field.FeatureSet())
+	}
+	for oneof := range seq.Values(ty.Oneofs()) {
+		check("oneof", oneof.Name(), oneof.AST().Name(), oneof.FeatureSet())
 	}
 }
 

@@ -31,6 +31,7 @@ tables:
       visible: true
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "json_format", value: "ALLOW" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
@@ -46,6 +47,7 @@ tables:
       visible: true
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "enum_type", value: "OPEN" }
       - { name: "json_format", value: "ALLOW" }
       - { extn: "buf.test.f", name: "a", value: "false" }
@@ -63,6 +65,7 @@ tables:
       options.message.fields: { "feature_support": { message: {} } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -87,6 +90,7 @@ tables:
               "value": { string: "false" }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -112,6 +116,7 @@ tables:
         "feature_support": { message: {} }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -138,6 +143,7 @@ tables:
           message.fields: { "edition_introduced": { i32: 1001 } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -162,6 +168,7 @@ tables:
           message.fields: { "edition_introduced": { i32: 1001 } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -194,6 +201,7 @@ tables:
             "edition_removed": { i32: 900 }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -220,6 +228,7 @@ tables:
           message.fields: { "edition_introduced": { i32: 1000 } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
@@ -266,6 +275,7 @@ tables:
       visible: true
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "PACKED" }
