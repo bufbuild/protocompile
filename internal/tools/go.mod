@@ -5,7 +5,7 @@ go 1.26.7
 require (
 	github.com/bufbuild/buf v1.73.0
 	github.com/golangci/golangci-lint/v2 v2.13.2
-	golang.org/x/tools v0.50.0
+	golang.org/x/tools v0.51.0
 )
 
 require (
