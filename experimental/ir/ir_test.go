@@ -87,6 +87,11 @@ type Test struct {
 	// tables.
 	Symtab bool `yaml:"symtab"`
 
+	// Maximum parallelism for the incremental executor. Defaults to 1 so that
+	// scheduling cannot affect diagnostics, such as which file is blamed for
+	// an import cycle.
+	Parallelism int `yaml:"parallelism"`
+
 	// If true, skip this test when the protobuf-go runtime supports message
 	// sets (e.g. when built with the `protolegacy` build tag). Used for tests
 	// that assert on diagnostics that are only emitted when message sets are
@@ -181,7 +186,7 @@ func TestIR(t *testing.T) {
 		}
 
 		exec := incremental.New(
-			incremental.WithParallelism(1),
+			incremental.WithParallelism(int64(max(test.Parallelism, 1))),
 			incremental.WithReportOptions(report.Options{Tracing: *tracing}),
 		)
 

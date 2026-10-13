@@ -1,0 +1,171 @@
+# base.proto never uses Closed so its own lowering never resolves the
+# enum_type feature. The importers below all resolve it concurrently.
+parallelism: 8
+files:
+- path: "base.proto"
+  import: true
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    enum Closed {
+      option features.enum_type = CLOSED;
+      CLOSED_UNSPECIFIED = 0;
+    }
+
+- path: "user0.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M0 {
+      Closed f = 1;
+    }
+
+- path: "user1.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M1 {
+      Closed f = 1;
+    }
+
+- path: "user2.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M2 {
+      Closed f = 1;
+    }
+
+- path: "user3.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M3 {
+      Closed f = 1;
+    }
+
+- path: "user4.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M4 {
+      Closed f = 1;
+    }
+
+- path: "user5.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M5 {
+      Closed f = 1;
+    }
+
+- path: "user6.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M6 {
+      Closed f = 1;
+    }
+
+- path: "user7.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M7 {
+      Closed f = 1;
+    }
+
+- path: "user8.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M8 {
+      Closed f = 1;
+    }
+
+- path: "user9.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M9 {
+      Closed f = 1;
+    }
+
+- path: "user10.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M10 {
+      Closed f = 1;
+    }
+
+- path: "user11.proto"
+  text: |
+    edition = "2023";
+    package buf.test;
+
+    import "base.proto";
+
+    option features.field_presence = IMPLICIT;
+
+    message M11 {
+      Closed f = 1;
+    }
+
