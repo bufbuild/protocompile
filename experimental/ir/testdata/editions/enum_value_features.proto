@@ -1,0 +1,8 @@
+//% descriptor: true
+//% symtab: true
+edition = "2024";
+package buf.test;
+enum E {
+  E_UNSPECIFIED = 0;
+  x = 1 [features.enforce_naming_style = STYLE_LEGACY];
+}

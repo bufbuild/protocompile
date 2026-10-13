@@ -1,0 +1,12 @@
+file:
+- name: "testdata/editions/enum_value_features.proto"
+  package: "buf.test"
+  enum_type:
+  - name: "E"
+    value:
+    - { name: "E_UNSPECIFIED", number: 0 }
+    - name: "x"
+      number: 1
+      options.features.enforce_naming_style: STYLE_LEGACY
+  syntax: "editions"
+  edition: EDITION_2024

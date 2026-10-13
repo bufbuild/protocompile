@@ -38,3 +38,36 @@ export message Incomplete3 {
     export enum E { Z = 0; } 
     reserved 1 to 5, 6 to 10;
 }
+// The nested enum exception requires a top-level local message.
+local message LocalComplete {
+    export enum E { Z = 0; }
+    reserved 1 to max;
+}
+
+local message LocalComplete2 {
+    export enum E { Z = 0; }
+    reserved 1 to 536870911;
+}
+
+local message LocalSplit {
+    export enum E { Z = 0; }
+    reserved 1 to 5, 6 to max;
+}
+
+local message LocalIncomplete1 {
+    export enum E { Z = 0; }
+    reserved 1 to 5;
+}
+
+local message LocalIncomplete2 {
+    export enum E { Z = 0; }
+    reserved 6 to max;
+}
+
+local message LocalNested {
+    local message Inner {
+        export enum E { Z = 0; }
+        reserved 1 to max;
+    }
+    reserved 1 to max;
+}

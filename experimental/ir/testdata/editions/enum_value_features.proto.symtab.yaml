@@ -1,0 +1,26 @@
+tables:
+  "testdata/editions/enum_value_features.proto":
+    symbols:
+    - fqn: "buf"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/enum_value_features.proto"
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/enum_value_features.proto"
+    - fqn: "buf.test.E"
+      kind: KIND_ENUM
+      file: "testdata/editions/enum_value_features.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.E_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/enum_value_features.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.x"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/enum_value_features.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }

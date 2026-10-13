@@ -1269,10 +1269,34 @@ func validateVisibility(ty Type, r *report.Report) {
 	// STRICT requires that we check two things:
 	//
 	// 1. Nested types are not explicitly exported.
-	// 2. Unless they are nested within a message that reserves all of its
-	//    field numbers.
+	// 2. Unless they are enums nested within a top-level, local message that
+	//    reserves all of its field numbers.
 	parent := ty.Parent()
 	if ty.Parent().IsZero() {
+		return
+	}
+
+	if ty.IsMessage() {
+		r.Errorf("nested message type marked as exported").Apply(
+			report.Snippetf(vis, "nested type exported here"),
+			report.Snippetf(parent.AST(), "... within this type"),
+			report.PageBreak,
+			report.Snippetf(why, "`STRICT` specified here"),
+			report.Helpf("in strict mode, nested message types cannot be marked as "+
+				"exported, even if all the field numbers of its parent are reserved"),
+		)
+		return
+	}
+
+	if !parent.Parent().IsZero() || !isLocal(parent) {
+		r.Errorf("nested enum type marked as exported").Apply(
+			report.Snippetf(vis, "nested type exported here"),
+			report.Snippetf(parent.AST(), "... within this type"),
+			report.PageBreak,
+			report.Snippetf(why, "`STRICT` specified here"),
+			report.Helpf("in strict mode, a nested enum type can only be marked as exported "+
+				"if it is nested within a top-level `local` message that declares `reserved 1 to max;`"),
+		)
 		return
 	}
 
@@ -1312,49 +1336,32 @@ func validateVisibility(ty Type, r *report.Report) {
 		}
 	}
 
-	if end <= gap {
-		// If there are multiple reserved ranges, protoc rejects this, because it
-		// doesn't do the same sophisticated interval sorting we do.
-		switch {
-		case parent.ReservedRanges().Len() != 1:
-			d := r.Errorf("expected exactly one reserved range").Apply(
-				report.Snippetf(vis, "nested type exported here"),
-				report.Snippetf(parent.AST(), "... within this type"),
-			)
-			ranges := parent.ReservedRanges()
-			if ranges.Len() > 0 {
-				d.Apply(
-					report.Snippetf(ranges.At(0).AST(), "one here"),
-					report.Snippetf(ranges.At(1).AST(), "another here"),
-				)
-			}
-			//nolint:dupword
-			d.Apply(
-				report.PageBreak,
-				report.Snippetf(why, "`STRICT` specified here"),
-				report.Helpf("in strict mode, nesting an exported type within another type "+
-					"requires that that type declare `reserved 1 to max;`, even if all of its field "+
-					"numbers are `reserved`"),
-				report.Helpf("protoc erroneously rejects this, despite being equivalent"),
-			)
-		case ty.IsMessage():
-			r.Errorf("nested message type marked as exported").Apply(
-				report.Snippetf(vis, "nested type exported here"),
-				report.Snippetf(parent.AST(), "... within this type"),
-				report.PageBreak,
-				report.Snippetf(why, "`STRICT` specified here"),
-				report.Helpf("in strict mode, nested message types cannot be marked as "+
-					"exported, even if all the field numbers of its parent are reserved"),
-			)
-		}
-
+	if end <= gap && parent.ReservedRanges().Len() == 1 {
 		return
 	}
 
-	// If this is true, the protoc check is bugged and we emit a warning...
-	bugged := parent.ReservedRanges().Len() == 1
+	if end <= gap {
+		// protoc requires the literal `reserved 1 to max;`, even if multiple
+		// ranges reserve the same numbers.
+		ranges := parent.ReservedRanges()
+		//nolint:dupword
+		r.Errorf("expected exactly one reserved range").Apply(
+			report.Snippetf(vis, "nested type exported here"),
+			report.Snippetf(parent.AST(), "... within this type"),
+			report.Snippetf(ranges.At(0).AST(), "one here"),
+			report.Snippetf(ranges.At(1).AST(), "another here"),
+			report.PageBreak,
+			report.Snippetf(why, "`STRICT` specified here"),
+			report.Helpf("in strict mode, nesting an exported type within another type "+
+				"requires that that type declare `reserved 1 to max;`, even if all of its field "+
+				"numbers are `reserved`"),
+			report.Helpf("replace these ranges with a single `reserved 1 to max;`"),
+		)
+		return
+	}
+
 	//nolint:dupword
-	d := r.SoftErrorf(!bugged, "%s `%s` does not reserve all field numbers", parent.noun(), parent.FullName()).Apply(
+	r.Errorf("%s `%s` does not reserve all field numbers", parent.noun(), parent.FullName()).Apply(
 		report.Snippetf(vis, "nested type exported here"),
 		report.Snippetf(parent.AST(), "... within this type"),
 		report.PageBreak,
@@ -1363,10 +1370,23 @@ func validateVisibility(ty Type, r *report.Report) {
 			`requires that that type reserve every field number (the "C++ namespace exception"), `+
 			"but this type does not reserve the field number %d", gap),
 	)
-	if bugged {
-		d.Apply(report.Helpf("protoc erroneously accepts this code due to a bug: it only " +
-			"checks that there is exactly one reserved range"))
+}
+
+// isLocal returns whether a top-level type is local, either explicitly or
+// because the file's default_symbol_visibility makes it so. This matches the
+// check protoc uses for the STRICT nested enum exception.
+func isLocal(ty Type) bool {
+	switch id.Wrap(ty.AST().Context().Stream(), ty.Raw().visibility).Keyword() {
+	case keyword.Local:
+		return true
+	case keyword.Export:
+		return false
 	}
+
+	key := ty.Context().builtins().FeatureVisibility
+	value, _ := ty.Context().FeatureSet().Lookup(key).Value().AsInt()
+	return value == tags.FeatureSet_DefaultSymbolVisibility_Strict ||
+		value == tags.FeatureSet_DefaultSymbolVisibility_LocalAll
 }
 
 func validateNamingStyle(f *File, r *report.Report) {
