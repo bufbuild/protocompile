@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package test;
+
+option go_package = "github.com/bufbuild/protocompile/experimental/internal/protoscope/testdata/alltypesproto2";
+
+message AllTypesProto2 {
+  repeated group OptionalGroup = 1 {
+    optional int32 val = 2;
+  }
+  repeated int32 f_unpacked_int32 = 3 [packed = false];
+}
