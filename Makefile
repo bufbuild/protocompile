@@ -6,19 +6,20 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
-BIN ?= $(abspath .tmp/bin)
 CACHE := $(abspath .tmp/cache)
 COPYRIGHT_YEARS := 2020-2026
 LICENSE_IGNORE := -E -e "/testdata/|^wellknownimports/google/protobuf/|^[^/]+\.ya?ml$$|^\.github/"
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
-TOOLS_MOD_DIR := ./internal/tools
-# We allow the internal/tools module use a newer version of Go, since some of the
-# tools we want to install and execute require later versions.
-GO_TOOL_CMD := GOTOOLCHAIN=auto $(GO)
+# Tools are declared in a separate modfile so their dependencies don't leak into
+# the library's go.mod. We allow it to use a newer version of Go, since some of
+# the tools require later versions. -modfile can't be used in workspace mode.
+GO_TOOL := env GOWORK=off GOTOOLCHAIN=auto $(GO) tool -modfile=$(abspath internal/tools/go.mod)
+# golangci-lint must run in workspace mode to lint internal/benchmarks against
+# the local module, so resolve its binary rather than running it via go tool.
+GOLANGCI_LINT = $(shell $(GO_TOOL) -n golangci-lint)
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
-PATH_SEP ?= ":"
 
 PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
@@ -74,21 +75,21 @@ install: ## Install all binaries
 	$(GO) install ./...
 
 .PHONY: lint
-lint: $(BIN)/golangci-lint ## Lint Go
+lint: ## Lint Go
 	@# golangci-lint already catches unsafe.Pointer misuse, and can be silenced
 	@# when it has false positives, unlike go vet, which cannot.
 	$(GO) vet  -unsafeptr=false ./... ./internal/benchmarks/...
-	$(BIN)/golangci-lint run
-	cd internal/benchmarks && $(BIN)/golangci-lint run
+	$(GOLANGCI_LINT) run
+	cd internal/benchmarks && $(GOLANGCI_LINT) run
 
 .PHONY: lintfix
-lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
-	$(BIN)/golangci-lint run --fix
-	cd internal/benchmarks && $(BIN)/golangci-lint run --fix
+lintfix: ## Automatically fix some lint errors
+	$(GOLANGCI_LINT) run --fix
+	cd internal/benchmarks && $(GOLANGCI_LINT) run --fix
 
 .PHONY: generate
-generate: $(BIN)/license-header $(BIN)/goyacc wellknownimports test-descriptors ext-features-descriptors ## Regenerate code and licenses
-	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO) generate ./...
+generate: wellknownimports test-descriptors ext-features-descriptors ## Regenerate code and licenses
+	GOWORK=off GOTOOLCHAIN=auto $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and
@@ -98,14 +99,14 @@ generate: $(BIN)/license-header $(BIN)/goyacc wellknownimports test-descriptors 
 	comm -23 \
 		<(git ls-files --cached --modified --others --no-empty-directory --exclude-standard | sort -u | grep -v $(LICENSE_IGNORE) ) \
 		<(git ls-files --deleted | sort -u) | \
-		xargs $(BIN)/license-header \
+		xargs $(GO_TOOL) license-header \
 			--license-type apache \
 			--copyright-holder "Buf Technologies, Inc." \
 			--year-range "$(COPYRIGHT_YEARS)"
 
 .PHONY: generate-golden
 generate-golden: generate
-	PATH="$(BIN)$(PATH_SEP)$(PATH)" PROTOCOMPILE_REFRESH=** $(GO) test  ./... -run 'TestSourceCodeInfoOptions|TestIR|TestLexer|TestParse|TestRender|TestFormat|TestEdits' || true
+	PROTOCOMPILE_REFRESH=** $(GO) test  ./... -run 'TestSourceCodeInfoOptions|TestIR|TestLexer|TestParse|TestRender|TestFormat|TestEdits' || true
 
 .PHONY: upgrade
 upgrade: ## Upgrade dependencies
@@ -120,21 +121,6 @@ checkgenerate:
 	  xxd wellknownimports/wkt.pb; \
 	  false; \
 	fi
-
-$(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
-	@mkdir -p $(@D)
-	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
-
-$(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
-	@mkdir -p $(@D)
-	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-
-$(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
-	@mkdir -p $(@D)
-	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO_TOOL_CMD) build -o $@ golang.org/x/tools/cmd/goyacc
 
 $(CACHE)/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)

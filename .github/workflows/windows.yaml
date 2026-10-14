@@ -15,7 +15,6 @@ jobs:
     name: windows (go:${{ matrix.go-version.name }})
     env:
       PROTOC_ARTIFACT_SUFFIX: win64
-      PATH_SEP: ;
     runs-on: windows-latest
     strategy:
       matrix:
