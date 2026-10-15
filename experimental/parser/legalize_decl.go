@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -74,10 +75,50 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 		what := classified{def, taxa.Classify(def)}
 
 		legalizeDef(p, parent, def)
+
+		nests := what.what == taxa.Message || what.what == taxa.Group
+		if nests {
+			p.messageDepth++
+		}
+		legalizeDepth(p, what, def)
+
 		for decl := range seq.Values(body.Decls()) {
 			legalizeDecl(p, what, decl)
 		}
+
+		if nests {
+			p.messageDepth--
+		}
 	}
+}
+
+// legalizeDepth reports the first message that reaches
+// [internal.MaxMessageNestingDepth]. Messages nested inside it are not
+// reported.
+func legalizeDepth(p *parser, what classified, def ast.DeclDef) {
+	depth := p.messageDepth
+	var opts []report.DiagnosticOption
+	switch what.what {
+	case taxa.Message, taxa.Group:
+		opts = append(opts, report.Snippetf(def.Name(), "nested %d levels deep", depth))
+	case taxa.Field:
+		ty := def.Type().RemovePrefixes().AsGeneric()
+		if key, _ := ty.AsMap(); key.IsZero() {
+			return
+		}
+		depth++
+		opts = append(opts,
+			report.Snippetf(ty, "nested %d levels deep", depth),
+			report.Helpf("map fields are implemented as a nested message type, which counts toward the limit"),
+		)
+	default:
+		return
+	}
+
+	if depth != internal.MaxMessageNestingDepth {
+		return
+	}
+	p.Errorf("message nesting depth must be less than %d", internal.MaxMessageNestingDepth).Apply(opts...)
 }
 
 // legalizeDecl legalizes an extension or reserved range.

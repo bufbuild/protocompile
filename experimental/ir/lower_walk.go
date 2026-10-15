@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	pcinternal "github.com/bufbuild/protocompile/internal"
 )
 
 // walker is the state struct for the AST-walking logic.
@@ -68,7 +69,7 @@ func (w *walker) walk() {
 	}
 
 	for decl := range seq.Values(w.AST().Decls()) {
-		w.recurse(decl, nil)
+		w.recurse(decl, nil, 0)
 	}
 }
 
@@ -96,11 +97,13 @@ func extractParentType(parent any) Type {
 }
 
 // recurse recursively walks the AST to build the out all of the types in a file.
-func (w *walker) recurse(decl ast.DeclAny, parent any) {
+//
+// depth is the number of messages and groups that enclose decl.
+func (w *walker) recurse(decl ast.DeclAny, parent any, depth int) {
 	switch decl.Kind() {
 	case ast.DeclKindBody:
 		for decl := range seq.Values(decl.AsBody().Decls()) {
-			w.recurse(decl, parent)
+			w.recurse(decl, parent, depth)
 		}
 
 	case ast.DeclKindRange:
@@ -121,7 +124,17 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 				ty.Raw().syntheticTypeOf = member.ID()
 			}
 
-			w.recurse(def.Body().AsAny(), ty)
+			if kind == ast.DefKindEnum {
+				w.recurse(def.Body().AsAny(), ty, depth)
+				break
+			}
+
+			// The parser reports this error. Stop here to bound the cost of
+			// deeply nested files.
+			if depth+1 >= pcinternal.MaxMessageNestingDepth {
+				break
+			}
+			w.recurse(def.Body().AsAny(), ty, depth+1)
 
 		case ast.DefKindField, ast.DefKindEnumValue:
 			w.newField(def, parent, false)
@@ -136,13 +149,13 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			w.recurse(def.Body().AsAny(), oneof{
 				parent: extractParentType(parent),
 				Oneof:  w.newOneof(oneofDef, parent),
-			})
+			}, depth)
 
 		case ast.DefKindExtend:
 			w.recurse(def.Body().AsAny(), extend{
 				parent:   extractParentType(parent),
 				extendee: w.newExtendee(def.AsExtend(), parent).ID(),
-			})
+			}, depth)
 
 		case ast.DefKindService:
 			service := w.newService(def, parent)
@@ -150,7 +163,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 				break
 			}
 
-			w.recurse(def.Body().AsAny(), service)
+			w.recurse(def.Body().AsAny(), service, depth)
 
 		case ast.DefKindMethod:
 			w.newMethod(def, parent)
