@@ -2,9 +2,8 @@ error: message nesting depth must be less than 32
   --> testdata/depth/map.proto:36:1
    |
 36 | map<string, string> bad = 1;
-   | ^^^^^^^^^^^^^^^^^^^ nested 32 levels deep
+   | ^^^^^^^^^^^^^^^^^^^ this map field reaches the limit
    |
-   = help: map fields are implemented as a nested message type, which counts
-           toward the limit
+   = help: map fields declare a nested message type
 
 encountered 1 error
