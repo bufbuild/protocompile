@@ -1,0 +1,39 @@
+syntax = "proto2";
+package test;
+
+import "google/protobuf/descriptor.proto";
+
+message V {
+  optional V a = 1;
+}
+
+extend google.protobuf.MessageOptions {
+  optional V v = 1000;
+}
+
+message Ok {
+option (v) = {a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {} }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
+}
+
+message Bad {
+option (v) = {a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{a: {a: {a: {a: {a: {a: {a: {a: {a: {a:
+{} }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
+}

@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -143,7 +144,17 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 
 	case next.Keyword() == keyword.Sub:
 		c.Next()
-		inner := parseExprPrefix(p, c, taxa.Noun(keyword.Sub).After())
+		var inner ast.ExprAny
+		if enterExpr(p, next) {
+			inner = parseExprPrefix(p, c, taxa.Noun(keyword.Sub).After())
+		} else {
+			// Skip the remaining prefixes without recursing.
+			for c.Peek().Keyword() == keyword.Sub {
+				c.Next()
+			}
+			inner = parseExprSolo(p, c, taxa.Noun(keyword.Sub).After())
+		}
+		p.exprDepth--
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{
 			Prefix: next,
 			Expr:   inner,
@@ -181,6 +192,18 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		// lexer, we need to perform rather complicated parsing here to handle
 		// <a: b> syntax messages. (ugh)
 		angles := body.Keyword() == keyword.Lt
+
+		if !enterExpr(p, body) {
+			// Skip the contents without recursing.
+			p.exprDepth--
+			if angles {
+				skipAngles(c, body)
+			}
+			if in == taxa.Array {
+				return p.NewExprArray(body).AsAny()
+			}
+			return p.NewExprDict(body).AsAny()
+		}
 		children := c
 		if !angles {
 			children = body.Children()
@@ -214,6 +237,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 
 			array := p.NewExprArray(body)
 			elems.appendTo(array.Elements())
+			p.exprDepth--
 			return array.AsAny()
 		}
 
@@ -240,6 +264,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			}
 		}
 
+		p.exprDepth--
 		return dict.AsAny()
 
 	default:
@@ -250,6 +275,44 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		})
 
 		return ast.ExprAny{}
+	}
+}
+
+// enterExpr tracks expression nesting depth. It returns false if the limit is
+// exceeded, reporting a diagnostic at tok only for the first expression that
+// crosses the threshold.
+//
+// The caller is responsible for decrementing p.exprDepth when exiting the
+// expression.
+func enterExpr(p *parser, tok token.Token) bool {
+	p.exprDepth++
+	if p.exprDepth <= internal.MaxExpressionNestingDepth {
+		return true
+	}
+	if p.exprDepth == internal.MaxExpressionNestingDepth+1 {
+		p.Errorf("expression nesting depth must be at most %d", internal.MaxExpressionNestingDepth).Apply(
+			report.Snippetf(tok.LeafSpan(), "this expression exceeds the nesting limit"),
+		)
+	}
+	return false
+}
+
+// skipAngles advances c past the `>` that matches open and fuses the pair.
+// If there is no match, it stops at the end of c.
+func skipAngles(c *token.Cursor, open token.Token) {
+	depth := 1
+	for !c.Done() {
+		switch c.Peek().Keyword() {
+		case keyword.Lt:
+			depth++
+		case keyword.Gt:
+			depth--
+		}
+		tok := c.Next()
+		if depth == 0 {
+			token.Fuse(open, tok)
+			return
+		}
 	}
 }
 
