@@ -1,0 +1,43 @@
+error: `Foo` declared multiple times
+  --> a1.proto:4:9
+   |
+ 4 | message Foo {
+   |         ^^^ first here, as a message type
+   |
+  ::: a2.proto:4:9
+   |
+ 4 | message Foo {
+   |         --- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example, "a2.proto"
+           declares `pkgname.Foo` but it is not directly imported
+
+error: `Zed` declared multiple times
+  --> a1.proto:11:9
+   |
+11 | message Zed {}
+   |         ^^^ first here, as a message type
+   |
+  ::: a2.proto:11:9
+   |
+11 | message Zed {}
+   |         --- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example, "a2.proto"
+           declares `pkgname.Zed` but it is not directly imported
+
+error: `Svc` declared multiple times
+  --> a1.proto:12:9
+   |
+12 | service Svc {}
+   |         ^^^ first here, as a service definition
+   |
+  ::: a2.proto:12:9
+   |
+12 | service Svc {}
+   |         --- ...also declared here
+   |
+   = help: symbol names must be unique across all files; for example, "a2.proto"
+           declares `pkgname.Svc` but it is not directly imported
+
+encountered 3 errors
