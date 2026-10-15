@@ -36,6 +36,7 @@ type parser struct {
 	syntax           syntax.Syntax
 	parseComplete    bool
 	messageDepth     int
+	exprDepth        int
 }
 
 // classified is a spanner that has been classified by taxa.

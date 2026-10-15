@@ -1,0 +1,7 @@
+error: expression nesting depth must be at most 100
+  --> testdata/depth/expr.proto:38:1
+   |
+38 | {} }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
+   | ^ this expression exceeds the nesting limit
+
+encountered 1 error

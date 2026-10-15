@@ -15,8 +15,11 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -66,4 +69,59 @@ func TestParse(t *testing.T) {
 
 		outputs[0] = prototest.ToYAML(proto, prototest.ToYAMLOptions{})
 	})
+}
+
+func TestExprNestingDepth(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name  string
+		expr  func(depth int) string
+		start string
+	}{
+		{
+			name:  "dict",
+			expr:  func(depth int) string { return strings.Repeat("{a: ", depth-1) + "{}" + strings.Repeat("}", depth-1) },
+			start: "{",
+		},
+		{
+			name:  "angles",
+			expr:  func(depth int) string { return strings.Repeat("<a: ", depth-1) + "<>" + strings.Repeat(">", depth-1) },
+			start: "<",
+		},
+		{
+			name:  "array",
+			expr:  func(depth int) string { return strings.Repeat("[", depth) + "1" + strings.Repeat("]", depth) },
+			start: "[",
+		},
+		{
+			name:  "prefix",
+			expr:  func(depth int) string { return strings.Repeat("-", depth) + "1" },
+			start: "-",
+		},
+	} {
+		for _, depth := range []int{100, 101, 200000} {
+			t.Run(fmt.Sprintf("%s/%d", test.name, depth), func(t *testing.T) {
+				t.Parallel()
+				// The second option checks that the depth is reset.
+				text := "syntax = \"proto3\"; option x = " + test.expr(depth) + "; option y = " + test.expr(100) + ";"
+				errs := &report.Report{}
+				Parse("test.proto", source.NewFile("test.proto", text), errs)
+
+				var depthErrors int
+				for _, diagnostic := range errs.Diagnostics {
+					if diagnostic.Message() != "expression nesting depth must be at most 100" {
+						continue
+					}
+					depthErrors++
+					assert.Equal(t, test.start, diagnostic.Primary().Text())
+				}
+				if depth > 100 {
+					assert.Equal(t, 1, depthErrors)
+				} else {
+					assert.Zero(t, depthErrors)
+				}
+			})
+		}
+	}
 }
