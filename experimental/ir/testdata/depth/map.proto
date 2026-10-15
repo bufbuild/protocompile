@@ -1,0 +1,67 @@
+syntax = "proto3";
+package test;
+
+message M1 {
+message M2 {
+message M3 {
+message M4 {
+message M5 {
+message M6 {
+message M7 {
+message M8 {
+message M9 {
+message M10 {
+message M11 {
+message M12 {
+message M13 {
+message M14 {
+message M15 {
+message M16 {
+message M17 {
+message M18 {
+message M19 {
+message M20 {
+message M21 {
+message M22 {
+message M23 {
+message M24 {
+message M25 {
+message M26 {
+message M27 {
+message M28 {
+message M29 {
+message M30 {
+map<string, string> ok = 1;
+message M31 {
+map<string, string> bad = 1;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}

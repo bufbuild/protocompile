@@ -17,6 +17,7 @@ package ir_test
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"maps"
 	"path/filepath"
 	"regexp"
@@ -38,6 +39,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/ir/sourceinfo"
+	"github.com/bufbuild/protocompile/experimental/parser"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -309,6 +311,84 @@ func TestIR(t *testing.T) {
 			outputs[3] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
 		}
 	})
+}
+
+func TestMessageNestingDepth(t *testing.T) {
+	t.Parallel()
+
+	wrap := func(body string, depth int) string {
+		return strings.Repeat("message M { ", depth) + body + strings.Repeat(" }", depth)
+	}
+	for _, test := range []struct {
+		name      string
+		body      string
+		extraType bool
+		addsDepth bool
+	}{
+		{name: "message", body: "message Limit {}", extraType: true, addsDepth: true},
+		{name: "group", body: "optional group Limit = 1 {}", extraType: true, addsDepth: true},
+		{name: "map", body: "map<string, int32> limit = 1;", extraType: true, addsDepth: true},
+		{name: "oneof_group", body: "oneof choice { int32 kept = 2; group Limit = 1 {} }", extraType: true, addsDepth: true},
+		{name: "extension_group", body: "extend .test.Ext { optional int32 kept = 2; optional group Limit = 1 {} }", extraType: true, addsDepth: true},
+		{name: "enum", body: "enum Limit { ZERO = 0; }", extraType: true},
+		{name: "field", body: "optional int32 limit = 1;"},
+		{name: "oneof_field", body: "oneof choice { int32 limit = 1; }"},
+	} {
+		for _, depth := range []int{30, 31, 256, 6000} {
+			t.Run(fmt.Sprintf("%s/%d", test.name, depth), func(t *testing.T) {
+				t.Parallel()
+				text := "syntax = \"proto2\"; package test; message Ext { extensions 1 to max; } " +
+					wrap(test.body, depth) + " message Sibling {}"
+				wantError := depth >= 32 || depth == 31 && test.addsDepth
+				parseReport := &report.Report{Options: report.Options{SuppressWarnings: true}}
+				_, ok := parser.Parse("test.proto", source.NewFile("test.proto", text), parseReport)
+				parseDiagnostics, _, _ := report.Renderer{}.RenderString(parseReport)
+				require.Equal(t, !wantError, ok, parseDiagnostics)
+
+				exec := incremental.New()
+				results, diagnostics, err := incremental.Run(t.Context(), exec, queries.IR{
+					Opener: &source.Openers{
+						source.NewMap(map[string]*source.File{"test.proto": source.NewFile("test.proto", text)}),
+						source.WKTs(),
+					},
+					Session: new(ir.Session),
+					Path:    "test.proto",
+				})
+				require.NoError(t, err)
+				require.NoError(t, results[0].Fatal)
+				var errors int
+				for _, diagnostic := range diagnostics.Diagnostics {
+					if diagnostic.Level() > report.Error {
+						continue
+					}
+					errors++
+					assert.Equal(t, "message nesting depth must be less than 32", diagnostic.Message())
+					switch {
+					case depth >= 32:
+						assert.Equal(t, "M", diagnostic.Primary().Text())
+					case test.name == "map":
+						assert.Equal(t, "map<string, int32>", diagnostic.Primary().Text())
+					default:
+						assert.Equal(t, "limit", strings.ToLower(diagnostic.Primary().Text()))
+					}
+				}
+				if wantError {
+					assert.Equal(t, 1, errors)
+				} else {
+					assert.Zero(t, errors)
+				}
+				file := results[0].Value
+				require.NotNil(t, file)
+				// The type at the limit is kept. Its body is not lowered.
+				wantTypes := min(depth, 32) + 2
+				if test.extraType && depth < 32 {
+					wantTypes++
+				}
+				assert.Equal(t, wantTypes, file.AllTypes().Len())
+				assert.Equal(t, "Sibling", file.Types().At(file.Types().Len()-1).Name())
+			})
+		}
+	}
 }
 
 func symtabProto(files []*ir.File) *compilerpb.SymbolSet {

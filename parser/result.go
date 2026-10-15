@@ -572,7 +572,7 @@ func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, synta
 }
 
 func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *reporter.Handler) bool {
-	if depth < 32 {
+	if depth < internal.MaxMessageNestingDepth {
 		return true
 	}
 	n := ast.Node(node)
@@ -580,7 +580,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 		// pinpoint the group keyword if the source is a group
 		n = grp.Keyword
 	}
-	_ = handler.HandleErrorf(r.file.NodeInfo(n), "message nesting depth must be less than 32")
+	_ = handler.HandleErrorf(r.file.NodeInfo(n), "message nesting depth must be less than %d", internal.MaxMessageNestingDepth)
 	return false
 }
 
