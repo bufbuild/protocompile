@@ -1,0 +1,30 @@
+files:
+- path: "a1.proto"
+  text: |
+    syntax = "proto3";
+    package pkgname;
+
+    message Foo {
+      message Bar {
+        message Baz {}
+        enum E { E_ZERO = 0; }
+      }
+      oneof o { string s = 1; }
+    }
+    message Zed {}
+    service Svc {}
+
+- path: "a2.proto"
+  text: |
+    syntax = "proto3";
+    package pkgname;
+
+    message Foo {
+      message Bar {
+        message Baz {}
+        enum E { E_ZERO = 0; }
+      }
+      oneof o { string s = 1; }
+    }
+    message Zed {}
+    service Svc {}

@@ -17,6 +17,7 @@ package ir
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // DedupExportedSymbols takes a report and the given *[File]s and checks for duplicate
@@ -44,10 +45,10 @@ import (
 // A diagnostic for the duplication of `a.Foo` would be surfaced, but it would be redundant
 // to surface diagnostics for `a.Foo.bar`..
 func DedupExportedSymbols(r *report.Report, files ...*File) {
-	nameToSymbols := map[FullName][]Symbol{}
+	nameToSymbols := map[intern.ID][]Symbol{}
+	var names []intern.ID
 
 	for _, file := range files {
-	symCheck:
 		for sym := range seq.Values(file.ExportedSymbols()) {
 			// We ignore package declarations, since the same package declaration could be made
 			// multiple times.
@@ -60,29 +61,45 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 				continue
 			}
 
-			// To avoid unnecessary diagnostics, we recursively check that the parent of the
-			// current symbol is not already duplicated. As the docs for [symtab] indicate, the
-			// symbol tables are sorted by the [intern.ID] of their FQN during the lowering step,
-			// so any duplication for a parent symbol will already have been found.
-			parent := sym.FullName().Parent()
-			for parent != "" {
-				if len(nameToSymbols[parent]) > 1 {
-					break symCheck
-				}
-				parent = parent.Parent()
+			fqn := sym.InternedFullName()
+			if _, ok := nameToSymbols[fqn]; !ok {
+				names = append(names, fqn)
 			}
-			nameToSymbols[sym.FullName()] = append(nameToSymbols[sym.FullName()], sym)
+			nameToSymbols[fqn] = append(nameToSymbols[fqn], sym)
 		}
 	}
 
-	for _, symbols := range nameToSymbols {
-		if len(symbols) == 1 {
+	for _, fqn := range names {
+		symbols := nameToSymbols[fqn]
+		if len(symbols) < 2 {
 			continue
 		}
 
-		if len(symbols) > 1 {
-			r.Error(errDuplicates{symbols: symbols})
+		// Two declarations of a symbol imply two declarations of the type
+		// enclosing it, so checking the immediate parent is sufficient to skip
+		// every symbol beneath a duplicated one.
+		if parent := enclosingName(symbols[0]); parent != 0 && len(nameToSymbols[parent]) > 1 {
+			continue
 		}
+
+		r.Error(errDuplicates{symbols: symbols})
+	}
+}
+
+// enclosingName returns the full name of the declaration that syntactically
+// encloses sym, or zero if it is declared at the top level of its file.
+func enclosingName(sym Symbol) intern.ID {
+	switch {
+	case sym.Kind().IsType():
+		return sym.AsType().Parent().InternedFullName()
+	case sym.Kind().IsMember():
+		return sym.AsMember().Parent().InternedFullName()
+	case sym.Kind() == SymbolKindOneof:
+		return sym.AsOneof().Container().InternedFullName()
+	case sym.Kind() == SymbolKindMethod:
+		return sym.AsMethod().Service().InternedFullName()
+	default:
+		return 0
 	}
 }
 
