@@ -153,6 +153,43 @@ func (IRExcluder) Exclude(file *ir.File) bool {
 	return file.IsDescriptorProto()
 }
 
+func TestEnumNesting(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name, open string
+	}{
+		{name: "enum", open: "enum E { Z = 0; "},
+		{name: "oneof", open: "enum E { Z = 0; oneof o { "},
+		{name: "extend", open: "enum E { Z = 0; extend Ext { "},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			const depth = 6000
+			closing := strings.Repeat("} ", strings.Count(test.open, "{"))
+			text := "syntax = \"proto2\"; package test; message Ext { extensions 1 to max; } " +
+				strings.Repeat(test.open, depth) + strings.Repeat(closing, depth) + " message Sibling {}"
+
+			exec := incremental.New()
+			results, _, err := incremental.Run(t.Context(), exec, queries.IR{
+				Opener: &source.Openers{
+					source.NewMap(map[string]*source.File{"test.proto": source.NewFile("test.proto", text)}),
+					source.WKTs(),
+				},
+				Session: new(ir.Session),
+				Path:    "test.proto",
+			})
+			require.NoError(t, err)
+			require.NoError(t, results[0].Fatal)
+			file := results[0].Value
+			require.NotNil(t, file)
+			// Only Ext, the outermost E, and Sibling are lowered.
+			assert.Equal(t, 3, file.AllTypes().Len())
+			assert.Equal(t, "Sibling", file.Types().At(file.Types().Len()-1).Name())
+		})
+	}
+}
+
 func TestIR(t *testing.T) {
 	t.Parallel()
 

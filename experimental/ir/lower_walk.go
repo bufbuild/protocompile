@@ -117,6 +117,11 @@ func (w *walker) recurse(decl ast.DeclAny, parent any, depth int) {
 
 		switch kind := def.Classify(); kind {
 		case ast.DefKindMessage, ast.DefKindEnum, ast.DefKindGroup:
+			// The parser reports types nested in an enum. Skip them to bound
+			// the cost of deeply nested enums.
+			if extractParentType(parent).IsEnum() {
+				break
+			}
 			ty := w.newType(def, parent)
 
 			if kind == ast.DefKindGroup {
