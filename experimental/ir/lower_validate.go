@@ -1475,7 +1475,7 @@ func validateVisibility(ty Type, r *report.Report) {
 	)
 }
 
-// Limits enforced by PROTO_LIMITS2026. These match protoc's values.
+// Limits enforced by PROTO_LIMITS2026.
 const (
 	limit2026FieldsPerMessage = 1500
 	limit2026OneofsPerMessage = 1000
