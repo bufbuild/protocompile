@@ -71,6 +71,7 @@ func (e InvalidEscape) Diagnose(d *report.Diagnostic) {
 
 	if len(text) < 2 {
 		d.Apply(report.Snippet(e.Span))
+		return
 	}
 
 	switch c := text[1]; c {

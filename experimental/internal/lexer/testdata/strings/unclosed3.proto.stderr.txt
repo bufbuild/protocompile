@@ -1,0 +1,13 @@
+error: invalid escape sequence
+  --> testdata/strings/unclosed3.proto:1:5
+   |
+ 1 | "abc\
+   |     ^
+
+error: unterminated string literal
+  --> testdata/strings/unclosed3.proto:1:1
+   |
+ 1 | "abc\
+   | ^^^^^ expected to be terminated by `"`
+
+encountered 2 errors

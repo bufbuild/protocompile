@@ -1,0 +1,2 @@
+#		kind		keyword		offsets		linecol		text
+0		String		Unknown		000:005		001:001		"\"abc\\"		string:"abc\x00"
