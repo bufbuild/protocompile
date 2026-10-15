@@ -2,7 +2,7 @@ error: message nesting depth must be less than 32
   --> testdata/depth/group.proto:37:16
    |
 37 | optional group Bad = 1 {
-   |                ^^^ this group reaches the limit
+   |                ^^^ this group exceeds the nesting limit
    |
    = help: groups declare a nested message type
 

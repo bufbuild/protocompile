@@ -100,10 +100,10 @@ func legalizeDepth(p *parser, what classified, def ast.DeclDef) {
 	var opts []report.DiagnosticOption
 	switch what.what {
 	case taxa.Message:
-		opts = append(opts, report.Snippetf(def.Name(), "this message reaches the limit"))
+		opts = append(opts, report.Snippetf(def.Name(), "this message exceeds the nesting limit"))
 	case taxa.Group:
 		opts = append(opts,
-			report.Snippetf(def.Name(), "this group reaches the limit"),
+			report.Snippetf(def.Name(), "this group exceeds the nesting limit"),
 			report.Helpf("groups declare a nested message type"),
 		)
 	case taxa.Field:
@@ -113,7 +113,7 @@ func legalizeDepth(p *parser, what classified, def ast.DeclDef) {
 		}
 		depth++
 		opts = append(opts,
-			report.Snippetf(ty, "this map field reaches the limit"),
+			report.Snippetf(ty, "this map field exceeds the nesting limit"),
 			report.Helpf("map fields declare a nested message type"),
 		)
 	default:

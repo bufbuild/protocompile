@@ -2,7 +2,7 @@ error: message nesting depth must be less than 32
   --> testdata/depth/message.proto:37:9
    |
 37 | message M32 {
-   |         ^^^ this message reaches the limit
+   |         ^^^ this message exceeds the nesting limit
 
 error: cannot find `M32.M33` in this scope
   --> testdata/depth/message.proto:36:1
