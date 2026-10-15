@@ -1,0 +1,19 @@
+error: extension declaration must specify `type`
+  --> testdata/extend/decl_reserved.proto:16:33
+   |
+16 |     extensions 3 [declaration = { number: 3, full_name: ".test.r3", reserved: true }];
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: extension declaration must specify `full_name`
+  --> testdata/extend/decl_reserved.proto:17:33
+   |
+17 |     extensions 4 [declaration = { number: 4, type: "int32", reserved: true }];
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: extension declaration must specify `full_name`
+  --> testdata/extend/decl_reserved.proto:20:33
+   |
+20 |     extensions 5 [declaration = { number: 5 }];
+   |                                 ^^^^^^^^^^^^^
+
+encountered 3 errors
