@@ -16,7 +16,6 @@ package lexer
 
 import (
 	"math"
-	"math/big"
 	"strings"
 	"unicode/utf8"
 
@@ -110,7 +109,6 @@ type lexer struct {
 	cursor, count int
 	braces        []token.ID
 	scratch       []byte
-	scratchInt    big.Int
 	scratchDec    *decimal.Decimal
 
 	// Used for determining longest runs of unrecognized tokens.

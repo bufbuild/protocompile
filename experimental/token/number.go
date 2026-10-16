@@ -148,9 +148,8 @@ func (n NumberToken) Int() (v uint64, exact bool) {
 
 	switch {
 	case n.Raw().Big != nil:
-		k := n.Raw().Big.Int(nil) // TODO: get rid of this allocation.
-		if k.IsUint64() {
-			return k.Uint64(), n.Raw().Big.IsInt()
+		if k, ok := n.Raw().Big.Uint64(); ok {
+			return k, n.Raw().Big.IsInt()
 		}
 		return math.MaxUint64, false
 	case n.Raw().IsFloat:

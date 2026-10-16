@@ -1,0 +1,107 @@
+error: literal out of range for `int32`
+  --> testdata/options/values/large_exponent.proto:9:11
+   |
+ 9 |     i32: [1e2147483646, -1e2147483646]
+   |           ^^^^^^^^^^^^
+10 |     i64: [1e2147483646, -1e2147483646]
+...
+15 |     repeated int32 i32 = 1;
+   |     -------------- expected due to this
+   |
+   = note: the range for `int32` is `-2147483648 to 2147483647`
+
+error: literal out of range for `int32`
+  --> testdata/options/values/large_exponent.proto:9:25
+   |
+ 9 |     i32: [1e2147483646, -1e2147483646]
+   |                         ^^^^^^^^^^^^^
+10 |     i64: [1e2147483646, -1e2147483646]
+...
+15 |     repeated int32 i32 = 1;
+   |     -------------- expected due to this
+   |
+   = note: the range for `int32` is `-2147483648 to 2147483647`
+
+error: literal out of range for `int64`
+  --> testdata/options/values/large_exponent.proto:10:11
+   |
+10 |     i64: [1e2147483646, -1e2147483646]
+   |           ^^^^^^^^^^^^
+11 |     u64: [1e2147483646]
+...
+15 |     repeated int32 i32 = 1;
+16 |     repeated int64 i64 = 2;
+   |     -------------- expected due to this
+   |
+   = note: the range for `int64` is `-9223372036854775808 to
+           9223372036854775807`
+
+error: literal out of range for `int64`
+  --> testdata/options/values/large_exponent.proto:10:25
+   |
+10 |     i64: [1e2147483646, -1e2147483646]
+   |                         ^^^^^^^^^^^^^
+11 |     u64: [1e2147483646]
+...
+15 |     repeated int32 i32 = 1;
+16 |     repeated int64 i64 = 2;
+   |     -------------- expected due to this
+   |
+   = note: the range for `int64` is `-9223372036854775808 to
+           9223372036854775807`
+
+error: literal out of range for `uint64`
+  --> testdata/options/values/large_exponent.proto:11:11
+   |
+11 |     u64: [1e2147483646]
+   |           ^^^^^^^^^^^^
+...
+16 |     repeated int64 i64 = 2;
+17 |     repeated uint64 u64 = 3;
+   |     --------------- expected due to this
+   |
+   = note: the range for `uint64` is `0 to 18446744073709551615`
+
+error: field number out of range
+  --> testdata/options/values/large_exponent.proto:19:28
+   |
+19 |     optional int32 field = 1e2147483646;
+   |                            ^^^^^^^^^^^^
+   = note: the range for field numbers is `1 to 536870911`,
+           minus `19000 to 19999`, which is reserved for internal use
+
+error: literal out of range for `int64`
+  --> testdata/options/values/large_exponent.proto:20:48
+   |
+20 |     optional int64 with_default = 6 [default = 1e2147483646];
+   |     --------------                             ^^^^^^^^^^^^
+   |      |
+   |      expected due to this
+   |
+   = note: the range for `int64` is `-9223372036854775808 to
+           9223372036854775807`
+
+error: field number out of range
+  --> testdata/options/values/large_exponent.proto:21:14
+   |
+21 |     reserved 1e2147483646;
+   |              ^^^^^^^^^^^^
+   = note: the range for field numbers is `1 to 536870911`,
+           minus `19000 to 19999`, which is reserved for internal use
+
+error: field number out of range
+  --> testdata/options/values/large_exponent.proto:22:24
+   |
+22 |     extensions 1000 to 1e2147483646;
+   |                        ^^^^^^^^^^^^
+   = note: the range for field numbers is `1 to 536870911`,
+           minus `19000 to 19999`, which is reserved for internal use
+
+error: literal out of range for `int32`
+  --> testdata/options/values/large_exponent.proto:27:15
+   |
+27 |     BAR_ONE = 1e2147483646;
+   |               ^^^^^^^^^^^^
+   = note: the range for `int32` is `-2147483648 to 2147483647`
+
+encountered 10 errors
