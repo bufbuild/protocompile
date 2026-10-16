@@ -1,0 +1,47 @@
+warning: group syntax is deprecated
+  --> proto2.proto:5:12
+   |
+ 5 |   optional group Group = 1 { optional string name = 1; }
+   |            ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: message field `test.Foo.baz` referenced incorrectly
+  --> test.proto:35:5
+   |
+35 |     Baz { name: "abc" }
+   |     ^^^ referenced here
+   |
+  help: reference it as `baz`
+   |
+35 | -     Baz { name: "abc" }
+35 | +     baz { name: "abc" }
+   |
+   |
+   = note: only delimited fields may be referenced by their type name
+
+error: cannot resolve message field name for `test.Foo`
+  --> test.proto:36:5
+   |
+27 |   Foo foo = 10001;
+   |   --- expected `Foo` field due to this
+28 |   Wrong wrong = 10002;
+...
+35 |     Baz { name: "abc" }
+36 |     Qux { name: "abc" }
+   |     ^^^^^^^^^^^^^^^^^^^ field referenced here
+
+error: mismatched types
+  --> test.proto:38:22
+   |
+28 |   Wrong wrong = 10002;
+   |   ----- expected due to this
+29 |   P2 p2 = 10003;
+...
+37 |   };
+38 |   option (wrong) = { Bar { name: "abc" } };
+   |                      ^^^ expected `test.Wrong` field, found `test.Bar`
+   |
+   = note: expected: `test.Wrong` field
+              found: message type `test.Bar`
+
+encountered 3 errors and 1 warning
