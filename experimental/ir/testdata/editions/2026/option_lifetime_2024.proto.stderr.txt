@@ -1,0 +1,22 @@
+error: `cpp` is not supported in Edition 2024
+  --> testdata/editions/2026/option_lifetime_2024.proto:9:8
+   |
+ 1 | edition = "2024";
+   |           ------ edition specified here
+...
+ 8 | option cc_enable_arenas = true;
+ 9 | option (pb.file.cpp).namespace = "foo";
+   |        ^^^^^^^^^^^^^
+   = help: `cpp` requires at least Edition 2026
+
+error: `json` is not supported in Edition 2024
+  --> testdata/editions/2026/option_lifetime_2024.proto:12:26
+   |
+ 1 | edition = "2024";
+   |           ------ edition specified here
+...
+12 |     FOO_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "unspecified"];
+   |                          ^^^^^^^^^^^^^^^^^^^
+   = help: `json` requires at least Edition 2026
+
+encountered 2 errors

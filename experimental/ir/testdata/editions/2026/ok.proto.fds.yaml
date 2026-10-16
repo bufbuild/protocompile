@@ -1,0 +1,157 @@
+file:
+- name: "google/protobuf/json_enumvalue_options.proto"
+  package: "pb.enumvalue"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "JsonEnumValueOptions"
+    field:
+    - name: "string"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "string"
+    visibility: VISIBILITY_LOCAL
+  extension:
+  - name: "json"
+    number: 998
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.enumvalue.JsonEnumValueOptions"
+    extendee: ".google.protobuf.EnumValueOptions"
+    json_name: "json"
+    options.feature_support.edition_introduced: EDITION_2026
+  options.java_package: "com.google.protobuf.util"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "google/protobuf/json_options.proto"
+  package: "pb"
+  dependency: ["google/protobuf/json_enumvalue_options.proto"]
+  public_dependency: [0]
+  options.java_package: "com.google.protobuf.util"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "google/protobuf/cpp_file_options.proto"
+  package: "pb.file"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "CppFileOptions"
+    field:
+    - name: "namespace"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "namespace"
+    visibility: VISIBILITY_LOCAL
+  extension:
+  - name: "cpp"
+    number: 990
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.file.CppFileOptions"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "cpp"
+    options.feature_support.edition_introduced: EDITION_2026
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "google/protobuf/cpp_options.proto"
+  package: "pb"
+  dependency: ["google/protobuf/cpp_file_options.proto"]
+  public_dependency: [0]
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "google/protobuf/c_sharp_features.proto"
+  package: "pb"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "CSharpFeatures"
+    field:
+    - name: "nullable_reference_types"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "nullableReferenceTypes"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_MESSAGE, TARGET_TYPE_FILE]
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
+        feature_support.edition_introduced: EDITION_2026
+  extension:
+  - name: "csharp"
+    number: 1004
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.CSharpFeatures"
+    extendee: ".google.protobuf.FeatureSet"
+    json_name: "csharp"
+  options:
+    java_outer_classname: "CSharpFeaturesOuterClass"
+    java_multiple_files: true
+    csharp_namespace: "Google.Protobuf.Reflection"
+- name: "testdata/editions/2026/ok.proto"
+  package: "buf.test"
+  option_dependency:
+  - "google/protobuf/c_sharp_features.proto"
+  - "google/protobuf/cpp_options.proto"
+  - "google/protobuf/json_options.proto"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x"
+    - name: "bar"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Bar"
+      json_name: "bar"
+    - name: "local"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Local"
+      json_name: "local"
+    - name: "kind"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Namespace.Kind"
+      json_name: "kind"
+    - name: "a"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "a"
+    - name: "b"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "b"
+    oneof_decl: [{ name: "choice" }]
+    options.features.$unknown: "9: 1"
+    visibility: VISIBILITY_EXPORT
+  - name: "Local"
+  - name: "Namespace"
+    enum_type:
+    - name: "Kind"
+      value: [{ name: "KIND_UNSPECIFIED", number: 0 }]
+      visibility: VISIBILITY_EXPORT
+    reserved_range: [{ start: 1, end: 536870912 }]
+  enum_type:
+  - name: "Bar"
+    value:
+    - name: "BAR_UNSPECIFIED"
+      number: 0
+      options.$unknown: "998: {1: {\"unspecified\"}}"
+    - { name: "BAR_ONE", number: 1, options.$unknown: "998: {1: {\"1\"}}" }
+    - { name: "BAR_TWO", number: 2 }
+    visibility: VISIBILITY_EXPORT
+  options:
+    features.$unknown: "1004: {1: 1}"
+    $unknown: "990: {1: {\"buf::test\"}}"
+  syntax: "editions"
+  edition: EDITION_2026

@@ -40,6 +40,7 @@
     
     - {name: Edition2023, string: "2023", expr: "1000"}
     - {name: Edition2024, string: "2024", expr: "1001"}
+    - {name: Edition2026, string: "2026", expr: "1002"}
     
     - {name: EditionLegacy, string: "buf/legacy", expr: "900"}
     - {name: EditionTest1, string: "buf/1", expr: "1"}

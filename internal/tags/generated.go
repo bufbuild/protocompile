@@ -491,6 +491,9 @@ const (
 	// Field number for google.protobuf.FeatureSet.default_symbol_visibility.
 	FeatureSet_DefaultSymbolVisibility = 8
 
+	// Field number for google.protobuf.FeatureSet.enforce_proto_limits.
+	FeatureSet_EnforceProtoLimits = 9
+
 	// Field number for google.protobuf.FeatureSetDefaults.defaults.
 	FeatureSetDefaults_Defaults = 1
 
@@ -831,6 +834,15 @@ const (
 
 	// Enum value for google.protobuf.FeatureSet.VisibilityFeature.STRICT.
 	FeatureSet_DefaultSymbolVisibility_Strict = 4
+
+	// Enum value for google.protobuf.FeatureSet.ProtoLimitsFeature.PROTO_LIMITS_UNKNOWN.
+	FeatureSet_ProtoLimitsFeature_EnforceProtoLimits_Unknown = 0
+
+	// Enum value for google.protobuf.FeatureSet.ProtoLimitsFeature.LEGACY_NO_EXPLICIT_LIMITS.
+	FeatureSet_ProtoLimitsFeature_EnforceProtoLimits_LegacyNoExplicitLimits = 1
+
+	// Enum value for google.protobuf.FeatureSet.ProtoLimitsFeature.PROTO_LIMITS2026.
+	FeatureSet_ProtoLimitsFeature_EnforceProtoLimits_2026 = 2
 
 	// Enum value for google.protobuf.GeneratedCodeInfo.Annotation.NONE.
 	GeneratedCodeInfo_Annotation_Semantic_None = 0

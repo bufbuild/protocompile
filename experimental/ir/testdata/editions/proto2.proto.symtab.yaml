@@ -23,6 +23,7 @@ tables:
       options.message.fields: { "features": { message: {} } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
     - fqn: "buf.test.Enum"
       kind: KIND_ENUM
@@ -32,6 +33,7 @@ tables:
       options.message.fields: { "features": { message: {} } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "enum_type", value: "CLOSED" }
       - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
     - fqn: "buf.test.Message.x"
@@ -44,6 +46,7 @@ tables:
       features:
       - { name: "field_presence", value: "IMPLICIT", explicit: true }
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "EXPANDED" }
       - { name: "utf8_validation", value: "NONE" }
@@ -55,6 +58,7 @@ tables:
       options.message.fields: { "features": { message: {} } }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "EXPANDED" }
@@ -72,5 +76,7 @@ tables:
       index: 1
       visible: true
       options.message.fields: { "features": { message: {} } }
-      features: [{ name: "enforce_naming_style", value: "STYLE_LEGACY" }]
+      features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
     options.message.fields: { "features": { message: {} } }

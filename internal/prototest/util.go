@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -52,9 +53,18 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	}
 	checked[act.Path()] = struct{}{}
 
-	expProto := findFileInSet(expSet, act.Path())
-	actProto := protoutil.ProtoFromFileDescriptor(act)
-	ret := AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
+	// Files provided by the Go runtime, such as descriptor.proto, were not
+	// compiled by us, and may lag the protoc version used to build expSet.
+	ret := true
+	unwrapped := act
+	if imp, ok := act.(protoreflect.FileImport); ok {
+		unwrapped = imp.FileDescriptor
+	}
+	if global, _ := protoregistry.GlobalFiles.FindFileByPath(act.Path()); global != unwrapped {
+		expProto := findFileInSet(expSet, act.Path())
+		actProto := protoutil.ProtoFromFileDescriptor(act)
+		ret = AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
+	}
 
 	if recursive {
 		for i := range act.Imports().Len() {
