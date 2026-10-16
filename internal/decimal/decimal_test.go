@@ -901,6 +901,16 @@ func TestUint64(t *testing.T) {
 	assert.False(t, fits)
 }
 
+func TestUint64Allocs(t *testing.T) {
+	// Not parallel: testing.AllocsPerRun panics during parallel tests.
+	for _, in := range []string{"1e5", "18446744073709551615e0", "0x1p63", "1e20"} {
+		z, err := new(Decimal).Parse(in)
+		require.NoError(t, err)
+		allocs := testing.AllocsPerRun(100, func() { _, _ = z.Uint64() })
+		assert.Zero(t, allocs, in)
+	}
+}
+
 func TestIsFloat(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

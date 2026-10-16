@@ -17,9 +17,15 @@ package decimal
 import (
 	"math"
 	"math/big"
+	"math/bits"
 
 	"github.com/bufbuild/protocompile/internal/ext/bigx"
 )
+
+var pow10s = [...]uint64{
+	1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
+	1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+}
 
 // IsInt returns whether this value is an integer.
 func (z *Decimal) IsInt() bool {
@@ -80,11 +86,17 @@ func (z *Decimal) Uint64() (uint64, bool) {
 		return 0, false
 	}
 
-	x := z.Int(nil)
-	if !x.IsUint64() {
+	m := z.get()
+	if !bigx.IsUint64(m) {
 		return 0, false
 	}
-	return x.Uint64(), true
+	v := bigx.Uint64(m)
+	n := int(z.exp) - z.digits()
+	if z.base2() {
+		return v << n, true
+	}
+	hi, lo := bits.Mul64(v, pow10s[n])
+	return lo, hi == 0
 }
 
 // SetUint64 sets this decimal's value to x.
