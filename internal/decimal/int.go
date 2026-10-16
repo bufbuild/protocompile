@@ -75,8 +75,8 @@ func (z *Decimal) Uint64() (uint64, bool) {
 		if z.exp > 64 {
 			return 0, false
 		}
-	} else if int(z.exp)-z.digits() >= 20 {
-		// The mantissa is nonzero, so z is at least 10^20 > 2^64.
+	} else if z.exp > 20 {
+		// The mantissa is normalized to 0.dddd, so z is at least 10^(exp-1).
 		return 0, false
 	}
 
