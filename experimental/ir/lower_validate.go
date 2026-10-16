@@ -614,6 +614,14 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 			// NOTE: name deduplication needs to wait until global linking,
 			// similar to extension number deduplication.
 			name := decl.Field(builtins.ExtnDeclName)
+			tyName := decl.Field(builtins.ExtnDeclType)
+
+			// Reserved declarations may omit both the name and the type.
+			reserved, _ := decl.Field(builtins.ExtnDeclReserved).AsBool()
+			if reserved && name.IsZero() && tyName.IsZero() {
+				continue
+			}
+
 			if !name.IsZero() {
 				validatePath(name, "fully-qualified name")
 			} else if !haveMissingField {
@@ -623,7 +631,6 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 				haveMissingField = true
 			}
 
-			tyName := decl.Field(builtins.ExtnDeclType)
 			if !tyName.IsZero() {
 				v, _ := tyName.AsString()
 				if predeclared.Lookup(v) == predeclared.Unknown {
