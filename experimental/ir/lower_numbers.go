@@ -48,7 +48,7 @@ func evaluateFieldNumbers(file *File, r *report.Report) {
 
 		for member := range seq.Values(ty.Members()) {
 			member.Raw().number, member.Raw().numberOk = evaluateMemberNumber(
-				file, scope, member.AST().Value(), kind, false, r)
+				file, scope, member.AST().Value(), kind, false, false, r)
 		}
 
 		for tags := range seq.Values(ty.AllRanges()) {
@@ -56,8 +56,8 @@ func evaluateFieldNumbers(file *File, r *report.Report) {
 			case ast.ExprKindRange:
 				a, b := tags.AST().AsRange().Bounds()
 
-				start, startOk := evaluateMemberNumber(file, scope, a, kind, false, r)
-				end, endOk := evaluateMemberNumber(file, scope, b, kind, true, r)
+				start, startOk := evaluateMemberNumber(file, scope, a, kind, true, false, r)
+				end, endOk := evaluateMemberNumber(file, scope, b, kind, true, true, r)
 
 				if !startOk || !endOk {
 					continue
@@ -91,7 +91,7 @@ func evaluateFieldNumbers(file *File, r *report.Report) {
 				tags.Raw().rangeOk = startOk && endOk
 
 			default:
-				n, ok := evaluateMemberNumber(file, scope, tags.AST(), kind, false, r)
+				n, ok := evaluateMemberNumber(file, scope, tags.AST(), kind, true, false, r)
 				if !ok {
 					continue
 				}
@@ -118,11 +118,11 @@ func evaluateFieldNumbers(file *File, r *report.Report) {
 		}
 
 		extn.Raw().number, extn.Raw().numberOk = evaluateMemberNumber(
-			file, scope, extn.AST().Value(), kind, false, r)
+			file, scope, extn.AST().Value(), kind, false, false, r)
 	}
 }
 
-func evaluateMemberNumber(file *File, scope FullName, number ast.ExprAny, kind memberNumber, allowMax bool, r *report.Report) (int32, bool) {
+func evaluateMemberNumber(file *File, scope FullName, number ast.ExprAny, kind memberNumber, rangeBound, allowMax bool, r *report.Report) (int32, bool) {
 	if number.IsZero() {
 		return 0, false // Diagnosed for us elsewhere.
 	}
@@ -137,6 +137,7 @@ func evaluateMemberNumber(file *File, scope FullName, number ast.ExprAny, kind m
 	v, ok := e.evalBits(evalArgs{
 		expr:         number,
 		memberNumber: kind,
+		rangeBound:   rangeBound,
 		allowMax:     allowMax,
 	})
 

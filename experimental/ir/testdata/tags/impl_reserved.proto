@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+package test;
+
+// Ranges may include the implementation-reserved numbers 19000 to 19999.
+message M {
+    reserved 18900 to 19100;
+    reserved 19200;
+    reserved 19500 to 19600;
+    extensions 19999 to 20500;
+    extensions 19700 to 19800;
+
+    // Field numbers may not.
+    optional int32 f = 19300;
+}
+
+extend M {
+    optional int32 x = 19750;
+}
