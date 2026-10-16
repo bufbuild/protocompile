@@ -17,6 +17,7 @@ message Foo {
     repeated uint64 u64 = 3;
 
     optional int32 field = 1e2147483646;
+    optional int64 with_default = 6 [default = 1e2147483646];
     reserved 1e2147483646;
     extensions 1000 to 1e2147483646;
 }

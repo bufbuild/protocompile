@@ -30,7 +30,7 @@ func (z *Decimal) IsInt() bool {
 //
 // If z is non-finite, returns nil and leaves x unchanged.
 //
-// The result has as many digits as z's exponent, which may be far larger than
+// The size of the result grows with z's exponent, so it may be far larger than
 // the text z was parsed from. Use [Decimal.Uint64] when only values that fit
 // in 64 bits are of interest.
 func (z *Decimal) Int(x *big.Int) *big.Int {
@@ -57,27 +57,26 @@ func (z *Decimal) Int(x *big.Int) *big.Int {
 	return x.SetBits(w)
 }
 
-// Uint64 returns the value [Decimal.Int] would return, as a uint64.
+// Uint64 returns z as a uint64.
 //
-// Returns false if z is non-finite or the value does not fit in a uint64.
-// Unlike [Decimal.Int], this does not materialize values that cannot fit.
+// Returns false if z is not an integer in the range of a uint64; this
+// includes non-finite and negative values. Unlike [Decimal.Int], this does not
+// materialize values that cannot fit.
 func (z *Decimal) Uint64() (uint64, bool) {
-	if !z.IsFinite() {
+	if z.IsZero() {
+		return 0, z.IsFinite()
+	}
+	if !z.IsFinite() || z.Negative() || !z.IsInt() {
 		return 0, false
 	}
 
-	mant := z.get()
-	n := int(z.exp) - z.digits()
-	if n < 0 || len(mant) == 0 {
-		return 0, true
-	}
-
 	if z.base2() {
-		if bigx.Log2(mant)+1+n > 64 {
+		// The mantissa is normalized to 0.1bbbb, so z is at least 2^(exp-1).
+		if z.exp > 64 {
 			return 0, false
 		}
-	} else if n >= 20 {
-		// The mantissa is nonzero, so the value is at least 10^20 > 2^64.
+	} else if int(z.exp)-z.digits() >= 20 {
+		// The mantissa is nonzero, so z is at least 10^20 > 2^64.
 		return 0, false
 	}
 

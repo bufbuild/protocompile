@@ -849,15 +849,20 @@ func TestUint64(t *testing.T) {
 		large bool // Too large to check against Int.
 	}{
 		{in: "0", want: 0, fits: true},
+		{in: "-0", want: 0, fits: true},
 		{in: "42", want: 42, fits: true},
-		{in: "1.5", want: 0, fits: true},
 		{in: "1e19", want: 1e19, fits: true},
 		{in: "18446744073709551615", want: math.MaxUint64, fits: true},
 		{in: "1844674407370955161.5e1", want: math.MaxUint64, fits: true},
 		{in: "0x1p63", want: 1 << 63, fits: true},
 		{in: "0xffffffffffffffff", want: math.MaxUint64, fits: true},
 
+		{in: "1.5", fits: false},
+		{in: "123.5", fits: false},
+		{in: "-5", fits: false},
+		{in: "-0x1p10", fits: false},
 		{in: "18446744073709551616", fits: false},
+		{in: "2e19", fits: false},
 		{in: "1e20", fits: false},
 		{in: "0x1p64", fits: false},
 		{in: "0x10000000000000000", fits: false},
@@ -877,8 +882,12 @@ func TestUint64(t *testing.T) {
 				assert.Equal(t, tt.want, got)
 			}
 			if !tt.large {
+				// Int ignores the sign and truncates non-integers to zero, so
+				// it only agrees with Uint64 on nonnegative integers.
 				n := z.Int(nil)
-				assert.Equal(t, n.IsUint64(), fits)
+				if z.IsInt() && !z.Negative() {
+					assert.Equal(t, n.IsUint64(), fits)
+				}
 				if fits {
 					assert.Equal(t, n.Uint64(), got)
 				}
