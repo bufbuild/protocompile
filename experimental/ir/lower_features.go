@@ -666,7 +666,20 @@ func validateOptionLifetimesIn(options MessageValue, r *report.Report) {
 // diagnoseEnumLifetimes diagnoses each enum value set in value whose
 // feature_support does not permit it in the current edition.
 func diagnoseEnumLifetimes(value Value, r *report.Report) {
-	if !value.Field().Element().IsEnum() {
+	ty := value.Field().Element()
+	if !ty.IsEnum() {
+		return
+	}
+	// Most enums have no values with feature_support, so skip looking up
+	// each element by number.
+	hasSupport := false
+	for member := range seq.Values(ty.Members()) {
+		if !member.FeatureInfo().IsZero() {
+			hasSupport = true
+			break
+		}
+	}
+	if !hasSupport {
 		return
 	}
 	for elem := range seq.Values(value.Elements()) {
