@@ -214,12 +214,35 @@ func enumValueJSON(m Member) (option, str Value, ok bool) {
 // validateEnumValueJSON validates custom JSON strings set with
 // (pb.enumvalue.json).string, following protoc's rules.
 func validateEnumValueJSON(ty Type, r *report.Report) {
+	type custom struct {
+		name   string
+		span   source.Spanner // Nil if the option is not set.
+		hasStr bool
+	}
+	customs := make([]custom, ty.Members().Len())
+	var found bool
+	for i, member := range seq.All(ty.Members()) {
+		option, str, ok := enumValueJSON(member)
+		if !ok {
+			continue
+		}
+		found = true
+		customs[i].name, customs[i].hasStr = str.AsString()
+		customs[i].span = option.OptionSpan()
+		if customs[i].hasStr {
+			customs[i].span = str.ValueAST()
+		}
+	}
+	if !found {
+		return
+	}
+
 	type entry struct {
 		member Member
 		span   source.Spanner
 	}
 	names := make(map[string]entry)
-	primaries := make(map[int32]Member)
+	primaries := make(map[int32]int)
 
 	insert := func(name string, member Member, span source.Spanner) {
 		prev, ok := names[name]
@@ -236,52 +259,40 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 		}
 	}
 
-	for member := range seq.Values(ty.Members()) {
-		option, str, custom := enumValueJSON(member)
-		name, hasString := str.AsString()
-
-		var span source.Spanner
-		if custom {
-			span = option.OptionSpan()
-			if hasString {
-				span = str.ValueAST()
-			}
-
-			if strings.ContainsRune(name, 0) {
+	for i, member := range seq.All(ty.Members()) {
+		c := customs[i]
+		if c.span != nil {
+			if strings.ContainsRune(c.name, 0) {
 				r.Errorf("custom JSON name cannot contain NUL bytes").Apply(
-					report.Snippet(span),
+					report.Snippet(c.span),
 				)
 			}
 
 			// A custom name that is a number would be ambiguous with the
 			// number of a different value.
-			n, err := strconv.ParseInt(strings.Trim(name, " \t\n\v\f\r"), 10, 32)
+			n, err := strconv.ParseInt(strings.Trim(c.name, " \t\n\v\f\r"), 10, 32)
 			if err == nil && int32(n) != member.Number() {
-				r.Errorf("custom JSON name `%s` is a number that does not match", name).Apply(
-					report.Snippetf(span, "this is `%d`", n),
+				r.Errorf("custom JSON name `%s` is a number that does not match", c.name).Apply(
+					report.Snippetf(c.span, "this is `%d`", n),
 					report.Snippetf(member.AST().Value(), "but the value's number is `%d`", member.Number()),
 				)
 			}
 		}
 
 		if ty.AllowsAlias() {
-			if primary, ok := primaries[member.Number()]; !ok {
-				primaries[member.Number()] = member
-			} else {
-				_, primaryStr, _ := enumValueJSON(primary)
-				primaryName, primaryHas := primaryStr.AsString()
-				if primaryHas != hasString || primaryName != name {
-					r.Errorf("aliases must have the same custom JSON name").Apply(
-						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, hasString)),
-						report.Snippetf(primary.AST().Name(), "but this has %s", describeJSONName(primaryName, primaryHas)),
-					)
-				}
+			if j, ok := primaries[member.Number()]; !ok {
+				primaries[member.Number()] = i
+			} else if p := customs[j]; p.hasStr != c.hasStr || p.name != c.name {
+				r.Errorf("aliases must have the same custom JSON name").Apply(
+					report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(c.name, c.hasStr)),
+					report.Snippetf(ty.Members().At(j).AST().Name(), "but this has %s", describeJSONName(p.name, p.hasStr)),
+				)
 			}
 		}
 
 		insert(member.Name(), member, member.AST().Name())
-		if custom {
-			insert(name, member, span)
+		if c.span != nil {
+			insert(c.name, member, c.span)
 		}
 	}
 }
@@ -1683,8 +1694,14 @@ func validateNamingStyle(f *File, r *report.Report) {
 	}
 }
 
-// collisionOptOut tells the user how to disable the STYLE2026 collision checks.
-var collisionOptOut = report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
+var (
+	// collisionOptOut tells the user how to disable the STYLE2026 collision
+	// checks.
+	collisionOptOut = report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
+
+	// collisionPrefixes are the prefixes checked by STYLE2026.
+	collisionPrefixes = []string{"has_", "get_", "set_", "clear_"}
+)
 
 // validateNameCollision checks the STYLE2026 rules for a field, oneof or
 // extension name that is likely to collide in generated code with the fields
@@ -1699,7 +1716,7 @@ func validateNameCollision(ty Type, noun, name string, span source.Spanner, r *r
 		return
 	}
 
-	for _, prefix := range []string{"has_", "get_", "set_", "clear_"} {
+	for _, prefix := range collisionPrefixes {
 		other, ok := strings.CutPrefix(name, prefix)
 		if !ok {
 			continue
