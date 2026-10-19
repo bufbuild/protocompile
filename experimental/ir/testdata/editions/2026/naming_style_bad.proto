@@ -39,3 +39,24 @@ export message FieldOptOut {
     int32 x = 1;
     int32 has_x = 2 [features.enforce_naming_style = STYLE2024];
 }
+
+export message Extendee {
+    int32 x = 1;
+    oneof y {
+        int32 a = 2;
+    }
+    extensions 100 to 200;
+}
+
+extend Extendee {
+    int32 has_x = 100;
+    int32 x_value = 101;
+    int32 get_y = 102;
+    string descriptor = 103;
+    int32 BadExtension = 104;
+    int32 clear_x = 105 [features.enforce_naming_style = STYLE2024];
+
+    // Extensions are not checked against each other.
+    int32 z = 106;
+    int32 has_z = 107;
+}

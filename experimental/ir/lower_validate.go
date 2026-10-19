@@ -1634,8 +1634,6 @@ func validateNamingStyle(f *File, r *report.Report) {
 					)
 				}
 			}
-
-			validateNameCollisions(ty, isStyle2026, r)
 		case ty.IsEnum():
 			// PascalCase required for enums.
 			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
@@ -1660,22 +1658,30 @@ func validateNamingStyle(f *File, r *report.Report) {
 			}
 		}
 	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		if extn.IsGroup() || !isStyle2024(extn.FeatureSet()) {
+			continue
+		}
+		if !isSnakeCase(extn.Name()) {
+			r.Errorf("extension name should be snake_case").Apply(
+				report.Snippetf(extn.AST().Name(), "this name violates STYLE2024"),
+				report.Helpf("STYLE2024 requires extension names to be snake_case (e.g., my_extension)"),
+			)
+		}
+	}
+
+	validateNameCollisions(f, isStyle2026, r)
 }
 
-// validateNameCollisions checks the STYLE2026 rules for field and oneof names
-// that are likely to collide in generated code.
-func validateNameCollisions(ty Type, enabled func(FeatureSet) bool, r *report.Report) {
-	// Fields and oneofs share a namespace for the purposes of this check.
-	names := make(map[string]source.Spanner)
-	for field := range seq.Values(ty.Members()) {
-		names[field.Name()] = field.AST().Name()
-	}
-	for oneof := range seq.Values(ty.Oneofs()) {
-		names[oneof.Name()] = oneof.AST().Name()
-	}
-
+// validateNameCollisions checks the STYLE2026 rules for field, oneof and
+// extension names that are likely to collide in generated code.
+//
+// Like protoc, an extension is checked against the fields and oneofs of its
+// extendee, but not against other extensions.
+func validateNameCollisions(f *File, enabled func(FeatureSet) bool, r *report.Report) {
 	optOut := report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
-	check := func(noun, name string, span source.Spanner, fs FeatureSet) {
+	check := func(ty Type, noun, name string, span source.Spanner, fs FeatureSet) {
 		if !enabled(fs) {
 			return
 		}
@@ -1691,7 +1697,10 @@ func validateNameCollisions(ty Type, enabled func(FeatureSet) bool, r *report.Re
 
 		for _, prefix := range []string{"has_", "get_", "set_", "clear_"} {
 			other, ok := strings.CutPrefix(name, prefix)
-			if prev := names[other]; ok && prev != nil {
+			if !ok {
+				continue
+			}
+			if prev := fieldOrOneofByName(ty, other); prev != nil {
 				r.Errorf("%s name cannot begin with `%s` if `%s` exists", noun, prefix, other).Apply(
 					report.Snippetf(span, "this name violates STYLE2026"),
 					report.Snippetf(prev, "`%s` declared here", other),
@@ -1703,7 +1712,7 @@ func validateNameCollisions(ty Type, enabled func(FeatureSet) bool, r *report.Re
 		}
 
 		if other, ok := strings.CutSuffix(name, "_value"); ok {
-			if prev := names[other]; prev != nil {
+			if prev := fieldOrOneofByName(ty, other); prev != nil {
 				r.Errorf("%s name cannot end with `_value` if `%s` exists", noun, other).Apply(
 					report.Snippetf(span, "this name violates STYLE2026"),
 					report.Snippetf(prev, "`%s` declared here", other),
@@ -1714,12 +1723,35 @@ func validateNameCollisions(ty Type, enabled func(FeatureSet) bool, r *report.Re
 		}
 	}
 
-	for field := range seq.Values(ty.Members()) {
-		check("field", field.Name(), field.AST().Name(), field.FeatureSet())
+	for ty := range seq.Values(f.AllTypes()) {
+		if !ty.IsMessage() {
+			continue
+		}
+		for field := range seq.Values(ty.Members()) {
+			check(ty, "field", field.Name(), field.AST().Name(), field.FeatureSet())
+		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			check(ty, "oneof", oneof.Name(), oneof.AST().Name(), oneof.FeatureSet())
+		}
+	}
+	for extn := range seq.Values(f.AllExtensions()) {
+		check(extn.Container(), "extension", extn.Name(), extn.AST().Name(), extn.FeatureSet())
+	}
+}
+
+// fieldOrOneofByName returns the name of the field or oneof of ty called
+// name, or nil if there is none. Fields and oneofs share a namespace for the
+// STYLE2026 collision checks.
+func fieldOrOneofByName(ty Type, name string) source.Spanner {
+	if field := ty.MemberByName(name); !field.IsZero() {
+		return field.AST().Name()
 	}
 	for oneof := range seq.Values(ty.Oneofs()) {
-		check("oneof", oneof.Name(), oneof.AST().Name(), oneof.FeatureSet())
+		if oneof.Name() == name {
+			return oneof.AST().Name()
+		}
 	}
+	return nil
 }
 
 // isPascalCase checks if a name is in PascalCase format.
