@@ -10,16 +10,6 @@ error: `cc_enable_arenas` is not supported in Edition 2026
    = help: cc_enable_arenas is enabled by default in every edition and overrides
            are ignored.This option is removed in editions 2026 and above
 
-warning: expected feature field to set `edition_defaults`
-  --> testdata/editions/2026/option_lifetime.proto:34:25
-   |
-34 |       bool deprecated = 1 [feature_support = {
-   |  ________________________^
-...  /
-38 | |     }];
-   | \______^
-   = note: this is likely a mistake, but it is not rejected by protoc
-
 error: `old` is not supported in Edition 2026
   --> testdata/editions/2026/option_lifetime.proto:43:12
    |
@@ -79,4 +69,4 @@ error: `MODE_OLD` is not supported in Edition 2026
    = help: removed in Edition 2026
    = help: use `MODE_NEW` instead
 
-encountered 5 errors and 2 warnings
+encountered 5 errors and 1 warning

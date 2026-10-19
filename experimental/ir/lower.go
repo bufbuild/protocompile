@@ -127,6 +127,7 @@ func lower(file *File, r *report.Report, importer Importer) {
 	// Build feature info for validating features after they are constructed.
 	// Then validate all feature settings throughout the file.
 	buildAllFeatureInfo(file, r)
+	validateFeatureExtensions(file, r)
 	validateAllFeatures(file, r)
 	validateOptionLifetimes(file, r)
 

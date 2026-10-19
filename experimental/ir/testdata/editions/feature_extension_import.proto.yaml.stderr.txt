@@ -1,0 +1,25 @@
+warning: expected feature field to set `edition_defaults`
+  --> features.proto:5:14
+   |
+ 5 |   bool a = 1 [feature_support.edition_introduced = EDITION_2023];
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ::: main.proto:8:12
+   |
+ 8 |   Features features = 10000;
+   |            -------- `Features` is used as features here
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected feature field to set `edition_defaults`
+  --> features.proto:6:8
+   |
+ 6 |   bool b = 2;
+   |        ^
+  ::: main.proto:8:12
+   |
+ 8 |   Features features = 10000;
+   |            -------- `Features` is used as features here
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+encountered 2 warnings

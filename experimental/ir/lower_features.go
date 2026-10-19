@@ -38,6 +38,36 @@ func buildAllFeatureInfo(file *File, r *report.Report) {
 	}
 }
 
+// validateFeatureExtensions checks the message type of each FeatureSet
+// extension in file. Like protoc, every field of that type is a feature, and
+// must set edition_defaults.
+func validateFeatureExtensions(file *File, r *report.Report) {
+	builtins := file.builtins()
+	seen := make(map[FullName]bool)
+	for extn := range seq.Values(file.AllExtensions()) {
+		ty := extn.Element()
+		if extn.Container() != builtins.FeatureSet || !ty.IsMessage() || seen[ty.FullName()] {
+			continue
+		}
+		seen[ty.FullName()] = true
+
+		for field := range seq.Values(ty.Members()) {
+			if !field.Options().Field(builtins.EditionDefaults).IsZero() {
+				continue
+			}
+			var where source.Spanner = field.AST().Options()
+			if field.AST().Options().IsZero() {
+				where = field.AST().Name()
+			}
+			r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
+				report.Snippet(where),
+				report.Snippetf(extn.AST().Name(), "`%s` is used as features here", ty.Name()),
+				report.Notef("this is likely a mistake, but it is not rejected by protoc"),
+			)
+		}
+	}
+}
+
 // buildFeatureInfo builds feature information for a feature field.
 //
 // A feature field is any field which sets either of the editions_defaults or
@@ -55,15 +85,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
 
 	info := new(rawFeatureInfo)
-	if defaults.IsZero() {
-		// Ordinary options may set feature_support without edition_defaults,
-		// such as cc_enable_arenas.
-		if !isOptionsMessage(field.Container()) {
-			r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
-				report.Snippet(field.AST().Options()), mistake,
-			)
-		}
-	} else {
+	// Ordinary options may set feature_support without edition_defaults, such
+	// as cc_enable_arenas. Feature fields are checked for edition_defaults by
+	// validateFeatureExtensions.
+	if !defaults.IsZero() {
 		for def := range seq.Values(defaults.Elements()) {
 			def := def.AsMessage()
 			value := def.Field(builtins.EditionDefaultsKey)
@@ -278,25 +303,6 @@ func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.R
 
 	value = support.Field(builtins.EditionSupportRemovalErr)
 	info.removalErr, _ = value.AsString()
-}
-
-// isOptionsMessage returns whether ty is one of the *Options messages in
-// descriptor.proto.
-func isOptionsMessage(ty Type) bool {
-	if ty.IsZero() {
-		return false
-	}
-	builtins := ty.Context().builtins()
-	for _, options := range []Member{
-		builtins.FileOptions, builtins.MessageOptions, builtins.FieldOptions,
-		builtins.OneofOptions, builtins.RangeOptions, builtins.EnumOptions,
-		builtins.EnumValueOptions, builtins.ServiceOptions, builtins.MethodOptions,
-	} {
-		if !options.IsZero() && options.Element() == ty {
-			return true
-		}
-	}
-	return false
 }
 
 func validateAllFeatures(file *File, r *report.Report) {

@@ -3,6 +3,10 @@ warning: expected feature field to set `edition_defaults`
    |
 12 |     bool a = 1 [feature_support = {}];
    |                ^^^^^^^^^^^^^^^^^^^^^^
+...
+55 |     Features f = 10000;
+   |              - `Features` is used as features here
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
 
 warning: expected `FeatureSupport.edition_introduced` to be set
