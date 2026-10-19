@@ -1543,18 +1543,17 @@ func validateNamingStyle(f *File, r *report.Report) {
 		return // Feature doesn't exist (pre-2024)
 	}
 
-	// Helper to check if a style is enabled at a given scope. Like protoc,
-	// each style implies all earlier ones, and STYLE_LEGACY disables them all.
-	isStyle := func(featureSet FeatureSet, style int64) bool {
-		feature := featureSet.Lookup(key)
-		value, _ := feature.Value().AsInt()
+	// Like protoc, each style implies all earlier ones, and STYLE_LEGACY
+	// disables them all.
+	styleOf := func(featureSet FeatureSet) int64 {
+		value, _ := featureSet.Lookup(key).Value().AsInt()
+		return value
+	}
+	atLeast := func(value, style int64) bool {
 		return value >= style && value != tags.FeatureSet_EnforceNamingStyle_Legacy
 	}
 	isStyle2024 := func(featureSet FeatureSet) bool {
-		return isStyle(featureSet, tags.FeatureSet_EnforceNamingStyle_2024)
-	}
-	isStyle2026 := func(featureSet FeatureSet) bool {
-		return isStyle(featureSet, tags.FeatureSet_EnforceNamingStyle_2026)
+		return atLeast(styleOf(featureSet), tags.FeatureSet_EnforceNamingStyle_2024)
 	}
 
 	// Validate package name (file-level scope).
@@ -1609,29 +1608,35 @@ func validateNamingStyle(f *File, r *report.Report) {
 
 			// Validate field names (check at field level).
 			for field := range seq.Values(ty.Members()) {
-				if field.IsZero() || field.IsGroup() || !isStyle2024(field.FeatureSet()) {
+				style := styleOf(field.FeatureSet())
+				if !atLeast(style, tags.FeatureSet_EnforceNamingStyle_2024) {
 					continue
 				}
-				fieldName := field.Name()
-				if !isSnakeCase(fieldName) {
+				if !field.IsGroup() && !isSnakeCase(field.Name()) {
 					r.Errorf("field name should be snake_case").Apply(
 						report.Snippetf(field.AST().Name(), "this name violates STYLE2024"),
 						report.Helpf("STYLE2024 requires field names to be snake_case (e.g., my_field)"),
 					)
 				}
+				if atLeast(style, tags.FeatureSet_EnforceNamingStyle_2026) {
+					validateNameCollision(ty, "field", field.Name(), field.AST().Name(), r)
+				}
 			}
 
 			// Validate oneof names (check at oneof level).
 			for oneof := range seq.Values(ty.Oneofs()) {
-				if oneof.IsZero() || !isStyle2024(oneof.FeatureSet()) {
+				style := styleOf(oneof.FeatureSet())
+				if !atLeast(style, tags.FeatureSet_EnforceNamingStyle_2024) {
 					continue
 				}
-				oneofName := oneof.Name()
-				if !isSnakeCase(oneofName) {
+				if !isSnakeCase(oneof.Name()) {
 					r.Errorf("oneof name should be snake_case").Apply(
 						report.Snippetf(oneof.AST().Name(), "this name violates STYLE2024"),
 						report.Helpf("STYLE2024 requires oneof names to be snake_case (e.g., my_choice)"),
 					)
+				}
+				if atLeast(style, tags.FeatureSet_EnforceNamingStyle_2026) {
+					validateNameCollision(ty, "oneof", oneof.Name(), oneof.AST().Name(), r)
 				}
 			}
 		case ty.IsEnum():
@@ -1660,82 +1665,65 @@ func validateNamingStyle(f *File, r *report.Report) {
 	}
 
 	for extn := range seq.Values(f.AllExtensions()) {
-		if extn.IsGroup() || !isStyle2024(extn.FeatureSet()) {
+		style := styleOf(extn.FeatureSet())
+		if !atLeast(style, tags.FeatureSet_EnforceNamingStyle_2024) {
 			continue
 		}
-		if !isSnakeCase(extn.Name()) {
+		if !extn.IsGroup() && !isSnakeCase(extn.Name()) {
 			r.Errorf("extension name should be snake_case").Apply(
 				report.Snippetf(extn.AST().Name(), "this name violates STYLE2024"),
 				report.Helpf("STYLE2024 requires extension names to be snake_case (e.g., my_extension)"),
 			)
 		}
+		if atLeast(style, tags.FeatureSet_EnforceNamingStyle_2026) {
+			// Like protoc, an extension is checked against the fields and
+			// oneofs of its extendee, but not against other extensions.
+			validateNameCollision(extn.Container(), "extension", extn.Name(), extn.AST().Name(), r)
+		}
 	}
-
-	validateNameCollisions(f, isStyle2026, r)
 }
 
-// validateNameCollisions checks the STYLE2026 rules for field, oneof and
-// extension names that are likely to collide in generated code.
-//
-// Like protoc, an extension is checked against the fields and oneofs of its
-// extendee, but not against other extensions.
-func validateNameCollisions(f *File, enabled func(FeatureSet) bool, r *report.Report) {
-	optOut := report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
-	check := func(ty Type, noun, name string, span source.Spanner, fs FeatureSet) {
-		if !enabled(fs) {
-			return
-		}
+// collisionOptOut tells the user how to disable the STYLE2026 collision checks.
+var collisionOptOut = report.Helpf("set `features.enforce_naming_style = STYLE2024` to opt out of this check")
 
-		if name == "descriptor" {
-			r.Errorf("%s cannot be named `descriptor`", noun).Apply(
+// validateNameCollision checks the STYLE2026 rules for a field, oneof or
+// extension name that is likely to collide in generated code with the fields
+// and oneofs of ty.
+func validateNameCollision(ty Type, noun, name string, span source.Spanner, r *report.Report) {
+	if name == "descriptor" {
+		r.Errorf("%s cannot be named `descriptor`", noun).Apply(
+			report.Snippetf(span, "this name violates STYLE2026"),
+			report.Helpf("this name can collide with generated code"),
+			collisionOptOut,
+		)
+		return
+	}
+
+	for _, prefix := range []string{"has_", "get_", "set_", "clear_"} {
+		other, ok := strings.CutPrefix(name, prefix)
+		if !ok {
+			continue
+		}
+		if prev := fieldOrOneofByName(ty, other); prev != nil {
+			r.Errorf("%s name cannot begin with `%s` if `%s` exists", noun, prefix, other).Apply(
 				report.Snippetf(span, "this name violates STYLE2026"),
-				report.Helpf("this name can collide with generated code"),
-				optOut,
+				report.Snippetf(prev, "`%s` declared here", other),
+				report.Helpf("this name can collide with generated code for `%s`", other),
+				collisionOptOut,
 			)
 			return
 		}
-
-		for _, prefix := range []string{"has_", "get_", "set_", "clear_"} {
-			other, ok := strings.CutPrefix(name, prefix)
-			if !ok {
-				continue
-			}
-			if prev := fieldOrOneofByName(ty, other); prev != nil {
-				r.Errorf("%s name cannot begin with `%s` if `%s` exists", noun, prefix, other).Apply(
-					report.Snippetf(span, "this name violates STYLE2026"),
-					report.Snippetf(prev, "`%s` declared here", other),
-					report.Helpf("this name can collide with generated code for `%s`", other),
-					optOut,
-				)
-				return
-			}
-		}
-
-		if other, ok := strings.CutSuffix(name, "_value"); ok {
-			if prev := fieldOrOneofByName(ty, other); prev != nil {
-				r.Errorf("%s name cannot end with `_value` if `%s` exists", noun, other).Apply(
-					report.Snippetf(span, "this name violates STYLE2026"),
-					report.Snippetf(prev, "`%s` declared here", other),
-					report.Helpf("this name can collide with generated code for `%s`", other),
-					optOut,
-				)
-			}
-		}
 	}
 
-	for ty := range seq.Values(f.AllTypes()) {
-		if !ty.IsMessage() {
-			continue
+	if other, ok := strings.CutSuffix(name, "_value"); ok {
+		if prev := fieldOrOneofByName(ty, other); prev != nil {
+			r.Errorf("%s name cannot end with `_value` if `%s` exists", noun, other).Apply(
+				report.Snippetf(span, "this name violates STYLE2026"),
+				report.Snippetf(prev, "`%s` declared here", other),
+				report.Helpf("this name can collide with generated code for `%s`", other),
+				collisionOptOut,
+			)
 		}
-		for field := range seq.Values(ty.Members()) {
-			check(ty, "field", field.Name(), field.AST().Name(), field.FeatureSet())
-		}
-		for oneof := range seq.Values(ty.Oneofs()) {
-			check(ty, "oneof", oneof.Name(), oneof.AST().Name(), oneof.FeatureSet())
-		}
-	}
-	for extn := range seq.Values(f.AllExtensions()) {
-		check(extn.Container(), "extension", extn.Name(), extn.AST().Name(), extn.FeatureSet())
 	}
 }
 

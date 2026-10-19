@@ -308,10 +308,10 @@ func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.R
 	validateFeatureSupport(newFeatureSupport(support), r)
 }
 
-// validateEnumValueSupport checks the feature_support of each enum value
-// usable by an enum-typed field that sets feature_support. Like protoc, a
-// value's support is merged over the field's, and must not widen it.
-func validateEnumValueSupport(file *File, r *report.Report) {
+// validateFeatureSupportEnumValues checks the feature_support of each enum
+// value usable by an enum-typed field that sets feature_support. Like protoc,
+// a value's support is merged over the field's, and must not widen it.
+func validateFeatureSupportEnumValues(file *File, r *report.Report) {
 	builtins := file.builtins()
 	for field := range file.AllMembers() {
 		enum := field.Element()
@@ -655,8 +655,10 @@ func validateOptionLifetimesIn(options MessageValue, r *report.Report) {
 
 		diagnoseLifetime(value, field.FeatureInfo(), r)
 		diagnoseEnumLifetimes(value, r)
-		for elem := range seq.Values(value.Elements()) {
-			validateOptionLifetimesIn(elem.AsMessage(), r)
+		if field.Element().IsMessage() {
+			for elem := range seq.Values(value.Elements()) {
+				validateOptionLifetimesIn(elem.AsMessage(), r)
+			}
 		}
 	}
 }
