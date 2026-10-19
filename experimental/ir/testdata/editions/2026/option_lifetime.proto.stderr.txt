@@ -11,36 +11,72 @@ error: `cc_enable_arenas` is not supported in Edition 2026
            are ignored.This option is removed in editions 2026 and above
 
 warning: expected feature field to set `edition_defaults`
-  --> testdata/editions/2026/option_lifetime.proto:21:25
+  --> testdata/editions/2026/option_lifetime.proto:34:25
    |
-21 |       bool deprecated = 1 [feature_support = {
+34 |       bool deprecated = 1 [feature_support = {
    |  ________________________^
 ...  /
-25 | |     }];
+38 | |     }];
    | \______^
    = note: this is likely a mistake, but it is not rejected by protoc
 
 error: `old` is not supported in Edition 2026
-  --> testdata/editions/2026/option_lifetime.proto:29:12
+  --> testdata/editions/2026/option_lifetime.proto:43:12
    |
  1 | edition = "2026";
    |           ------ edition specified here
 ...
-29 |     option (old) = true;
+43 |     option (old) = true;
    |            ^^^^^
    = help: deprecated since Edition 2024, removed in Edition 2026
    = help: use `new` instead
 
 warning: `deprecated` is deprecated in Edition 2026
-  --> testdata/editions/2026/option_lifetime.proto:30:12
+  --> testdata/editions/2026/option_lifetime.proto:44:12
    |
  1 | edition = "2026";
    |           ------ edition specified here
 ...
-29 |     option (old) = true;
-30 |     option (nested).deprecated = true;
+43 |     option (old) = true;
+44 |     option (nested).deprecated = true;
    |            ^^^^^^^^^^^^^^^^^^^
    = help: deprecated since Edition 2026
    = help: don't use this
 
-encountered 2 errors and 2 warnings
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:45:21
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+44 |     option (nested).deprecated = true;
+45 |     option (mode) = MODE_OLD;
+   |                     ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:47:22
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+46 |     option (modes) = MODE_NEW;
+47 |     option (modes) = MODE_OLD;
+   |                      ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:48:32
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+47 |     option (modes) = MODE_OLD;
+48 |     option (nesteds) = { mode: MODE_OLD };
+   |                                ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+encountered 5 errors and 2 warnings

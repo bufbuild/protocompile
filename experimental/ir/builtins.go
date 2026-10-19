@@ -87,6 +87,7 @@ type builtins struct {
 	EditionSupportWarning    Member `builtin:"optional"`
 	EditionSupportRemoved    Member `builtin:"optional"`
 	EditionSupportRemovalErr Member `builtin:"optional"`
+	EnumValueSupport         Member `builtin:"optional"`
 
 	FeatureSet         Type   `builtin:"optional"`
 	FeaturePresence    Member `builtin:"optional"`
@@ -181,6 +182,7 @@ type builtinIDs struct {
 	EditionSupportWarning    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.deprecation_warning"`
 	EditionSupportRemoved    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_removed"`
 	EditionSupportRemovalErr intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.removal_error"`
+	EnumValueSupport         intern.ID `intern:"google.protobuf.EnumValueOptions.feature_support"`
 
 	FeatureSet         intern.ID `intern:"google.protobuf.FeatureSet"`
 	FeaturePresence    intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`

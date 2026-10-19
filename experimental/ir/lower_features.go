@@ -24,12 +24,15 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func buildAllFeatureInfo(file *File, r *report.Report) {
 	for m := range file.AllMembers() {
-		if !m.IsEnumValue() {
+		if m.IsEnumValue() {
+			buildEnumValueFeatureInfo(m, r)
+		} else {
 			buildFeatureInfo(m, r)
 		}
 	}
@@ -196,61 +199,85 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
-		value := support.Field(builtins.EditionSupportIntroduced)
-		n, _ := value.AsInt()
-		info.introduced = syntax.Syntax(n)
-		if value.IsZero() {
-			r.Warnf("expected `%s.%s` to be set",
-				builtins.EditionSupportIntroduced.Container().Name(),
-				builtins.EditionSupportIntroduced.Name(),
-			).Apply(
-				report.Snippet(support.AsValue().ValueAST()),
-				mistake,
-			)
-		} else if info.introduced == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.introduced.DescriptorName(),
-				builtins.EditionSupportIntroduced.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportDeprecated)
-		n, _ = value.AsInt()
-		info.deprecated = syntax.Syntax(n)
-		if !value.IsZero() && info.deprecated == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.deprecated.DescriptorName(),
-				builtins.EditionSupportDeprecated.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportRemoved)
-		n, _ = value.AsInt()
-		info.removed = syntax.Syntax(n)
-		if !value.IsZero() && info.removed == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.removed.DescriptorName(),
-				builtins.EditionSupportRemoved.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportWarning)
-		info.deprecationWarning, _ = value.AsString()
-
-		value = support.Field(builtins.EditionSupportRemovalErr)
-		info.removalErr, _ = value.AsString()
+		buildFeatureSupport(info, support, r)
 	}
 
 	field.Raw().featureInfo = info
+}
+
+// buildEnumValueFeatureInfo builds lifetime information for an enum value
+// that sets feature_support. protoc checks it whenever the value is used in
+// an option or feature.
+func buildEnumValueFeatureInfo(value Member, r *report.Report) {
+	builtins := value.Context().builtins()
+	support := value.Options().Field(builtins.EnumValueSupport).AsMessage()
+	if support.IsZero() {
+		return
+	}
+
+	info := new(rawFeatureInfo)
+	buildFeatureSupport(info, support, r)
+	value.Raw().featureInfo = info
+}
+
+// buildFeatureSupport fills in the lifetime fields of info from a
+// FeatureSupport message.
+func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.Report) {
+	builtins := support.Context().builtins()
+	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
+
+	value := support.Field(builtins.EditionSupportIntroduced)
+	n, _ := value.AsInt()
+	info.introduced = syntax.Syntax(n)
+	if value.IsZero() {
+		r.Warnf("expected `%s.%s` to be set",
+			builtins.EditionSupportIntroduced.Container().Name(),
+			builtins.EditionSupportIntroduced.Name(),
+		).Apply(
+			report.Snippet(support.AsValue().ValueAST()),
+			mistake,
+		)
+	} else if info.introduced == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.introduced.DescriptorName(),
+			builtins.EditionSupportIntroduced.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportDeprecated)
+	n, _ = value.AsInt()
+	info.deprecated = syntax.Syntax(n)
+	if !value.IsZero() && info.deprecated == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.deprecated.DescriptorName(),
+			builtins.EditionSupportDeprecated.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportRemoved)
+	n, _ = value.AsInt()
+	info.removed = syntax.Syntax(n)
+	if !value.IsZero() && info.removed == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.removed.DescriptorName(),
+			builtins.EditionSupportRemoved.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportWarning)
+	info.deprecationWarning, _ = value.AsString()
+
+	value = support.Field(builtins.EditionSupportRemovalErr)
+	info.removalErr, _ = value.AsString()
 }
 
 // isOptionsMessage returns whether ty is one of the *Options messages in
@@ -417,6 +444,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		}
 
 		diagnoseLifetime(feature, info, r)
+		diagnoseEnumLifetimes(feature, r)
 	}
 }
 
@@ -464,18 +492,38 @@ func validateOptionLifetimesIn(options MessageValue, r *report.Report) {
 		}
 
 		diagnoseLifetime(value, field.FeatureInfo(), r)
-		validateOptionLifetimesIn(value.AsMessage(), r)
+		diagnoseEnumLifetimes(value, r)
+		for elem := range seq.Values(value.Elements()) {
+			validateOptionLifetimesIn(elem.AsMessage(), r)
+		}
+	}
+}
+
+// diagnoseEnumLifetimes diagnoses each enum value set in value whose
+// feature_support does not permit it in the current edition.
+func diagnoseEnumLifetimes(value Value, r *report.Report) {
+	if !value.Field().Element().IsEnum() {
+		return
+	}
+	for elem := range seq.Values(value.Elements()) {
+		enum := elem.AsEnum()
+		diagnoseLifetimeOf(value.Context(), enum.FeatureInfo(), enum.Name(), elem.AST(), r)
 	}
 }
 
 // diagnoseLifetime diagnoses value if its field's feature_support does not
 // permit it in the current edition.
 func diagnoseLifetime(value Value, info FeatureInfo, r *report.Report) {
+	diagnoseLifetimeOf(value.Context(), info, value.Field().Name(), value.KeyAST(), r)
+}
+
+// diagnoseLifetimeOf diagnoses what, spanning where, if info does not permit
+// it in the current edition.
+func diagnoseLifetimeOf(file *File, info FeatureInfo, what string, where source.Spanner, r *report.Report) {
 	if info.IsZero() {
 		return
 	}
 
-	file := value.Context()
 	edition := file.Syntax()
 
 	// We check these in reverse order, because the user might have set
@@ -490,8 +538,8 @@ func diagnoseLifetime(value Value, info FeatureInfo, r *report.Report) {
 			Deprecated:       info.Deprecated(),
 			RemovedReason:    info.RemovalError(),
 			DeprecatedReason: info.DeprecationWarning(),
-			What:             value.Field().Name(),
-			Where:            value.KeyAST(),
+			What:             what,
+			Where:            where,
 		})
 
 	case !info.IsIntroduced(edition):
@@ -499,8 +547,8 @@ func diagnoseLifetime(value Value, info FeatureInfo, r *report.Report) {
 			Current: edition,
 			Decl:    file.AST().Syntax(),
 			Intro:   info.Introduced(),
-			What:    value.Field().Name(),
-			Where:   value.KeyAST(),
+			What:    what,
+			Where:   where,
 		})
 	}
 }
