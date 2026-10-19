@@ -1,0 +1,68 @@
+error: `MODE_EARLY` is introduced before `mode`
+  --> testdata/editions/feature_support_enum_values.proto:21:56
+   |
+ 9 |     edition_introduced: EDITION_2023
+   |                         ------------ `mode` is introduced here
+10 |     edition_deprecated: EDITION_2024
+...
+20 |   // Introduced before mode.
+21 |   MODE_EARLY = 1 [feature_support.edition_introduced = EDITION_PROTO2];
+   |                                                        ^^^^^^^^^^^^^^
+
+error: `edition_deprecated` must be before `edition_removed`
+  --> testdata/editions/feature_support_enum_values.proto:24:3
+   |
+12 |     edition_removed: EDITION_2026
+   |                      ------------ `edition_removed` set here
+13 |     removal_error: "mode is removed"
+...
+23 |   // Deprecated after mode.
+24 |   MODE_LATE_DEPRECATION = 2 [feature_support = {
+   |   ^^^^^^^^^^^^^^^^^^^^^
+   |    |
+   |    `MODE_LATE_DEPRECATION` inherits `feature_support` from `mode`
+25 |     edition_deprecated: EDITION_2026
+   |                         ------------
+
+error: `MODE_LATE_DEPRECATION` is deprecated after `mode`
+  --> testdata/editions/feature_support_enum_values.proto:25:25
+   |
+10 |     edition_deprecated: EDITION_2024
+   |                         ------------ `mode` is deprecated here
+11 |     deprecation_warning: "mode is deprecated"
+...
+25 |     edition_deprecated: EDITION_2026
+   |                         ^^^^^^^^^^^^
+
+error: `MODE_LATE_REMOVAL` is removed after `mode`
+  --> testdata/editions/feature_support_enum_values.proto:31:22
+   |
+12 |     edition_removed: EDITION_2026
+   |                      ------------ `mode` is removed here
+13 |     removal_error: "mode is removed"
+...
+31 |     edition_removed: EDITION_99997_TEST_ONLY
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^
+
+error: `edition_deprecated` must be before `edition_removed`
+  --> testdata/editions/feature_support_enum_values.proto:36:3
+   |
+10 |     edition_deprecated: EDITION_2024
+   |                         ------------
+11 |     deprecation_warning: "mode is deprecated"
+...
+35 |   // Removed when mode is deprecated, so the merged support is invalid.
+36 |   MODE_REMOVED_AT_DEPRECATION = 4 [feature_support = {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |    |
+   |    `MODE_REMOVED_AT_DEPRECATION` inherits `feature_support` from `mode`
+37 |     edition_removed: EDITION_2024
+   |                      ------------ `edition_removed` set here
+
+error: `removal_error` requires `edition_removed` to be set
+  --> testdata/editions/feature_support_enum_values.proto:50:23
+   |
+50 |   MODE_OWN_ERROR = 6 [feature_support.removal_error = "own"];
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+encountered 6 errors

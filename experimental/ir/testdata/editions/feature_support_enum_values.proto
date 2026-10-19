@@ -1,0 +1,51 @@
+edition = "2024";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MessageOptions {
+  Mode mode = 50000 [feature_support = {
+    edition_introduced: EDITION_2023
+    edition_deprecated: EDITION_2024
+    deprecation_warning: "mode is deprecated"
+    edition_removed: EDITION_2026
+    removal_error: "mode is removed"
+  }];
+}
+
+enum Mode {
+  MODE_UNSPECIFIED = 0;
+
+  // Introduced before mode.
+  MODE_EARLY = 1 [feature_support.edition_introduced = EDITION_PROTO2];
+
+  // Deprecated after mode.
+  MODE_LATE_DEPRECATION = 2 [feature_support = {
+    edition_deprecated: EDITION_2026
+    deprecation_warning: "late"
+  }];
+
+  // Removed after mode.
+  MODE_LATE_REMOVAL = 3 [feature_support = {
+    edition_removed: EDITION_99997_TEST_ONLY
+    removal_error: "late"
+  }];
+
+  // Removed when mode is deprecated, so the merged support is invalid.
+  MODE_REMOVED_AT_DEPRECATION = 4 [feature_support = {
+    edition_removed: EDITION_2024
+    removal_error: "removed"
+  }];
+
+  // Narrows mode's lifetime, which is allowed.
+  MODE_NARROW = 5 [feature_support = {
+    edition_introduced: EDITION_2024
+    edition_removed: EDITION_2026
+    removal_error: "narrow"
+  }];
+
+  // Invalid on its own, but valid once merged with mode. Only the value's own
+  // problem is reported.
+  MODE_OWN_ERROR = 6 [feature_support.removal_error = "own"];
+}

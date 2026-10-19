@@ -305,59 +305,160 @@ func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.R
 	value = support.Field(builtins.EditionSupportRemovalErr)
 	info.removalErr, _ = value.AsString()
 
-	validateFeatureSupport(info, support, r)
+	validateFeatureSupport(newFeatureSupport(support), r)
 }
 
-// validateFeatureSupport diagnoses inconsistent lifetimes in a FeatureSupport
-// message, which protoc rejects for every field and enum value.
-func validateFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.Report) {
+// validateEnumValueSupport checks the feature_support of each enum value
+// usable by an enum-typed field that sets feature_support. Like protoc, a
+// value's support is merged over the field's, and must not widen it.
+func validateEnumValueSupport(file *File, r *report.Report) {
+	builtins := file.builtins()
+	for field := range file.AllMembers() {
+		enum := field.Element()
+		if field.IsEnumValue() || !enum.IsEnum() {
+			continue
+		}
+		support := field.Options().Field(builtins.EditionSupport).AsMessage()
+		if support.IsZero() {
+			continue
+		}
+		parent := newFeatureSupport(support)
+
+		for value := range seq.Values(enum.Members()) {
+			support := value.Options().Field(builtins.EnumValueSupport).AsMessage()
+			if support.IsZero() {
+				continue
+			}
+			own := newFeatureSupport(support)
+			merged := parent.mergedWith(own)
+			inherits := report.Snippetf(value.AST().Name(),
+				"`%s` inherits `%s` from `%s`", value.Name(), builtins.EditionSupport.Name(), field.Name())
+
+			// Problems with the value's own support are reported on the value.
+			if validateFeatureSupport(own, nil) {
+				validateFeatureSupport(merged, r, inherits)
+			}
+
+			widens := func(what string, valueEdition, fieldEdition Value) {
+				r.Errorf("`%s` is %s after `%s`", value.Name(), what, field.Name()).Apply(
+					report.Snippet(valueEdition.ValueAST()),
+					report.Snippetf(fieldEdition.ValueAST(), "`%s` is %s here", field.Name(), what),
+				)
+			}
+			if editionOf(merged.introduced) < editionOf(parent.introduced) {
+				r.Errorf("`%s` is introduced before `%s`", value.Name(), field.Name()).Apply(
+					report.Snippet(merged.introduced.ValueAST()),
+					report.Snippetf(parent.introduced.ValueAST(), "`%s` is introduced here", field.Name()),
+				)
+			}
+			if !parent.removed.IsZero() && editionOf(merged.removed) > editionOf(parent.removed) {
+				widens("removed", merged.removed, parent.removed)
+			}
+			if !parent.deprecated.IsZero() && editionOf(merged.deprecated) > editionOf(parent.deprecated) {
+				widens("deprecated", merged.deprecated, parent.deprecated)
+			}
+		}
+	}
+}
+
+// featureSupport holds the fields of a FeatureSupport message. Unset fields
+// are zero.
+type featureSupport struct {
+	builtins                                             *builtins
+	introduced, deprecated, removed, warning, removalErr Value
+}
+
+func newFeatureSupport(support MessageValue) featureSupport {
 	builtins := support.Context().builtins()
-	introduced := support.Field(builtins.EditionSupportIntroduced)
-	deprecated := support.Field(builtins.EditionSupportDeprecated)
-	removed := support.Field(builtins.EditionSupportRemoved)
-	warning := support.Field(builtins.EditionSupportWarning)
-	removalErr := support.Field(builtins.EditionSupportRemovalErr)
+	return featureSupport{
+		builtins:   builtins,
+		introduced: support.Field(builtins.EditionSupportIntroduced),
+		deprecated: support.Field(builtins.EditionSupportDeprecated),
+		removed:    support.Field(builtins.EditionSupportRemoved),
+		warning:    support.Field(builtins.EditionSupportWarning),
+		removalErr: support.Field(builtins.EditionSupportRemovalErr),
+	}
+}
 
+// mergedWith returns s with any fields set in other replacing its own, like
+// merging two FeatureSupport messages.
+func (s featureSupport) mergedWith(other featureSupport) featureSupport {
+	pick := func(a, b Value) Value {
+		if !b.IsZero() {
+			return b
+		}
+		return a
+	}
+	s.introduced = pick(s.introduced, other.introduced)
+	s.deprecated = pick(s.deprecated, other.deprecated)
+	s.removed = pick(s.removed, other.removed)
+	s.warning = pick(s.warning, other.warning)
+	s.removalErr = pick(s.removalErr, other.removalErr)
+	return s
+}
+
+// editionOf returns the edition an edition-valued field is set to.
+func editionOf(v Value) syntax.Syntax {
+	n, _ := v.AsInt()
+	return syntax.Syntax(n)
+}
+
+// validateFeatureSupport diagnoses inconsistent lifetimes in s, which protoc
+// rejects for every field and enum value, and returns whether s is valid. If r
+// is nil, nothing is reported. Each diagnostic starts with the options in
+// extra, so they can provide its primary snippet.
+func validateFeatureSupport(s featureSupport, r *report.Report, extra ...report.DiagnosticOption) bool {
+	ok := true
+	fail := func(format string, args ...any) *report.Diagnostic {
+		ok = false
+		if r == nil {
+			return nil
+		}
+		return r.Errorf(format, args...)
+	}
 	requires := func(set Value, missing Member) {
-		r.Errorf("`%s` requires `%s` to be set", set.Field().Name(), missing.Name()).Apply(
-			report.Snippet(set.KeyAST()),
-		)
-	}
-	before := func(later, earlier Value) {
-		r.Errorf("`%s` must not be before `%s`", later.Field().Name(), earlier.Field().Name()).Apply(
-			report.Snippet(later.ValueAST()),
-			report.Snippetf(earlier.ValueAST(), "`%s` set here", earlier.Field().Name()),
-		)
-	}
-
-	if !deprecated.IsZero() {
-		if !introduced.IsZero() && info.deprecated < info.introduced {
-			before(deprecated, introduced)
+		if d := fail("`%s` requires `%s` to be set", set.Field().Name(), missing.Name()); d != nil {
+			d.Apply(extra...)
+			d.Apply(report.Snippet(set.KeyAST()))
 		}
-		if warning.IsZero() {
-			requires(deprecated, builtins.EditionSupportWarning)
-		}
-	} else if !warning.IsZero() {
-		requires(warning, builtins.EditionSupportDeprecated)
 	}
-
-	if !removed.IsZero() {
-		if !deprecated.IsZero() && info.deprecated >= info.removed {
-			r.Errorf("`%s` must be before `%s`", deprecated.Field().Name(), removed.Field().Name()).Apply(
-				report.Snippet(deprecated.ValueAST()),
-				report.Snippetf(removed.ValueAST(), "`%s` set here", removed.Field().Name()),
+	ordered := func(format string, later, earlier Value) {
+		if d := fail(format, later.Field().Name(), earlier.Field().Name()); d != nil {
+			d.Apply(extra...)
+			d.Apply(
+				report.Snippet(later.ValueAST()),
+				report.Snippetf(earlier.ValueAST(), "`%s` set here", earlier.Field().Name()),
 			)
 		}
-		if !introduced.IsZero() && info.removed < info.introduced {
-			before(removed, introduced)
+	}
+
+	introduced, deprecated, removed := editionOf(s.introduced), editionOf(s.deprecated), editionOf(s.removed)
+	if !s.deprecated.IsZero() {
+		if !s.introduced.IsZero() && deprecated < introduced {
+			ordered("`%s` must not be before `%s`", s.deprecated, s.introduced)
+		}
+		if s.warning.IsZero() {
+			requires(s.deprecated, s.builtins.EditionSupportWarning)
+		}
+	} else if !s.warning.IsZero() {
+		requires(s.warning, s.builtins.EditionSupportDeprecated)
+	}
+
+	if !s.removed.IsZero() {
+		if !s.deprecated.IsZero() && deprecated >= removed {
+			ordered("`%s` must be before `%s`", s.deprecated, s.removed)
+		}
+		if !s.introduced.IsZero() && removed < introduced {
+			ordered("`%s` must not be before `%s`", s.removed, s.introduced)
 		}
 		// protoc exempts options introduced and removed in the same edition.
-		if removalErr.IsZero() && info.introduced != info.removed {
-			requires(removed, builtins.EditionSupportRemovalErr)
+		if s.removalErr.IsZero() && introduced != removed {
+			requires(s.removed, s.builtins.EditionSupportRemovalErr)
 		}
-	} else if !removalErr.IsZero() {
-		requires(removalErr, builtins.EditionSupportRemoved)
+	} else if !s.removalErr.IsZero() {
+		requires(s.removalErr, s.builtins.EditionSupportRemoved)
 	}
+	return ok
 }
 
 func validateAllFeatures(file *File, r *report.Report) {

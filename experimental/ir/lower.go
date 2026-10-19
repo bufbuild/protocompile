@@ -128,6 +128,7 @@ func lower(file *File, r *report.Report, importer Importer) {
 	// Then validate all feature settings throughout the file.
 	buildAllFeatureInfo(file, r)
 	validateFeatureExtensions(file, r)
+	validateEnumValueSupport(file, r)
 	validateAllFeatures(file, r)
 	validateOptionLifetimes(file, r)
 
