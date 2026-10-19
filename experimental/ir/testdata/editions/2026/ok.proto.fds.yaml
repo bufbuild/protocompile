@@ -132,7 +132,7 @@ file:
       oneof_index: 0
       json_name: "b"
     oneof_decl: [{ name: "choice" }]
-    options.features.$unknown: "9: 1"
+    options.features.enforce_proto_limits: LEGACY_NO_EXPLICIT_LIMITS
     visibility: VISIBILITY_EXPORT
   - name: "Local"
   - name: "Namespace"
@@ -146,8 +146,10 @@ file:
     value:
     - name: "BAR_UNSPECIFIED"
       number: 0
-      options.$unknown: "998: {1: {\"unspecified\"}}"
-    - { name: "BAR_ONE", number: 1, options.$unknown: "998: {1: {\"1\"}}" }
+      options: { (pb.enumvalue.json): { string: "unspecified" } }
+    - name: "BAR_ONE"
+      number: 1
+      options: { (pb.enumvalue.json): { string: "1" } }
     - { name: "BAR_TWO", number: 2 }
     visibility: VISIBILITY_EXPORT
   options:
