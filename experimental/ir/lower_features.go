@@ -51,19 +51,28 @@ func validateFeatureExtensions(file *File, r *report.Report) {
 		}
 		seen[ty.FullName()] = true
 
+		usedHere := report.Snippetf(extn.AST().Name(), "`%s` is used as features here", ty.Name())
+		mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
 		for field := range seq.Values(ty.Members()) {
-			if !field.Options().Field(builtins.EditionDefaults).IsZero() {
-				continue
+			if field.Options().Field(builtins.EditionDefaults).IsZero() {
+				var where source.Spanner = field.AST().Options()
+				if field.AST().Options().IsZero() {
+					where = field.AST().Name()
+				}
+				r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
+					report.Snippet(where), usedHere, mistake,
+				)
 			}
-			var where source.Spanner = field.AST().Options()
-			if field.AST().Options().IsZero() {
-				where = field.AST().Name()
+
+			support := field.Options().Field(builtins.EditionSupport).AsMessage()
+			if !support.IsZero() && support.Field(builtins.EditionSupportIntroduced).IsZero() {
+				r.Warnf("expected `%s.%s` to be set",
+					builtins.EditionSupportIntroduced.Container().Name(),
+					builtins.EditionSupportIntroduced.Name(),
+				).Apply(
+					report.Snippet(support.AsValue().ValueAST()), usedHere, mistake,
+				)
 			}
-			r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
-				report.Snippet(where),
-				report.Snippetf(extn.AST().Name(), "`%s` is used as features here", ty.Name()),
-				report.Notef("this is likely a mistake, but it is not rejected by protoc"),
-			)
 		}
 	}
 }
@@ -254,15 +263,7 @@ func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.R
 	value := support.Field(builtins.EditionSupportIntroduced)
 	n, _ := value.AsInt()
 	info.introduced = syntax.Syntax(n)
-	if value.IsZero() {
-		r.Warnf("expected `%s.%s` to be set",
-			builtins.EditionSupportIntroduced.Container().Name(),
-			builtins.EditionSupportIntroduced.Name(),
-		).Apply(
-			report.Snippet(support.AsValue().ValueAST()),
-			mistake,
-		)
-	} else if info.introduced == syntax.Unknown {
+	if !value.IsZero() && info.introduced == syntax.Unknown {
 		r.Warnf("unexpected `%s` in `%s`",
 			info.introduced.DescriptorName(),
 			builtins.EditionSupportIntroduced.Name(),
@@ -303,6 +304,60 @@ func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.R
 
 	value = support.Field(builtins.EditionSupportRemovalErr)
 	info.removalErr, _ = value.AsString()
+
+	validateFeatureSupport(info, support, r)
+}
+
+// validateFeatureSupport diagnoses inconsistent lifetimes in a FeatureSupport
+// message, which protoc rejects for every field and enum value.
+func validateFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.Report) {
+	builtins := support.Context().builtins()
+	introduced := support.Field(builtins.EditionSupportIntroduced)
+	deprecated := support.Field(builtins.EditionSupportDeprecated)
+	removed := support.Field(builtins.EditionSupportRemoved)
+	warning := support.Field(builtins.EditionSupportWarning)
+	removalErr := support.Field(builtins.EditionSupportRemovalErr)
+
+	requires := func(set Value, missing Member) {
+		r.Errorf("`%s` requires `%s` to be set", set.Field().Name(), missing.Name()).Apply(
+			report.Snippet(set.KeyAST()),
+		)
+	}
+	before := func(later, earlier Value) {
+		r.Errorf("`%s` must not be before `%s`", later.Field().Name(), earlier.Field().Name()).Apply(
+			report.Snippet(later.ValueAST()),
+			report.Snippetf(earlier.ValueAST(), "`%s` set here", earlier.Field().Name()),
+		)
+	}
+
+	if !deprecated.IsZero() {
+		if !introduced.IsZero() && info.deprecated < info.introduced {
+			before(deprecated, introduced)
+		}
+		if warning.IsZero() {
+			requires(deprecated, builtins.EditionSupportWarning)
+		}
+	} else if !warning.IsZero() {
+		requires(warning, builtins.EditionSupportDeprecated)
+	}
+
+	if !removed.IsZero() {
+		if !deprecated.IsZero() && info.deprecated >= info.removed {
+			r.Errorf("`%s` must be before `%s`", deprecated.Field().Name(), removed.Field().Name()).Apply(
+				report.Snippet(deprecated.ValueAST()),
+				report.Snippetf(removed.ValueAST(), "`%s` set here", removed.Field().Name()),
+			)
+		}
+		if !introduced.IsZero() && info.removed < info.introduced {
+			before(removed, introduced)
+		}
+		// protoc exempts options introduced and removed in the same edition.
+		if removalErr.IsZero() && info.introduced != info.removed {
+			requires(removed, builtins.EditionSupportRemovalErr)
+		}
+	} else if !removalErr.IsZero() {
+		requires(removalErr, builtins.EditionSupportRemoved)
+	}
 }
 
 func validateAllFeatures(file *File, r *report.Report) {

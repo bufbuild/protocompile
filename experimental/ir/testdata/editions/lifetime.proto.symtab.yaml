@@ -161,9 +161,11 @@ tables:
               "value": { string: "false" }
         "feature_support":
           message.fields:
+            "deprecation_warning": { string: "e is deprecated" }
             "edition_deprecated": { i32: 1000 }
             "edition_introduced": { i32: 1000 }
             "edition_removed": { i32: 1001 }
+            "removal_error": { string: "e is removed" }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
       - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
@@ -190,9 +192,11 @@ tables:
               "value": { string: "false" }
         "feature_support":
           message.fields:
+            "deprecation_warning": { string: "f is deprecated" }
             "edition_deprecated": { i32: 999 }
             "edition_introduced": { i32: 999 }
             "edition_removed": { i32: 1000 }
+            "removal_error": { string: "f is removed" }
       features:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
       - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }

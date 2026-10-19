@@ -10,7 +10,7 @@ extend google.protobuf.MessageOptions {
     bool old = 50000 [feature_support = {
         edition_introduced: EDITION_2023
         edition_deprecated: EDITION_2024
-        deprecation_warning: "Use `new` instead."
+        deprecation_warning: "Prefer `new`."
         edition_removed: EDITION_2026
         removal_error: "Use `new` instead."
     }];
