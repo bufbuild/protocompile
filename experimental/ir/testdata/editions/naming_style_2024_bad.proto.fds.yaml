@@ -76,6 +76,7 @@ file:
         options.features.enforce_naming_style: STYLE_LEGACY
       options.features.enforce_naming_style: STYLE2024
     options.features.enforce_naming_style: STYLE_LEGACY
+  - { name: "Extendee", extension_range: [{ start: 1, end: 11 }] }
   enum_type:
   - name: "my_enum"
     value:
@@ -90,5 +91,25 @@ file:
     - name: "test_method"
       input_type: ".Buf.Test.my_message"
       output_type: ".Buf.Test.my_message"
+  extension:
+  - name: "BadExtension"
+    number: 1
+    label: LABEL_OPTIONAL
+    type: TYPE_STRING
+    extendee: ".Buf.Test.Extendee"
+    json_name: "BadExtension"
+  - name: "_bad_extension"
+    number: 2
+    label: LABEL_OPTIONAL
+    type: TYPE_STRING
+    extendee: ".Buf.Test.Extendee"
+    json_name: "BadExtension"
+  - name: "BadOptOut"
+    number: 3
+    label: LABEL_OPTIONAL
+    type: TYPE_STRING
+    extendee: ".Buf.Test.Extendee"
+    json_name: "BadOptOut"
+    options.features.enforce_naming_style: STYLE_LEGACY
   syntax: "editions"
   edition: EDITION_2024

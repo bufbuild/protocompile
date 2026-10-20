@@ -38,6 +38,7 @@ warning: `e` is deprecated in Edition 2023
  9 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                                            ^
    = help: deprecated since Edition 2023, to be removed in Edition 2024
+   = help: e is deprecated
 
 error: `f` is not supported in Edition 2023
   --> testdata/editions/lifetime.proto:9:69
@@ -48,5 +49,6 @@ error: `f` is not supported in Edition 2023
  9 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                                                     ^
    = help: deprecated since "proto3", removed in Edition 2023
+   = help: f is removed
 
 encountered 3 errors and 2 warnings

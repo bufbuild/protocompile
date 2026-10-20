@@ -14,7 +14,7 @@ require (
 	github.com/tidwall/btree v1.8.1
 	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597
 	golang.org/x/sync v0.22.0
-	google.golang.org/protobuf v1.36.12
+	google.golang.org/protobuf v1.36.13-0.20261016172727-e9ee2a76ab8e
 	gopkg.in/yaml.v3 v3.0.1
 )
 

@@ -27,12 +27,12 @@ import (
 func TestEditions(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024}, slices.Collect(syntax.Editions()))
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024, syntax.Edition2026}, slices.Collect(syntax.Editions()))
 	assert.Equal(t,
-		[]syntax.Syntax{syntax.Edition2023, syntax.Edition2024},
+		[]syntax.Syntax{syntax.Edition2023, syntax.Edition2024, syntax.Edition2026},
 		slices.Collect(syntax.Editions()),
 	)
 	// Verify all editions report as supported
 	supported := slices.Collect(iterx.Filter(syntax.Editions(), syntax.Syntax.IsSupported))
-	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024}, supported)
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024, syntax.Edition2026}, supported)
 }
