@@ -396,6 +396,14 @@ again:
 	// Try checking if this is just a member of the message directly.
 	if !hasBrackets {
 		member = ty.MemberByName(path)
+		if member.IsZero() {
+			// Group-like fields may be referenced by their type name. Whether
+			// the field is delimited is checked by validateGroupKeys, since
+			// features are not resolved yet.
+			if m := ty.MemberByName(strings.ToLower(path)); looksLikeGroup(m) && m.Element().Name() == path {
+				member = m
+			}
+		}
 	}
 	if member.IsZero() {
 		if isPath && !hasBrackets && strings.HasPrefix(path, "(") {
@@ -456,7 +464,8 @@ validate:
 	// Validate that the key was spelled correctly: if it is a field,
 	// it is a single identifier with the name of that field, and has no
 	// brackets; if it is an extension, it is the FQN and it has brackets.
-	wrongPath := member.IsMessageField() && path != member.Name()
+	wrongPath := member.IsMessageField() && path != member.Name() &&
+		!(looksLikeGroup(member) && path == member.Element().Name())
 	misspelled := !isPath || hasBrackets != member.IsExtension() || wrongPath
 
 	if misspelled {
