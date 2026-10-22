@@ -630,8 +630,14 @@ func (g *generator) options(v ir.MessageValue, target proto.Message) {
 				if messageField := field.AsMessage(); !messageField.IsZero() {
 					if field.IsTopLevel() {
 						// If this is a top-level option declaration for a message type with a message
-						// literal, we add a location for the declaration.
-						g.debug.span(ast, field.Field().Number())
+						// literal, we add a location for the declaration. Like scalar options below,
+						// the span includes the option keyword and semicolon, if present.
+						span := ast.Span()
+						keyword, semicolon := g.optionKeywordAndSemicolon(span)
+						if !keyword.IsZero() && !semicolon.IsZero() {
+							span = source.Between(keyword.Span(), semicolon.Span())
+						}
+						g.debug.span(span, field.Field().Number())
 
 						if !g.generateExtraOptionLocations {
 							// If the option [GenerateExtraOptionLocations] is not set, then continue
