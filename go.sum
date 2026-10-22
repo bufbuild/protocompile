@@ -29,8 +29,8 @@ golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 h1:qLvzZeaANDgyVOA8pyHCOStGl
 golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597/go.mod h1:EdfpwwqSu+0Li0mzskwHU6FWDV3t9Q+RZDo3QMUtL3Q=
 golang.org/x/sync v0.22.0 h1:SZjpbeLmrCk4xhRSZFNZW5gFUeCeFgjekvI/+gfScek=
 golang.org/x/sync v0.22.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
-google.golang.org/protobuf v1.36.13-0.20261016172727-e9ee2a76ab8e h1:TU4XCsANCrpOpeS6NA+LhCA6H12DfxF2gIcYBrWcdwc=
-google.golang.org/protobuf v1.36.13-0.20261016172727-e9ee2a76ab8e/go.mod h1:X7eSFOSeyjM8zqq7vd+xpgLluojDTuH3nwq1zr6OCKg=
+google.golang.org/protobuf v1.37.0-rc.1 h1:RQUh2I7V8DjoPJlj2K1BXNUKIOpK2ZdPRfG0HK766Yg=
+google.golang.org/protobuf v1.37.0-rc.1/go.mod h1:X7eSFOSeyjM8zqq7vd+xpgLluojDTuH3nwq1zr6OCKg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
