@@ -1,0 +1,30 @@
+error: JSON name `` is used by multiple enum values
+  --> testdata/editions/2026/enum_json_empty.proto:17:28
+   |
+16 |     EMPTY_COLLISION_A = 1 [(pb.enumvalue.json) = {}];
+   |                            ------------------------ previously used here
+17 |     EMPTY_COLLISION_B = 2 [(pb.enumvalue.json) = {}];
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^ used here
+   |
+   = help: only aliases of the same number may share a JSON name
+
+error: JSON name `` is used by multiple enum values
+  --> testdata/editions/2026/enum_json_empty.proto:18:57
+   |
+16 |     EMPTY_COLLISION_A = 1 [(pb.enumvalue.json) = {}];
+   |                            ------------------------ previously used here
+17 |     EMPTY_COLLISION_B = 2 [(pb.enumvalue.json) = {}];
+18 |     EMPTY_COLLISION_C = 3 [(pb.enumvalue.json).string = ""];
+   |                                                         ^^ used here
+   |
+   = help: only aliases of the same number may share a JSON name
+
+error: aliases must have the same custom JSON name
+  --> testdata/editions/2026/enum_json_empty.proto:35:5
+   |
+34 |     EMPTY_ALIAS_BAD_ONE = 1 [(pb.enumvalue.json) = {}];
+   |     ------------------- but this has no custom JSON name
+35 |     EMPTY_ALIAS_BAD_UNO = 1 [(pb.enumvalue.json).string = ""];
+   |     ^^^^^^^^^^^^^^^^^^^ this has custom JSON name ``
+
+encountered 3 errors

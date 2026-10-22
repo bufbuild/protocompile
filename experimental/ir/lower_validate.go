@@ -248,6 +248,9 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 	}
 
 	for member := range seq.Values(ty.Members()) {
+		// Like protoc, (pb.enumvalue.json) = {} is inconsistent: the
+		// collision check treats it as the name "", but the alias check
+		// treats it as unset.
 		option, str, custom := enumValueJSON(member)
 		name, hasString := str.AsString()
 
