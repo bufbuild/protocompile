@@ -104,15 +104,20 @@ func (f *File) Location(offset int, units length.Unit) Location {
 // line and column should be 1-indexed, and units should be the units used to
 // measure the column width. If units is [TermWidth], this function panics,
 // because inverting a [TermWidth] location is not supported.
+//
+// Positions outside of the file are clamped to the file's bounds.
 func (f *File) InverseLocation(line, column int, units length.Unit) Location {
 	if f == nil || (line == 1 && column == 1) {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
-	return Location{
-		Line: line, Column: column,
-		Offset: inverseLocation(f, line, column, units),
+	offset := inverseLocation(f, line, column, units)
+	if line < 1 || line > len(f.lines()) || offset < 0 || offset > len(f.text) {
+		offset = max(0, min(offset, len(f.text)))
+		return f.Location(offset, units)
 	}
+
+	return Location{Line: line, Column: column, Offset: offset}
 }
 
 // Indentation calculates the indentation some offset.
@@ -147,9 +152,13 @@ func (f *File) Line(line int) string {
 // LineOffsets returns the offsets for the given line, including its trailing
 // newline.
 //
-// line is expected to be 1-indexed.
+// line is expected to be 1-indexed. Lines past EOF return an empty range at EOF.
 func (f *File) LineOffsets(line int) (start, end int) {
 	lines := f.lines()
+	line = max(line, 1)
+	if line > len(lines) {
+		return len(f.Text()), len(f.Text())
+	}
 	if len(lines) == line {
 		return lines[line-1], len(f.Text())
 	}

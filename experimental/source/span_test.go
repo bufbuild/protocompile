@@ -73,3 +73,24 @@ func TestLocation(t *testing.T) {
 		})
 	}
 }
+
+func TestInverseLocationOutOfBounds(t *testing.T) {
+	t.Parallel()
+
+	empty := source.NewFile("empty", "")
+	assert.Equal(t, source.Location{0, 1, 1}, empty.InverseLocation(2, 1, length.UTF16))
+	assert.Equal(t, source.Location{0, 1, 1}, empty.InverseLocation(2, 5, length.Bytes))
+	assert.Empty(t, empty.Line(2))
+
+	file := source.NewFile("test", "foo\nbar\n")
+	start, end := file.LineOffsets(10)
+	assert.Equal(t, [2]int{8, 8}, [2]int{start, end})
+	start, end = file.LineOffsets(0)
+	assert.Equal(t, [2]int{0, 4}, [2]int{start, end})
+
+	for _, unit := range []length.Unit{length.Bytes, length.UTF16, length.Runes} {
+		assert.Equal(t, source.Location{8, 3, 1}, file.InverseLocation(10, 3, unit), "%s", unit)
+		assert.Equal(t, source.Location{8, 3, 1}, file.InverseLocation(3, 7, unit), "%s", unit)
+		assert.Equal(t, source.Location{0, 1, 1}, file.InverseLocation(0, 1, unit), "%s", unit)
+	}
+}
