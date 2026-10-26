@@ -11,6 +11,7 @@ files:
     import "local.proto";
     import "fake/../local.proto";
     import "../up.proto";
+    import "fake/../../up.proto";
 
 - path: "nested/path.proto"
   import: true

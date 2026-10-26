@@ -65,4 +65,21 @@ error: import path must not refer to parent directory
  9 | import "../up.proto";
    |        ^^^^^^^^^^^^^ imported here
 
-encountered 7 errors
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:10:8
+   |
+10 | import "fake/../../up.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
+  help: canonicalize this path
+   |
+10 | - import "fake/../../up.proto";
+10 | + import "../up.proto";
+
+error: import path must not refer to parent directory
+  --> main.proto:10:8
+   |
+10 | import "fake/../../up.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+
+encountered 9 errors
