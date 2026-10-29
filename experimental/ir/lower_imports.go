@@ -225,6 +225,14 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 		return "" // Refuse to escape to a parent directory.
 	}
 
+	if r != nil && path == "." {
+		r.Errorf("import path must not refer to current directory").Apply(
+			report.Snippetf(decl.ImportPath(), "imported here"),
+		)
+
+		return ""
+	}
+
 	if r != nil {
 		isLetter := func(b byte) bool {
 			return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
