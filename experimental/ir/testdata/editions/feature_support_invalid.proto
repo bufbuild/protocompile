@@ -1,0 +1,18 @@
+edition = "2024";
+package buf.test;
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions {
+  bool removal_without_removed = 50000 [feature_support = { edition_introduced: EDITION_2023, removal_error: "x" }];
+  bool removed_without_error = 50001 [feature_support = { edition_introduced: EDITION_2023, edition_removed: EDITION_2024 }];
+  bool removed_same_as_introduced = 50002 [feature_support = { edition_introduced: EDITION_2024, edition_removed: EDITION_2024 }];
+  bool warning_without_deprecated = 50003 [feature_support = { edition_introduced: EDITION_2023, deprecation_warning: "x" }];
+  bool deprecated_without_warning = 50004 [feature_support = { edition_introduced: EDITION_2023, edition_deprecated: EDITION_2024 }];
+  bool deprecated_before_introduced = 50005 [feature_support = { edition_introduced: EDITION_2024, edition_deprecated: EDITION_2023, deprecation_warning: "x" }];
+  bool removed_before_introduced = 50006 [feature_support = { edition_introduced: EDITION_2024, edition_removed: EDITION_2023, removal_error: "x" }];
+  bool deprecated_after_removed = 50007 [feature_support = { edition_introduced: EDITION_2023, edition_deprecated: EDITION_2024, deprecation_warning: "x", edition_removed: EDITION_2024, removal_error: "x" }];
+  bool ok = 50008 [feature_support = { edition_introduced: EDITION_2023, edition_deprecated: EDITION_2023, deprecation_warning: "x", edition_removed: EDITION_2024, removal_error: "x" }];
+}
+enum E {
+  E_UNSPECIFIED = 0;
+  E_BAD = 1 [feature_support = { removal_error: "x" }];
+}

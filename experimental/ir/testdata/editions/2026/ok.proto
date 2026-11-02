@@ -1,0 +1,40 @@
+//% descriptor: true
+//% symtab: true
+edition = "2026";
+
+package buf.test;
+
+import option "google/protobuf/c_sharp_features.proto";
+import option "google/protobuf/cpp_options.proto";
+import option "google/protobuf/json_options.proto";
+
+option (pb.file.cpp).namespace = "buf::test";
+option features.(pb.csharp).nullable_reference_types = true;
+
+export message Foo {
+  option features.enforce_proto_limits = LEGACY_NO_EXPLICIT_LIMITS;
+
+  int32 x = 1;
+  Bar bar = 2;
+  Local local = 3;
+  Namespace.Kind kind = 4;
+  oneof choice {
+    string a = 5;
+    string b = 6;
+  }
+}
+
+export enum Bar {
+  BAR_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "unspecified"];
+  BAR_ONE = 1 [(pb.enumvalue.json).string = "1"];
+  BAR_TWO = 2;
+}
+
+message Local {}
+
+message Namespace {
+  export enum Kind {
+    KIND_UNSPECIFIED = 0;
+  }
+  reserved 1 to max;
+}

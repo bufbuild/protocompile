@@ -1,0 +1,36 @@
+edition = "2026";
+
+package buf.test;
+
+import option "google/protobuf/json_options.proto";
+
+export enum Ok {
+    option allow_alias = true;
+    OK_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "unspecified"];
+    OK_ONE = 1 [(pb.enumvalue.json).string = "1"];
+    OK_UNO = 1 [(pb.enumvalue.json).string = "1"];
+    OK_TWO = 2 [(pb.enumvalue.json).string = " 2 "];
+}
+
+export enum Conflicts {
+    CONFLICTS_UNSPECIFIED = 0;
+    CONFLICTS_A = 1 [(pb.enumvalue.json).string = "a"];
+    CONFLICTS_B = 2 [(pb.enumvalue.json).string = "a"];
+    CONFLICTS_C = 3 [(pb.enumvalue.json).string = "CONFLICTS_UNSPECIFIED"];
+    CONFLICTS_D = 4 [(pb.enumvalue.json).string = "x"];
+    x = 5 [features.enforce_naming_style = STYLE_LEGACY];
+}
+
+export enum Numbers {
+    NUMBERS_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "7"];
+    NUMBERS_ONE = 1 [(pb.enumvalue.json).string = "-1"];
+    NUMBERS_TWO = 2 [(pb.enumvalue.json).string = "nul\0"];
+}
+
+export enum Aliases {
+    option allow_alias = true;
+    ALIASES_UNSPECIFIED = 0;
+    ALIASES_ONE = 1 [(pb.enumvalue.json).string = "one"];
+    ALIASES_UNO = 1 [(pb.enumvalue.json).string = "uno"];
+    ALIASES_EIN = 1;
+}

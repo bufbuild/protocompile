@@ -74,6 +74,8 @@ error: found unexported message type `test.local.D`
    |
  4 | option features.default_symbol_visibility = LOCAL_ALL;
    |                                             --------- this implies `local`
+   |
+   = help: mark `D` as `export` to make it visible to other files
 
 error: found unexported message type `test.local.L`
   --> main.proto:21:3
@@ -153,6 +155,8 @@ error: found unexported message type `test.strict.D`
    |
  4 | option features.default_symbol_visibility = STRICT;
    |                                             ------ this implies `local`
+   |
+   = help: mark `D` as `export` to make it visible to other files
 
 error: found unexported message type `test.strict.L`
   --> main.proto:39:3

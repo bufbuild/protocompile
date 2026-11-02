@@ -1,0 +1,7 @@
+edition = "2024";
+
+package buf.test;
+
+message Foo {
+    option features.enforce_proto_limits = PROTO_LIMITS2026;
+}

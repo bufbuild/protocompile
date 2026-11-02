@@ -42,3 +42,13 @@ message LegacyStyleMessage {
     string _another_field = 2 [features.enforce_naming_style = STYLE_LEGACY];
   }
 }
+
+message Extendee {
+  extensions 1 to 10;
+}
+
+extend Extendee {
+  string BadExtension = 1;
+  string _bad_extension = 2;
+  string BadOptOut = 3 [features.enforce_naming_style = STYLE_LEGACY];
+}

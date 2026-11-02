@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package test;
+
+message M {
+    // Reserved declarations may omit both full_name and type.
+    extensions 1 [declaration = { number: 1, reserved: true }];
+    extensions 2 [declaration = {
+        number: 2,
+        full_name: ".test.r2",
+        type: "int32",
+        reserved: true,
+    }];
+
+    // But not just one of them.
+    extensions 3 [declaration = { number: 3, full_name: ".test.r3", reserved: true }];
+    extensions 4 [declaration = { number: 4, type: "int32", reserved: true }];
+
+    // Non-reserved declarations require both.
+    extensions 5 [declaration = { number: 5 }];
+}

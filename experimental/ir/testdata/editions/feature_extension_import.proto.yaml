@@ -1,0 +1,26 @@
+files:
+- path: "main.proto"
+  text: |
+    edition = "2023";
+    package test;
+
+    import "google/protobuf/descriptor.proto";
+    import "features.proto";
+
+    extend google.protobuf.FeatureSet {
+      Features features = 10000;
+    }
+- path: "features.proto"
+  import: true
+  text: |
+    edition = "2023";
+    package test;
+
+    message Features {
+      bool a = 1 [feature_support.edition_introduced = EDITION_2023];
+      bool b = 2;
+      bool c = 3 [
+        edition_defaults = { edition: EDITION_LEGACY, value: "false" },
+        feature_support.edition_introduced = EDITION_2023
+      ];
+    }

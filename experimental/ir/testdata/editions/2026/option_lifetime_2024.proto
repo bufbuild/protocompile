@@ -1,0 +1,13 @@
+edition = "2024";
+
+package buf.test;
+
+import option "google/protobuf/cpp_options.proto";
+import option "google/protobuf/json_options.proto";
+
+option cc_enable_arenas = true;
+option (pb.file.cpp).namespace = "foo";
+
+enum Foo {
+    FOO_UNSPECIFIED = 0 [(pb.enumvalue.json).string = "unspecified"];
+}

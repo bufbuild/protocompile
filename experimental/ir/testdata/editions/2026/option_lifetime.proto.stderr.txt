@@ -1,0 +1,72 @@
+error: `cc_enable_arenas` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:7:8
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+ 7 | option cc_enable_arenas = true;
+   |        ^^^^^^^^^^^^^^^^
+   = help: removed in Edition 2026
+   = help: cc_enable_arenas is enabled by default in every edition and overrides
+           are ignored.This option is removed in editions 2026 and above
+
+error: `old` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:43:12
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+43 |     option (old) = true;
+   |            ^^^^^
+   = help: deprecated since Edition 2024, removed in Edition 2026
+   = help: use `new` instead
+
+warning: `deprecated` is deprecated in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:44:12
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+43 |     option (old) = true;
+44 |     option (nested).deprecated = true;
+   |            ^^^^^^^^^^^^^^^^^^^
+   = help: deprecated since Edition 2026
+   = help: don't use this
+
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:45:21
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+44 |     option (nested).deprecated = true;
+45 |     option (mode) = MODE_OLD;
+   |                     ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:47:22
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+46 |     option (modes) = MODE_NEW;
+47 |     option (modes) = MODE_OLD;
+   |                      ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+error: `MODE_OLD` is not supported in Edition 2026
+  --> testdata/editions/2026/option_lifetime.proto:48:32
+   |
+ 1 | edition = "2026";
+   |           ------ edition specified here
+...
+47 |     option (modes) = MODE_OLD;
+48 |     option (nesteds) = { mode: MODE_OLD };
+   |                                ^^^^^^^^
+   = help: removed in Edition 2026
+   = help: use `MODE_NEW` instead
+
+encountered 5 errors and 1 warning

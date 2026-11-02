@@ -26,6 +26,11 @@ tables:
       visible: true
       options.message.fields:
         "features": { message.fields: { "enforce_naming_style": { i32: 1 } } }
+    - fqn: "Buf.Test.Extendee"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 5
+      visible: true
     - fqn: "Buf.Test.my_enum"
       kind: KIND_ENUM
       file: "testdata/editions/naming_style_2024_bad.proto"
@@ -120,6 +125,23 @@ tables:
       file: "testdata/editions/naming_style_2024_bad.proto"
       index: 13
       visible: true
+    - fqn: "Buf.Test.BadExtension"
+      kind: KIND_EXTENSION
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 18
+      visible: true
+    - fqn: "Buf.Test._bad_extension"
+      kind: KIND_EXTENSION
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 19
+      visible: true
+    - fqn: "Buf.Test.BadOptOut"
+      kind: KIND_EXTENSION
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 20
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
     - fqn: "Buf.Test.my_message.TestChoice"
       kind: KIND_ONEOF
       file: "testdata/editions/naming_style_2024_bad.proto"

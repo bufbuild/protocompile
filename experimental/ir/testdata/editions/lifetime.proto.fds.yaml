@@ -52,7 +52,9 @@ file:
         feature_support:
           edition_introduced: EDITION_2023
           edition_deprecated: EDITION_2023
+          deprecation_warning: "e is deprecated"
           edition_removed: EDITION_2024
+          removal_error: "e is removed"
     - name: "f"
       number: 6
       label: LABEL_OPTIONAL
@@ -63,7 +65,9 @@ file:
         feature_support:
           edition_introduced: EDITION_PROTO3
           edition_deprecated: EDITION_PROTO3
+          deprecation_warning: "f is deprecated"
           edition_removed: EDITION_2023
+          removal_error: "f is removed"
   extension:
   - name: "x"
     number: 9995

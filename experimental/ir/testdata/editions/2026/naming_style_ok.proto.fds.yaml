@@ -1,0 +1,52 @@
+file:
+- name: "testdata/editions/2026/naming_style_ok.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "has_x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "hasX"
+    - name: "get_y"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "getY"
+    - name: "z_value"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "zValue"
+    - name: "descriptors"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "descriptors"
+    - name: "hasx"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "hasx"
+    visibility: VISIBILITY_EXPORT
+  - name: "Legacy"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x"
+    - name: "has_x"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "hasX"
+    - name: "BadName"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "BadName"
+    options.features.enforce_naming_style: STYLE_LEGACY
+  syntax: "editions"
+  edition: EDITION_2026

@@ -1,0 +1,49 @@
+edition = "2026";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+option cc_enable_arenas = true;
+
+extend google.protobuf.MessageOptions {
+    bool old = 50000 [feature_support = {
+        edition_introduced: EDITION_2023
+        edition_deprecated: EDITION_2024
+        deprecation_warning: "Prefer `new`."
+        edition_removed: EDITION_2026
+        removal_error: "Use `new` instead."
+    }];
+    Nested nested = 50001;
+    Mode mode = 50002;
+    repeated Mode modes = 50003;
+    repeated Nested nesteds = 50004;
+}
+
+export enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_OLD = 1 [feature_support = {
+        edition_introduced: EDITION_2023
+        edition_removed: EDITION_2026
+        removal_error: "Use `MODE_NEW` instead."
+    }];
+    MODE_NEW = 2;
+}
+
+export message Nested {
+    bool deprecated = 1 [feature_support = {
+        edition_introduced: EDITION_2023
+        edition_deprecated: EDITION_2026
+        deprecation_warning: "Don't use this."
+    }];
+    Mode mode = 2;
+}
+
+export message Foo {
+    option (old) = true;
+    option (nested).deprecated = true;
+    option (mode) = MODE_OLD;
+    option (modes) = MODE_NEW;
+    option (modes) = MODE_OLD;
+    option (nesteds) = { mode: MODE_OLD };
+}
