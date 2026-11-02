@@ -1,0 +1,55 @@
+error: `removal_error` requires `edition_removed` to be set
+  --> testdata/editions/feature_support_invalid.proto:5:95
+   |
+ 5 |   bool removal_without_removed = 50000 [feature_support = { edition_introduced: EDITION_2023, removal_error: "x" }];
+   |                                                                                               ^^^^^^^^^^^^^
+
+error: `edition_removed` requires `removal_error` to be set
+  --> testdata/editions/feature_support_invalid.proto:6:93
+   |
+ 6 |   bool removed_without_error = 50001 [feature_support = { edition_introduced: EDITION_2023, edition_removed: EDITION_2024 }];
+   |                                                                                             ^^^^^^^^^^^^^^^
+
+error: `deprecation_warning` requires `edition_deprecated` to be set
+  --> testdata/editions/feature_support_invalid.proto:8:98
+   |
+ 8 |   bool warning_without_deprecated = 50003 [feature_support = { edition_introduced: EDITION_2023, deprecation_warning: "x" }];
+   |                                                                                                  ^^^^^^^^^^^^^^^^^^^
+
+error: `edition_deprecated` requires `deprecation_warning` to be set
+  --> testdata/editions/feature_support_invalid.proto:9:98
+   |
+ 9 |   bool deprecated_without_warning = 50004 [feature_support = { edition_introduced: EDITION_2023, edition_deprecated: EDITION_2024 }];
+   |                                                                                                  ^^^^^^^^^^^^^^^^^^
+
+error: `edition_deprecated` must not be before `edition_introduced`
+  --> testdata/editions/feature_support_invalid.proto:10:120
+   |
+10 |   bool deprecated_before_introduced = 50005 [feature_support = { edition_introduced: EDITION_2024, edition_deprecated: EDITION_2023, deprecation_warning: "x" }];
+   |                                                                                      ------------                      ^^^^^^^^^^^^
+   |                                                                                       |
+   |                                                                                       `edition_introduced` set here
+
+error: `edition_removed` must not be before `edition_introduced`
+  --> testdata/editions/feature_support_invalid.proto:11:114
+   |
+11 |   bool removed_before_introduced = 50006 [feature_support = { edition_introduced: EDITION_2024, edition_removed: EDITION_2023, removal_error: "x" }];
+   |                                                                                   ------------                   ^^^^^^^^^^^^
+   |                                                                                    |
+   |                                                                                    `edition_introduced` set here
+
+error: `edition_deprecated` must be before `edition_removed`
+  --> testdata/editions/feature_support_invalid.proto:12:116
+   |
+12 |   bool deprecated_after_removed = 50007 [feature_support = { edition_introduced: EDITION_2023, edition_deprecated: EDITION_2024, deprecation_warning: "x", edition_removed: EDITION_2024, removal_error: "x" }];
+   |                                                                                                                    ^^^^^^^^^^^^                                             ------------
+   |                                                                                                                                                                              |
+   |                                                                                                                                                                              `edition_removed` set here
+
+error: `removal_error` requires `edition_removed` to be set
+  --> testdata/editions/feature_support_invalid.proto:17:34
+   |
+17 |   E_BAD = 1 [feature_support = { removal_error: "x" }];
+   |                                  ^^^^^^^^^^^^^
+
+encountered 8 errors

@@ -1,0 +1,20 @@
+//% descriptor: true
+//% symtab: true
+edition = "2026";
+
+package buf.test;
+
+export message Foo {
+    int32 has_x = 1;
+    int32 get_y = 2;
+    int32 z_value = 3;
+    string descriptors = 4;
+    int32 hasx = 5;
+}
+
+message Legacy {
+    option features.enforce_naming_style = STYLE_LEGACY;
+    int32 x = 1;
+    int32 has_x = 2;
+    int32 BadName = 3;
+}

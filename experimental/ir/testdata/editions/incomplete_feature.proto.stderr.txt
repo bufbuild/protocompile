@@ -3,6 +3,10 @@ warning: expected feature field to set `edition_defaults`
    |
 12 |     bool a = 1 [feature_support = {}];
    |                ^^^^^^^^^^^^^^^^^^^^^^
+...
+55 |     Features f = 10000;
+   |              - `Features` is used as features here
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
 
 warning: expected `FeatureSupport.edition_introduced` to be set
@@ -10,6 +14,10 @@ warning: expected `FeatureSupport.edition_introduced` to be set
    |
 12 |     bool a = 1 [feature_support = {}];
    |                                   ^^
+...
+55 |     Features f = 10000;
+   |              - `Features` is used as features here
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
 
 warning: expected feature field to set `feature_support`
@@ -27,6 +35,10 @@ warning: expected `FeatureSupport.edition_introduced` to be set
    |
 20 |         feature_support = {}
    |                           ^^
+...
+55 |     Features f = 10000;
+   |              - `Features` is used as features here
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
 
 warning: `edition_defaults` does not cover all editions
@@ -68,6 +80,22 @@ warning: expected quoted bool in `EditionDefault.value`
    = note: this is likely a mistake, but it is not rejected by protoc
    = help: `value` must one of "true" or "false"
 
+error: `edition_deprecated` requires `deprecation_warning` to be set
+  --> testdata/editions/incomplete_feature.proto:37:9
+   |
+37 |         feature_support.edition_deprecated = EDITION_LEGACY,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: `edition_deprecated` must be before `edition_removed`
+  --> testdata/editions/incomplete_feature.proto:37:46
+   |
+37 |         feature_support.edition_deprecated = EDITION_LEGACY,
+   |                                              ^^^^^^^^^^^^^^
+38 |         feature_support.edition_removed = EDITION_LEGACY
+   |                                           --------------
+   |                                            |
+   |                                            `edition_removed` set here
+
 warning: expected quoted enum value in `EditionDefault.edition`
   --> testdata/editions/incomplete_feature.proto:44:59
    |
@@ -80,4 +108,4 @@ warning: expected quoted enum value in `EditionDefault.edition`
    = note: this is likely a mistake, but it is not rejected by protoc
    = help: `value` must be the name of a value in `buf.test.Enum`
 
-encountered 9 warnings
+encountered 2 errors and 9 warnings

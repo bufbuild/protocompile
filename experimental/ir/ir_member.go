@@ -398,7 +398,8 @@ func (m Member) FeatureSet() FeatureSet {
 }
 
 // FeatureInfo returns feature definition information relating to this field
-// (for when using this field as a feature).
+// (for when using this field as a feature). For an enum value, it holds only
+// the lifetime from its feature_support option.
 //
 // Returns a zero value if this information does not exist.
 func (m Member) FeatureInfo() FeatureInfo {

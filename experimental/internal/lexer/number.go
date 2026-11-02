@@ -199,9 +199,8 @@ func lexNumber(l *lexer) token.Token {
 		// weird, non-standard way to say "ties-to-even".
 		switch {
 		case !meta.IsFloat && v.IsInt():
-			n := v.Int(&l.scratchInt)
-			if n.IsUint64() {
-				meta.Word = n.Uint64()
+			if n, ok := v.Uint64(); ok {
+				meta.Word = n
 				return tok
 			}
 		case v.IsFloat():

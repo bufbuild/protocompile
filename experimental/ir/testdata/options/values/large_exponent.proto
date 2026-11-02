@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+// Large exponents must not be expanded into their full integer values.
+option (x) = {
+    i32: [1e2147483646, -1e2147483646]
+    i64: [1e2147483646, -1e2147483646]
+    u64: [1e2147483646]
+};
+
+message Foo {
+    repeated int32 i32 = 1;
+    repeated int64 i64 = 2;
+    repeated uint64 u64 = 3;
+
+    optional int32 field = 1e2147483646;
+    optional int64 with_default = 6 [default = 1e2147483646];
+    reserved 1e2147483646;
+    extensions 1000 to 1e2147483646;
+}
+
+enum Bar {
+    BAR_ZERO = 0;
+    BAR_ONE = 1e2147483646;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
+}

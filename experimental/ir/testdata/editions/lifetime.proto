@@ -40,13 +40,17 @@ message Features {
         edition_defaults = {edition: EDITION_LEGACY, value: "false"},
         feature_support.edition_introduced = EDITION_2023,
         feature_support.edition_deprecated = EDITION_2023,
-        feature_support.edition_removed = EDITION_2024
+        feature_support.deprecation_warning = "e is deprecated",
+        feature_support.edition_removed = EDITION_2024,
+        feature_support.removal_error = "e is removed"
     ];
 
     bool f = 6 [
         edition_defaults = {edition: EDITION_LEGACY, value: "false"},
         feature_support.edition_introduced = EDITION_PROTO3,
         feature_support.edition_deprecated = EDITION_PROTO3,
-        feature_support.edition_removed = EDITION_2023
+        feature_support.deprecation_warning = "f is deprecated",
+        feature_support.edition_removed = EDITION_2023,
+        feature_support.removal_error = "f is removed"
     ];
 }

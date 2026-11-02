@@ -17,9 +17,15 @@ package decimal
 import (
 	"math"
 	"math/big"
+	"math/bits"
 
 	"github.com/bufbuild/protocompile/internal/ext/bigx"
 )
+
+var pow10s = [...]uint64{
+	1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
+	1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+}
 
 // IsInt returns whether this value is an integer.
 func (z *Decimal) IsInt() bool {
@@ -29,6 +35,10 @@ func (z *Decimal) IsInt() bool {
 // Int sets x to the nearest integer to z.
 //
 // If z is non-finite, returns nil and leaves x unchanged.
+//
+// The size of the result grows with z's exponent, so it may be far larger than
+// the text z was parsed from. Use [Decimal.Uint64] when only values that fit
+// in 64 bits are of interest.
 func (z *Decimal) Int(x *big.Int) *big.Int {
 	if !z.IsFinite() {
 		return nil
@@ -51,6 +61,42 @@ func (z *Decimal) Int(x *big.Int) *big.Int {
 	}
 
 	return x.SetBits(w)
+}
+
+// Uint64 returns z as a uint64.
+//
+// Returns false if z is not an integer in the range of a uint64; this
+// includes non-finite and negative values. Unlike [Decimal.Int], this does not
+// materialize values that cannot fit.
+func (z *Decimal) Uint64() (uint64, bool) {
+	if z.IsZero() {
+		return 0, z.IsFinite()
+	}
+	if !z.IsFinite() || z.Negative() || !z.IsInt() {
+		return 0, false
+	}
+
+	if z.base2() {
+		// The mantissa is normalized to 0.1bbbb, so z is at least 2^(exp-1).
+		if z.exp > 64 {
+			return 0, false
+		}
+	} else if z.exp > 20 {
+		// The mantissa is normalized to 0.dddd, so z is at least 10^(exp-1).
+		return 0, false
+	}
+
+	m := z.get()
+	if !bigx.IsUint64(m) {
+		return 0, false
+	}
+	v := bigx.Uint64(m)
+	n := int(z.exp) - z.digits()
+	if z.base2() {
+		return v << n, true
+	}
+	hi, lo := bits.Mul64(v, pow10s[n])
+	return lo, hi == 0
 }
 
 // SetUint64 sets this decimal's value to x.

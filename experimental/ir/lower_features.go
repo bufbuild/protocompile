@@ -24,13 +24,55 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func buildAllFeatureInfo(file *File, r *report.Report) {
 	for m := range file.AllMembers() {
-		if !m.IsEnumValue() {
+		if m.IsEnumValue() {
+			buildEnumValueFeatureInfo(m, r)
+		} else {
 			buildFeatureInfo(m, r)
+		}
+	}
+}
+
+// validateFeatureExtensions checks the message type of each FeatureSet
+// extension in file. Like protoc, every field of that type is a feature, and
+// must set edition_defaults.
+func validateFeatureExtensions(file *File, r *report.Report) {
+	builtins := file.builtins()
+	seen := make(map[FullName]bool)
+	for extn := range seq.Values(file.AllExtensions()) {
+		ty := extn.Element()
+		if extn.Container() != builtins.FeatureSet || !ty.IsMessage() || seen[ty.FullName()] {
+			continue
+		}
+		seen[ty.FullName()] = true
+
+		usedHere := report.Snippetf(extn.AST().Name(), "`%s` is used as features here", ty.Name())
+		mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
+		for field := range seq.Values(ty.Members()) {
+			if field.Options().Field(builtins.EditionDefaults).IsZero() {
+				var where source.Spanner = field.AST().Options()
+				if field.AST().Options().IsZero() {
+					where = field.AST().Name()
+				}
+				r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
+					report.Snippet(where), usedHere, mistake,
+				)
+			}
+
+			support := field.Options().Field(builtins.EditionSupport).AsMessage()
+			if !support.IsZero() && support.Field(builtins.EditionSupportIntroduced).IsZero() {
+				r.Warnf("expected `%s.%s` to be set",
+					builtins.EditionSupportIntroduced.Container().Name(),
+					builtins.EditionSupportIntroduced.Name(),
+				).Apply(
+					report.Snippet(support.AsValue().ValueAST()), usedHere, mistake,
+				)
+			}
 		}
 	}
 }
@@ -52,11 +94,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
 
 	info := new(rawFeatureInfo)
-	if defaults.IsZero() {
-		r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
-			report.Snippet(field.AST().Options()), mistake,
-		)
-	} else {
+	// Ordinary options may set feature_support without edition_defaults, such
+	// as cc_enable_arenas. Feature fields are checked for edition_defaults by
+	// validateFeatureExtensions.
+	if !defaults.IsZero() {
 		for def := range seq.Values(defaults.Elements()) {
 			def := def.AsMessage()
 			value := def.Field(builtins.EditionDefaultsKey)
@@ -192,58 +233,232 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
-		value := support.Field(builtins.EditionSupportIntroduced)
-		n, _ := value.AsInt()
-		info.introduced = syntax.Syntax(n)
-		if value.IsZero() {
-			r.Warnf("expected `%s.%s` to be set",
-				builtins.EditionSupportIntroduced.Container().Name(),
-				builtins.EditionSupportIntroduced.Name(),
-			).Apply(
-				report.Snippet(support.AsValue().ValueAST()),
-				mistake,
-			)
-		} else if info.introduced == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.introduced.DescriptorName(),
-				builtins.EditionSupportIntroduced.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportDeprecated)
-		n, _ = value.AsInt()
-		info.deprecated = syntax.Syntax(n)
-		if !value.IsZero() && info.deprecated == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.deprecated.DescriptorName(),
-				builtins.EditionSupportDeprecated.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportRemoved)
-		n, _ = value.AsInt()
-		info.removed = syntax.Syntax(n)
-		if !value.IsZero() && info.removed == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `%s`",
-				info.removed.DescriptorName(),
-				builtins.EditionSupportRemoved.Name(),
-			).Apply(
-				report.Snippet(value.ValueAST()),
-				mistake,
-			)
-		}
-
-		value = support.Field(builtins.EditionSupportWarning)
-		info.deprecationWarning, _ = value.AsString()
+		buildFeatureSupport(info, support, r)
 	}
 
 	field.Raw().featureInfo = info
+}
+
+// buildEnumValueFeatureInfo builds lifetime information for an enum value
+// that sets feature_support. protoc checks it whenever the value is used in
+// an option or feature.
+func buildEnumValueFeatureInfo(value Member, r *report.Report) {
+	builtins := value.Context().builtins()
+	support := value.Options().Field(builtins.EnumValueSupport).AsMessage()
+	if support.IsZero() {
+		return
+	}
+
+	info := new(rawFeatureInfo)
+	buildFeatureSupport(info, support, r)
+	value.Raw().featureInfo = info
+}
+
+// buildFeatureSupport fills in the lifetime fields of info from a
+// FeatureSupport message.
+func buildFeatureSupport(info *rawFeatureInfo, support MessageValue, r *report.Report) {
+	builtins := support.Context().builtins()
+	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
+
+	value := support.Field(builtins.EditionSupportIntroduced)
+	n, _ := value.AsInt()
+	info.introduced = syntax.Syntax(n)
+	if !value.IsZero() && info.introduced == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.introduced.DescriptorName(),
+			builtins.EditionSupportIntroduced.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportDeprecated)
+	n, _ = value.AsInt()
+	info.deprecated = syntax.Syntax(n)
+	if !value.IsZero() && info.deprecated == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.deprecated.DescriptorName(),
+			builtins.EditionSupportDeprecated.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportRemoved)
+	n, _ = value.AsInt()
+	info.removed = syntax.Syntax(n)
+	if !value.IsZero() && info.removed == syntax.Unknown {
+		r.Warnf("unexpected `%s` in `%s`",
+			info.removed.DescriptorName(),
+			builtins.EditionSupportRemoved.Name(),
+		).Apply(
+			report.Snippet(value.ValueAST()),
+			mistake,
+		)
+	}
+
+	value = support.Field(builtins.EditionSupportWarning)
+	info.deprecationWarning, _ = value.AsString()
+
+	value = support.Field(builtins.EditionSupportRemovalErr)
+	info.removalErr, _ = value.AsString()
+
+	validateFeatureSupport(newFeatureSupport(support), r)
+}
+
+// validateFeatureSupportEnumValues checks the feature_support of each enum
+// value usable by an enum-typed field that sets feature_support. Like protoc,
+// a value's support is merged over the field's, and must not widen it.
+func validateFeatureSupportEnumValues(file *File, r *report.Report) {
+	builtins := file.builtins()
+	for field := range file.AllMembers() {
+		enum := field.Element()
+		if field.IsEnumValue() || !enum.IsEnum() {
+			continue
+		}
+		support := field.Options().Field(builtins.EditionSupport).AsMessage()
+		if support.IsZero() {
+			continue
+		}
+		parent := newFeatureSupport(support)
+
+		for value := range seq.Values(enum.Members()) {
+			support := value.Options().Field(builtins.EnumValueSupport).AsMessage()
+			if support.IsZero() {
+				continue
+			}
+			own := newFeatureSupport(support)
+			merged := parent.mergedWith(own)
+			inherits := report.Snippetf(value.AST().Name(),
+				"`%s` inherits `%s` from `%s`", value.Name(), builtins.EditionSupport.Name(), field.Name())
+
+			// Problems with the value's own support are reported on the value.
+			if validateFeatureSupport(own, nil) {
+				validateFeatureSupport(merged, r, inherits)
+			}
+
+			widens := func(what string, valueEdition, fieldEdition Value) {
+				r.Errorf("`%s` is %s after `%s`", value.Name(), what, field.Name()).Apply(
+					report.Snippet(valueEdition.ValueAST()),
+					report.Snippetf(fieldEdition.ValueAST(), "`%s` is %s here", field.Name(), what),
+				)
+			}
+			if editionOf(merged.introduced) < editionOf(parent.introduced) {
+				r.Errorf("`%s` is introduced before `%s`", value.Name(), field.Name()).Apply(
+					report.Snippet(merged.introduced.ValueAST()),
+					report.Snippetf(parent.introduced.ValueAST(), "`%s` is introduced here", field.Name()),
+				)
+			}
+			if !parent.removed.IsZero() && editionOf(merged.removed) > editionOf(parent.removed) {
+				widens("removed", merged.removed, parent.removed)
+			}
+			if !parent.deprecated.IsZero() && editionOf(merged.deprecated) > editionOf(parent.deprecated) {
+				widens("deprecated", merged.deprecated, parent.deprecated)
+			}
+		}
+	}
+}
+
+// featureSupport holds the fields of a FeatureSupport message. Unset fields
+// are zero.
+type featureSupport struct {
+	builtins                                             *builtins
+	introduced, deprecated, removed, warning, removalErr Value
+}
+
+func newFeatureSupport(support MessageValue) featureSupport {
+	builtins := support.Context().builtins()
+	return featureSupport{
+		builtins:   builtins,
+		introduced: support.Field(builtins.EditionSupportIntroduced),
+		deprecated: support.Field(builtins.EditionSupportDeprecated),
+		removed:    support.Field(builtins.EditionSupportRemoved),
+		warning:    support.Field(builtins.EditionSupportWarning),
+		removalErr: support.Field(builtins.EditionSupportRemovalErr),
+	}
+}
+
+// mergedWith returns s with any fields set in other replacing its own, like
+// merging two FeatureSupport messages.
+func (s featureSupport) mergedWith(other featureSupport) featureSupport {
+	pick := func(a, b Value) Value {
+		if !b.IsZero() {
+			return b
+		}
+		return a
+	}
+	s.introduced = pick(s.introduced, other.introduced)
+	s.deprecated = pick(s.deprecated, other.deprecated)
+	s.removed = pick(s.removed, other.removed)
+	s.warning = pick(s.warning, other.warning)
+	s.removalErr = pick(s.removalErr, other.removalErr)
+	return s
+}
+
+// editionOf returns the edition an edition-valued field is set to.
+func editionOf(v Value) syntax.Syntax {
+	n, _ := v.AsInt()
+	return syntax.Syntax(n)
+}
+
+// validateFeatureSupport diagnoses inconsistent lifetimes in s, which protoc
+// rejects for every field and enum value, and returns whether s is valid. If r
+// is nil, nothing is reported. Each diagnostic starts with the options in
+// extra, so they can provide its primary snippet.
+func validateFeatureSupport(s featureSupport, r *report.Report, extra ...report.DiagnosticOption) bool {
+	ok := true
+	fail := func(format string, args ...any) *report.Diagnostic {
+		ok = false
+		if r == nil {
+			return nil
+		}
+		return r.Errorf(format, args...)
+	}
+	requires := func(set Value, missing Member) {
+		if d := fail("`%s` requires `%s` to be set", set.Field().Name(), missing.Name()); d != nil {
+			d.Apply(extra...)
+			d.Apply(report.Snippet(set.KeyAST()))
+		}
+	}
+	ordered := func(format string, later, earlier Value) {
+		if d := fail(format, later.Field().Name(), earlier.Field().Name()); d != nil {
+			d.Apply(extra...)
+			d.Apply(
+				report.Snippet(later.ValueAST()),
+				report.Snippetf(earlier.ValueAST(), "`%s` set here", earlier.Field().Name()),
+			)
+		}
+	}
+
+	introduced, deprecated, removed := editionOf(s.introduced), editionOf(s.deprecated), editionOf(s.removed)
+	if !s.deprecated.IsZero() {
+		if !s.introduced.IsZero() && deprecated < introduced {
+			ordered("`%s` must not be before `%s`", s.deprecated, s.introduced)
+		}
+		if s.warning.IsZero() {
+			requires(s.deprecated, s.builtins.EditionSupportWarning)
+		}
+	} else if !s.warning.IsZero() {
+		requires(s.warning, s.builtins.EditionSupportDeprecated)
+	}
+
+	if !s.removed.IsZero() {
+		if !s.deprecated.IsZero() && deprecated >= removed {
+			ordered("`%s` must be before `%s`", s.deprecated, s.removed)
+		}
+		if !s.introduced.IsZero() && removed < introduced {
+			ordered("`%s` must not be before `%s`", s.removed, s.introduced)
+		}
+		// protoc exempts options introduced and removed in the same edition.
+		if s.removalErr.IsZero() && introduced != removed {
+			requires(s.removed, s.builtins.EditionSupportRemovalErr)
+		}
+	} else if !s.removalErr.IsZero() {
+		requires(s.removalErr, s.builtins.EditionSupportRemoved)
+	}
+	return ok
 }
 
 func validateAllFeatures(file *File, r *report.Report) {
@@ -361,7 +576,6 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	))
 
 	builtins := features.Context().builtins()
-	edition := features.Context().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
 			validateFeatures(msg, r)
@@ -391,29 +605,127 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			}
 		}
 
-		// We check these in reverse order, because the user might have set
-		// introduced == deprecated == removed, and protoc doesn't enforce
-		// any relationship between these.
-		switch {
-		case info.IsRemoved(edition), info.IsDeprecated(edition):
-			r.SoftError(info.IsRemoved(edition), erredition.TooNew{
-				Current:          features.Context().Syntax(),
-				Decl:             features.Context().AST().Syntax(),
-				Removed:          info.Removed(),
-				Deprecated:       info.Deprecated(),
-				DeprecatedReason: info.DeprecationWarning(),
-				What:             feature.Field().Name(),
-				Where:            feature.KeyAST(),
-			})
+		diagnoseLifetime(feature, info, r)
+		diagnoseEnumLifetimes(feature, r)
+	}
+}
 
-		case !info.IsIntroduced(edition):
-			r.Error(erredition.TooOld{
-				Current: features.Context().Syntax(),
-				Decl:    features.Context().AST().Syntax(),
-				Intro:   info.Introduced(),
-				What:    feature.Field().Name(),
-				Where:   feature.KeyAST(),
-			})
+// validateOptionLifetimes validates that options which declare a
+// feature_support, such as cc_enable_arenas, are compatible with the current
+// edition. Features are validated separately by [validateFeatures].
+func validateOptionLifetimes(file *File, r *report.Report) {
+	validateOptionLifetimesIn(file.Options(), r)
+	for ty := range seq.Values(file.AllTypes()) {
+		validateOptionLifetimesIn(ty.Options(), r)
+		for member := range seq.Values(ty.Members()) {
+			validateOptionLifetimesIn(member.Options(), r)
 		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			validateOptionLifetimesIn(oneof.Options(), r)
+		}
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			validateOptionLifetimesIn(extns.Options(), r)
+		}
+	}
+	for extn := range seq.Values(file.AllExtensions()) {
+		validateOptionLifetimesIn(extn.Options(), r)
+	}
+	for service := range seq.Values(file.Services()) {
+		validateOptionLifetimesIn(service.Options(), r)
+		for method := range seq.Values(service.Methods()) {
+			validateOptionLifetimesIn(method.Options(), r)
+		}
+	}
+}
+
+func validateOptionLifetimesIn(options MessageValue, r *report.Report) {
+	if options.IsZero() {
+		return
+	}
+
+	builtins := options.Context().builtins()
+	for value := range options.Fields() {
+		field := value.Field()
+		switch {
+		case field.Element() == builtins.FeatureSet:
+			continue // Validated by validateFeatures.
+		case field == builtins.JavaMultipleFiles:
+			continue // Has a more specific diagnostic in validateFileOptions.
+		}
+
+		diagnoseLifetime(value, field.FeatureInfo(), r)
+		diagnoseEnumLifetimes(value, r)
+		if field.Element().IsMessage() {
+			for elem := range seq.Values(value.Elements()) {
+				validateOptionLifetimesIn(elem.AsMessage(), r)
+			}
+		}
+	}
+}
+
+// diagnoseEnumLifetimes diagnoses each enum value set in value whose
+// feature_support does not permit it in the current edition.
+func diagnoseEnumLifetimes(value Value, r *report.Report) {
+	ty := value.Field().Element()
+	if !ty.IsEnum() {
+		return
+	}
+	// Most enums have no values with feature_support, so skip looking up
+	// each element by number.
+	hasSupport := false
+	for member := range seq.Values(ty.Members()) {
+		if !member.FeatureInfo().IsZero() {
+			hasSupport = true
+			break
+		}
+	}
+	if !hasSupport {
+		return
+	}
+	for elem := range seq.Values(value.Elements()) {
+		enum := elem.AsEnum()
+		diagnoseLifetimeOf(value.Context(), enum.FeatureInfo(), enum.Name(), elem.AST(), r)
+	}
+}
+
+// diagnoseLifetime diagnoses value if its field's feature_support does not
+// permit it in the current edition.
+func diagnoseLifetime(value Value, info FeatureInfo, r *report.Report) {
+	diagnoseLifetimeOf(value.Context(), info, value.Field().Name(), value.KeyAST(), r)
+}
+
+// diagnoseLifetimeOf diagnoses what, spanning where, if info does not permit
+// it in the current edition.
+func diagnoseLifetimeOf(file *File, info FeatureInfo, what string, where source.Spanner, r *report.Report) {
+	if info.IsZero() {
+		return
+	}
+
+	edition := file.Syntax()
+
+	// We check these in reverse order, because the user might have set
+	// introduced == deprecated == removed, and protoc doesn't enforce
+	// any relationship between these.
+	switch {
+	case info.IsRemoved(edition), info.IsDeprecated(edition):
+		r.SoftError(info.IsRemoved(edition), erredition.TooNew{
+			Current:          edition,
+			Decl:             file.AST().Syntax(),
+			Removed:          info.Removed(),
+			Deprecated:       info.Deprecated(),
+			RemovedReason:    info.RemovalError(),
+			DeprecatedReason: info.DeprecationWarning(),
+			What:             what,
+			Where:            where,
+		})
+
+	case !info.IsIntroduced(edition):
+		r.Error(erredition.TooOld{
+			Current: edition,
+			Decl:    file.AST().Syntax(),
+			Intro:   info.Introduced(),
+			What:    what,
+			Where:   where,
+		})
 	}
 }
