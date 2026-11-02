@@ -7,8 +7,9 @@ message M {
     reserved 18900 to 19100;
     reserved 19200;
     reserved 19500 to 19600;
-    extensions 19999 to 20500;
+    extensions 19400;
     extensions 19700 to 19800;
+    extensions 19999 to max;
 
     // Field numbers may not.
     optional int32 f = 19300;

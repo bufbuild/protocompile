@@ -1,15 +1,15 @@
 error: field number out of range
-  --> testdata/tags/impl_reserved.proto:14:24
+  --> testdata/tags/impl_reserved.proto:15:24
    |
-14 |     optional int32 f = 19300;
+15 |     optional int32 f = 19300;
    |                        ^^^^^
    = note: the range for field numbers is `1 to 536870911`,
            excluding `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
-  --> testdata/tags/impl_reserved.proto:18:24
+  --> testdata/tags/impl_reserved.proto:19:24
    |
-18 |     optional int32 x = 19750;
+19 |     optional int32 x = 19750;
    |                        ^^^^^
    = note: the range for field numbers is `1 to 536870911`,
            excluding `19000 to 19999`, which is reserved for internal use
