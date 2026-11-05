@@ -1,0 +1,23 @@
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal_2023.proto:8:43
+   |
+ 8 |   string a = 1 [features.field_presence = LEGACY_REQUIRED];
+   |                                           ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal_2023.proto:9:43
+   |
+ 9 |   string b = 2 [features.field_presence = LEGACY_REQUIRED];
+   |                                           ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+error: missing required fields: (buf.test.foo).b
+  --> testdata/options/validate/required_literal_2023.proto:19:8
+   |
+19 | option (foo) = { a: "a" };
+   |        ^^^^^^^^^^^^^^^^^^
+
+encountered 1 error and 2 warnings

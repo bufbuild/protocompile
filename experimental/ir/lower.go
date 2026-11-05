@@ -131,6 +131,7 @@ func lower(file *File, r *report.Report, importer Importer) {
 	validateFeatureSupportEnumValues(file, r)
 	validateAllFeatures(file, r)
 	validateOptionLifetimes(file, r)
+	validateRequiredOptions(file, r)
 
 	populateJSONNames(file, r)
 

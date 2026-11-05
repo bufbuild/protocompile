@@ -1,0 +1,87 @@
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal.proto:8:3
+   |
+ 8 |   required string a = 1;
+   |   ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal.proto:9:3
+   |
+ 9 |   required string b = 2;
+   |   ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal.proto:21:3
+   |
+21 |   required int32 z = 5;
+   |   ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+error: missing required fields: (buf.test.foo).b
+  --> testdata/options/validate/required_literal.proto:53:8
+   |
+53 | option (foo) = { a: "a" };
+   |        ^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.rfoo)[0].b
+  --> testdata/options/validate/required_literal.proto:54:8
+   |
+54 | option (rfoo) = { a: "a" };
+   |        ^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.nested).f.b
+  --> testdata/options/validate/required_literal.proto:56:8
+   |
+56 | option (nested) = { z: 1 f { a: "a" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.repeated).r[1].a
+  --> testdata/options/validate/required_literal.proto:57:8
+   |
+57 | option (repeated) = { z: 1 r { a: "a" b: "b" } r { b: "b" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.extn).(buf.test.ex).b
+  --> testdata/options/validate/required_literal.proto:58:8
+   |
+58 | option (extn) = { z: 1 [buf.test.ex] { a: "a" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.map).m[0].value.b
+  --> testdata/options/validate/required_literal.proto:59:8
+   |
+59 | option (map) = { z: 1 m { key: "k" value { a: "a" } } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.dotted).f.a
+  --> testdata/options/validate/required_literal.proto:60:8
+   |
+60 | option (dotted).f = { b: "b" };
+   |        ^^^^^^^^
+
+error: missing required fields: (buf.test.everything).z,
+       (buf.test.everything).f.a, (buf.test.everything).r[0].b,
+       (buf.test.everything).(buf.test.ex).b
+  --> testdata/options/validate/required_literal.proto:61:8
+   |
+61 | option (everything) = { f { b: "b" } r { a: "a" } [ex] { a: "a" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.mfoo).b
+  --> testdata/options/validate/required_literal.proto:64:10
+   |
+64 |   option (mfoo) = { a: "a" };
+   |          ^^^^^^^^^^^^^^^^^^^
+
+error: missing required fields: (buf.test.ffoo).a
+  --> testdata/options/validate/required_literal.proto:65:25
+   |
+65 |   optional int32 x = 1 [(ffoo) = { b: "b" }];
+   |                         ^^^^^^^^^^^^^^^^^^^
+
+encountered 10 errors and 3 warnings
