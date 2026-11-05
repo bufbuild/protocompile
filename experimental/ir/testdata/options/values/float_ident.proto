@@ -1,0 +1,32 @@
+//% descriptor: true
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+    optional double d = 1;
+    repeated float f = 2;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
+    optional Foo x2 = 1002;
+    optional Foo x3 = 1003;
+    optional Foo x4 = 1004;
+    optional double y = 1001;
+    optional double y2 = 1005;
+}
+
+// Accepted by protoc: case-insensitive inf, infinity and nan.
+option (x) = { d: iNf f: [-INFINITY, NaN] };
+
+// Rejected by protoc: any other identifier, with or without a sign.
+option (x2) = { d: foo };
+option (x3) = { d: -foo };
+option (x4) = { f: [-Infin, nanx, Infinityx] };
+
+// Rejected by protoc: only exact `inf` and `nan` outside of a message literal.
+option (y) = foo;
+option (y2) = -foo;

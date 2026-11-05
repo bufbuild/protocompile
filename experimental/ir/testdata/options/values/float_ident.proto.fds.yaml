@@ -1,0 +1,66 @@
+file:
+- name: "testdata/options/values/float_ident.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      json_name: "d"
+    - name: "f"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_FLOAT
+      json_name: "f"
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
+  - name: "x2"
+    number: 1002
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x2"
+  - name: "x3"
+    number: 1003
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x3"
+  - name: "x4"
+    number: 1004
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x4"
+  - name: "y"
+    number: 1001
+    label: LABEL_OPTIONAL
+    type: TYPE_DOUBLE
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "y"
+  - name: "y2"
+    number: 1005
+    label: LABEL_OPTIONAL
+    type: TYPE_DOUBLE
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "y2"
+  options.$unknown: |
+    1000: {
+      1: inf64
+      2: {`000080ff0000c07f`}
+    }
+    1002: {}
+    1003: {}
+    1004: {}

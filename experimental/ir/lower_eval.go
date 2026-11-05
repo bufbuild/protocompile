@@ -1132,27 +1132,30 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 			canonical = "nan"
 			v = math.Float64frombits(nanBits)
 		}
-		if !neg.IsZero() {
-			v = -v
+		// Other identifiers fall through to the type mismatch below.
+		if canonical != "" {
+			if !neg.IsZero() {
+				v = -v
+			}
+
+			var d *report.Diagnostic
+			if args.textFormat {
+				d = e.Warnf("non-canonical %s", taxa.Float)
+			} else {
+				d = e.Errorf("non-canonical %s outside of %s", taxa.Float, taxa.Dict)
+			}
+
+			d.Apply(
+				report.Snippet(expr),
+				report.SuggestEdits(expr, fmt.Sprintf("replace with `%v`", canonical), report.Edit{
+					Start: 0, End: len(text),
+					Replace: canonical,
+				}),
+				report.Notef("within %ss only, some %ss are case-insensitive", taxa.Dict, taxa.Float),
+			)
+
+			return newScalarBits(e.File, v), args.textFormat
 		}
-
-		var d *report.Diagnostic
-		if args.textFormat {
-			d = e.Warnf("non-canonical %s", taxa.Float)
-		} else {
-			d = e.Errorf("non-canonical %s outside of %s", taxa.Float, taxa.Dict)
-		}
-
-		d.Apply(
-			report.Snippet(expr),
-			report.SuggestEdits(expr, fmt.Sprintf("replace with `%v`", canonical), report.Edit{
-				Start: 0, End: len(text),
-				Replace: canonical,
-			}),
-			report.Notef("within %ss only, some %ss are case-insensitive", taxa.Dict, taxa.Float),
-		)
-
-		return newScalarBits(e.File, v), args.textFormat
 	}
 
 	// Perform symbol lookup in the current scope. This isn't what protoc
