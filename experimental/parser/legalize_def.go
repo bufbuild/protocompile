@@ -25,6 +25,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Map of a def kind to the valid parents it can have.
@@ -258,6 +260,10 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		legalizeCompactOptions(p, options)
 	}
 
+	if legalizeLeadingKeyword(p, what, def, parent) {
+		return
+	}
+
 	if what == taxa.Field || what == taxa.Group {
 		var oneof ast.DeclDef
 		if parent.what == taxa.Oneof {
@@ -265,6 +271,48 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		}
 		legalizeFieldType(p, what, def.Type(), true, ast.TypePrefixed{}, oneof)
 	}
+}
+
+// legalizeLeadingKeyword diagnoses a field or enum value that begins with a
+// keyword that protoc always parses as the start of some other declaration,
+// or as a field label. Returns whether it reported an error.
+func legalizeLeadingKeyword(p *parser, what taxa.Noun, def ast.DeclDef, parent classified) bool {
+	if what == taxa.EnumValue {
+		name := def.Name().AsIdent()
+		if parent.what != taxa.Enum || !slicesx.Among(name.Keyword(), keyword.Option, keyword.Reserved) {
+			return false
+		}
+		p.Errorf("%v cannot be named `%s`", what, name.Text()).Apply(
+			report.Snippet(name),
+		)
+		return true
+	}
+
+	if def.Type().Kind() != ast.TypeKindPath {
+		return false
+	}
+	path := def.Type().AsPath().Path
+	if path.Absolute() {
+		return false
+	}
+	first, _ := iterx.First(path.Components())
+	kw := first.AsIdent()
+	switch kw.Keyword() {
+	case keyword.Optional, keyword.Repeated, keyword.Required:
+	case keyword.Message, keyword.Enum, keyword.Extend, keyword.Oneof,
+		keyword.Option, keyword.Reserved, keyword.Extensions:
+		if parent.what != taxa.Message && parent.what != taxa.Group {
+			return false
+		}
+	default:
+		return false
+	}
+
+	p.Errorf("%v type cannot start with `%s`", what, kw.Text()).Apply(
+		report.Snippet(kw),
+		report.Helpf("use a fully-qualified type name, starting with `.`"),
+	)
+	return true
 }
 
 // legalizeOption legalizes an option definition (see legalize_option.go).

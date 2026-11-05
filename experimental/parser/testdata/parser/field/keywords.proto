@@ -38,3 +38,48 @@ message M2 {
     reserved.X reserved = 14;
     rpc.X rpc = 15;
 }
+
+message M3 {
+    // Labels are always labels, even if a type shares their name.
+    optional optional = 1;
+    repeated repeated = 2;
+    required required = 3;
+}
+
+extend M {
+    optional optional = 1;
+    repeated repeated = 2;
+    required required = 3;
+}
+
+message M4 {
+    oneof x {
+        optional optional = 1;
+        repeated repeated = 2;
+        required required = 3;
+    }
+}
+
+message M5 {
+    // These must remain valid.
+    optional optional a = 1;
+    repeated message b = 2;
+    .message c = 3;
+    .optional d = 4;
+    test.message e = 5;
+    optional.X f = 6;
+
+    oneof x {
+        message g = 10;
+        enum h = 11;
+        oneof i = 12;
+        extend j = 13;
+    }
+}
+
+extend M {
+    message k = 20;
+    enum l = 21;
+    oneof m = 22;
+    extend n = 23;
+}

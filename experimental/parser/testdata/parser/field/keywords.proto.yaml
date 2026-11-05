@@ -188,3 +188,154 @@ decls:
         - ident: "rpc"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 15
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M3" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "optional" }]
+        type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "repeated" }]
+        type.path.components: [{ ident: "repeated" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "required" }]
+        type.path.components: [{ ident: "required" }]
+        value.literal.int_value: 3
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "optional" }]
+        type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "repeated" }]
+        type.path.components: [{ ident: "repeated" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "required" }]
+        type.path.components: [{ ident: "required" }]
+        value.literal.int_value: 3
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M4" }]
+    body.decls:
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "x" }]
+        body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "optional" }]
+            type.path.components: [{ ident: "optional" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "repeated" }]
+            type.path.components: [{ ident: "repeated" }]
+            value.literal.int_value: 2
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "required" }]
+            type.path.components: [{ ident: "required" }]
+            value.literal.int_value: 3
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M5" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "a" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "b" }]
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "message" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "c" }]
+        type.path.components: [{ ident: "message", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 3
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "d" }]
+        type.path.components: [{ ident: "optional", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 4
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "e" }]
+        type.path.components:
+        - ident: "test"
+        - { ident: "message", separator: SEPARATOR_DOT }
+        value.literal.int_value: 5
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "f" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "X", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 6
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "x" }]
+        body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "g" }]
+            type.path.components: [{ ident: "message" }]
+            value.literal.int_value: 10
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "h" }]
+            type.path.components: [{ ident: "enum" }]
+            value.literal.int_value: 11
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "i" }]
+            type.path.components: [{ ident: "oneof" }]
+            value.literal.int_value: 12
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "j" }]
+            type.path.components: [{ ident: "extend" }]
+            value.literal.int_value: 13
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "k" }]
+        type.path.components: [{ ident: "message" }]
+        value.literal.int_value: 20
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "l" }]
+        type.path.components: [{ ident: "enum" }]
+        value.literal.int_value: 21
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "m" }]
+        type.path.components: [{ ident: "oneof" }]
+        value.literal.int_value: 22
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "n" }]
+        type.path.components: [{ ident: "extend" }]
+        value.literal.int_value: 23
