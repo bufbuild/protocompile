@@ -1,0 +1,25 @@
+error: missing digits in hexadecimal integer literal
+  --> testdata/numbers/no-digits.proto:6:1
+   |
+ 6 | 0x
+   | ^^ expected `0` to `9`, or `a` to `f` after this
+
+error: missing digits in hexadecimal integer literal
+  --> testdata/numbers/no-digits.proto:7:1
+   |
+ 7 | 0X
+   | ^^ expected `0` to `9`, or `a` to `f` after this
+
+error: missing digits in binary integer literal
+  --> testdata/numbers/no-digits.proto:8:1
+   |
+ 8 | 0b
+   | ^^ expected `0` or `1` after this
+
+error: missing digits in octal integer literal
+  --> testdata/numbers/no-digits.proto:9:1
+   |
+ 9 | 0o
+   | ^^ expected `0` to `7` after this
+
+encountered 4 errors

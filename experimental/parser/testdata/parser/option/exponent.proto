@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package test;
+
+option x = 1e3;
+option x = 1p100;
+option x = 1P3;
+option x = 1.5p2;
+
+message M {
+  optional double a = 1 [default = 1p3];
+}
+
+enum E {
+  A = 0;
+  B = 1p3;
+}

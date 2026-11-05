@@ -141,6 +141,13 @@ func lexNumber(l *lexer) token.Token {
 		token.MutateMeta[tokenmeta.Number](tok).Exp = uint32(offset)
 	}
 
+	// A prefix such as 0x must be followed by at least one digit.
+	if prefix != "" && digits == "" {
+		l.Error(errtoken.InvalidNumber{Token: tok})
+		token.MutateMeta[tokenmeta.Number](tok).SyntaxError = true
+		return tok
+	}
+
 	result, ok := parseInt(digits, base)
 	switch {
 	case !ok:
@@ -158,8 +165,7 @@ func lexNumber(l *lexer) token.Token {
 			meta.Base = 10
 			meta.Prefix = 0
 		}
-		// A number with an exponent is a float, even if its value is an
-		// integer.
+		// Float is any decimal or exponent.
 		meta.IsFloat = strings.ContainsAny(digits, ".-") || expIdx != -1
 		meta.ThousandsSep = strings.Contains(digits, "_")
 
