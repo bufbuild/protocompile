@@ -1,0 +1,126 @@
+file:
+- name: "testdata/options/values/enum_number.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "M"
+    field:
+    - name: "e"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Foo"
+      json_name: "e"
+    - name: "r"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_ENUM
+      type_name: ".buf.test.Foo"
+      json_name: "r"
+  - name: "N"
+    field:
+    - name: "f1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Foo"
+      json_name: "f1"
+    - name: "f2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Foo"
+      default_value: "ONE"
+      json_name: "f2"
+    - name: "f3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Foo"
+      json_name: "f3"
+      options: {}
+    options: {}
+  enum_type:
+  - name: "Foo"
+    value: [{ name: "ZERO", number: 0 }, { name: "ONE", number: 1 }]
+  extension:
+  - name: "foo"
+    number: 10101
+    label: LABEL_OPTIONAL
+    type: TYPE_ENUM
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "foo"
+  - name: "m1"
+    number: 10102
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "m1"
+  - name: "m2"
+    number: 10103
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "m2"
+  - name: "m3"
+    number: 10104
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "m3"
+  - name: "m4"
+    number: 10105
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "m4"
+  - name: "m5"
+    number: 10106
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "m5"
+  - name: "lit"
+    number: 10107
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "lit"
+  - name: "mfoo1"
+    number: 10201
+    label: LABEL_OPTIONAL
+    type: TYPE_ENUM
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "mfoo1"
+  - name: "mfoo2"
+    number: 10202
+    label: LABEL_OPTIONAL
+    type: TYPE_ENUM
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "mfoo2"
+  - name: "ffoo"
+    number: 10301
+    label: LABEL_OPTIONAL
+    type: TYPE_ENUM
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FieldOptions"
+    json_name: "ffoo"
+  options.$unknown: |
+    10102: {}
+    10103: {}
+    10104: {}
+    10105: {1: 1}
+    10106: {1: 0}
+    10107: {
+      1: 1
+      2: {`0001`}
+    }

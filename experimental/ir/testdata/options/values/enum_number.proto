@@ -1,0 +1,58 @@
+//% descriptor: true
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+enum Foo {
+    ZERO = 0;
+    ONE = 1;
+}
+
+message M {
+    optional Foo e = 1;
+    repeated Foo r = 2;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo foo = 10101;
+    optional M m1 = 10102;
+    optional M m2 = 10103;
+    optional M m3 = 10104;
+    optional M m4 = 10105;
+    optional M m5 = 10106;
+    optional M lit = 10107;
+}
+
+extend google.protobuf.MessageOptions {
+    optional Foo mfoo1 = 10201;
+    optional Foo mfoo2 = 10202;
+}
+
+extend google.protobuf.FieldOptions {
+    optional Foo ffoo = 10301;
+}
+
+// Numbers are rejected for enum-valued options outside of message literals.
+option (foo) = 1;
+option (m1).e = 1;
+option (m2).r = 1;
+option (m3).r = -1;
+option (m4).e = ONE;
+option (m5).e = ZERO;
+
+// Numbers are accepted inside of message literals.
+option (lit) = {
+    e: 1
+    r: [0, 1]
+};
+
+message N {
+    option (mfoo1) = -1;
+    option (mfoo2) = 0x1;
+
+    optional Foo f1 = 1 [default = 1];
+    optional Foo f2 = 2 [default = ONE];
+    optional Foo f3 = 3 [(ffoo) = 1];
+}
