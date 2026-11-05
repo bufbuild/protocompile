@@ -693,10 +693,6 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 				})
 				copied.target = Value{}
 
-			case field.Element().IsMessage():
-				copied.target = value
-				exprCount = len(value.Raw().exprs)
-
 			default:
 				e.Error(errSetMultipleTimes{
 					member: field,
