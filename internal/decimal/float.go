@@ -105,7 +105,9 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 			break
 		}
 
-		if exact {
+		// Multiplying by 5^exp only rounds once if 5^exp is itself exact, which
+		// holds up to 5^22.
+		if exact && (!z.base10() || -22 <= exp && exp <= 22) {
 			// Need to divide out by the large power of five hiding inside this
 			// value.
 			if z.base10() {
@@ -122,6 +124,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		// example, when the target value is very close to the dynamic range
 		// limits, converting the mantissa to float may lose precision before
 		// we even multiply by 5^e.
+		exact = false
 		fallthrough
 	default:
 		if z.base2() {
@@ -263,7 +266,7 @@ var (
 		1e12 / 0x1p12, 1e13 / 0x1p13, 1e14 / 0x1p14, 1e15 / 0x1p15,
 
 		1e16 / 0x1p16, 1e17 / 0x1p17, 1e18 / 0x1p18, 1e19 / 0x1p19,
-		1e20 / 0x1p20, 1e21 / 0x1p21, 1e22 / 0x1p22, 1e07 / 0x1p07,
+		1e20 / 0x1p20, 1e21 / 0x1p21, 1e22 / 0x1p22, 1e23 / 0x1p23,
 		1e24 / 0x1p24, 1e25 / 0x1p25, 1e26 / 0x1p26, 1e27 / 0x1p27,
 		1e28 / 0x1p28, 1e29 / 0x1p29, 1e30 / 0x1p30, 1e31 / 0x1p31,
 	}
