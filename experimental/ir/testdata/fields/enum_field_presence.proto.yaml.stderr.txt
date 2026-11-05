@@ -1,3 +1,17 @@
+error: closed enum `example.ClosedEnum` cannot be used in an implicit-presence
+       field
+  --> editions_extensions.proto:7:3
+   |
+ 7 |   ClosedEnum inherited_closed = 101; // reject: inherits implicit presence
+   |   ^^^^^^^^^^
+  ::: editions_enums.proto:4:31
+   |
+ 4 |   option features.enum_type = CLOSED;
+   |                               ------ `example.ClosedEnum` is a closed enum
+   |
+   = help: an unset implicit-presence field falls back to the enum's zero value,
+           which a closed enum need not define
+
 error: closed enum `example.Proto2Enum` cannot be used in an implicit-presence
        field
   --> editions_message.proto:8:3
@@ -78,4 +92,4 @@ error: closed enum `example.ClosedEnum` cannot be used in a "proto3" message
    = help: fields in a "proto3" message must use open enums, which always define
            a zero value
 
-encountered 6 errors
+encountered 7 errors

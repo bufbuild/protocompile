@@ -1001,8 +1001,8 @@ func validateClosedEnumUse(m Member, r *report.Report) {
 // presence. Editions field-presence features are not reflected by
 // [Member.Presence], so the resolved feature value is consulted directly.
 func hasImplicitPresence(m Member) bool {
-	if !m.IsSingular() || m.Presence() == presence.Shared {
-		return false // repeated, map, or oneof member
+	if !m.IsSingular() || m.Presence() == presence.Shared || m.IsExtension() {
+		return false // repeated, map, oneof member, or extension
 	}
 	builtins := m.Context().builtins()
 	v, _ := m.FeatureSet().Lookup(builtins.FeaturePresence).Value().AsInt()
