@@ -1135,6 +1135,10 @@ func validateJSType(m Member, r *report.Report) {
 	if option.IsZero() {
 		return
 	}
+	// JS_NORMAL is the default, so it's allowed on any field.
+	if v, _ := option.AsInt(); v == tags.FieldOptions_JsType_JsNormal {
+		return
+	}
 
 	ty := m.Element().Predeclared()
 	if !ty.IsInt() || ty.Bits() != 64 {
