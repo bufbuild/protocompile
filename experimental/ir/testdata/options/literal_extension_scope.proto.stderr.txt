@@ -1,0 +1,53 @@
+error: cannot resolve message field name for `foo.bar.a`
+  --> testdata/options/literal_extension_scope.proto:10:34
+   |
+ 4 | extend google.protobuf.MessageOptions { optional a msga = 10000; }
+   |                                         ----------
+   |                                          |
+   |                                          expected `a` field due to this
+ 5 | message a {
+...
+ 9 |   extend a { repeated int32 k = 3; }
+10 |   message m0 { option (msga) = { [b.c.i]: 1 }; }
+   |                                  ^^^^^^^^^^ field referenced here
+
+error: cannot resolve message field name for `foo.bar.a`
+  --> testdata/options/literal_extension_scope.proto:11:34
+   |
+ 4 | extend google.protobuf.MessageOptions { optional a msga = 10000; }
+   |                                         ----------
+   |                                          |
+   |                                          expected `a` field due to this
+ 5 | message a {
+...
+10 |   message m0 { option (msga) = { [b.c.i]: 1 }; }
+11 |   message m1 { option (msga) = { [d.e.j]: 1 }; }
+   |                                  ^^^^^^^^^^ field referenced here
+
+error: cannot resolve message field name for `foo.bar.a`
+  --> testdata/options/literal_extension_scope.proto:13:34
+   |
+ 4 | extend google.protobuf.MessageOptions { optional a msga = 10000; }
+   |                                         ----------
+   |                                          |
+   |                                          expected `a` field due to this
+ 5 | message a {
+...
+12 |   message m2 { option (msga) = { [a.d.e.j]: 1 }; }
+13 |   message m3 { option (msga) = { [e.j]: 1 }; }
+   |                                  ^^^^^^^^ field referenced here
+
+error: cannot resolve message field name for `foo.bar.a`
+  --> testdata/options/literal_extension_scope.proto:14:34
+   |
+ 4 | extend google.protobuf.MessageOptions { optional a msga = 10000; }
+   |                                         ----------
+   |                                          |
+   |                                          expected `a` field due to this
+ 5 | message a {
+...
+13 |   message m3 { option (msga) = { [e.j]: 1 }; }
+14 |   message m4 { option (msga) = { [k]: 1 }; }
+   |                                  ^^^^^^ field referenced here
+
+encountered 4 errors
