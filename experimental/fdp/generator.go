@@ -427,8 +427,10 @@ func (g *generator) field(f ir.Member, fdp *descriptorpb.FieldDescriptorProto) {
 				fdp.DefaultValue = addr("-inf")
 			case math.IsNaN(v):
 				fdp.DefaultValue = addr("nan") // Goodbye NaN payload. :(
+			case f.Element().Predeclared() == predeclared.Float32:
+				fdp.DefaultValue = addr(formatFloat32(v))
 			default:
-				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
+				fdp.DefaultValue = addr(formatFloat64(v))
 			}
 		} else if v, ok := d.AsString(); ok {
 			if f.Element().Predeclared() == predeclared.Bytes {
@@ -752,6 +754,32 @@ func visibility(ty ir.Type) *descriptorpb.SymbolVisibility {
 	default:
 		return descriptorpb.SymbolVisibility_VISIBILITY_LOCAL.Enum()
 	}
+}
+
+// formatFloat32 formats a float default value the same way protoc does: with
+// 6 significant digits if that round-trips, and 9 otherwise.
+//
+// protoc also uses 9 digits for subnormal values, because the C strtof it uses
+// to check the round-trip reports an error for them.
+func formatFloat32(v float64) string {
+	v = float64(float32(v))
+	s := strconv.FormatFloat(v, 'g', 6, 64)
+	parsed, err := strconv.ParseFloat(s, 32)
+	subnormal := parsed != 0 && math.Abs(parsed) < 0x1p-126 // Smallest normal float32.
+	if err != nil || parsed != v || subnormal {
+		s = strconv.FormatFloat(v, 'g', 9, 64)
+	}
+	return s
+}
+
+// formatFloat64 formats a double default value the same way protoc does: with
+// 15 significant digits if that round-trips, and 17 otherwise.
+func formatFloat64(v float64) string {
+	s := strconv.FormatFloat(v, 'g', 15, 64)
+	if parsed, err := strconv.ParseFloat(s, 64); err != nil || parsed != v {
+		s = strconv.FormatFloat(v, 'g', 17, 64)
+	}
+	return s
 }
 
 // addr is a helper for creating a pointer out of any type, because Go is
