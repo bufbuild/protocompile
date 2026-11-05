@@ -1,0 +1,144 @@
+error: unsupported option target for `so`
+  --> testdata/options/target_unchecked.proto:44:12
+   |
+18 |     optional int32 so = 50056 [targets = TARGET_TYPE_METHOD];
+   |                                          ------------------
+   |                                           |
+   |                                           targets constrained here
+19 |     optional Tg stg = 50057;
+...
+43 | service S {
+   |         - applied to this
+44 |     option (so) = 1;
+   |            ^^^^ option set here
+   |
+   = help: `buf.test.so` is constrained to service methods
+
+error: unsupported option target for `sv`
+  --> testdata/options/target_unchecked.proto:45:22
+   |
+14 |     optional int32 sv = 2 [targets = TARGET_TYPE_METHOD];
+   |                                      ------------------
+   |                                       |
+   |                                       targets constrained here
+...
+43 | service S {
+   |         - applied to this
+44 |     option (so) = 1;
+45 |     option (stg) = { sv: 1 };
+   |                      ^^ option set here
+   |
+   = help: `buf.test.Tg.sv` is constrained to service methods
+
+error: unsupported option target for `mo`
+  --> testdata/options/target_unchecked.proto:47:16
+   |
+23 |     optional int32 mo = 50055 [targets = TARGET_TYPE_SERVICE];
+   |                                          -------------------
+   |                                           |
+   |                                           targets constrained here
+...
+45 |     option (stg) = { sv: 1 };
+46 |     rpc F(Msg) returns (Msg) {
+   |         - applied to this
+47 |         option (mo) = 1;
+   |                ^^^^ option set here
+   |
+   = help: `buf.test.mo` is constrained to service definitions
+
+error: unsupported option target for `ero`
+  --> testdata/options/target_unchecked.proto:52:24
+   |
+27 |     optional int32 ero = 50053 [targets = TARGET_TYPE_FIELD];
+   |                                           -----------------
+   |                                            |
+   |                                            targets constrained here
+28 |     optional Tg rtg = 50054;
+...
+52 |     extensions 1 to 5 [(ero) = 1];
+   |     -------------------^^^^^------ applied to this
+   |                         |
+   |                         option set here
+   |
+   = help: `buf.test.ero` is constrained to message fields
+
+error: unsupported option target for `en`
+  --> testdata/options/target_unchecked.proto:53:30
+   |
+13 |     optional int32 en = 1 [targets = TARGET_TYPE_FIELD];
+   |                                      -----------------
+   |                                       |
+   |                                       targets constrained here
+14 |     optional int32 sv = 2 [targets = TARGET_TYPE_METHOD];
+...
+52 |     extensions 1 to 5 [(ero) = 1];
+53 |     extensions 6 to 7 [(rtg).en = 1];
+   |     -------------------------^^------ applied to this
+   |                              |
+   |                              option set here
+   |
+   = help: `buf.test.Tg.en` is constrained to message fields
+
+error: unsupported option target for `sv`
+  --> testdata/options/target_unchecked.proto:54:30
+   |
+14 |     optional int32 sv = 2 [targets = TARGET_TYPE_METHOD];
+   |                                      ------------------
+   |                                       |
+   |                                       targets constrained here
+...
+53 |     extensions 6 to 7 [(rtg).en = 1];
+54 |     extensions 8 to 9 [(rtg).sv = 1];
+   |     -------------------------^^------ applied to this
+   |                              |
+   |                              option set here
+   |
+   = help: `buf.test.Tg.sv` is constrained to service methods
+
+error: unsupported option target for `none_msg`
+  --> testdata/options/target_unchecked.proto:58:12
+   |
+32 |     optional int32 none_msg = 50060 [targets = TARGET_TYPE_UNKNOWN];
+   |                                                -------------------
+   |                                                 |
+   |                                                 targets constrained here
+...
+57 | message X {
+   |         - applied to this
+58 |     option (none_msg) = 1;
+   |            ^^^^^^^^^^ option set here
+   |
+   = help: `buf.test.none_msg` cannot be set on any target
+
+error: unsupported option target for `none_field`
+  --> testdata/options/target_unchecked.proto:59:27
+   |
+40 |     optional int32 none_field = 50062 [targets = TARGET_TYPE_UNKNOWN];
+   |                                                  -------------------
+   |                                                   |
+   |                                                   targets constrained here
+...
+58 |     option (none_msg) = 1;
+59 |     optional int32 a = 1 [(none_field) = 1];
+   |                    -      ^^^^^^^^^^^^ option set here
+   |                    |
+   |                    applied to this
+   |
+   = help: `buf.test.none_field` cannot be set on any target
+
+error: unsupported option target for `none_enum`
+  --> testdata/options/target_unchecked.proto:63:12
+   |
+36 |     optional int32 none_enum = 50061 [targets = TARGET_TYPE_UNKNOWN];
+   |                                                 -------------------
+   |                                                  |
+   |                                                  targets constrained here
+...
+62 | enum E {
+   |      - applied to this
+63 |     option (none_enum) = 1;
+   |            ^^^^^^^^^^^ option set here
+   |
+   = help: `buf.test.none_enum` cannot be set on any target
+
+encountered 9 errors
