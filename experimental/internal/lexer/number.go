@@ -158,7 +158,9 @@ func lexNumber(l *lexer) token.Token {
 			meta.Base = 10
 			meta.Prefix = 0
 		}
-		meta.IsFloat = strings.ContainsAny(digits, ".-") // Positive exponents are not necessarily floats.
+		// A number with an exponent is a float, even if its value is an
+		// integer.
+		meta.IsFloat = strings.ContainsAny(digits, ".-") || expIdx != -1
 		meta.ThousandsSep = strings.Contains(digits, "_")
 
 		var err error

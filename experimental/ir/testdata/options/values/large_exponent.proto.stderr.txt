@@ -1,107 +1,125 @@
-error: literal out of range for `int32`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:9:11
    |
  9 |     i32: [1e2147483646, -1e2147483646]
-   |           ^^^^^^^^^^^^
+   |           ^^^^^^^^^^^^ expected `int32`, found floating-point literal
 10 |     i64: [1e2147483646, -1e2147483646]
 ...
 15 |     repeated int32 i32 = 1;
    |     -------------- expected due to this
    |
-   = note: the range for `int32` is `-2147483648 to 2147483647`
+   = note: expected: scalar type `int32`
+              found: floating-point literal
 
-error: literal out of range for `int32`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:9:25
    |
  9 |     i32: [1e2147483646, -1e2147483646]
    |                         ^^^^^^^^^^^^^
+   |                          |
+   |                          expected `int32`, found floating-point literal
 10 |     i64: [1e2147483646, -1e2147483646]
 ...
 15 |     repeated int32 i32 = 1;
    |     -------------- expected due to this
    |
-   = note: the range for `int32` is `-2147483648 to 2147483647`
+   = note: expected: scalar type `int32`
+              found: floating-point literal
 
-error: literal out of range for `int64`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:10:11
    |
 10 |     i64: [1e2147483646, -1e2147483646]
-   |           ^^^^^^^^^^^^
+   |           ^^^^^^^^^^^^ expected `int64`, found floating-point literal
 11 |     u64: [1e2147483646]
 ...
 15 |     repeated int32 i32 = 1;
 16 |     repeated int64 i64 = 2;
    |     -------------- expected due to this
    |
-   = note: the range for `int64` is `-9223372036854775808 to
-           9223372036854775807`
+   = note: expected: scalar type `int64`
+              found: floating-point literal
 
-error: literal out of range for `int64`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:10:25
    |
 10 |     i64: [1e2147483646, -1e2147483646]
    |                         ^^^^^^^^^^^^^
+   |                          |
+   |                          expected `int64`, found floating-point literal
 11 |     u64: [1e2147483646]
 ...
 15 |     repeated int32 i32 = 1;
 16 |     repeated int64 i64 = 2;
    |     -------------- expected due to this
    |
-   = note: the range for `int64` is `-9223372036854775808 to
-           9223372036854775807`
+   = note: expected: scalar type `int64`
+              found: floating-point literal
 
-error: literal out of range for `uint64`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:11:11
    |
 11 |     u64: [1e2147483646]
-   |           ^^^^^^^^^^^^
+   |           ^^^^^^^^^^^^ expected `uint64`, found floating-point literal
 ...
 16 |     repeated int64 i64 = 2;
 17 |     repeated uint64 u64 = 3;
    |     --------------- expected due to this
    |
-   = note: the range for `uint64` is `0 to 18446744073709551615`
+   = note: expected: scalar type `uint64`
+              found: floating-point literal
 
-error: field number out of range
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:19:28
    |
 19 |     optional int32 field = 1e2147483646;
    |                            ^^^^^^^^^^^^
-   = note: the range for field numbers is `1 to 536870911`,
-           excluding `19000 to 19999`, which is reserved for internal use
+   |                             |
+   |                             expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
 
-error: literal out of range for `int64`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:20:48
    |
 20 |     optional int64 with_default = 6 [default = 1e2147483646];
    |     --------------                             ^^^^^^^^^^^^
-   |      |
-   |      expected due to this
+   |      |                                          |
+   |      expected due to this                       expected `int64`, found floating-point literal
    |
-   = note: the range for `int64` is `-9223372036854775808 to
-           9223372036854775807`
+   = note: expected: scalar type `int64`
+              found: floating-point literal
 
-error: field number out of range
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:21:14
    |
 21 |     reserved 1e2147483646;
    |              ^^^^^^^^^^^^
-   = note: the range for field numbers is `1 to 536870911`,
-           excluding `19000 to 19999`, which is reserved for internal use
+   |               |
+   |               expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
 
-error: field number out of range
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:22:24
    |
 22 |     extensions 1000 to 1e2147483646;
    |                        ^^^^^^^^^^^^
-   = note: the range for field numbers is `1 to 536870911`,
-           excluding `19000 to 19999`, which is reserved for internal use
+   |                         |
+   |                         expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
 
-error: literal out of range for `int32`
+error: mismatched types
   --> testdata/options/values/large_exponent.proto:27:15
    |
 27 |     BAR_ONE = 1e2147483646;
-   |               ^^^^^^^^^^^^
-   = note: the range for `int32` is `-2147483648 to 2147483647`
+   |               ^^^^^^^^^^^^ expected `int32`, found floating-point literal
+   |
+   = note: expected: scalar type `int32`
+              found: floating-point literal
 
 encountered 10 errors
