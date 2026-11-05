@@ -16,7 +16,9 @@ package lexer
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
@@ -311,6 +313,21 @@ escSwitch:
 
 			l.pop()
 			consumed++
+		}
+
+		// A \u escape for a high surrogate followed by one for a low surrogate
+		// encodes a single code point, as in UTF-16. An unpaired surrogate is
+		// rejected below. This is deliberately stricter than protoc, which
+		// encodes it as is and produces invalid UTF-8.
+		if r == 'u' && consumed == digits && utf16.IsSurrogate(sc.rune) {
+			rest := l.rest()
+			if len(rest) >= 6 && rest[:2] == `\u` {
+				low, err := strconv.ParseUint(rest[2:6], 16, 16)
+				if pair := utf16.DecodeRune(sc.rune, rune(low)); err == nil && pair != utf8.RuneError {
+					sc.rune = pair
+					l.cursor += 6
+				}
+			}
 		}
 
 		sc.escape = l.spanFrom(start)

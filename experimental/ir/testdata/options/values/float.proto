@@ -51,6 +51,13 @@ option (y) = nan;
 option (y) = NaN;
 option (y) = NAN;
 
+// Hex and octal integers are allowed.
+option (y) = 0x10;
+option (y) = 0X1F;
+option (y) = -0x10;
+option (y) = 0x1e3;
+option (y) = 010;
+
 message Foo {
     repeated float f32 = 1;
     repeated double f64 = 2;

@@ -9,3 +9,4 @@
 //%     old_style_unicode: true
 "\k" "\x" "\X" "\9" "\u" "\U"
 "\u000" "\U0000000"
+"\ud800" "\uDFFF" "\ud83d\ude00" "\U0000d800"
