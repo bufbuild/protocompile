@@ -1027,7 +1027,7 @@ func validatePacked(m Member, r *report.Report) {
 
 	validate := func(span source.Span, isPacked bool) {
 		switch {
-		case m.IsSingular() || m.IsMap():
+		case m.IsSingular():
 			r.Errorf("expected repeated field, found singular field").Apply(
 				report.Snippet(m.TypeAST()),
 				report.Snippetf(span, "packed encoding set here"),

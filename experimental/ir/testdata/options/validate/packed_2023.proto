@@ -22,4 +22,7 @@ message M {
 
     repeated string s1 = 11 [features.repeated_field_encoding = PACKED];
     repeated string s2 = 12 [features.repeated_field_encoding = EXPANDED];
+
+    map<string, string> map1 = 13 [features.repeated_field_encoding = PACKED];
+    map<string, string> map2 = 14 [features.repeated_field_encoding = EXPANDED];
 }
