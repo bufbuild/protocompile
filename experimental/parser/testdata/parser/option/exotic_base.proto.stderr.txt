@@ -48,4 +48,11 @@ error: unsupported base for floating-point literal
    |            ^^^^^^^^^^
    = note: Protobuf does not support hexadecimal floating-point literals
 
-encountered 6 errors
+error: unsupported base for floating-point literal
+  --> testdata/parser/option/exotic_base.proto:12:12
+   |
+12 | option x = 0x1p3;
+   |            ^^^^^
+   = note: Protobuf does not support hexadecimal floating-point literals
+
+encountered 7 errors

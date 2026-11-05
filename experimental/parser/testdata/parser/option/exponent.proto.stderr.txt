@@ -1,0 +1,36 @@
+error: unsupported exponent for integer literal
+  --> testdata/parser/option/exponent.proto:6:12
+   |
+ 6 | option x = 1p100;
+   |            ^^^^^
+   = note: Protobuf only supports decimal exponents, written with `e`
+
+error: unsupported exponent for integer literal
+  --> testdata/parser/option/exponent.proto:7:12
+   |
+ 7 | option x = 1P3;
+   |            ^^^
+   = note: Protobuf only supports decimal exponents, written with `e`
+
+error: unsupported exponent for floating-point literal
+  --> testdata/parser/option/exponent.proto:8:12
+   |
+ 8 | option x = 1.5p2;
+   |            ^^^^^
+   = note: Protobuf only supports decimal exponents, written with `e`
+
+error: unsupported exponent for integer literal
+  --> testdata/parser/option/exponent.proto:11:36
+   |
+11 |   optional double a = 1 [default = 1p3];
+   |                                    ^^^
+   = note: Protobuf only supports decimal exponents, written with `e`
+
+error: unsupported exponent for integer literal
+  --> testdata/parser/option/exponent.proto:16:7
+   |
+16 |   B = 1p3;
+   |       ^^^
+   = note: Protobuf only supports decimal exponents, written with `e`
+
+encountered 5 errors
