@@ -1,0 +1,70 @@
+warning: missing `package` declaration
+ --> testdata/parser/field/group_type_name.proto
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:11:12
+   |
+11 |   optional group a = 1;
+   |            ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:12:12
+   |
+12 |   repeated group.Bar b = 2;
+   |            ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:13:12
+   |
+13 |   optional group c = 3 [deprecated = true];
+   |            ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:14:15
+   |
+14 |   map<string, group> d = 4;
+   |               ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:16:5
+   |
+16 |     group e = 5;
+   |     ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:17:5
+   |
+17 |     group.Bar f = 6;
+   |     ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:27:12
+   |
+27 |   optional group x = 101;
+   |            ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:28:12
+   |
+28 |   optional group.Bar y = 102;
+   |            ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
+encountered 8 errors and 1 warning

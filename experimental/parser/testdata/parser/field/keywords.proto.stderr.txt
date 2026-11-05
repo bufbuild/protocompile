@@ -19,6 +19,14 @@ error: message field type cannot start with `extend`
    |     ^^^^^^
    = help: use a fully-qualified type name, starting with `.`
 
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/keywords.proto:16:5
+   |
+16 |     group group = 10;
+   |     ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
+
 error: message field type cannot start with `oneof`
   --> testdata/parser/field/keywords.proto:17:5
    |
@@ -67,6 +75,14 @@ error: message field type cannot start with `extend`
 33 |     extend.X extend = 9;
    |     ^^^^^^
    = help: use a fully-qualified type name, starting with `.`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/keywords.proto:34:5
+   |
+34 |     group.X group = 10;
+   |     ^^^^^
+   = help: use a fully qualified path, such as `.group`, to refer to a type
+           named `group`
 
 error: message field type cannot start with `oneof`
   --> testdata/parser/field/keywords.proto:35:5
@@ -152,4 +168,4 @@ error: message field type cannot start with `required`
    |         ^^^^^^^^
    = help: use a fully-qualified type name, starting with `.`
 
-encountered 22 errors
+encountered 24 errors

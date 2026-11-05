@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // legalizeMethodParams legalizes part of the signature of a method.
@@ -109,6 +110,16 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					Replace: "optional ",
 				}),
 				report.Notef("modifiers are required in %s", syntax.Proto2),
+			)
+		}
+
+		// Without a body, `group` is parsed as a field type, but a leading
+		// `group` is always the group keyword.
+		if first, ok := iterx.First(ty.AsPath().Components()); what == taxa.Field &&
+			ok && first.Separator().IsZero() && first.Name().Keyword() == keyword.Group {
+			p.Errorf("`group` cannot be used as a type name").Apply(
+				report.Snippet(first.Name()),
+				report.Helpf("use a fully qualified path, such as `.group`, to refer to a type named `group`"),
 			)
 		}
 

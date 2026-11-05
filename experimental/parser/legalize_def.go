@@ -274,8 +274,8 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 }
 
 // legalizeLeadingKeyword diagnoses a field or enum value that begins with a
-// keyword that protoc always parses as the start of some other declaration,
-// or as a field label. Returns whether it reported an error.
+// keyword that always starts some other declaration, or is a field label.
+// Returns whether it reported an error.
 func legalizeLeadingKeyword(p *parser, what taxa.Noun, def ast.DeclDef, parent classified) bool {
 	if what == taxa.EnumValue {
 		name := def.Name().AsIdent()

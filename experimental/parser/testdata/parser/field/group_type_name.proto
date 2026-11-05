@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+message group {
+  message Bar {}
+}
+
+message Foo {
+  extensions 100 to 200;
+
+  // Rejected: `group` always introduces a group.
+  optional group a = 1;
+  repeated group.Bar b = 2;
+  optional group c = 3 [deprecated = true];
+  map<string, group> d = 4;
+  oneof o {
+    group e = 5;
+    group.Bar f = 6;
+  }
+
+  // Accepted: absolute paths and non-type uses of the word.
+  optional .group g = 7;
+  optional .group.Bar h = 8;
+  optional Foo group = 9;
+}
+
+extend Foo {
+  optional group x = 101;
+  optional group.Bar y = 102;
+  optional .group z = 103;
+}
+
+service S {
+  rpc M(.group) returns (.group);
+}
