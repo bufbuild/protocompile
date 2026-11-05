@@ -1,0 +1,65 @@
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+message Msg {
+    optional int32 a = 1;
+    extensions 100 to 200;
+}
+
+message Tg {
+    optional int32 en = 1 [targets = TARGET_TYPE_FIELD];
+    optional int32 sv = 2 [targets = TARGET_TYPE_METHOD];
+}
+
+extend google.protobuf.ServiceOptions {
+    optional int32 so = 50056 [targets = TARGET_TYPE_METHOD];
+    optional Tg stg = 50057;
+}
+
+extend google.protobuf.MethodOptions {
+    optional int32 mo = 50055 [targets = TARGET_TYPE_SERVICE];
+}
+
+extend google.protobuf.ExtensionRangeOptions {
+    optional int32 ero = 50053 [targets = TARGET_TYPE_FIELD];
+    optional Tg rtg = 50054;
+}
+
+extend google.protobuf.MessageOptions {
+    optional int32 none_msg = 50060 [targets = TARGET_TYPE_UNKNOWN];
+}
+
+extend google.protobuf.EnumOptions {
+    optional int32 none_enum = 50061 [targets = TARGET_TYPE_UNKNOWN];
+}
+
+extend google.protobuf.FieldOptions {
+    optional int32 none_field = 50062 [targets = TARGET_TYPE_UNKNOWN];
+}
+
+service S {
+    option (so) = 1;
+    option (stg) = { sv: 1 };
+    rpc F(Msg) returns (Msg) {
+        option (mo) = 1;
+    }
+}
+
+message Y {
+    extensions 1 to 5 [(ero) = 1];
+    extensions 6 to 7 [(rtg).en = 1];
+    extensions 8 to 9 [(rtg).sv = 1];
+}
+
+message X {
+    option (none_msg) = 1;
+    optional int32 a = 1 [(none_field) = 1];
+}
+
+enum E {
+    option (none_enum) = 1;
+    A = 0;
+}
