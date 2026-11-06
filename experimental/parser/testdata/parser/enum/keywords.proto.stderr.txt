@@ -1,0 +1,13 @@
+error: enum value cannot be named `option`
+  --> testdata/parser/enum/keywords.proto:11:5
+   |
+11 |     option = 5;
+   |     ^^^^^^
+
+error: enum value cannot be named `reserved`
+  --> testdata/parser/enum/keywords.proto:20:5
+   |
+20 |     reserved = 14;
+   |     ^^^^^^^^
+
+encountered 2 errors

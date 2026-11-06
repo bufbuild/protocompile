@@ -1,3 +1,9 @@
+error: enum value cannot be named `reserved`
+  --> testdata/tags/reserved.proto:31:5
+   |
+31 |     reserved = 100;
+   |     ^^^^^^^^
+
 error: use of reserved field number `2`
   --> testdata/tags/reserved.proto:7:25
    |
@@ -174,4 +180,4 @@ error: use of reserved enum value `0`
 37 |     reserved 0;
    |              - enum value reserved here
 
-encountered 17 errors and 2 warnings
+encountered 18 errors and 2 warnings
