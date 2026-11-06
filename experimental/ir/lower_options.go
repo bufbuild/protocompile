@@ -471,6 +471,7 @@ func (r optionRef) resolve() {
 	field := current.Field()
 	var path ast.Path
 	var raw slot
+	var inFeatures bool
 	for pc := range r.def.Path.Components() {
 		// If this is the first iteration, use the *Options value as the current
 		// message.
@@ -597,7 +598,7 @@ func (r optionRef) resolve() {
 
 			case ids.FileFeatures,
 				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
-				ids.EnumFeatures, ids.EnumValueFeatures:
+				ids.EnumFeatures, ids.EnumValueFeatures, ids.RangeFeatures:
 				if syn := r.Syntax(); !syn.IsEdition() {
 					r.Errorf("`features` cannot be set in %s", syn.Name()).Apply(
 						report.Snippet(pc),
@@ -608,6 +609,19 @@ func (r optionRef) resolve() {
 		}
 
 		path, _ = pc.SplitAfter()
+
+		// A custom feature cannot be set with `features.(x)` in the file that
+		// defines it.
+		if pc.IsFirst() {
+			inFeatures = pc.AsExtension().IsZero() && pc.AsIdent().Text() == "features"
+		}
+		if inFeatures && field.Context() == r.File {
+			r.Errorf("feature `%s` cannot be used in the file that defines it", field.FullName()).Apply(
+				report.Snippet(pc),
+				report.Snippetf(field.AST().Name(), "`%s` defined here", field.FullName()),
+			)
+			return
+		}
 
 		// Check to see if this value has already been set in the parent message.
 		// We have already validated current as a singular message by this point.

@@ -1,0 +1,39 @@
+error: feature `test.custom` cannot be used in the file that defines it
+  --> main.proto:16:16
+   |
+13 |   Custom custom = 9970;
+   |          ------ `test.custom` defined here
+...
+16 | option features.(custom).a = true;
+   |                ^^^^^^^^^
+
+error: feature `test.custom` cannot be used in the file that defines it
+  --> main.proto:20:18
+   |
+13 |   Custom custom = 9970;
+   |          ------ `test.custom` defined here
+...
+20 |   option features.(custom).a = true;
+   |                  ^^^^^^^^^
+
+error: feature `test.custom` cannot be used in the file that defines it
+  --> main.proto:22:24
+   |
+13 |   Custom custom = 9970;
+   |          ------ `test.custom` defined here
+...
+21 |   option features.(other.imported).b = true;
+22 |   int32 x = 1 [features.(custom).a = true];
+   |                        ^^^^^^^^^
+
+error: feature `test.custom` cannot be used in the file that defines it
+  --> main.proto:25:34
+   |
+13 |   Custom custom = 9970;
+   |          ------ `test.custom` defined here
+...
+24 |   int32 z = 3 [features.(other.imported).b = true];
+25 |   extensions 100 to 200 [features.(custom).a = true];
+   |                                  ^^^^^^^^^
+
+encountered 4 errors

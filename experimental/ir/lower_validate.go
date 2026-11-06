@@ -1009,6 +1009,13 @@ func hasImplicitPresence(m Member) bool {
 	return v == tags.FeatureSet_FieldPresence_Implicit
 }
 
+// hasPresence reports whether a singular field tracks presence. Message
+// fields, extensions and oneof members always do, whatever the
+// `field_presence` feature says.
+func hasPresence(m Member) bool {
+	return m.IsExtension() || m.Element().IsMessage() || !hasImplicitPresence(m)
+}
+
 // closedEnumNote points at whatever makes an enum closed: its proto2 syntax
 // keyword, or its explicit `enum_type` feature.
 func closedEnumNote(enum Type) report.DiagnosticOption {
@@ -1304,6 +1311,13 @@ func validateDefault(m Member, r *report.Report) {
 			report.PageBreak,
 			report.Snippetf(file.AST().Syntax().Value(), "\"proto3\" specified here"),
 			report.Helpf("custom defaults cannot be defined in \"proto3\" only"),
+		)
+	}
+
+	if file := m.Context(); file.Syntax() != syntax.Proto3 && !m.IsRepeated() && !hasPresence(m) {
+		r.Errorf("implicit-presence fields cannot specify defaults").Apply(
+			report.Snippet(option.KeyAST()),
+			report.Helpf("set `features.field_presence` to `EXPLICIT` to use a custom default"),
 		)
 	}
 
