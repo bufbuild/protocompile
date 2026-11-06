@@ -37,6 +37,17 @@ import (
 // permitted.
 func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	switch decl.Kind() {
+	case ast.DeclKindEmpty:
+		if parent.what == taxa.Oneof || parent.what == taxa.Extend {
+			p.Error(errBadNest{
+				parent: parent,
+				child:  decl,
+				validParents: taxa.NewSet(
+					taxa.TopLevel, taxa.Message, taxa.Group,
+					taxa.Enum, taxa.Service, taxa.Method,
+				),
+			})
+		}
 	case ast.DeclKindSyntax:
 		legalizeSyntax(p, parent, -1, nil, decl.AsSyntax())
 	case ast.DeclKindPackage:
