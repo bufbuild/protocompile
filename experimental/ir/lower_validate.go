@@ -1027,7 +1027,7 @@ func validatePacked(m Member, r *report.Report) {
 
 	validate := func(span source.Span, isPacked bool) {
 		switch {
-		case m.IsSingular() || m.IsMap():
+		case m.IsSingular():
 			r.Errorf("expected repeated field, found singular field").Apply(
 				report.Snippet(m.TypeAST()),
 				report.Snippetf(span, "packed encoding set here"),
@@ -1133,6 +1133,10 @@ func validateJSType(m Member, r *report.Report) {
 
 	option := m.Options().Field(builtins.JSType)
 	if option.IsZero() {
+		return
+	}
+	// JS_NORMAL is the default, so it's allowed on any field.
+	if v, _ := option.AsInt(); v == tags.FieldOptions_JsType_JsNormal {
 		return
 	}
 

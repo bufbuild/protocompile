@@ -16,4 +16,13 @@ error: expected packable type, found message type `buf.test.M`
    = help: packed encoding can only be set on repeated fields of integer, float,
            `bool`, or enum type
 
-encountered 2 errors
+error: expected packable type, found map entry type `buf.test.M.Map1Entry`
+  --> testdata/options/validate/packed_proto2.proto:20:5
+   |
+20 |     map<string, string> map1 = 9 [packed = true];
+   |     ^^^^^^^^^^^^^^^^^^^                    ---- packed encoding set here
+   |
+   = help: packed encoding can only be set on repeated fields of integer, float,
+           `bool`, or enum type
+
+encountered 3 errors

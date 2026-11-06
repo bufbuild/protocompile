@@ -22,4 +22,14 @@ message M {
     bool x15 = 15 [jstype = JS_NUMBER];
     E x16 = 16 [jstype = JS_NUMBER];
     M x17 = 17 [jstype = JS_NUMBER];
+
+    // JS_NORMAL is the default, so it's allowed on any field.
+    string n1 = 18 [jstype = JS_NORMAL];
+    bool n2 = 19 [jstype = JS_NORMAL];
+    uint32 n3 = 20 [jstype = JS_NORMAL];
+    E n4 = 21 [jstype = JS_NORMAL];
+    M n5 = 22 [jstype = JS_NORMAL];
+    repeated string n6 = 23 [jstype = JS_NORMAL];
+    map<string, string> n7 = 24 [jstype = JS_NORMAL];
+    string n8 = 25 [jstype = JS_STRING];
 }
