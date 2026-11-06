@@ -249,3 +249,8 @@ func (z *Decimal) digits() int {
 
 func (z *Decimal) base2() bool  { return z.flags&base2 != 0 }
 func (z *Decimal) base10() bool { return z.flags&base2 == 0 }
+
+// Exp returns this value's exponent.
+func (z *Decimal) Exp() int {
+	return int(z.exp)
+}

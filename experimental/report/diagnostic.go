@@ -380,3 +380,15 @@ func (pageBreak) apply(d *Diagnostic) {
 	}
 	d.snippets[len(d.snippets)-1].pageBreak = true
 }
+
+// ShiftSpan shifts all snippets in the diagnostic to be offsets within the new file by adding offset.
+func (d *Diagnostic) ShiftSpan(file *source.File, offset int) {
+	if d == nil {
+		return
+	}
+	for i := range d.snippets {
+		d.snippets[i].Span.File = file
+		d.snippets[i].Span.Start += offset
+		d.snippets[i].Span.End += offset
+	}
+}

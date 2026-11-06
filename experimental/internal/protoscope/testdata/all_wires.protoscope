@@ -1,0 +1,84 @@
+# Wire Type 1 (I64): double
+1: 0x405edd2f1a9fbe77i64
+
+# Wire Type 5 (I32): float
+2: 0x429dcccdi32
+
+# Wire Type 0 (VARINT): int32
+3: 150
+3: 18446744073709551574
+
+# Wire Type 0 (VARINT): int64
+4: 123456789
+
+# Wire Type 0 (VARINT): uint32
+5: 42
+
+# Wire Type 0 (VARINT): uint64
+6: 987654321
+
+# Wire Type 0 (VARINT): sint32 (zigzag varint)
+7: 19
+
+# Wire Type 0 (VARINT): sint64 (zigzag varint)
+8: 1999
+
+# Wire Type 5 (I32): fixed32
+9: 0x00000037i32
+
+# Wire Type 1 (I64): fixed64
+10: 0x0000000000000042i64
+
+# Wire Type 5 (I32): sfixed32
+11: 0xffffffb3i32
+
+# Wire Type 1 (I64): sfixed64
+12: 0xffffffffffffffa8i64
+
+# Wire Type 0 (VARINT): bool
+13: true
+
+# Wire Type 2 (LEN): string - Pure UTF-8 text
+14: "Hello, UTF-8 text! 日本語, 𐍈, 💻, 🚀"
+
+# Wire Type 2 (LEN): bytes - Pure random binary bytes
+15: `de ad be ef 00 ff 80 c0 12 34 56 78`
+
+# Wire Type 2 (LEN): bytes - Mixed text and binary
+22: "Prefix UTF-8 text \xde\xad\xbe\xef Suffix UTF-8 text"
+
+# Wire Type 2 (LEN): NestedMessage
+16: [
+  1: 999
+]
+
+# Wire Type 0 (VARINT): NestedEnum
+17: 1
+
+# Wire Type 2 (LEN): repeated int32 (packed)
+18: [ 11 22 33 ]
+
+# Wire Type 2 (LEN): map<string, string>
+19: [
+  1: "key1"
+  2: "val1"
+]
+19: [
+  1: "key2"
+  2: "val2"
+]
+
+# Wire Type 3 / 4 (Group): OptionalGroup
+20: !{
+  2: 50
+}
+20: !{
+  2: 60
+}
+
+# Unpacked repeated int32
+21: 70
+21: 80
+
+# Extra: Zigzag suffix test
+23: 10z
