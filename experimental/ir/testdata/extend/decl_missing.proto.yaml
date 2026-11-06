@@ -1,0 +1,33 @@
+files:
+  - path: "a.proto"
+    text: |
+      syntax = "proto2";
+      package a;
+
+      message Declared {
+        extensions 1 to 3 [verification = DECLARATION, declaration = { number: 1, full_name: ".a.ok", type: "string" }];
+      }
+      message Implicit {
+        extensions 1 to 3 [declaration = { number: 1, full_name: ".a.ok2", type: "string" }];
+      }
+      message Unverified {
+        extensions 1 to 3 [verification = UNVERIFIED];
+      }
+      message None {
+        extensions 1 to 3;
+      }
+
+      extend Declared { optional string ok = 1; }
+      extend Declared { optional string bad = 3; }
+      extend Implicit { optional string ok2 = 1; }
+      extend Implicit { optional string bad2 = 3; }
+      extend Unverified { optional string u = 1; }
+      extend None { optional string n = 1; }
+  - path: "b.proto"
+    text: |
+      syntax = "proto2";
+      package b;
+      import "a.proto";
+
+      extend a.Declared { optional string other = 2; }
+      extend a.Unverified { optional string u = 2; }

@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+package test;
+
+// Numbers must be unique within a range, names within a message.
+message M {
+    extensions 1 to 3 [
+        declaration = { number: 1, full_name: ".test.x", type: "string" },
+        declaration = { number: 2, full_name: ".test.x", type: "string" },
+        declaration = { number: 2, full_name: ".test.y", type: "string" }
+    ];
+    extensions 10 to 12 [
+        declaration = { number: 10, full_name: ".test.x", type: "string" }
+    ];
+}
+
+// Names may repeat across messages.
+message N {
+    extensions 1 [declaration = { number: 1, full_name: ".test.x", type: "string" }];
+}
+
+message R {
+    extensions 1 [
+        declaration = { number: 1, reserved: true },
+        declaration = { number: 1, reserved: true }
+    ];
+}

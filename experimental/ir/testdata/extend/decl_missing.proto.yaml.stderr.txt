@@ -1,0 +1,59 @@
+warning: missing declaration for extension number `2`
+  --> a.proto:5:14
+   |
+ 5 |   extensions 1 to 3 [verification = DECLARATION, declaration = { number: 1, full_name: ".a.ok", type: "string" }];
+   |              ^^^^^^ required by this range
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: missing declaration for extension number `2`
+  --> a.proto:8:14
+   |
+ 8 |   extensions 1 to 3 [declaration = { number: 1, full_name: ".a.ok2", type: "string" }];
+   |              ^^^^^^ required by this range
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+error: missing extension declaration for `a.bad`
+  --> a.proto:18:41
+   |
+18 | extend Declared { optional string bad = 3; }
+   |                                         ^
+  ::: a.proto:5:14
+   |
+ 5 |   extensions 1 to 3 [verification = DECLARATION, declaration = { number: 1, full_name: ".a.ok", type: "string" }];
+   |              ------ requires declarations
+   |
+   = help: an extension range must declare all of its extensions if it is marked
+           `DECLARATION` or declares any extension; otherwise, consider
+           splitting up the range
+
+error: missing extension declaration for `a.bad2`
+  --> a.proto:20:42
+   |
+20 | extend Implicit { optional string bad2 = 3; }
+   |                                          ^
+  ::: a.proto:8:14
+   |
+ 8 |   extensions 1 to 3 [declaration = { number: 1, full_name: ".a.ok2", type: "string" }];
+   |              ------ requires declarations
+   |
+   = help: an extension range must declare all of its extensions if it is marked
+           `DECLARATION` or declares any extension; otherwise, consider
+           splitting up the range
+
+error: missing extension declaration for `b.other`
+  --> b.proto:5:45
+   |
+ 5 | extend a.Declared { optional string other = 2; }
+   |                                             ^
+  ::: a.proto:5:14
+   |
+ 5 |   extensions 1 to 3 [verification = DECLARATION, declaration = { number: 1, full_name: ".a.ok", type: "string" }];
+   |              ------ requires declarations
+   |
+   = help: an extension range must declare all of its extensions if it is marked
+           `DECLARATION` or declares any extension; otherwise, consider
+           splitting up the range
+
+encountered 3 errors and 2 warnings

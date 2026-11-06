@@ -1,0 +1,55 @@
+warning: missing declaration for extension number `3`
+  --> testdata/extend/decl_dup.proto:7:16
+   |
+ 7 |     extensions 1 to 3 [
+   |                ^^^^^^ required by this range
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+error: extension name `.test.x` is declared multiple times
+  --> testdata/extend/decl_dup.proto:9:47
+   |
+ 8 |         declaration = { number: 1, full_name: ".test.x", type: "string" },
+   |                                               ---------
+   |                                                |
+   |                                                previously declared here
+ 9 |         declaration = { number: 2, full_name: ".test.x", type: "string" },
+   |                                               ^^^^^^^^^
+
+error: extension declaration number 2 is declared multiple times
+  --> testdata/extend/decl_dup.proto:10:33
+   |
+ 9 |         declaration = { number: 2, full_name: ".test.x", type: "string" },
+   |                                 - previously declared here
+10 |         declaration = { number: 2, full_name: ".test.y", type: "string" }
+   |                                 ^
+
+warning: missing declaration for extension number `11`
+  --> testdata/extend/decl_dup.proto:12:16
+   |
+12 |     extensions 10 to 12 [
+   |                ^^^^^^^^ required by this range
+   |
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+error: extension name `.test.x` is declared multiple times
+  --> testdata/extend/decl_dup.proto:13:48
+   |
+ 8 |         declaration = { number: 1, full_name: ".test.x", type: "string" },
+   |                                               ---------
+   |                                                |
+   |                                                previously declared here
+ 9 |         declaration = { number: 2, full_name: ".test.x", type: "string" },
+...
+13 |         declaration = { number: 10, full_name: ".test.x", type: "string" }
+   |                                                ^^^^^^^^^
+
+error: extension declaration number 1 is declared multiple times
+  --> testdata/extend/decl_dup.proto:25:33
+   |
+24 |         declaration = { number: 1, reserved: true },
+   |                                 - previously declared here
+25 |         declaration = { number: 1, reserved: true }
+   |                                 ^
+
+encountered 4 errors and 2 warnings
