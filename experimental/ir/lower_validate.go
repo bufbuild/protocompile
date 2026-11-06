@@ -131,6 +131,7 @@ func validateConstraints(f *File, r *report.Report) {
 			// without tripping over custom defaults, which we explicitly should
 			// *not* validate.
 			validateUTF8Values(v, r)
+			validateGroupKeys(v, r)
 		}
 	}
 
@@ -1343,6 +1344,45 @@ func validateUTF8Values(v Value, r *report.Report) {
 				r.Error(&errNotUTF8{value: elem})
 			}
 		}
+	}
+}
+
+// looksLikeGroup reports whether m can be referenced by type name in a message
+// literal, ignoring delimitation.
+//
+// See protoc's IsGroupLike.
+func looksLikeGroup(m Member) bool {
+	ty := m.Element()
+	return m.IsMessageField() && ty.IsMessage() &&
+		ty.Context() == m.Context() &&
+		ty.FullName().Parent() == m.FullName().Parent() &&
+		strings.ToLower(ty.Name()) == m.Name()
+}
+
+// validateGroupKeys checks that fields referenced by their type name in a
+// message literal are delimited.
+func validateGroupKeys(v Value, r *report.Report) {
+	field := v.Field()
+	if !looksLikeGroup(field) || field.IsGroup() {
+		return
+	}
+	encoding, _ := field.FeatureSet().Lookup(field.Context().builtins().FeatureGroup).Value().AsInt()
+	if encoding == tags.FeatureSet_MessageEncoding_Delimited {
+		return
+	}
+
+	for key := range seq.Values(v.KeyASTs()) {
+		if key.Kind() != ast.ExprKindPath || key.AsPath().Canonicalized() != field.Element().Name() {
+			continue
+		}
+		r.Errorf("%s `%s` referenced incorrectly", field.noun(), field.FullName()).Apply(
+			report.Snippetf(key, "referenced here"),
+			report.SuggestEdits(key, fmt.Sprintf("reference it as `%s`", field.Name()), report.Edit{
+				Start: 0, End: key.Span().Len(),
+				Replace: field.Name(),
+			}),
+			report.Notef("only delimited fields may be referenced by their type name"),
+		)
 	}
 }
 
