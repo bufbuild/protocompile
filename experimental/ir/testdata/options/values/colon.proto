@@ -1,0 +1,44 @@
+//% descriptor: true
+syntax = "proto2";
+
+package buf.test.colon;
+
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+    optional string s = 1;
+    repeated string strs = 2;
+    repeated Foo foos = 3;
+    optional Foo foo = 4;
+    repeated int32 ints = 5;
+    optional int32 i = 6;
+    optional E e = 7;
+}
+
+enum E {
+    A = 0;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo opt = 50000;
+    optional Foo opt2 = 50001;
+}
+
+// The colon is optional before a message or a list of messages.
+option (opt) = {
+    foo {}
+    foos {}
+    foos []
+    foos [{}, {}]
+    foos: []
+    strs: []
+};
+
+// The colon is required before scalars, including empty lists.
+option (opt2) = {
+    strs []
+    foos []
+    ints []
+    strs ["x"]
+    ints [1]
+};
