@@ -1,0 +1,29 @@
+error: custom JSON name `[FooBar]` cannot start with `[` and end with `]`
+  --> editions.proto:4:29
+   |
+ 4 |   string a = 1 [json_name = "[FooBar]"];
+   |                             ^^^^^^^^^^
+   = help: this form is reserved for representing extensions in JSON
+
+error: custom JSON name `[a]` cannot start with `[` and end with `]`
+  --> proto2.proto:4:38
+   |
+ 4 |   optional string a = 1 [json_name = "[a]"];
+   |                                      ^^^^^
+   = help: this form is reserved for representing extensions in JSON
+
+error: custom JSON name `[]` cannot start with `[` and end with `]`
+  --> proto2.proto:7:38
+   |
+ 7 |   optional string d = 4 [json_name = "[]"];
+   |                                      ^^^^
+   = help: this form is reserved for representing extensions in JSON
+
+error: custom JSON name `[FooBar]` cannot start with `[` and end with `]`
+  --> proto3.proto:4:29
+   |
+ 4 |   string a = 1 [json_name = "[FooBar]"];
+   |                             ^^^^^^^^^^
+   = help: this form is reserved for representing extensions in JSON
+
+encountered 4 errors

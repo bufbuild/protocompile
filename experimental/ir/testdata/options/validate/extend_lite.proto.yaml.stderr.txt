@@ -1,0 +1,41 @@
+error: extension of non-`LITE_RUNTIME` type in `LITE_RUNTIME` file
+  --> lite_bad.proto:9:8
+   |
+ 4 | option optimize_for = LITE_RUNTIME;
+   |                       ------------ optimization level set here
+...
+ 9 | extend test.Heavy { optional string s = 1; }
+   |        ^^^^^^^^^^
+   = help: a `LITE_RUNTIME` file can only extend types from other `LITE_RUNTIME`
+           files; the reverse is allowed
+
+error: extension of non-`LITE_RUNTIME` type in `LITE_RUNTIME` file
+  --> lite_bad.proto:10:20
+   |
+ 4 | option optimize_for = LITE_RUNTIME;
+   |                       ------------ optimization level set here
+...
+ 9 | extend test.Heavy { optional string s = 1; }
+10 | message N { extend test.Heavy { optional string t = 2; } }
+   |                    ^^^^^^^^^^
+   = help: a `LITE_RUNTIME` file can only extend types from other `LITE_RUNTIME`
+           files; the reverse is allowed
+
+error: extension of non-`LITE_RUNTIME` type in `LITE_RUNTIME` file
+  --> lite_bad.proto:11:8
+   |
+ 4 | option optimize_for = LITE_RUNTIME;
+   |                       ------------ optimization level set here
+...
+10 | message N { extend test.Heavy { optional string t = 2; } }
+11 | extend google.protobuf.MessageOptions { optional string o = 50000; }
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ::: <built-in>/google/protobuf/descriptor.proto:29:23
+   |
+29 | option optimize_for = SPEED;
+   |                       ----- `descriptor.proto` is not `LITE_RUNTIME`
+   |
+   = help: a `LITE_RUNTIME` file can only extend types from other `LITE_RUNTIME`
+           files; the reverse is allowed
+
+encountered 3 errors

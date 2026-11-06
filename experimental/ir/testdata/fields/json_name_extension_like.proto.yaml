@@ -1,0 +1,30 @@
+exclude: ["missing `package`", "unused import"]
+files:
+- path: "proto2.proto"
+  text: |
+    syntax = "proto2";
+
+    message M {
+      optional string a = 1 [json_name = "[a]"];
+      optional string b = 2 [json_name = "[b"];
+      optional string c = 3 [json_name = "c]"];
+      optional string d = 4 [json_name = "[]"];
+      optional string e = 5 [json_name = "["];
+      optional string f = 6 [json_name = "fine"];
+    }
+
+- path: "proto3.proto"
+  text: |
+    syntax = "proto3";
+
+    message M3 {
+      string a = 1 [json_name = "[FooBar]"];
+    }
+
+- path: "editions.proto"
+  text: |
+    edition = "2023";
+
+    message M4 {
+      string a = 1 [json_name = "[FooBar]"];
+    }

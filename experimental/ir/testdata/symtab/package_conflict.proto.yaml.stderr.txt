@@ -1,0 +1,29 @@
+error: `x.y.z` declared multiple times
+  --> a_symbol.proto:4:9
+   |
+ 4 | message z {}
+   |         ^ first here, as a message type
+   |
+  ::: z_package.proto:2:1
+   |
+ 2 | package x.y.z.w;
+   | ---------------- ...also declared here, now as a `package` declaration
+   |
+   = help: symbol names must be unique across all files; for example,
+           "a_symbol.proto" declares `x.y.z` but it is not directly imported
+
+error: `foo.bar.baz` declared multiple times
+  --> bar.proto:2:1
+   |
+ 2 | package foo.bar.baz;
+   | ^^^^^^^^^^^^^^^^^^^^ first here, as a `package` declaration
+   |
+  ::: foo.proto:4:6
+   |
+ 4 | enum baz { ZED = 0; }
+   |      --- ...also declared here, now as an enum type
+   |
+   = help: symbol names must be unique across all files; for example,
+           "foo.proto" declares `foo.bar.baz` but it is not directly imported
+
+encountered 2 errors

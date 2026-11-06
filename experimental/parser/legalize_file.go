@@ -289,7 +289,7 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 	}
 
 	legalizePath(p, taxa.Package.In(), decl.Path(), pathOptions{
-		MaxBytes:      512,
+		MaxBytes:      511,
 		MaxComponents: 101,
 	})
 }
