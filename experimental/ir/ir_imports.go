@@ -126,6 +126,15 @@ type imported struct {
 	// still re-exported.
 	public bool
 
+	// Whether this file is reachable through an import that is not an option
+	// import, either directly or because that import re-exports it. Visible
+	// files that are not dependencies can only be used in options.
+	//
+	// This is not the same as option, which records how the import was
+	// declared. An option import can still be a dependency if a regular
+	// import also re-exports it.
+	dependency bool
+
 	visible, used bool
 }
 
@@ -152,16 +161,11 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 	// import cannot be classified by looking only at whichever direct import
 	// happens to pull it in first. Instead, classify every transitive import
 	// up front, quantifying over all direct imports.
-	public, visible := i.classifyTransitive()
+	public, visible, dependencies := i.classifyTransitive()
 
-	for k, file := range seq.All(i.Directs()) {
+	for file := range seq.Values(i.Directs()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
 			if !mapsx.AddZero(dedup, imp.InternedPath()) {
-				// If imp is public, but file is already present, we need to
-				// treat this import as non-option, because this overrides it.
-				if imp.Public {
-					i.files[k].option = false
-				}
 				continue
 			}
 
@@ -186,6 +190,10 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 		}
 	}
 
+	for n := range i.files {
+		i.files[n].dependency = dependencies.ContainsID(i.files[n].file.InternedPath())
+	}
+
 	// Now, build the path and causes maps.
 	i.byPath = make(intern.Map[uint32])
 	i.causes = make(intern.Map[uint32])
@@ -194,11 +202,18 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 		i.byPath[imp.file.InternedPath()] = uint32(n)
 	}
 
+	// Direct imports take precedence over transitive imports, and a direct
+	// import that re-exports a file takes precedence over one that does not.
 	for k, file := range seq.All(i.Directs()) {
-		// Direct imports take precedence over transitive imports.
 		i.causes[file.InternedPath()] = uint32(k)
-		for imp := range seq.Values(file.TransitiveImports()) {
-			mapsx.Add(i.causes, imp.InternedPath(), uint32(k))
+	}
+	for _, public := range []bool{true, false} {
+		for k, file := range seq.All(i.Directs()) {
+			for imp := range seq.Values(file.TransitiveImports()) {
+				if imp.Public == public {
+					mapsx.Add(i.causes, imp.InternedPath(), uint32(k))
+				}
+			}
 		}
 	}
 }
@@ -216,10 +231,18 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 // Neither set includes the direct imports themselves, which are always
 // visible, nor files reached only through non-public imports, which are
 // neither.
-func (i *imports) classifyTransitive() (public, visible intern.Set) {
+//
+// dependencies is the set of direct imports that are not option imports,
+// together with the files they re-export. Unlike public and visible, it
+// includes direct imports.
+func (i *imports) classifyTransitive() (public, visible, dependencies intern.Set) {
 	public = make(intern.Set)
 	visible = make(intern.Set)
+	dependencies = make(intern.Set)
 	for file := range seq.Values(i.Directs()) {
+		if !file.Option {
+			dependencies.AddID(file.InternedPath())
+		}
 		for imp := range seq.Values(file.TransitiveImports()) {
 			if !imp.Public {
 				continue
@@ -229,9 +252,12 @@ func (i *imports) classifyTransitive() (public, visible intern.Set) {
 			if file.Public {
 				public.AddID(imp.InternedPath())
 			}
+			if !file.Option {
+				dependencies.AddID(imp.InternedPath())
+			}
 		}
 	}
-	return public, visible
+	return public, visible, dependencies
 }
 
 // Insert inserts a new import at the given position. It also builds up the path map for lookups.

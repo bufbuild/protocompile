@@ -1,0 +1,39 @@
+warning: unused import "other.proto"
+  --> main.proto:4:8
+   |
+ 4 | import "other.proto";
+   |        ^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "other.proto";
+   |
+   = help: no symbols from this file are referenced
+
+error: `c.C` is only imported for use in options
+  --> main3.proto:7:14
+   |
+ 4 | import option "b.proto";
+   | ------------------------ imported as `option` here
+ 5 |
+ 6 | option (c.copt) = 1;
+ 7 | message M3 { c.C f = 1; }
+   |              ^^^ requires non-`option` import
+   |
+  help: delete `option`
+   |
+ 4 | - import option "b.proto";
+ 4 | + import "b.proto";
+   |
+
+warning: unused import "b.proto"
+  --> other.proto:4:15
+   |
+ 4 | import option "b.proto";
+   |               ^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import option "b.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 1 error and 2 warnings
