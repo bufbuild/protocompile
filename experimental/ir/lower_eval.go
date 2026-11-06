@@ -740,20 +740,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		if scalar.IsFloat() {
 			n, _ := lit.Float()
 
-			// If the number contains no decimal point, check that it has no
-			// 0x prefix. Hex literals are not permitted for float-typed
-			// values, but we don't know that until here, much later than
-			// all the other base checks in the compiler.
 			text := expr.Text()
-			if !taxa.IsFloatText(text) && (strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X")) {
-				e.Errorf("unsupported base for %s", taxa.Float).Apply(
-					report.SuggestEdits(expr, "use a decimal literal instead", report.Edit{
-						Start: 0, End: len(text),
-						Replace: strconv.FormatFloat(n, 'g', 40, 64),
-					}),
-					report.Notef("Protobuf does not support hexadecimal %s", taxa.Float),
-				)
-			}
 
 			if !neg.IsZero() {
 				n = -n
