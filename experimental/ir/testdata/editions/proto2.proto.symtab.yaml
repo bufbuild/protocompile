@@ -25,6 +25,15 @@ tables:
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
       - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
       - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
+    - fqn: "buf.test.Ranges"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/proto2.proto"
+      index: 3
+      visible: true
+      features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enforce_proto_limits", value: "LEGACY_NO_EXPLICIT_LIMITS" }
+      - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
     - fqn: "buf.test.Enum"
       kind: KIND_ENUM
       file: "testdata/editions/proto2.proto"

@@ -1,0 +1,28 @@
+edition = "2023";
+
+package buf.test;
+
+option features.field_presence = IMPLICIT;
+
+message Foo {
+    // Inherited from the file.
+    string s1 = 1 [default = "abc"];
+    string s2 = 2 [default = "abc", features.field_presence = IMPLICIT];
+    int32 i = 3 [default = 1];
+
+    // Explicit presence allows defaults.
+    string s3 = 4 [default = "abc", features.field_presence = EXPLICIT];
+    string s4 = 5 [default = "abc", features.field_presence = LEGACY_REQUIRED];
+
+    // Oneof members always have presence.
+    oneof o {
+        string s5 = 6 [default = "abc"];
+    }
+
+    extensions 100 to max;
+}
+
+// Extensions always have presence.
+extend Foo {
+    string s6 = 100 [default = "abc"];
+}
