@@ -193,9 +193,9 @@ func validateEnum(ty Type, r *report.Report) {
 	validateEnumValueJSON(ty, r)
 }
 
-// enumValueJSON returns the (pb.enumvalue.json) option on an enum value, and
-// its string field. ok is false if the option is not set at all.
-func enumValueJSON(m Member) (option, str Value, ok bool) {
+// enumValueJSON returns the (pb.enumvalue.json).string option on an enum
+// value. An empty (pb.enumvalue.json) = {} is treated as unset.
+func enumValueJSON(m Member) Value {
 	ids := &m.Context().session.builtins
 	for option := range m.Options().Fields() {
 		if option.Field().InternedFullName() != ids.EnumValueJSON {
@@ -203,12 +203,11 @@ func enumValueJSON(m Member) (option, str Value, ok bool) {
 		}
 		for str := range option.AsMessage().Fields() {
 			if str.Field().InternedFullName() == ids.EnumValueJSONString {
-				return option, str, true
+				return str
 			}
 		}
-		return option, Value{}, true
 	}
-	return Value{}, Value{}, false
+	return Value{}
 }
 
 // validateEnumValueJSON validates custom JSON strings set with
@@ -216,7 +215,7 @@ func enumValueJSON(m Member) (option, str Value, ok bool) {
 func validateEnumValueJSON(ty Type, r *report.Report) {
 	custom := false
 	for member := range seq.Values(ty.Members()) {
-		if _, _, ok := enumValueJSON(member); ok {
+		if !enumValueJSON(member).IsZero() {
 			custom = true
 			break
 		}
@@ -248,16 +247,12 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 	}
 
 	for member := range seq.Values(ty.Members()) {
-		option, str, custom := enumValueJSON(member)
-		name, hasString := str.AsString()
+		str := enumValueJSON(member)
+		name, custom := str.AsString()
 
 		var span source.Spanner
 		if custom {
-			span = option.OptionSpan()
-			if hasString {
-				span = str.ValueAST()
-			}
-
+			span = str.ValueAST()
 			if strings.ContainsRune(name, 0) {
 				r.Errorf("custom JSON name cannot contain NUL bytes").Apply(
 					report.Snippet(span),
@@ -279,11 +274,10 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 			if primary, ok := primaries[member.Number()]; !ok {
 				primaries[member.Number()] = member
 			} else {
-				_, primaryStr, _ := enumValueJSON(primary)
-				primaryName, primaryHas := primaryStr.AsString()
-				if primaryHas != hasString || primaryName != name {
+				primaryName, primaryHas := enumValueJSON(primary).AsString()
+				if primaryHas != custom || primaryName != name {
 					r.Errorf("aliases must have the same custom JSON name").Apply(
-						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, hasString)),
+						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, custom)),
 						report.Snippetf(primary.AST().Name(), "but this has %s", describeJSONName(primaryName, primaryHas)),
 					)
 				}
