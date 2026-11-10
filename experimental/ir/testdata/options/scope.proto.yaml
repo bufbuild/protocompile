@@ -1,0 +1,72 @@
+# Option names are looked up starting from the scope that contains the element
+# the option is set on, not from inside the element itself. The first symbol
+# found is used, even if it isn't an extension.
+files:
+# A service's own methods are not in scope for its options.
+- path: "service.proto"
+  text: |
+    syntax = "proto3";
+    package service;
+    import "google/protobuf/descriptor.proto";
+    extend google.protobuf.ServiceOptions { string Bar = 30000; }
+    message Empty {}
+    service Foo {
+      option (Bar) = "blah";
+      rpc Bar (Empty) returns (Empty);
+    }
+# A field option sees the message first, and a message type there hides the
+# extension in an outer scope.
+- path: "field_hidden.proto"
+  text: |
+    syntax = "proto3";
+    package field_hidden;
+    import "google/protobuf/descriptor.proto";
+    extend google.protobuf.FieldOptions { string Bar = 30000; }
+    message M {
+      message Bar {}
+      string f = 1 [(Bar) = "x"];
+    }
+# A message's own nested types are not in scope for its options.
+- path: "message.proto"
+  text: |
+    syntax = "proto3";
+    package message;
+    import "google/protobuf/descriptor.proto";
+    extend google.protobuf.MessageOptions { string X = 30001; }
+    message M {
+      option (X) = "y";
+      message X {}
+    }
+# A field option sees extensions declared in its message.
+- path: "field.proto"
+  text: |
+    syntax = "proto3";
+    package field;
+    import "google/protobuf/descriptor.proto";
+    message M {
+      extend google.protobuf.FieldOptions { string Y = 30002; }
+      string f = 1 [(Y) = "z"];
+    }
+# A oneof option sees extensions declared in its message.
+- path: "oneof.proto"
+  text: |
+    syntax = "proto3";
+    package oneof;
+    import "google/protobuf/descriptor.proto";
+    message M {
+      extend google.protobuf.OneofOptions { string Z = 30003; }
+      oneof o {
+        option (Z) = "w";
+        string a = 1;
+      }
+    }
+# An enum value option sees extensions declared in the enclosing message.
+- path: "enum_value.proto"
+  text: |
+    syntax = "proto3";
+    package enum_value;
+    import "google/protobuf/descriptor.proto";
+    message M {
+      extend google.protobuf.EnumValueOptions { string Q = 30004; }
+      enum E { V = 0 [(Q) = "q"]; }
+    }
