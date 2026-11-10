@@ -15,12 +15,16 @@
 package ir
 
 import (
+	"cmp"
 	"fmt"
 	"iter"
+	"slices"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -28,6 +32,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/messageset"
+	"github.com/bufbuild/protocompile/internal/tags"
 )
 
 // checkMessageSetFieldUsage reports an error if the given field belongs to a
@@ -722,6 +727,106 @@ func (r optionRef) resolve() {
 		v.Raw().isTopLevel = true
 		raw.Insert(v)
 	}
+}
+
+// validateRequiredOptions diagnoses option values that leave required fields
+// unset. This must run after features are resolved, since `LEGACY_REQUIRED`
+// is a feature.
+//
+// Only the final, merged options of each element are checked, so a message
+// literal may be completed by a later dotted option.
+func validateRequiredOptions(f *File, r *report.Report) {
+	check := func(options MessageValue) {
+		for value := range options.Fields() {
+			var missing []string
+			missingRequiredInValue(value, "", &missing)
+			if len(missing) > 0 {
+				r.Errorf("missing required fields: %s", strings.Join(missing, ", ")).Apply(
+					report.Snippet(value.OptionSpan()),
+				)
+			}
+		}
+	}
+	check(f.Options())
+	for ty := range seq.Values(f.AllTypes()) {
+		check(ty.Options())
+		for member := range seq.Values(ty.Members()) {
+			check(member.Options())
+		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			check(oneof.Options())
+		}
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			check(extns.Options())
+		}
+	}
+	for extn := range seq.Values(f.AllExtensions()) {
+		check(extn.Options())
+	}
+	for service := range seq.Values(f.Services()) {
+		check(service.Options())
+		for method := range seq.Values(service.Methods()) {
+			check(method.Options())
+		}
+	}
+}
+
+// missingRequired appends the paths of unset required fields in msg and the
+// messages nested within it: unset fields of msg first, then those of its set
+// message fields in field number order.
+func missingRequired(msg MessageValue, prefix string, missing *[]string) {
+	ty := msg.Type()
+	if ty.IsZero() || ty.IsAny() {
+		return
+	}
+
+	for field := range seq.Values(ty.Members()) {
+		if isRequired(field) && msg.Field(field).IsZero() {
+			*missing = append(*missing, prefix+field.Name())
+		}
+	}
+
+	values := slices.SortedFunc(msg.Fields(), func(a, b Value) int {
+		return cmp.Compare(a.Field().Number(), b.Field().Number())
+	})
+	for _, value := range values {
+		missingRequiredInValue(value, prefix, missing)
+	}
+}
+
+// missingRequiredInValue calls [missingRequired] on each message element of
+// value.
+func missingRequiredInValue(value Value, prefix string, missing *[]string) {
+	field := value.Field()
+	if !field.Element().IsMessage() {
+		return
+	}
+
+	name := prefix + field.Name()
+	if field.IsExtension() {
+		name = fmt.Sprintf("%s(%s)", prefix, field.FullName())
+	}
+	for i, elem := range seq.All(value.Elements()) {
+		elemName := name
+		if field.IsRepeated() {
+			elemName = fmt.Sprintf("%s[%d]", name, i)
+		}
+		missingRequired(elem.AsMessage(), elemName+".", missing)
+	}
+}
+
+// isRequired reports whether m is a required field, either by label or by
+// the `LEGACY_REQUIRED` feature.
+func isRequired(m Member) bool {
+	if m.Presence() == presence.Required {
+		return true
+	}
+	if !m.IsSingular() || m.Presence() == presence.Shared {
+		return false // repeated, map, or oneof member
+	}
+	builtins := m.Context().builtins()
+	v, _ := m.FeatureSet().Lookup(builtins.FeaturePresence).Value().AsInt()
+	return v == tags.FeatureSet_FieldPresence_LegacyRequired
 }
 
 type errSetMultipleTimes struct {

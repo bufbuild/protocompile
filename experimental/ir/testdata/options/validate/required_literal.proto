@@ -1,0 +1,70 @@
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+  required string a = 1;
+  required string b = 2;
+}
+
+message Wrapper {
+  optional Foo f = 1;
+}
+
+message Outer {
+  optional Foo f = 1;
+  repeated Foo r = 2;
+  map<string, Foo> m = 3;
+  optional int32 x = 4;
+  required int32 z = 5;
+
+  extensions 100 to 200;
+}
+
+extend Outer {
+  optional Foo ex = 100;
+}
+
+extend google.protobuf.FileOptions {
+  optional Foo foo = 20000;
+  optional Outer outer = 20001;
+  repeated Foo rfoo = 20002;
+  optional Foo ok1 = 20003;
+  optional Outer ok2 = 20006;
+  optional Outer nested = 20007;
+  optional Outer repeated = 20008;
+  optional Outer extn = 20009;
+  optional Outer map = 20010;
+  optional Wrapper dotted = 20011;
+  optional Outer everything = 20012;
+}
+
+extend google.protobuf.MessageOptions {
+  optional Foo mfoo = 20000;
+}
+
+extend google.protobuf.FieldOptions {
+  optional Foo ffoo = 20000;
+}
+
+// Rejected.
+option (foo) = { a: "a" };
+option (rfoo) = { a: "a" };
+option (rfoo) = { a: "a" b: "b" };
+option (nested) = { z: 1 f { a: "a" } };
+option (repeated) = { z: 1 r { a: "a" b: "b" } r { b: "b" } };
+option (extn) = { z: 1 [buf.test.ex] { a: "a" } };
+option (map) = { z: 1 m { key: "k" value { a: "a" } } };
+option (dotted).f = { b: "b" };
+option (everything) = { f { b: "b" } r { a: "a" } [ex] { a: "a" } };
+
+message M {
+  option (mfoo) = { a: "a" };
+  optional int32 x = 1 [(ffoo) = { b: "b" }];
+}
+
+// Accepted.
+option (ok1) = { a: "a" b: "b" };
+option (ok2) = { z: 1 f { a: "a" b: "b" } r { a: "a" b: "b" } };
