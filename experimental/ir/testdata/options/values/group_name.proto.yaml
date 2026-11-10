@@ -1,0 +1,58 @@
+# Group-like fields may be referenced by their type name in message literals.
+files:
+- path: "test.proto"
+  text: |
+    edition = "2023";
+    package test;
+
+    import "google/protobuf/descriptor.proto";
+    import "proto2.proto";
+
+    message Foo {
+      Bar bar = 1 [features.message_encoding = DELIMITED];
+      message Bar { string name = 1; }
+
+      // Not delimited.
+      Baz baz = 2;
+      message Baz { string name = 1; }
+
+      // Wrong field name.
+      Qux quxqux = 3 [features.message_encoding = DELIMITED];
+      message Qux { string name = 1; }
+    }
+
+    // Wrong scope.
+    message Wrong {
+      Bar bar = 1 [features.message_encoding = DELIMITED];
+    }
+    message Bar { string name = 1; }
+
+    extend google.protobuf.MessageOptions {
+      Foo foo = 10001;
+      Wrong wrong = 10002;
+      P2 p2 = 10003;
+    }
+
+    message A {
+      option (foo) = {
+        Bar { name: "abc" }
+        Baz { name: "abc" }
+        Qux { name: "abc" }
+      };
+      option (wrong) = { Bar { name: "abc" } };
+      option (p2) = { Group { name: "abc" } };
+    }
+
+    message B {
+      option (foo) = { bar { name: "abc" } };
+      option (p2) = { group { name: "abc" } };
+    }
+- path: "proto2.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package test;
+
+    message P2 {
+      optional group Group = 1 { optional string name = 1; }
+    }
