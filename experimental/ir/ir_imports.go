@@ -126,14 +126,14 @@ type imported struct {
 	// still re-exported.
 	public bool
 
-	// Whether this file is reachable through an import that is not an option
-	// import, either directly or because that import re-exports it. Visible
-	// files that are not dependencies can only be used in options.
+	// Whether this file's symbols can only be used in options, because it is
+	// not reachable through any import that is not an option import, either
+	// directly or because that import re-exports it.
 	//
 	// This is not the same as option, which records how the import was
-	// declared. An option import can still be a dependency if a regular
-	// import also re-exports it.
-	dependency bool
+	// declared. An option import is not option-only if a regular import also
+	// re-exports it.
+	optionOnly bool
 
 	visible, used bool
 }
@@ -191,7 +191,7 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 	}
 
 	for n := range i.files {
-		i.files[n].dependency = dependencies.ContainsID(i.files[n].file.InternedPath())
+		i.files[n].optionOnly = !dependencies.ContainsID(i.files[n].file.InternedPath())
 	}
 
 	// Now, build the path and causes maps.

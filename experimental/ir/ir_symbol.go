@@ -166,7 +166,7 @@ func (s Symbol) Visible(in *File, allowOptions bool) bool {
 	}
 
 	imp := in.imports.files[idx]
-	if !imp.visible || !(allowOptions || imp.dependency) {
+	if !imp.visible || (!allowOptions && imp.optionOnly) {
 		return false
 	}
 
