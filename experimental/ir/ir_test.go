@@ -555,13 +555,15 @@ func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 				options = sym.AsOneof().Options()
 			}
 
+			// OptionOnly is set for symbols that are visible in options, but not
+			// elsewhere.
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
 				Fqn:        string(sym.FullName()),
 				Kind:       compilerpb.Symbol_Kind(sym.Kind()),
 				File:       sym.Context().Path(),
 				Index:      uint32(sym.RawData()),
 				Visible:    sym.Kind() != ir.SymbolKindPackage && sym.Visible(file, false),
-				OptionOnly: sym.Kind() != ir.SymbolKindPackage && !sym.Visible(file, true) && sym.Visible(file, true),
+				OptionOnly: sym.Kind() != ir.SymbolKindPackage && !sym.Visible(file, false) && sym.Visible(file, true),
 				Options:    new(optionWalker).message(options),
 				Features:   dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})
