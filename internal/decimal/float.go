@@ -105,7 +105,8 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 			break
 		}
 
-		if exact {
+		// Multiplying by 5^exp only rounds once if 5^exp is itself exact.
+		if exact && (!z.base10() || -maxPow5 <= exp && exp <= maxPow5) {
 			// Need to divide out by the large power of five hiding inside this
 			// value.
 			if z.base10() {
@@ -122,6 +123,7 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		// example, when the target value is very close to the dynamic range
 		// limits, converting the mantissa to float may lose precision before
 		// we even multiply by 5^e.
+		exact = false
 		fallthrough
 	default:
 		if z.base2() {
@@ -255,47 +257,23 @@ func finite(x float64) bool {
 	return !math.IsInf(x, 0) && !math.IsNaN(x)
 }
 
-var (
-	pow5s = [...]float64{
-		1e00 / 0x1p00, 1e01 / 0x1p01, 1e02 / 0x1p02, 1e03 / 0x1p03,
-		1e04 / 0x1p04, 1e05 / 0x1p05, 1e06 / 0x1p06, 1e07 / 0x1p07,
-		1e08 / 0x1p08, 1e09 / 0x1p09, 1e10 / 0x1p10, 1e11 / 0x1p11,
-		1e12 / 0x1p12, 1e13 / 0x1p13, 1e14 / 0x1p14, 1e15 / 0x1p15,
+// pow5s holds 5^n for each n where 5^n is exactly representable as a float64.
+var pow5s = [...]float64{
+	1e00 / 0x1p00, 1e01 / 0x1p01, 1e02 / 0x1p02, 1e03 / 0x1p03,
+	1e04 / 0x1p04, 1e05 / 0x1p05, 1e06 / 0x1p06, 1e07 / 0x1p07,
+	1e08 / 0x1p08, 1e09 / 0x1p09, 1e10 / 0x1p10, 1e11 / 0x1p11,
+	1e12 / 0x1p12, 1e13 / 0x1p13, 1e14 / 0x1p14, 1e15 / 0x1p15,
+	1e16 / 0x1p16, 1e17 / 0x1p17, 1e18 / 0x1p18, 1e19 / 0x1p19,
+	1e20 / 0x1p20, 1e21 / 0x1p21, 1e22 / 0x1p22,
+}
 
-		1e16 / 0x1p16, 1e17 / 0x1p17, 1e18 / 0x1p18, 1e19 / 0x1p19,
-		1e20 / 0x1p20, 1e21 / 0x1p21, 1e22 / 0x1p22, 1e07 / 0x1p07,
-		1e24 / 0x1p24, 1e25 / 0x1p25, 1e26 / 0x1p26, 1e27 / 0x1p27,
-		1e28 / 0x1p28, 1e29 / 0x1p29, 1e30 / 0x1p30, 1e31 / 0x1p31,
-	}
+// maxPow5 is the largest n for which 5^n is in pow5s.
+const maxPow5 = len(pow5s) - 1
 
-	pow5s32 = [...]float64{
-		1e+00 / 0x1p+00, 1e+32 / 0x1p+32, 1e+64 / 0x1p+64, 1e+96 / 0x1p+96,
-		1e+128 / 0x1p+128, 1e+160 / 0x1p+160, 1e+192 / 0x1p+192, 1e+224 / 0x1p+224,
-		1e+256 / 0x1p+256, 1e+288 / 0x1p+288,
-	}
-
-	pow5s32neg = [...]float64{
-		1e-00 / 0x1p-00, 1e-32 / 0x1p-32, 1e-64 / 0x1p-64, 1e-96 / 0x1p-96,
-		1e-128 / 0x1p-128, 1e-160 / 0x1p-160, 1e-192 / 0x1p-192, 1e-224 / 0x1p-224,
-		1e-256 / 0x1p-256, 1e-288 / 0x1p-288, 1e-320 / 0x1p-320,
-	}
-)
-
-// pow5 multiplies f by 5^n.
-//
-// We need to perform the multiplication with f within this function because
-// float arithmetic is non-associative. For multiplying by very large or very
-// small powers, we can easily lose precision, but by performing the
-// multiplication in two parts, we avoid this risk.
+// pow5 multiplies f by 5^n, for -maxPow5 <= n <= maxPow5.
 func pow5(f float64, n int) float64 {
-	switch {
-	case 0 <= n && n <= 309:
-		return f * pow5s32[uint(n)/32] * pow5s[uint(n)%32]
-	case -324 <= n && n <= 0:
-		return f * pow5s32neg[uint(-n)/32] / pow5s[uint(-n)%32]
-	case n > 0:
-		return math.Inf(1)
-	default:
-		return 0
+	if n < 0 {
+		return f / pow5s[-n]
 	}
+	return f * pow5s[n]
 }

@@ -1,0 +1,162 @@
+file:
+- name: "testdata/fields/default_float.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "f1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "0.0015"
+      json_name: "f1"
+    - name: "f2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "0.1"
+      json_name: "f2"
+    - name: "f3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "3.40282347e+38"
+      json_name: "f3"
+    - name: "f4"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "1.40129846e-45"
+      json_name: "f4"
+    - name: "f5"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "16777216"
+      json_name: "f5"
+    - name: "f6"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "9e+09"
+      json_name: "f6"
+    - name: "f7"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "1234567"
+      json_name: "f7"
+    - name: "f8"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "0.0001"
+      json_name: "f8"
+    - name: "f9"
+      number: 9
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "1e-05"
+      json_name: "f9"
+    - name: "f10"
+      number: 10
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "100000"
+      json_name: "f10"
+    - name: "f11"
+      number: 11
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "1e+06"
+      json_name: "f11"
+    - name: "f12"
+      number: 12
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "-0"
+      json_name: "f12"
+    - name: "f13"
+      number: 13
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "123456792"
+      json_name: "f13"
+    - name: "f14"
+      number: 14
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "3.00000065e-39"
+      json_name: "f14"
+    - name: "d1"
+      number: 21
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1234567"
+      json_name: "d1"
+    - name: "d2"
+      number: 22
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "0.1"
+      json_name: "d2"
+    - name: "d3"
+      number: 23
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1e+15"
+      json_name: "d3"
+    - name: "d4"
+      number: 24
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1e+16"
+      json_name: "d4"
+    - name: "d5"
+      number: 25
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "7e+22"
+      json_name: "d5"
+    - name: "d6"
+      number: 26
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1.7976931348623157e+308"
+      json_name: "d6"
+    - name: "d7"
+      number: 27
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "4.94065645841247e-324"
+      json_name: "d7"
+    - name: "d8"
+      number: 28
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1.2345678901234568e+17"
+      json_name: "d8"
+    - name: "d9"
+      number: 29
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1e-05"
+      json_name: "d9"
+    - name: "d10"
+      number: 30
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "-0"
+      json_name: "d10"
+    - name: "d11"
+      number: 31
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1e+100"
+      json_name: "d11"
+    - name: "d12"
+      number: 32
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "0.66666666666666663"
+      json_name: "d12"
