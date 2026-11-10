@@ -1,8 +1,8 @@
 warning: unused import "other.proto"
-  --> main.proto:4:8
+  --> main.proto:4:1
    |
  4 | import "other.proto";
-   |        ^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^
   help: delete it
    |
  4 | - import "other.proto";
@@ -26,10 +26,10 @@ error: `c.C` is only imported for use in options
    |
 
 warning: unused import "b.proto"
-  --> other.proto:4:15
+  --> other.proto:4:1
    |
  4 | import option "b.proto";
-   |               ^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
   help: delete it
    |
  4 | - import option "b.proto";
