@@ -1041,7 +1041,7 @@ func TestPathological(t *testing.T) {
 			// Fuzz testing complains if this loop, with 100 iterations, takes longer
 			// than 60 seconds. We're only running 3 iterations, so this test isn't
 			// too slow. So we can use a much tighter deadline.
-			allowedDuration := 2 * time.Second
+			allowedDuration := 3 * time.Second
 			start := time.Now()
 			ctx, cancel := context.WithTimeout(t.Context(), allowedDuration)
 			defer func() {

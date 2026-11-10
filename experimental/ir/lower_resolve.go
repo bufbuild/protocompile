@@ -372,7 +372,10 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 		)
 	case !sym.Visible(r.File, r.allowOption):
 		if !r.allowOption && sym.Visible(r.File, true) {
-			decl := sym.Import(r.File).Decl
+			// The symbol may come from a file the option import re-exports, so
+			// point at the direct import instead.
+			imports := &r.File.imports
+			decl := imports.files[imports.causes[sym.Context().InternedPath()]].decl
 			var option token.Token
 			for m := range seq.Values(decl.ModifierTokens()) {
 				if m.Keyword() == keyword.Option {

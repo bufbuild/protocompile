@@ -23,18 +23,22 @@ tables:
       kind: KIND_MESSAGE
       file: "option.proto"
       index: 1
+      option_only: true
     - fqn: "buf.test.Foo.x"
       kind: KIND_FIELD
       file: "option.proto"
       index: 1
+      option_only: true
     - fqn: "buf.test.e"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 2
+      option_only: true
     - fqn: "buf.test.any_opt"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 3
+      option_only: true
   "main2.proto":
     imports:
     - { path: "google/protobuf/any.proto", transitive: true }
@@ -60,18 +64,22 @@ tables:
       kind: KIND_MESSAGE
       file: "option.proto"
       index: 1
+      visible: true
     - fqn: "buf.test.Foo.x"
       kind: KIND_FIELD
       file: "option.proto"
       index: 1
+      visible: true
     - fqn: "buf.test.e"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 2
+      visible: true
     - fqn: "buf.test.any_opt"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 3
+      visible: true
   "main3.proto":
     imports:
     - { path: "google/protobuf/any.proto", transitive: true }
@@ -94,15 +102,19 @@ tables:
       kind: KIND_MESSAGE
       file: "option.proto"
       index: 1
+      option_only: true
     - fqn: "buf.test.Foo.x"
       kind: KIND_FIELD
       file: "option.proto"
       index: 1
+      option_only: true
     - fqn: "buf.test.e"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 2
+      option_only: true
     - fqn: "buf.test.any_opt"
       kind: KIND_EXTENSION
       file: "option.proto"
       index: 3
+      option_only: true
