@@ -284,7 +284,9 @@ func populateOptionTargets(file *File, _ *report.Report) {
 		for target := range seq.Values(m.Options().Field(targets).Elements()) {
 			n, _ := target.AsInt()
 			target := OptionTarget(n)
-			if target == OptionTargetInvalid || target >= optionTargetMax {
+			// An explicit TARGET_TYPE_UNKNOWN still makes the list non-empty,
+			// so it forbids every target rather than allowing all of them.
+			if target >= optionTargetMax {
 				continue
 			}
 
@@ -322,10 +324,27 @@ func validateOptionTargets(f *File, r *report.Report) {
 		for oneof := range seq.Values(ty.Oneofs()) {
 			validateOptionTargetsInValue(oneof.Options(), oneof.AST().Name().Span(), OptionTargetOneof, r)
 		}
+		// Ranges in one declaration share their options.
+		seen := map[ast.DeclRange]struct{}{}
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			decl := extns.DeclAST()
+			if _, ok := seen[decl]; ok {
+				continue
+			}
+			seen[decl] = struct{}{}
+			validateOptionTargetsInValue(extns.Options(), decl.Span(), OptionTargetRange, r)
+		}
 	}
 
 	for extn := range seq.Values(f.AllExtensions()) {
 		validateOptionTargetsInValue(extn.Options(), extn.AST().Name().Span(), OptionTargetField, r)
+	}
+
+	for service := range seq.Values(f.Services()) {
+		validateOptionTargetsInValue(service.Options(), service.AST().Name().Span(), OptionTargetService, r)
+		for method := range seq.Values(service.Methods()) {
+			validateOptionTargetsInValue(method.Options(), method.AST().Name().Span(), OptionTargetMethod, r)
+		}
 	}
 }
 
@@ -385,12 +404,15 @@ func validateOptionTargetsInValue(m MessageValue, decl source.Span, target Optio
 				report.Snippetf(decl, "applied to this"),
 				report.Snippetf(constraints.ValueAST(), "targets constrained here"),
 			)
-			if targets == 1 {
+			switch {
+			case targets == 0:
+				d.Apply(report.Helpf("`%s` cannot be set on any target", field.FullName()))
+			case targets == 1:
 				d.Apply(report.Helpf(
 					"`%s` is constrained to %ss",
 					field.FullName(),
 					nouns.Join("or")))
-			} else {
+			default:
 				d.Apply(report.Helpf(
 					"`%s` is constrained to one of %s",
 					field.FullName(),
