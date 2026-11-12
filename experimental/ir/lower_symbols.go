@@ -358,7 +358,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 
 		if noun != next {
 			d.Apply(report.Snippetf(span,
-				"...and then here as a %s %s", article(next), next))
+				"...and then here as %s %s", article(next), next))
 			noun = next
 		} else {
 			d.Apply(report.Snippetf(span, "...and here"))

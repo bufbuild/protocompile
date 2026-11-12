@@ -1,0 +1,54 @@
+exclude: ["unused import"]
+files:
+- path: "heavy.proto"
+  text: |
+    syntax = "proto2";
+    package test;
+
+    message Heavy { extensions 1 to 100; }
+
+- path: "lite_base.proto"
+  text: |
+    syntax = "proto2";
+    package test;
+
+    option optimize_for = LITE_RUNTIME;
+
+    message Lite { extensions 1 to 100; }
+
+- path: "lite_ok.proto"
+  text: |
+    syntax = "proto2";
+    package ok;
+
+    option optimize_for = LITE_RUNTIME;
+
+    import "lite_base.proto";
+
+    extend test.Lite { optional string s = 1; }
+    message N { extend test.Lite { optional string t = 2; } }
+
+- path: "lite_bad.proto"
+  text: |
+    syntax = "proto2";
+    package bad;
+
+    option optimize_for = LITE_RUNTIME;
+
+    import "heavy.proto";
+    import "google/protobuf/descriptor.proto";
+
+    extend test.Heavy { optional string s = 1; }
+    message N { extend test.Heavy { optional string t = 2; } }
+    extend google.protobuf.MessageOptions { optional string o = 50000; }
+
+- path: "code_size.proto"
+  text: |
+    syntax = "proto2";
+    package size;
+
+    option optimize_for = CODE_SIZE;
+
+    import "heavy.proto";
+
+    extend test.Heavy { optional string s = 10; }

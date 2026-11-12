@@ -482,6 +482,8 @@ func validateExtend(extend Extend, r *report.Report) {
 		)
 	}
 
+	validateExtendLite(extend, r)
+
 	if extend.Context().Syntax() != syntax.Proto3 {
 		return
 	}
@@ -566,6 +568,34 @@ func validateMessageSet(ty Type, r *report.Report) {
 			report.Snippet(ty.AST().Stem()),
 			report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
 		)
+	}
+}
+
+// validateExtendLite checks that a `LITE_RUNTIME` file only extends messages
+// from other `LITE_RUNTIME` files.
+func validateExtendLite(extend Extend, r *report.Report) {
+	extendee := extend.Extendee()
+	if extendee.IsZero() {
+		return
+	}
+
+	optimize := extend.Context().Options().Field(extend.Context().builtins().OptimizeFor)
+	if v, _ := optimize.AsInt(); v != tags.FileOptions_OptimizeMode_LiteRuntime {
+		return
+	}
+	extendeeOptimize := extendee.Context().Options().Field(extendee.Context().builtins().OptimizeFor)
+	if v, _ := extendeeOptimize.AsInt(); v == tags.FileOptions_OptimizeMode_LiteRuntime {
+		return
+	}
+
+	d := r.Errorf("extension of non-`LITE_RUNTIME` type in `LITE_RUNTIME` file").Apply(
+		report.Snippet(extend.AST().Name()),
+		report.Snippetf(optimize.ValueAST(), "optimization level set here"),
+		report.Helpf("a `LITE_RUNTIME` file can only extend types from other `LITE_RUNTIME` files; "+
+			"the reverse is allowed"),
+	)
+	if v := extendeeOptimize.ValueAST(); !v.IsZero() {
+		d.Apply(report.Snippetf(v, "`%s` is not `LITE_RUNTIME`", path.Base(extendee.Context().Path())))
 	}
 }
 

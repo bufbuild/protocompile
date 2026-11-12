@@ -1,0 +1,53 @@
+exclude: ["unused import"]
+files:
+- path: "bar.proto"
+  text: |
+    syntax = "proto3";
+    package foo.bar.baz;
+
+    message Empty {}
+
+- path: "foo.proto"
+  text: |
+    syntax = "proto3";
+    package foo.bar;
+
+    enum baz { ZED = 0; }
+
+# The conflict is reported regardless of which file comes first, and also for
+# intermediate components of a package.
+- path: "a_symbol.proto"
+  text: |
+    syntax = "proto3";
+    package x.y;
+
+    message z {}
+
+- path: "z_package.proto"
+  text: |
+    syntax = "proto3";
+    package x.y.z.w;
+
+    message Ok {}
+
+# Reusing a package name across files is fine.
+- path: "same_package1.proto"
+  text: |
+    syntax = "proto3";
+    package s.t;
+
+- path: "same_package2.proto"
+  text: |
+    syntax = "proto3";
+    package s.t;
+
+# A package and one of its sub-packages are fine too.
+- path: "parent_package.proto"
+  text: |
+    syntax = "proto3";
+    package pp;
+
+- path: "child_package.proto"
+  text: |
+    syntax = "proto3";
+    package pp.child;
