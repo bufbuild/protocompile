@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // legalizeMethodParams legalizes part of the signature of a method.
@@ -82,7 +83,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 }
 
 // legalizeFieldType legalizes the type of a message field.
-func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool, mod ast.TypePrefixed, oneof ast.DeclDef) {
+func legalizeFieldType(p *parser, what taxa.Noun, field ast.DeclDef, ty ast.TypeAny, topLevel bool, mod ast.TypePrefixed, oneof ast.DeclDef) {
 	expected := taxa.TypePath.AsSet()
 	if oneof.IsZero() {
 		switch p.syntax {
@@ -109,6 +110,17 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					Replace: "optional ",
 				}),
 				report.Notef("modifiers are required in %s", syntax.Proto2),
+			)
+		}
+
+		// Without a body, `group` is parsed as a field type, but a leading
+		// `group` is always the group keyword.
+		if first, ok := iterx.First(ty.AsPath().Components()); what == taxa.Field &&
+			ok && first.Separator().IsZero() && first.Name().Keyword() == keyword.Group {
+			field.MarkCorrupt()
+			p.Errorf("`group` cannot be used as a type name").Apply(
+				report.Snippet(first.Name()),
+				report.Helpf("use a fully-qualified type name, such as `.group`, to refer to a type named `group`"),
 			)
 		}
 
@@ -217,7 +229,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		inner := ty.Type()
 		switch inner.Kind() {
 		case ast.TypeKindPath, ast.TypeKindPrefixed:
-			legalizeFieldType(p, what, inner, false, mod, oneof)
+			legalizeFieldType(p, what, field, inner, false, mod, oneof)
 		default:
 			p.Error(errtoken.Unexpected{
 				What:  inner,
@@ -250,7 +262,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 
 			switch k.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, what, k, false, ast.TypePrefixed{}, oneof)
+				legalizeFieldType(p, what, field, k, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errtoken.Unexpected{
 					What:  k.AsPrefixed().PrefixToken(),
@@ -266,7 +278,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 
 			switch v.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, what, v, false, ast.TypePrefixed{}, oneof)
+				legalizeFieldType(p, what, field, v, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errtoken.Unexpected{
 					What:  v.AsPrefixed().PrefixToken(),

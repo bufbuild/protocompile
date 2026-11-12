@@ -1,0 +1,46 @@
+warning: missing `package` declaration
+ --> testdata/parser/field/group_type_name_proto3.proto
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name_proto3.proto:10:3
+   |
+10 |   group a = 1;
+   |   ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name_proto3.proto:11:12
+   |
+11 |   optional group b = 2;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name_proto3.proto:12:12
+   |
+12 |   repeated group.Bar c = 3;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name_proto3.proto:18:3
+   |
+18 |   group x = 10101;
+   |   ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name_proto3.proto:19:3
+   |
+19 |   group.Bar y = 10102;
+   |   ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+encountered 5 errors and 1 warning

@@ -1,0 +1,98 @@
+warning: missing `package` declaration
+ --> testdata/parser/field/group_type_name.proto
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:11:12
+   |
+11 |   optional group a = 1;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:12:12
+   |
+12 |   repeated group.Bar b = 2;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:13:12
+   |
+13 |   optional group c = 3 [deprecated = true];
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:14:15
+   |
+14 |   map<string, group> d = 4;
+   |               ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:16:5
+   |
+16 |     group e = 5;
+   |     ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:17:5
+   |
+17 |     group.Bar f = 6;
+   |     ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+warning: group syntax is deprecated
+  --> testdata/parser/field/group_type_name.proto:28:12
+   |
+28 |   optional group G = 1 {
+   |            ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: message field type cannot start with `message`
+  --> testdata/parser/field/group_type_name.proto:29:5
+   |
+29 |     message.X a = 2;
+   |     ^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `option`
+  --> testdata/parser/field/group_type_name.proto:30:5
+   |
+30 |     option.X b = 3;
+   |     ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `option`
+  --> testdata/parser/field/group_type_name.proto:32:7
+   |
+32 |       option.X c = 4;
+   |       ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:39:12
+   |
+39 |   optional group x = 101;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/group_type_name.proto:40:12
+   |
+40 |   optional group.Bar y = 102;
+   |            ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+encountered 11 errors and 2 warnings

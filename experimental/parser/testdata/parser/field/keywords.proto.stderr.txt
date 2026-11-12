@@ -1,0 +1,178 @@
+error: message field type cannot start with `message`
+  --> testdata/parser/field/keywords.proto:12:5
+   |
+12 |     message message = 6;
+   |     ^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `enum`
+  --> testdata/parser/field/keywords.proto:13:5
+   |
+13 |     enum enum = 7;
+   |     ^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `extend`
+  --> testdata/parser/field/keywords.proto:15:5
+   |
+15 |     extend extend = 9;
+   |     ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/keywords.proto:16:5
+   |
+16 |     group group = 10;
+   |     ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: message field type cannot start with `oneof`
+  --> testdata/parser/field/keywords.proto:17:5
+   |
+17 |     oneof oneof = 11;
+   |     ^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `extensions`
+  --> testdata/parser/field/keywords.proto:19:5
+   |
+19 |     extensions extensions = 13;
+   |     ^^^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `reserved`
+  --> testdata/parser/field/keywords.proto:20:5
+   |
+20 |     reserved reserved = 14;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `option`
+  --> testdata/parser/field/keywords.proto:29:5
+   |
+29 |     option.X option = 5;
+   |     ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `message`
+  --> testdata/parser/field/keywords.proto:30:5
+   |
+30 |     message.X message = 6;
+   |     ^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `enum`
+  --> testdata/parser/field/keywords.proto:31:5
+   |
+31 |     enum.X enum = 7;
+   |     ^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `extend`
+  --> testdata/parser/field/keywords.proto:33:5
+   |
+33 |     extend.X extend = 9;
+   |     ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: `group` cannot be used as a type name
+  --> testdata/parser/field/keywords.proto:34:5
+   |
+34 |     group.X group = 10;
+   |     ^^^^^
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
+           named `group`
+
+error: message field type cannot start with `oneof`
+  --> testdata/parser/field/keywords.proto:35:5
+   |
+35 |     oneof.X oneof = 11;
+   |     ^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `extensions`
+  --> testdata/parser/field/keywords.proto:37:5
+   |
+37 |     extensions.X extensions = 13;
+   |     ^^^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `reserved`
+  --> testdata/parser/field/keywords.proto:38:5
+   |
+38 |     reserved.X reserved = 14;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `optional`
+  --> testdata/parser/field/keywords.proto:44:5
+   |
+44 |     optional optional = 1;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `repeated`
+  --> testdata/parser/field/keywords.proto:45:5
+   |
+45 |     repeated repeated = 2;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `required`
+  --> testdata/parser/field/keywords.proto:46:5
+   |
+46 |     required required = 3;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `optional`
+  --> testdata/parser/field/keywords.proto:50:5
+   |
+50 |     optional optional = 1;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `repeated`
+  --> testdata/parser/field/keywords.proto:51:5
+   |
+51 |     repeated repeated = 2;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `required`
+  --> testdata/parser/field/keywords.proto:52:5
+   |
+52 |     required required = 3;
+   |     ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `optional`
+  --> testdata/parser/field/keywords.proto:57:9
+   |
+57 |         optional optional = 1;
+   |         ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `repeated`
+  --> testdata/parser/field/keywords.proto:58:9
+   |
+58 |         repeated repeated = 2;
+   |         ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `required`
+  --> testdata/parser/field/keywords.proto:59:9
+   |
+59 |         required required = 3;
+   |         ^^^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+error: message field type cannot start with `option`
+  --> testdata/parser/field/keywords.proto:89:9
+   |
+89 |         option.X a = 1;
+   |         ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+encountered 25 errors

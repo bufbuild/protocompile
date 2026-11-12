@@ -1,0 +1,66 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto3" }
+- import.import_path.literal.string_value: "google/protobuf/descriptor.proto"
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "group" }]
+    body.decls:
+    - def: { kind: KIND_MESSAGE, name.components: [{ ident: "Bar" }], body: {} }
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        name.components: [{ ident: "a" }]
+        type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 1
+    - def:
+        name.components: [{ ident: "b" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 2
+    - def:
+        name.components: [{ ident: "c" }]
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components:
+          - ident: "group"
+          - { ident: "Bar", separator: SEPARATOR_DOT }
+        value.literal.int_value: 3
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "d" }]
+        type.path.components: [{ ident: "group", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 4
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "e" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components:
+          - { ident: "group", separator: SEPARATOR_DOT }
+          - { ident: "Bar", separator: SEPARATOR_DOT }
+        value.literal.int_value: 5
+- def:
+    kind: KIND_EXTEND
+    name.components:
+    - ident: "google"
+    - { ident: "protobuf", separator: SEPARATOR_DOT }
+    - { ident: "MessageOptions", separator: SEPARATOR_DOT }
+    body.decls:
+    - def:
+        name.components: [{ ident: "x" }]
+        type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 10101
+    - def:
+        name.components: [{ ident: "y" }]
+        type.path.components:
+        - ident: "group"
+        - { ident: "Bar", separator: SEPARATOR_DOT }
+        value.literal.int_value: 10102
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "z" }]
+        type.path.components: [{ ident: "group", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 10103
