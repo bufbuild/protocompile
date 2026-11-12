@@ -118,4 +118,14 @@ error: expected 64-bit integer type, found message type `buf.test.M`
            integer types, which lose precision when JavaScript converts them
            into 64-bit IEEE 754 floats
 
-encountered 12 errors
+error: expected 64-bit integer type, found scalar type `string`
+  --> testdata/options/validate/jstype.proto:34:5
+   |
+34 |     string n8 = 25 [jstype = JS_STRING];
+   |     ^^^^^^          ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+encountered 13 errors
