@@ -154,24 +154,6 @@ error: `max` outside of range end
    |              ^^^
    = note: the special `max` expression can only be used at the end of a range
 
-error: use of reserved enum value name
-  --> testdata/tags/reserved.proto:31:5
-   |
-31 |     reserved = 100;
-   |     ^^^^^^^^
-32 |     reserved "reserved", "unused";
-   |              ---------- `reserved` reserved here
-
-error: use of reserved enum value `100`
-  --> testdata/tags/reserved.proto:31:16
-   |
-28 |     reserved 7, 8 to max;
-   |                 -------- enum value reserved here
-29 |     reserved max to max;
-30 |
-31 |     reserved = 100;
-   |                ^^^ used here
-
 error: use of reserved enum value `0`
   --> testdata/tags/reserved.proto:36:9
    |
@@ -180,4 +162,4 @@ error: use of reserved enum value `0`
 37 |     reserved 0;
    |              - enum value reserved here
 
-encountered 18 errors and 2 warnings
+encountered 16 errors and 2 warnings

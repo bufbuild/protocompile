@@ -269,19 +269,21 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		if parent.what == taxa.Oneof {
 			oneof, _ = parent.Spanner.(ast.DeclDef)
 		}
-		legalizeFieldType(p, what, def.Type(), true, ast.TypePrefixed{}, oneof)
+		legalizeFieldType(p, what, def, def.Type(), true, ast.TypePrefixed{}, oneof)
 	}
 }
 
 // legalizeLeadingKeyword diagnoses a field or enum value that begins with a
 // keyword that always starts some other declaration, or is a field label.
-// Returns whether it reported an error.
+// Such a def is marked corrupt so later passes skip it. Returns whether it
+// reported an error.
 func legalizeLeadingKeyword(p *parser, what taxa.Noun, def ast.DeclDef, parent classified) bool {
 	if what == taxa.EnumValue {
 		name := def.Name().AsIdent()
 		if parent.what != taxa.Enum || !slicesx.Among(name.Keyword(), keyword.Option, keyword.Reserved) {
 			return false
 		}
+		def.MarkCorrupt()
 		p.Errorf("%v cannot be named `%s`", what, name.Text()).Apply(
 			report.Snippet(name),
 		)
@@ -299,15 +301,21 @@ func legalizeLeadingKeyword(p *parser, what taxa.Noun, def ast.DeclDef, parent c
 	kw := first.AsIdent()
 	switch kw.Keyword() {
 	case keyword.Optional, keyword.Repeated, keyword.Required:
+	case keyword.Option:
+		// A leading `option` also starts an option inside a oneof.
+		if !slicesx.Among(parent.what, taxa.Message, taxa.Group, taxa.Oneof) {
+			return false
+		}
 	case keyword.Message, keyword.Enum, keyword.Extend, keyword.Oneof,
-		keyword.Option, keyword.Reserved, keyword.Extensions:
-		if parent.what != taxa.Message && parent.what != taxa.Group {
+		keyword.Reserved, keyword.Extensions:
+		if !slicesx.Among(parent.what, taxa.Message, taxa.Group) {
 			return false
 		}
 	default:
 		return false
 	}
 
+	def.MarkCorrupt()
 	p.Errorf("%v type cannot start with `%s`", what, kw.Text()).Apply(
 		report.Snippet(kw),
 		report.Helpf("use a fully-qualified type name, starting with `.`"),
