@@ -201,7 +201,7 @@ error: mismatched types
    |           ^^^^^ expected `float`, found `string`
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-55 |     repeated float f32 = 1;
+62 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -214,7 +214,7 @@ error: mismatched types
    |                  ^^^^ expected `float`, found `bool`
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-55 |     repeated float f32 = 1;
+62 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -227,7 +227,7 @@ error: mismatched types
    |                        ^^ expected `float`, found message expression
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-55 |     repeated float f32 = 1;
+62 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -239,8 +239,8 @@ error: mismatched types
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |           ^^^^^ expected `double`, found `string`
 ...
-55 |     repeated float f32 = 1;
-56 |     repeated double f64 = 2;
+62 |     repeated float f32 = 1;
+63 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
@@ -252,8 +252,8 @@ error: mismatched types
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                  ^^^^ expected `double`, found `bool`
 ...
-55 |     repeated float f32 = 1;
-56 |     repeated double f64 = 2;
+62 |     repeated float f32 = 1;
+63 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
@@ -265,8 +265,8 @@ error: mismatched types
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                        ^^ expected `double`, found message expression
 ...
-55 |     repeated float f32 = 1;
-56 |     repeated double f64 = 2;
+62 |     repeated float f32 = 1;
+63 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`

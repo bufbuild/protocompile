@@ -46,4 +46,30 @@ error: invalid escape sequence
 11 | "\u000" "\U0000000"
    |          ^^^^^^^^^ `\U` must be followed by exactly 8 hex digits
 
-encountered 8 errors
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:12:2
+   |
+12 | "\ud800" "\uDFFF" "\ud83d\ude00" "\U0000d800"
+   |  ^^^^^^ unpaired UTF-16 surrogate
+   |
+   = help: a `\u` escape in the range U+D800 to U+DBFF must be followed by one
+           in the range U+DC00 to U+DFFF
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:12:11
+   |
+12 | "\ud800" "\uDFFF" "\ud83d\ude00" "\U0000d800"
+   |           ^^^^^^ unpaired UTF-16 surrogate
+   |
+   = help: a `\u` escape in the range U+D800 to U+DBFF must be followed by one
+           in the range U+DC00 to U+DFFF
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:12:35
+   |
+12 | "\ud800" "\uDFFF" "\ud83d\ude00" "\U0000d800"
+   |                                   ^^^^^^^^^^
+   |                                    |
+   |                                    must be in the range U+0000 to U+10FFFF, except U+D800 to U+DFFF
+
+encountered 11 errors
