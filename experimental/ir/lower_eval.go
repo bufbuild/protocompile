@@ -736,6 +736,12 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 	switch expr.Kind() {
 	case token.Number:
 		lit := expr.AsNumber()
+		// Outside of message literals, enum values must be named.
+		if args.Type().IsEnum() && !args.textFormat && !lit.IsFloat() {
+			e.Error(args.mismatch(taxa.Int))
+			return 0, false
+		}
+
 		// Handle floats first, since all number formats can be used as floats.
 		if scalar.IsFloat() {
 			n, _ := lit.Float()

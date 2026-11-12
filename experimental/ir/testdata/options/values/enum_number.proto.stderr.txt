@@ -1,0 +1,107 @@
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:38:16
+   |
+19 |     optional Foo foo = 10101;
+   |     ------------ expected due to this
+20 |     optional M m1 = 10102;
+...
+37 | // Numbers are rejected for enum-valued options outside of message literals.
+38 | option (foo) = 1;
+   |                ^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:39:17
+   |
+14 |     optional Foo e = 1;
+   |     ------------ expected due to this
+15 |     repeated Foo r = 2;
+...
+38 | option (foo) = 1;
+39 | option (m1).e = 1;
+   |                 ^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:40:17
+   |
+15 |     repeated Foo r = 2;
+   |     ------------ expected due to this
+...
+39 | option (m1).e = 1;
+40 | option (m2).r = 1;
+   |                 ^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:41:17
+   |
+15 |     repeated Foo r = 2;
+   |     ------------ expected due to this
+...
+40 | option (m2).r = 1;
+41 | option (m3).r = -1;
+   |                 ^^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:52:22
+   |
+29 |     optional Foo mfoo1 = 10201;
+   |     ------------ expected due to this
+30 |     optional Foo mfoo2 = 10202;
+...
+52 |     option (mfoo1) = -1;
+   |                      ^^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:53:22
+   |
+30 |     optional Foo mfoo2 = 10202;
+   |     ------------ expected due to this
+...
+52 |     option (mfoo1) = -1;
+53 |     option (mfoo2) = 0x1;
+   |                      ^^^ expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:55:36
+   |
+55 |     optional Foo f1 = 1 [default = 1];
+   |     ------------                   ^
+   |      |                             |
+   |      expected due to this          expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+error: mismatched types
+  --> testdata/options/values/enum_number.proto:57:35
+   |
+34 |     optional Foo ffoo = 10301;
+   |     ------------ expected due to this
+...
+56 |     optional Foo f2 = 2 [default = ONE];
+57 |     optional Foo f3 = 3 [(ffoo) = 1];
+   |                                   ^
+   |                                   |
+   |                                   expected `buf.test.Foo`, found integer literal
+   |
+   = note: expected: enum type `buf.test.Foo`
+              found: integer literal
+
+encountered 8 errors
