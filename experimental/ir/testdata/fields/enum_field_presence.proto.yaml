@@ -10,6 +10,8 @@
 # - proto3: every singular field is rejected for a closed enum, even the
 #   explicit-presence `optional` ones.
 # - editions: only implicit-presence fields are rejected; explicit is fine.
+#   Extensions always have explicit presence, even when the file sets
+#   `IMPLICIT`.
 #
 exclude:
 - "unused import"
@@ -104,4 +106,21 @@ files:
       ClosedEnum implicit_closed = 6 [features.field_presence = IMPLICIT]; // reject: closed
       OpenEnum   explicit_open   = 7 [features.field_presence = EXPLICIT]; // accept: open
       OpenEnum   implicit_open   = 8 [features.field_presence = IMPLICIT]; // accept: open
+    }
+
+# editions extensions: a file-level `IMPLICIT` doesn't apply to extensions.
+- path: "editions_extensions.proto"
+  text: |
+    edition = "2023";
+    package example;
+    import "editions_enums.proto";
+    option features.field_presence = IMPLICIT;
+    message Extendee {
+      extensions 1 to 100;
+      ClosedEnum inherited_closed = 101; // reject: inherits implicit presence
+    }
+    extend Extendee {
+      string     s       = 1 [default = "abc"]; // accept
+      ClosedEnum closed  = 2;                   // accept: extensions are explicit
+      repeated ClosedEnum closeds = 3;          // accept
     }
