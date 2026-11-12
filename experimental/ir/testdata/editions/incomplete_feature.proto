@@ -6,7 +6,7 @@ package buf.test;
 
 import "google/protobuf/descriptor.proto";
 
-option features.(f) = {}; // Mention f so the symtab.yaml will show it.
+option features = {[buf.test.f]: {}}; // Mention f so the symtab.yaml will show it.
 
 message Features {
     bool a = 1 [feature_support = {}];

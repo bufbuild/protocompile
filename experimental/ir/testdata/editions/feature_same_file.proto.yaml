@@ -1,0 +1,45 @@
+files:
+- path: "main.proto"
+  text: |
+    edition = "2023";
+    package test;
+
+    import "google/protobuf/descriptor.proto";
+    import "other.proto";
+
+    message Custom {
+      bool a = 1 [feature_support.edition_introduced = EDITION_2023,
+        edition_defaults = { edition: EDITION_LEGACY, value: "false" }];
+    }
+
+    extend google.protobuf.FeatureSet {
+      Custom custom = 9970;
+    }
+
+    option features.(custom).a = true;
+    option features.(other.imported).b = true;
+
+    message M {
+      option features.(custom).a = true;
+      option features.(other.imported).b = true;
+      int32 x = 1 [features.(custom).a = true];
+      int32 y = 2 [features = { [test.custom]: { a: true } }];
+      int32 z = 3 [features.(other.imported).b = true];
+      extensions 100 to 200 [features.(custom).a = true];
+    }
+- path: "other.proto"
+  import: true
+  text: |
+    edition = "2023";
+    package other;
+
+    import "google/protobuf/descriptor.proto";
+
+    message Imported {
+      bool b = 1 [feature_support.edition_introduced = EDITION_2023,
+        edition_defaults = { edition: EDITION_LEGACY, value: "false" }];
+    }
+
+    extend google.protobuf.FeatureSet {
+      Imported imported = 9971;
+    }
