@@ -8,7 +8,7 @@ error: `group` cannot be used as a type name
    |
 10 |   group a = 1;
    |   ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: `group` cannot be used as a type name
@@ -16,7 +16,7 @@ error: `group` cannot be used as a type name
    |
 11 |   optional group b = 2;
    |            ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: `group` cannot be used as a type name
@@ -24,7 +24,7 @@ error: `group` cannot be used as a type name
    |
 12 |   repeated group.Bar c = 3;
    |            ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: `group` cannot be used as a type name
@@ -32,7 +32,7 @@ error: `group` cannot be used as a type name
    |
 18 |   group x = 10101;
    |   ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: `group` cannot be used as a type name
@@ -40,7 +40,7 @@ error: `group` cannot be used as a type name
    |
 19 |   group.Bar y = 10102;
    |   ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 encountered 5 errors and 1 warning

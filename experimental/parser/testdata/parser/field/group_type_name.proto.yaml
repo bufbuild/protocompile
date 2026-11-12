@@ -14,14 +14,12 @@ decls:
         ranges:
         - range: { start.literal.int_value: 100, end.literal.int_value: 200 }
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "a" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL
           type.path.components: [{ ident: "group" }]
         value.literal.int_value: 1
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "b" }]
         type.prefixed:
           prefix: PREFIX_REPEATED
@@ -30,7 +28,6 @@ decls:
           - { ident: "Bar", separator: SEPARATOR_DOT }
         value.literal.int_value: 2
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "c" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL
@@ -40,7 +37,6 @@ decls:
         - path.components: [{ ident: "deprecated" }]
           value.path.components: [{ ident: "true" }]
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "d" }]
         type.generic:
           path.components: [{ ident: "map" }]
@@ -53,12 +49,10 @@ decls:
         name.components: [{ ident: "o" }]
         body.decls:
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "e" }]
             type.path.components: [{ ident: "group" }]
             value.literal.int_value: 5
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "f" }]
             type.path.components:
             - ident: "group"
@@ -88,18 +82,57 @@ decls:
           type.path.components: [{ ident: "Foo" }]
         value.literal.int_value: 9
 - def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Baz" }]
+    body.decls:
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "G" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 1
+        body.decls:
+        - def:
+            name.components: [{ ident: "a" }]
+            type.path.components:
+            - ident: "message"
+            - { ident: "X", separator: SEPARATOR_DOT }
+            value.literal.int_value: 2
+        - def:
+            name.components: [{ ident: "b" }]
+            type.path.components:
+            - ident: "option"
+            - { ident: "X", separator: SEPARATOR_DOT }
+            value.literal.int_value: 3
+        - def:
+            kind: KIND_ONEOF
+            name.components: [{ ident: "o" }]
+            body.decls:
+            - def:
+                name.components: [{ ident: "c" }]
+                type.path.components:
+                - ident: "option"
+                - { ident: "X", separator: SEPARATOR_DOT }
+                value.literal.int_value: 4
+            - def:
+                kind: KIND_FIELD
+                name.components: [{ ident: "d" }]
+                type.path.components:
+                - ident: "message"
+                - { ident: "X", separator: SEPARATOR_DOT }
+                value.literal.int_value: 5
+- def:
     kind: KIND_EXTEND
     name.components: [{ ident: "Foo" }]
     body.decls:
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "x" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL
           type.path.components: [{ ident: "group" }]
         value.literal.int_value: 101
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "y" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL

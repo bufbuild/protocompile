@@ -24,7 +24,7 @@ error: `group` cannot be used as a type name
    |
 16 |     group group = 10;
    |     ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: message field type cannot start with `oneof`
@@ -81,7 +81,7 @@ error: `group` cannot be used as a type name
    |
 34 |     group.X group = 10;
    |     ^^^^^
-   = help: use a fully qualified path, such as `.group`, to refer to a type
+   = help: use a fully-qualified type name, such as `.group`, to refer to a type
            named `group`
 
 error: message field type cannot start with `oneof`
@@ -168,4 +168,11 @@ error: message field type cannot start with `required`
    |         ^^^^^^^^
    = help: use a fully-qualified type name, starting with `.`
 
-encountered 24 errors
+error: message field type cannot start with `option`
+  --> testdata/parser/field/keywords.proto:89:9
+   |
+89 |         option.X a = 1;
+   |         ^^^^^^
+   = help: use a fully-qualified type name, starting with `.`
+
+encountered 25 errors

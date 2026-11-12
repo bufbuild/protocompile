@@ -11,19 +11,16 @@ decls:
     name.components: [{ ident: "Foo" }]
     body.decls:
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "a" }]
         type.path.components: [{ ident: "group" }]
         value.literal.int_value: 1
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "b" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL
           type.path.components: [{ ident: "group" }]
         value.literal.int_value: 2
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "c" }]
         type.prefixed:
           prefix: PREFIX_REPEATED
@@ -53,12 +50,10 @@ decls:
     - { ident: "MessageOptions", separator: SEPARATOR_DOT }
     body.decls:
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "x" }]
         type.path.components: [{ ident: "group" }]
         value.literal.int_value: 10101
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "y" }]
         type.path.components:
         - ident: "group"

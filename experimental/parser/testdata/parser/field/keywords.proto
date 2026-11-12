@@ -68,12 +68,25 @@ message M5 {
     .optional d = 4;
     test.message e = 5;
     optional.X f = 6;
+    .option.X o = 7;
+    .reserved r = 8;
+    .extensions x = 9;
 
+    // Inside a oneof, only labels and `option` are special.
     oneof x {
         message g = 10;
         enum h = 11;
         oneof i = 12;
         extend j = 13;
+        reserved.X r2 = 14;
+        extensions.X x2 = 15;
+    }
+}
+
+message M6 {
+    // `option` still starts an option inside a oneof.
+    oneof x {
+        option.X a = 1;
     }
 }
 
@@ -82,4 +95,7 @@ extend M {
     enum l = 21;
     oneof m = 22;
     extend n = 23;
+    option.X o = 24;
+    reserved.X r = 25;
+    extensions.X x = 26;
 }

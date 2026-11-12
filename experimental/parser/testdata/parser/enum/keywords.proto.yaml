@@ -21,10 +21,7 @@ decls:
         kind: KIND_ENUM_VALUE
         name.components: [{ ident: "package" }]
         value.literal.int_value: 4
-    - def:
-        kind: KIND_ENUM_VALUE
-        name.components: [{ ident: "option" }]
-        value.literal.int_value: 5
+    - def: { name.components: [{ ident: "option" }], value.literal.int_value: 5 }
     - def:
         kind: KIND_ENUM_VALUE
         name.components: [{ ident: "message" }]
@@ -58,7 +55,6 @@ decls:
         name.components: [{ ident: "extensions" }]
         value.literal.int_value: 13
     - def:
-        kind: KIND_ENUM_VALUE
         name.components: [{ ident: "reserved" }]
         value.literal.int_value: 14
     - def:

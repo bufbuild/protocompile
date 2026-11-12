@@ -23,6 +23,18 @@ message Foo {
   optional Foo group = 9;
 }
 
+message Baz {
+  // Group bodies are parsed like message bodies.
+  optional group G = 1 {
+    message.X a = 2;
+    option.X b = 3;
+    oneof o {
+      option.X c = 4;
+      message.X d = 5;
+    }
+  }
+}
+
 extend Foo {
   optional group x = 101;
   optional group.Bar y = 102;
