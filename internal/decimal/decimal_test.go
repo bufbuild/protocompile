@@ -932,6 +932,9 @@ func TestIsFloat(t *testing.T) {
 		{in: "1.5", want: true},
 		{in: "1e-100", want: false},
 		{in: "10000e-6", want: false},
+		{in: "8470329472543003390683225006796419620513916015625e-70", want: true}, // 2^-70
+		{in: "1e-2147483646", want: false},
+		{in: "1.5e-2147483600", want: false},
 	}
 
 	for _, tt := range tests {
