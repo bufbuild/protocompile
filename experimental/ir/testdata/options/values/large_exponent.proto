@@ -29,4 +29,10 @@ enum Bar {
 
 extend google.protobuf.FileOptions {
     optional Foo x = 1000;
+    repeated double y = 1001;
 }
+
+// Neither must large negative exponents be expanded into powers of five.
+option (y) = 1e-2147483646;
+option (y) = -1e-2147483646;
+option (y) = 1.5e-2147483600;

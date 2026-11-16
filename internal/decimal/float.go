@@ -53,6 +53,13 @@ func (z *Decimal) IsFloat() bool {
 	// 181875e-4. As a float, the equivalent form is 291p-4, obtained by
 	// dividing by 5^4 = 625.
 
+	// 5^-exp is larger than 4^-exp = 2^(-2*exp), so a mantissa with at most
+	// -2*exp bits cannot be divisible by it. Check this before computing
+	// 5^-exp, whose size grows with the exponent rather than with the mantissa.
+	if bigx.Log2(z.get())/2 < -exp {
+		return false
+	}
+
 	// Calculate the factor of 5 that must be in the mantissa.
 	pow5, ok := slicesx.Get(fives[:], -exp)
 	if !ok {
