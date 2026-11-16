@@ -65,4 +65,84 @@ error: import path must not refer to parent directory
  9 | import "../up.proto";
    |        ^^^^^^^^^^^^^ imported here
 
-encountered 7 errors
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:10:8
+   |
+10 | import "fake/../../up.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
+  help: canonicalize this path
+   |
+10 | - import "fake/../../up.proto";
+10 | + import "../up.proto";
+
+error: import path must not refer to parent directory
+  --> main.proto:10:8
+   |
+10 | import "fake/../../up.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+
+error: import path must not refer to parent directory
+  --> main.proto:11:8
+   |
+11 | import "..";
+   |        ^^^^ imported here
+
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:12:8
+   |
+12 | import "fake/../..";
+   |        ^^^^^^^^^^^^ imported here
+   |
+  help: canonicalize this path
+   |
+12 | - import "fake/../..";
+12 | + import "..";
+
+error: import path must not refer to parent directory
+  --> main.proto:12:8
+   |
+12 | import "fake/../..";
+   |        ^^^^^^^^^^^^ imported here
+
+error: import path must not refer to current directory
+  --> main.proto:13:8
+   |
+13 | import ".";
+   |        ^^^ imported here
+
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:14:8
+   |
+14 | import "./";
+   |        ^^^^ imported here
+   |
+  help: canonicalize this path
+   |
+14 | - import "./";
+14 | + import ".";
+
+error: import path must not refer to current directory
+  --> main.proto:14:8
+   |
+14 | import "./";
+   |        ^^^^ imported here
+
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:15:8
+   |
+15 | import "fake/..";
+   |        ^^^^^^^^^ imported here
+   |
+  help: canonicalize this path
+   |
+15 | - import "fake/..";
+15 | + import ".";
+
+error: import path must not refer to current directory
+  --> main.proto:15:8
+   |
+15 | import "fake/..";
+   |        ^^^^^^^^^ imported here
+
+encountered 17 errors

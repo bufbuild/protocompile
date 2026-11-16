@@ -217,12 +217,20 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 		)
 	}
 
-	if r != nil && isClean && strings.HasPrefix(path, "../") {
+	if r != nil && (path == ".." || strings.HasPrefix(path, "../")) {
 		r.Errorf("import path must not refer to parent directory").Apply(
 			report.Snippetf(decl.ImportPath(), "imported here"),
 		)
 
 		return "" // Refuse to escape to a parent directory.
+	}
+
+	if r != nil && path == "." {
+		r.Errorf("import path must not refer to current directory").Apply(
+			report.Snippetf(decl.ImportPath(), "imported here"),
+		)
+
+		return ""
 	}
 
 	if r != nil {
