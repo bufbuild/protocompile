@@ -31,8 +31,17 @@ type InvalidNumber struct {
 
 // Diagnose implements [report.Diagnose].
 func (e InvalidNumber) Diagnose(d *report.Diagnostic) {
-	// Check for an extra decimal point in the mantissa.
+	// Check for a prefix with no digits after it, such as 0x.
 	mant := e.Token.AsNumber().Mantissa()
+	if prefix := e.Token.AsNumber().Prefix(); !prefix.IsZero() && mant.Len() == 0 {
+		d.Apply(
+			report.Message("missing digits in %s %s", e.baseName(), taxa.Classify(e.Token)),
+			report.Snippetf(prefix, "expected %s after this", e.digits()),
+		)
+		return
+	}
+
+	// Check for an extra decimal point in the mantissa.
 	first := strings.Index(mant.Text(), ".")
 	if first != -1 {
 		second := strings.Index(mant.Text()[first+1:], ".")

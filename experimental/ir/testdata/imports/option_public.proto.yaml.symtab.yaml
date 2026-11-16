@@ -1,0 +1,107 @@
+tables:
+  "main.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", transitive: true, visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "other.proto", visible: true }
+    symbols:
+    - { fqn: "b", kind: KIND_PACKAGE, file: "b.proto" }
+    - fqn: "b.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      option_only: true
+    - { fqn: "c", kind: KIND_PACKAGE, file: "c.proto" }
+    - fqn: "c.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      option_only: true
+    - fqn: "c.copt"
+      kind: KIND_EXTENSION
+      file: "c.proto"
+      index: 1
+      option_only: true
+    - { fqn: "buf", kind: KIND_PACKAGE, file: "main.proto" }
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main.proto" }
+    - { fqn: "other", kind: KIND_PACKAGE, file: "other.proto" }
+    options.message.extns: { "c.copt": { i32: 1 } }
+  "main2.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", transitive: true, visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    - { path: "x.proto", visible: true }
+    symbols:
+    - { fqn: "b", kind: KIND_PACKAGE, file: "b.proto" }
+    - fqn: "b.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - { fqn: "c", kind: KIND_PACKAGE, file: "c.proto" }
+    - fqn: "c.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "c.copt"
+      kind: KIND_EXTENSION
+      file: "c.proto"
+      index: 1
+      visible: true
+    - { fqn: "buf", kind: KIND_PACKAGE, file: "main2.proto" }
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main2.proto" }
+    - fqn: "buf.test.M2"
+      kind: KIND_MESSAGE
+      file: "main2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M2.f"
+      kind: KIND_FIELD
+      file: "main2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M2.g"
+      kind: KIND_FIELD
+      file: "main2.proto"
+      index: 2
+      visible: true
+    - { fqn: "x", kind: KIND_PACKAGE, file: "x.proto" }
+  "main3.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", transitive: true, visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    symbols:
+    - { fqn: "b", kind: KIND_PACKAGE, file: "b.proto" }
+    - fqn: "b.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      option_only: true
+    - { fqn: "c", kind: KIND_PACKAGE, file: "c.proto" }
+    - fqn: "c.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      option_only: true
+    - fqn: "c.copt"
+      kind: KIND_EXTENSION
+      file: "c.proto"
+      index: 1
+      option_only: true
+    - { fqn: "buf", kind: KIND_PACKAGE, file: "main3.proto" }
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "main3.proto" }
+    - fqn: "buf.test.M3"
+      kind: KIND_MESSAGE
+      file: "main3.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M3.f"
+      kind: KIND_FIELD
+      file: "main3.proto"
+      index: 1
+      visible: true
+    options.message.extns: { "c.copt": { i32: 1 } }

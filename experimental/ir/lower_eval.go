@@ -84,6 +84,7 @@ type evalArgs struct {
 
 	textFormat   bool         // Whether we're inside of a message literal.
 	allowMax     bool         // Whether the max keyword is to be honored.
+	rangeBound   bool         // Whether this is a reserved or extension range bound.
 	memberNumber memberNumber // Specifies which member number type we're resolving.
 }
 
@@ -935,8 +936,9 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 			return 0, false
 		}
 
-		// Check that this is not one of the special reserved numbers.
-		if v >= tags.FirstReserved && v <= tags.LastReserved {
+		// Check that this is not one of the special reserved numbers. Ranges
+		// may include them.
+		if !args.rangeBound && v >= tags.FirstReserved && v <= tags.LastReserved {
 			err()
 			return rawValueBits(v), false
 		}
@@ -1307,7 +1309,7 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 			report.Message("%s out of range", taxa.FieldNumber),
 			report.Snippet(e.expr),
 			report.Notef("the range for %ss is `%v to %v`,\n"+
-				"minus `%v to %v`, which is reserved for internal use",
+				"excluding `%v to %v`, which is reserved for internal use",
 				taxa.FieldNumber,
 				itoa(1),
 				itoa(hi),

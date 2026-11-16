@@ -189,7 +189,9 @@ func resolveOptions(file *File, r *report.Report) {
 					File:   file,
 					Report: r,
 
-					scope: ty.Scope(),
+					// A oneof's full name is inside its message, so lookup
+					// starts in the message.
+					scope: ty.FullName(),
 					def:   def,
 
 					field:    builtins.OneofOptions,
@@ -246,7 +248,9 @@ func resolveOptions(file *File, r *report.Report) {
 				File:   file,
 				Report: r,
 
-				scope: service.FullName(),
+				// Lookup starts outside the service, so its own methods are
+				// not in scope. Services are always top-level.
+				scope: file.Package(),
 				def:   def,
 
 				field:    builtins.ServiceOptions,

@@ -1,0 +1,9 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%
+//% number_can_start_with_dot: true
+//% old_style_octal: true
+0x
+0X
+0b
+0o

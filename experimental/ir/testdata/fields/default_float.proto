@@ -1,0 +1,36 @@
+//% descriptor: true
+syntax = "proto2";
+
+package buf.test;
+
+// Expected values are protoc's: float uses 6 significant digits, or 9 if that
+// doesn't round-trip; double uses 15, or 17.
+message M {
+    optional float f1 = 1 [default = 1.5e-3];               // 0.0015
+    optional float f2 = 2 [default = 0.1];                  // 0.1
+    optional float f3 = 3 [default = 3.4028235e38];         // 3.40282347e+38
+    optional float f4 = 4 [default = 1e-45];                // 1.40129846e-45
+    optional float f5 = 5 [default = 16777217];             // 16777216
+    optional float f6 = 6 [default = 9e9];                  // 9e+09
+    optional float f7 = 7 [default = 1234567];              // 1234567
+    optional float f8 = 8 [default = 0.0001];               // 0.0001
+    optional float f9 = 9 [default = 1e-5];                 // 1e-05
+    optional float f10 = 10 [default = 100000];             // 100000
+    optional float f11 = 11 [default = 1000000];            // 1e+06
+    optional float f12 = 12 [default = -0.0];               // -0
+    optional float f13 = 13 [default = 123456789];          // 123456792
+    optional float f14 = 14 [default = 3e-39];              // 3.00000065e-39
+
+    optional double d1 = 21 [default = 1234567];                  // 1234567
+    optional double d2 = 22 [default = 0.1];                      // 0.1
+    optional double d3 = 23 [default = 1e15];                     // 1e+15
+    optional double d4 = 24 [default = 1e16];                     // 1e+16
+    optional double d5 = 25 [default = 7e22];                     // 7e+22
+    optional double d6 = 26 [default = 1.7976931348623157e308];   // 1.7976931348623157e+308
+    optional double d7 = 27 [default = 5e-324];                   // 4.94065645841247e-324
+    optional double d8 = 28 [default = 123456789012345678];       // 1.2345678901234568e+17
+    optional double d9 = 29 [default = 0.00001];                  // 1e-05
+    optional double d10 = 30 [default = -0.0];                    // -0
+    optional double d11 = 31 [default = 1e100];                   // 1e+100
+    optional double d12 = 32 [default = 0.6666666666666666];      // 0.66666666666666663
+}

@@ -71,4 +71,13 @@ error: aliases must have the same custom JSON name
 35 |     ALIASES_EIN = 1;
    |     ^^^^^^^^^^^ this has no custom JSON name
 
-encountered 8 errors
+error: aliases must have the same custom JSON name
+  --> testdata/editions/2026/enum_json.proto:46:5
+   |
+44 |     EMPTY_C = 3 [(pb.enumvalue.json).string = ""];
+   |     ------- but this has custom JSON name ``
+45 |     EMPTY_ALIAS_A = 1;
+46 |     EMPTY_ALIAS_C = 3 [(pb.enumvalue.json) = {}];
+   |     ^^^^^^^^^^^^^ this has no custom JSON name
+
+encountered 9 errors

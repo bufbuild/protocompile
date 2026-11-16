@@ -12,7 +12,7 @@ error: field number out of range
 11 |     optional int32 z1 = -1;
    |                         ^^
    = note: the range for field numbers is `1 to 536870911`,
-           minus `19000 to 19999`, which is reserved for internal use
+           excluding `19000 to 19999`, which is reserved for internal use
 
 error: field number out of range
   --> testdata/tags/overlap.proto:12:25
@@ -20,7 +20,7 @@ error: field number out of range
 12 |     optional int32 z2 = -1;
    |                         ^^
    = note: the range for field numbers is `1 to 536870911`,
-           minus `19000 to 19999`, which is reserved for internal use
+           excluding `19000 to 19999`, which is reserved for internal use
 
 error: enum value `2` used more than once
   --> testdata/tags/overlap.proto:18:10

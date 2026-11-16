@@ -1,0 +1,9 @@
+error: expected message extension, found message type `field_hidden.M.Bar`
+  --> field_hidden.proto:7:18
+   |
+ 6 |   message Bar {}
+   |           --- defined here
+ 7 |   string f = 1 [(Bar) = "x"];
+   |                  ^^^ expected message extension
+
+encountered 1 error

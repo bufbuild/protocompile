@@ -9,3 +9,4 @@ option x = 0O1234567;
 
 option x = 0x10203.4;
 option x = 0X12.ffP10;
+option x = 0x1p3;

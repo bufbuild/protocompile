@@ -1,0 +1,75 @@
+file:
+- name: "c.proto"
+  package: "c"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type: [{ name: "C" }]
+  extension:
+  - name: "copt"
+    number: 50000
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "copt"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "b.proto"
+  package: "b"
+  dependency: ["c.proto"]
+  public_dependency: [0]
+  message_type: [{ name: "B" }]
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "other.proto"
+  package: "other"
+  option_dependency: ["b.proto"]
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main.proto"
+  package: "buf.test"
+  dependency: ["other.proto"]
+  option_dependency: ["b.proto"]
+  options.$unknown: "50000: 1"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "x.proto"
+  package: "x"
+  dependency: ["b.proto"]
+  public_dependency: [0]
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main2.proto"
+  package: "buf.test"
+  dependency: ["x.proto"]
+  option_dependency: ["b.proto"]
+  message_type:
+  - name: "M2"
+    field:
+    - name: "f"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".b.B"
+      json_name: "f"
+    - name: "g"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".c.C"
+      json_name: "g"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main3.proto"
+  package: "buf.test"
+  option_dependency: ["b.proto"]
+  message_type:
+  - name: "M3"
+    field:
+    - name: "f"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".c.C"
+      json_name: "f"
+  options.$unknown: "50000: 1"
+  syntax: "editions"
+  edition: EDITION_2024

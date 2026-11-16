@@ -34,3 +34,14 @@ export enum Aliases {
     ALIASES_UNO = 1 [(pb.enumvalue.json).string = "uno"];
     ALIASES_EIN = 1;
 }
+
+// An empty (pb.enumvalue.json) = {} behaves as if the option was not set.
+export enum Empty {
+    option allow_alias = true;
+    EMPTY_UNSPECIFIED = 0;
+    EMPTY_A = 1 [(pb.enumvalue.json) = {}];
+    EMPTY_B = 2 [(pb.enumvalue.json) = {}];
+    EMPTY_C = 3 [(pb.enumvalue.json).string = ""];
+    EMPTY_ALIAS_A = 1;
+    EMPTY_ALIAS_C = 3 [(pb.enumvalue.json) = {}];
+}

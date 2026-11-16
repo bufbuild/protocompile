@@ -25,3 +25,7 @@ decls:
     kind: KIND_OPTION
     name.components: [{ ident: "x" }]
     value.literal.int_value: 19452
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 8

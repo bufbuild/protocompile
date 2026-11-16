@@ -1,0 +1,80 @@
+descriptor: true
+symtab: true
+files:
+# An option import must stay an option import, even when its public import is
+# also reached through another import.
+- path: "main.proto"
+  text: |
+    edition = "2024";
+    package buf.test;
+
+    import "other.proto";
+    import option "b.proto";
+
+    option (c.copt) = 1;
+
+# An option import that is also re-exported by a regular import is fully
+# visible.
+- path: "main2.proto"
+  text: |
+    edition = "2024";
+    package buf.test;
+
+    import "x.proto";
+    import option "b.proto";
+
+    message M2 {
+      b.B f = 1;
+      c.C g = 2;
+    }
+
+# A file re-exported only by an option import is only visible in options.
+- path: "main3.proto"
+  text: |
+    edition = "2024";
+    package buf.test;
+
+    import option "b.proto";
+
+    option (c.copt) = 1;
+    message M3 { c.C f = 1; }
+
+- path: "other.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package other;
+
+    import option "b.proto";
+
+- path: "x.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package x;
+
+    import public "b.proto";
+
+- path: "b.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package b;
+
+    import public "c.proto";
+
+    message B {}
+
+- path: "c.proto"
+  import: true
+  text: |
+    edition = "2024";
+    package c;
+
+    import "google/protobuf/descriptor.proto";
+
+    message C {}
+
+    extend google.protobuf.FileOptions {
+      int32 copt = 50000;
+    }

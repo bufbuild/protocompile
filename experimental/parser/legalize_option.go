@@ -374,6 +374,14 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 			return
 		}
 
+		if n.ExpBase() == 2 {
+			p.Errorf("unsupported exponent for %s", what).Apply(
+				report.Snippet(value),
+				report.Notef("Protobuf only supports decimal exponents, written with `e`"),
+			)
+			return
+		}
+
 	case token.String:
 		s := value.AsString()
 		if sigil := s.Prefix(); sigil.Text() != "" {

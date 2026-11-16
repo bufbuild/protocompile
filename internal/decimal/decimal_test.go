@@ -17,6 +17,7 @@ package decimal
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1065,4 +1066,32 @@ func TestNonFinite(t *testing.T) {
 	assert.True(t, math.IsNaN(f))
 	assert.Nil(t, n.Int(nil))
 	assert.Equal(t, int64(0x7_ffff_ffff_ffff), n.NaN())
+}
+
+func TestFloat64(t *testing.T) {
+	t.Parallel()
+
+	// Each of these is checked against strconv.ParseFloat.
+	inputs := []string{
+		"1e23", "1.5e24", "1e-23", "0.00000000000000000000001", "123e21",
+		"1e55", "1e-55", "1e87", "2.5e-310",
+		"1e-30", "3.14159265358979e40", "1.1754942e-38",
+		"1e22", "1e-22", "0.1", "9007199254740993e-5",
+	}
+	// Sweep every power of ten with a few mantissas, to cover each entry of
+	// the power-of-five tables.
+	for _, mant := range []string{"1", "25", "15", "123456789", "9007199254740993"} {
+		for exp := -330; exp <= 310; exp++ {
+			inputs = append(inputs, fmt.Sprintf("%se%d", mant, exp))
+		}
+	}
+
+	for _, s := range inputs {
+		d, err := new(Decimal).Parse(s)
+		require.NoError(t, err, s)
+
+		got, _ := d.Float64()
+		want, _ := strconv.ParseFloat(s, 64)
+		assert.Equal(t, math.Float64bits(want), math.Float64bits(got), "%s: got %v, want %v", s, got, want)
+	}
 }

@@ -57,7 +57,7 @@ func diagnoseUnusedImports(f *File, r *report.Report) {
 		}
 
 		r.Warnf("unused import %s", imp.Decl.ImportPath().AsLiteral().Text()).Apply(
-			report.Snippet(imp.Decl.ImportPath()),
+			report.Snippet(imp.Decl),
 			report.SuggestEdits(imp.Decl, "delete it", report.Edit{
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
@@ -193,9 +193,9 @@ func validateEnum(ty Type, r *report.Report) {
 	validateEnumValueJSON(ty, r)
 }
 
-// enumValueJSON returns the (pb.enumvalue.json) option on an enum value, and
-// its string field. ok is false if the option is not set at all.
-func enumValueJSON(m Member) (option, str Value, ok bool) {
+// enumValueJSON returns the (pb.enumvalue.json).string option on an enum
+// value. An empty (pb.enumvalue.json) = {} is treated as unset.
+func enumValueJSON(m Member) Value {
 	ids := &m.Context().session.builtins
 	for option := range m.Options().Fields() {
 		if option.Field().InternedFullName() != ids.EnumValueJSON {
@@ -203,12 +203,11 @@ func enumValueJSON(m Member) (option, str Value, ok bool) {
 		}
 		for str := range option.AsMessage().Fields() {
 			if str.Field().InternedFullName() == ids.EnumValueJSONString {
-				return option, str, true
+				return str
 			}
 		}
-		return option, Value{}, true
 	}
-	return Value{}, Value{}, false
+	return Value{}
 }
 
 // validateEnumValueJSON validates custom JSON strings set with
@@ -216,7 +215,7 @@ func enumValueJSON(m Member) (option, str Value, ok bool) {
 func validateEnumValueJSON(ty Type, r *report.Report) {
 	custom := false
 	for member := range seq.Values(ty.Members()) {
-		if _, _, ok := enumValueJSON(member); ok {
+		if !enumValueJSON(member).IsZero() {
 			custom = true
 			break
 		}
@@ -248,16 +247,12 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 	}
 
 	for member := range seq.Values(ty.Members()) {
-		option, str, custom := enumValueJSON(member)
-		name, hasString := str.AsString()
+		str := enumValueJSON(member)
+		name, custom := str.AsString()
 
 		var span source.Spanner
 		if custom {
-			span = option.OptionSpan()
-			if hasString {
-				span = str.ValueAST()
-			}
-
+			span = str.ValueAST()
 			if strings.ContainsRune(name, 0) {
 				r.Errorf("custom JSON name cannot contain NUL bytes").Apply(
 					report.Snippet(span),
@@ -279,11 +274,10 @@ func validateEnumValueJSON(ty Type, r *report.Report) {
 			if primary, ok := primaries[member.Number()]; !ok {
 				primaries[member.Number()] = member
 			} else {
-				_, primaryStr, _ := enumValueJSON(primary)
-				primaryName, primaryHas := primaryStr.AsString()
-				if primaryHas != hasString || primaryName != name {
+				primaryName, primaryHas := enumValueJSON(primary).AsString()
+				if primaryHas != custom || primaryName != name {
 					r.Errorf("aliases must have the same custom JSON name").Apply(
-						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, hasString)),
+						report.Snippetf(member.AST().Name(), "this has %s", describeJSONName(name, custom)),
 						report.Snippetf(primary.AST().Name(), "but this has %s", describeJSONName(primaryName, primaryHas)),
 					)
 				}
@@ -608,17 +602,25 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 
 	// First, walk through all of the extension ranges to get their associated
 	// option objects.
-	options := make(map[MessageValue][]ReservedRange)
+	rangesByOptions := make(map[MessageValue][]ReservedRange)
+	var order []MessageValue // For deterministic diagnostics.
 	for r := range seq.Values(ty.ExtensionRanges()) {
 		if r.Options().IsZero() {
 			continue
 		}
-		mapsx.Append(options, r.Options(), r)
+		if _, ok := rangesByOptions[r.Options()]; !ok {
+			order = append(order, r.Options())
+		}
+		mapsx.Append(rangesByOptions, r.Options(), r)
 	}
+
+	// Declared names must be unique across all ranges of the message.
+	declaredNames := make(map[string]Value)
 
 	// Now, walk through each grouping of extensions and match up their
 	// declarations.
-	for options, ranges := range options {
+	for _, options := range order {
+		ranges := rangesByOptions[options]
 		rangeSpan := func() source.Span {
 			return source.JoinSeq(iterx.Map(slices.Values(ranges), func(r ReservedRange) source.Span {
 				return r.AST().Span()
@@ -657,11 +659,21 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 
 		var haveMissingField bool
 		numbers := make(map[int32]struct{})
+		declaredNumbers := make(map[int64]Value)
 		for elem := range seq.Values(decls.Elements()) {
 			decl := elem.AsMessage()
 
 			number := decl.Field(builtins.ExtnDeclNumber)
 			if n, ok := number.AsInt(); ok {
+				if prev, dup := declaredNumbers[n]; dup {
+					r.Errorf("extension declaration number %d is declared multiple times", n).Apply(
+						report.Snippet(number.ValueAST()),
+						report.Snippetf(prev.ValueAST(), "previously declared here"),
+					)
+				} else {
+					declaredNumbers[n] = number
+				}
+
 				// Find the range that contains n.
 				var found bool
 				for _, r := range ranges {
@@ -725,8 +737,6 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 				return true
 			}
 
-			// NOTE: name deduplication needs to wait until global linking,
-			// similar to extension number deduplication.
 			name := decl.Field(builtins.ExtnDeclName)
 			tyName := decl.Field(builtins.ExtnDeclType)
 
@@ -768,6 +778,17 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 				)
 				haveMissingField = true
 			}
+
+			if s, ok := name.AsString(); ok && !tyName.IsZero() {
+				if prev, dup := declaredNames[s]; dup {
+					r.Errorf("extension name `%s` is declared multiple times", s).Apply(
+						report.Snippet(name.ValueAST()),
+						report.Snippetf(prev.ValueAST(), "previously declared here"),
+					)
+				} else {
+					declaredNames[s] = name
+				}
+			}
 		}
 
 		// Generate warnings for each range that is missing at least one value.
@@ -797,9 +818,11 @@ func validateDeclaredExtension(m Member, r *report.Report) {
 	extendee := m.Container()
 	var decl MessageValue
 	var elem Element
+	var rng ReservedRange
 declSearch:
 	for r := range extendee.Ranges(m.Number()) {
-		decls := r.AsReserved().Options().Field(builtins.ExtnDecls)
+		rng = r.AsReserved()
+		decls := rng.Options().Field(builtins.ExtnDecls)
 		for v := range seq.Values(decls.Elements()) {
 			msg := v.AsMessage()
 			number := msg.Field(builtins.ExtnDeclNumber)
@@ -811,6 +834,18 @@ declSearch:
 		}
 	}
 	if decl.IsZero() {
+		// An extension needs a matching declaration if its range has any
+		// declarations or is explicitly marked as DECLARATION.
+		decls := rng.Options().Field(builtins.ExtnDecls)
+		verification := rng.Options().Field(builtins.ExtnVerification)
+		if v, _ := verification.AsInt(); !decls.IsZero() || (!verification.IsZero() && v == 0) {
+			r.Errorf("missing extension declaration for `%s`", m.FullName()).Apply(
+				report.Snippet(m.AST().Value()),
+				report.PageBreak,
+				report.Snippetf(rng.AST(), "requires declarations"),
+				report.Helpf("an extension range must declare all of its extensions if it is marked `DECLARATION` or declares any extension; otherwise, consider splitting up the range"),
+			)
+		}
 		return // Not a declared extension.
 	}
 
