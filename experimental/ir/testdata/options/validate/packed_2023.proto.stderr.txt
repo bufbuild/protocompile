@@ -69,4 +69,15 @@ error: expected packable type, found scalar type `string`
    = help: packed encoding can only be set on repeated fields of integer, float,
            `bool`, or enum type
 
-encountered 6 errors
+error: expected packable type, found map entry type `buf.test.M.Map1Entry`
+  --> testdata/options/validate/packed_2023.proto:26:5
+   |
+26 |     map<string, string> map1 = 13 [features.repeated_field_encoding = PACKED];
+   |     ^^^^^^^^^^^^^^^^^^^            --------------------------------
+   |                                     |
+   |                                     packed encoding set here
+   |
+   = help: packed encoding can only be set on repeated fields of integer, float,
+           `bool`, or enum type
+
+encountered 7 errors

@@ -16,4 +16,7 @@ message M {
 
     repeated float f1 = 7 [packed = true];
     repeated float f2 = 8 [packed = false];
+
+    map<string, string> map1 = 9 [packed = true];
+    map<string, string> map2 = 10 [packed = false];
 }
