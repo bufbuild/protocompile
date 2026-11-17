@@ -201,7 +201,7 @@ error: mismatched types
    |           ^^^^^ expected `float`, found `string`
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-62 |     repeated float f32 = 1;
+64 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -214,7 +214,7 @@ error: mismatched types
    |                  ^^^^ expected `float`, found `bool`
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-62 |     repeated float f32 = 1;
+64 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -227,7 +227,7 @@ error: mismatched types
    |                        ^^ expected `float`, found message expression
 43 |     f64: ["foo", true, {}, [], 0 to 1]
 ...
-62 |     repeated float f32 = 1;
+64 |     repeated float f32 = 1;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `float`
@@ -238,9 +238,10 @@ error: mismatched types
    |
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |           ^^^^^ expected `double`, found `string`
+44 |     f64: [0x10, 010] // Message literals only allow decimal.
 ...
-62 |     repeated float f32 = 1;
-63 |     repeated double f64 = 2;
+64 |     repeated float f32 = 1;
+65 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
@@ -251,9 +252,10 @@ error: mismatched types
    |
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                  ^^^^ expected `double`, found `bool`
+44 |     f64: [0x10, 010] // Message literals only allow decimal.
 ...
-62 |     repeated float f32 = 1;
-63 |     repeated double f64 = 2;
+64 |     repeated float f32 = 1;
+65 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
@@ -264,35 +266,41 @@ error: mismatched types
    |
 43 |     f64: ["foo", true, {}, [], 0 to 1]
    |                        ^^ expected `double`, found message expression
+44 |     f64: [0x10, 010] // Message literals only allow decimal.
 ...
-62 |     repeated float f32 = 1;
-63 |     repeated double f64 = 2;
+64 |     repeated float f32 = 1;
+65 |     repeated double f64 = 2;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `double`
               found: message expression
 
-error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:47:14
+error: unsupported base for floating-point literal
+  --> testdata/options/values/float.proto:44:11
+  help: use a decimal literal instead
    |
-47 | option (y) = infinity;
-   |              ^^^^^^^^
-  help: replace with `inf`
+44 | -     f64: [0x10, 010] // Message literals only allow decimal.
+44 | +     f64: [16, 010] // Message literals only allow decimal.
    |
-47 | - option (y) = infinity;
-47 | + option (y) = inf;
+   = note: message literals only support decimal floating-point literals
+
+error: unsupported base for floating-point literal
+  --> testdata/options/values/float.proto:44:17
+  help: use a decimal literal instead
    |
-   = note: within message expressions only, some floating-point literals are
-           case-insensitive
+44 | -     f64: [0x10, 010] // Message literals only allow decimal.
+44 | +     f64: [0x10, 8] // Message literals only allow decimal.
+   |
+   = note: message literals only support decimal floating-point literals
 
 error: non-canonical floating-point literal outside of message expression
   --> testdata/options/values/float.proto:48:14
    |
-48 | option (y) = INF;
-   |              ^^^
+48 | option (y) = infinity;
+   |              ^^^^^^^^
   help: replace with `inf`
    |
-48 | - option (y) = INF;
+48 | - option (y) = infinity;
 48 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
@@ -301,25 +309,25 @@ error: non-canonical floating-point literal outside of message expression
 error: non-canonical floating-point literal outside of message expression
   --> testdata/options/values/float.proto:49:14
    |
-49 | option (y) = Infinity;
-   |              ^^^^^^^^
+49 | option (y) = INF;
+   |              ^^^
   help: replace with `inf`
    |
-49 | - option (y) = Infinity;
+49 | - option (y) = INF;
 49 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
 error: non-canonical floating-point literal outside of message expression
-  --> testdata/options/values/float.proto:51:14
+  --> testdata/options/values/float.proto:50:14
    |
-51 | option (y) = NaN;
-   |              ^^^
-  help: replace with `nan`
+50 | option (y) = Infinity;
+   |              ^^^^^^^^
+  help: replace with `inf`
    |
-51 | - option (y) = NaN;
-51 | + option (y) = nan;
+50 | - option (y) = Infinity;
+50 | + option (y) = inf;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
@@ -327,14 +335,34 @@ error: non-canonical floating-point literal outside of message expression
 error: non-canonical floating-point literal outside of message expression
   --> testdata/options/values/float.proto:52:14
    |
-52 | option (y) = NAN;
+52 | option (y) = NaN;
    |              ^^^
   help: replace with `nan`
    |
-52 | - option (y) = NAN;
+52 | - option (y) = NaN;
 52 | + option (y) = nan;
    |
    = note: within message expressions only, some floating-point literals are
            case-insensitive
 
-encountered 15 errors and 12 warnings
+error: non-canonical floating-point literal outside of message expression
+  --> testdata/options/values/float.proto:53:14
+   |
+53 | option (y) = NAN;
+   |              ^^^
+  help: replace with `nan`
+   |
+53 | - option (y) = NAN;
+53 | + option (y) = nan;
+   |
+   = note: within message expressions only, some floating-point literals are
+           case-insensitive
+
+error: integer literal out of range
+  --> testdata/options/values/float.proto:61:14
+   |
+61 | option (y) = 0x10000000000000000; // Out of range.
+   |              ^^^^^^^^^^^^^^^^^^^
+   = note: hexadecimal and octal integers must fit in 64 bits
+
+encountered 18 errors and 12 warnings

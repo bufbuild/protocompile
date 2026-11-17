@@ -740,7 +740,29 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		if scalar.IsFloat() {
 			n, _ := lit.Float()
 
+			// Hex and octal integers are permitted for float-typed values,
+			// but only outside of message literals, and only if they fit in
+			// 64 bits.
 			text := expr.Text()
+			if !lit.IsFloat() && lit.Base() != 10 {
+				if args.textFormat {
+					e.Errorf("unsupported base for %s", taxa.Float).Apply(
+						report.SuggestEdits(expr, "use a decimal literal instead", report.Edit{
+							Start: 0, End: len(text),
+							Replace: strconv.FormatFloat(n, 'g', -1, 64),
+						}),
+						report.Notef("message literals only support decimal %ss", taxa.Float),
+					)
+					return 0, false
+				}
+				if _, exact := lit.Int(); !exact {
+					e.Errorf("integer literal out of range").Apply(
+						report.Snippet(expr),
+						report.Notef("hexadecimal and octal integers must fit in 64 bits"),
+					)
+					return 0, false
+				}
+			}
 
 			if !neg.IsZero() {
 				n = -n
