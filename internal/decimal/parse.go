@@ -141,11 +141,15 @@ mant:
 		if !nonzero && d != 0 {
 			nonzero = true
 
-			if base == 16 {
+			if base == 16 && !dot {
 				// For the first nonzero digit in hex, we need places to be
 				// the bit length of the digit. This ensures that, for example,
 				// 0x1 has exponent 1, not 4.
 				places = bits.Len(uint(d))
+			} else if base == 16 {
+				// After the dot, the first nonzero digit's leading zero bits
+				// count against the exponent: 0x0.1 is 0x0.8p-3.
+				z.exp -= int32(4 - bits.Len(uint(d)))
 			}
 		}
 
