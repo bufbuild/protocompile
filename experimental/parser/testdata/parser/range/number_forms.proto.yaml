@@ -8,7 +8,7 @@ decls:
     - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 3 }] }
     - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 7 }] }
     - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 10 }] }
-    - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 0 }] }
+    - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 10 }] }
     - range: { kind: KIND_EXTENSIONS, ranges: [{ literal.int_value: 10 }] }
     - range:
         kind: KIND_RESERVED
