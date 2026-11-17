@@ -26,4 +26,18 @@ error: `foo.bar.baz` declared multiple times
    = help: symbol names must be unique across all files; for example,
            "foo.proto" declares `foo.bar.baz` but it is not directly imported
 
-encountered 2 errors
+error: `n.M` declared multiple times
+  --> nested_package.proto:2:1
+   |
+ 2 | package n.M.f;
+   | ^^^^^^^^^^^^^^ first here, as a `package` declaration
+   |
+  ::: nested_message.proto:4:9
+   |
+ 4 | message M { int32 f = 1; }
+   |         - ...also declared here, now as a message type
+   |
+   = help: symbol names must be unique across all files; for example,
+           "nested_message.proto" declares `n.M` but it is not directly imported
+
+encountered 3 errors

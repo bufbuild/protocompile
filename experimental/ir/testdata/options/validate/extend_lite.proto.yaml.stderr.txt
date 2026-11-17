@@ -38,4 +38,15 @@ error: extension of non-`LITE_RUNTIME` type in `LITE_RUNTIME` file
    = help: a `LITE_RUNTIME` file can only extend types from other `LITE_RUNTIME`
            files; the reverse is allowed
 
-encountered 3 errors
+error: expected message type, found enum type `test.HeavyEnum`
+  --> lite_bad.proto:13:8
+   |
+13 | extend test.HeavyEnum { optional string e = 3; }
+   |        ^^^^^^^^^^^^^^ expected message type
+   |
+  ::: heavy.proto:5:6
+   |
+ 5 | enum HeavyEnum { ZERO = 0; }
+   |      --------- defined here
+
+encountered 4 errors

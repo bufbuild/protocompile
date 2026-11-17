@@ -6,6 +6,7 @@ files:
     package test;
 
     message Heavy { extensions 1 to 100; }
+    enum HeavyEnum { ZERO = 0; }
 
 - path: "lite_base.proto"
   text: |
@@ -41,6 +42,8 @@ files:
     extend test.Heavy { optional string s = 1; }
     message N { extend test.Heavy { optional string t = 2; } }
     extend google.protobuf.MessageOptions { optional string o = 50000; }
+    // Only the non-message extendee is diagnosed.
+    extend test.HeavyEnum { optional string e = 3; }
 
 - path: "code_size.proto"
   text: |

@@ -581,7 +581,7 @@ func validateMessageSet(ty Type, r *report.Report) {
 // from other `LITE_RUNTIME` files.
 func validateExtendLite(extend Extend, r *report.Report) {
 	extendee := extend.Extendee()
-	if extendee.IsZero() {
+	if !extendee.IsMessage() || extend.Extensions().Len() == 0 {
 		return
 	}
 

@@ -92,7 +92,8 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 }
 
 // enclosingName returns the full name of the declaration that syntactically
-// encloses sym, or zero if it is declared at the top level of its file.
+// encloses sym, or zero if it is declared at the top level of its file. For a
+// package, this is its parent package.
 func enclosingName(sym Symbol) intern.ID {
 	switch {
 	case sym.Kind().IsType():
@@ -103,6 +104,9 @@ func enclosingName(sym Symbol) intern.ID {
 		return sym.AsOneof().Container().InternedFullName()
 	case sym.Kind() == SymbolKindMethod:
 		return sym.AsMethod().Service().InternedFullName()
+	case sym.Kind() == SymbolKindPackage:
+		parent, _ := sym.Context().session.intern.Query(string(sym.FullName().Parent()))
+		return parent
 	default:
 		return 0
 	}
