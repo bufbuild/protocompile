@@ -1,23 +1,30 @@
 warning: required fields are deprecated
-  --> testdata/options/validate/required_literal_2023.proto:8:43
+  --> testdata/options/validate/required_literal_2023.proto:9:43
    |
- 8 |   string a = 1 [features.field_presence = LEGACY_REQUIRED];
+ 9 |   string a = 1 [features.field_presence = LEGACY_REQUIRED];
    |                                           ^^^^^^^^^^^^^^^
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break
 
 warning: required fields are deprecated
-  --> testdata/options/validate/required_literal_2023.proto:9:43
+  --> testdata/options/validate/required_literal_2023.proto:10:43
    |
- 9 |   string b = 2 [features.field_presence = LEGACY_REQUIRED];
+10 |   string b = 2 [features.field_presence = LEGACY_REQUIRED];
    |                                           ^^^^^^^^^^^^^^^
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break
 
 error: missing required fields: (buf.test.foo).b
-  --> testdata/options/validate/required_literal_2023.proto:19:8
+  --> testdata/options/validate/required_literal_2023.proto:21:8
    |
-19 | option (foo) = { a: "a" };
+21 | option (foo) = { a: "a" };
    |        ^^^^^^^^^^^^^^^^^^
 
-encountered 1 error and 2 warnings
+error: missing required fields:
+       (buf.test.any).[type.googleapis.com/buf.test.Foo].a
+  --> testdata/options/validate/required_literal_2023.proto:22:8
+   |
+22 | option (any) = { [type.googleapis.com/buf.test.Foo] { b: "b" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+encountered 2 errors and 2 warnings

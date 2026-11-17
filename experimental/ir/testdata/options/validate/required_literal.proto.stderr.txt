@@ -84,4 +84,25 @@ error: missing required fields: (buf.test.ffoo).a
 65 |   optional int32 x = 1 [(ffoo) = { b: "b" }];
    |                         ^^^^^^^^^^^^^^^^^^^
 
-encountered 10 errors and 3 warnings
+error: missing required fields: (buf.test.map_unset).m[0].value.a,
+       (buf.test.map_unset).m[0].value.b
+  --> testdata/options/validate/required_literal.proto:78:8
+   |
+78 | option (map_unset) = { z: 1 m { key: "k" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: mismatched types
+  --> testdata/options/validate/required_literal.proto:80:21
+   |
+ 8 |   required string a = 1;
+   |   --------------- expected due to this
+ 9 |   required string b = 2;
+...
+79 | // Rejected only for the mismatched type of a.
+80 | option (bad) = { a: 1 b: "b" };
+   |                     ^ expected `string`, found integer literal
+   |
+   = note: expected: scalar type `string`
+              found: integer literal
+
+encountered 12 errors and 3 warnings

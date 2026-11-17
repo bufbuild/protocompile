@@ -740,7 +740,7 @@ func validateRequiredOptions(f *File, r *report.Report) {
 		for value := range options.Fields() {
 			var missing []string
 			missingRequiredInValue(value, "", &missing)
-			if len(missing) > 0 {
+			if len(missing) > 0 && !hasErrorsIn(value, r) {
 				r.Errorf("missing required fields: %s", strings.Join(missing, ", ")).Apply(
 					report.Snippet(value.OptionSpan()),
 				)
@@ -775,14 +775,30 @@ func validateRequiredOptions(f *File, r *report.Report) {
 // messages nested within it: unset fields of msg first, then those of its set
 // message fields in field number order.
 func missingRequired(msg MessageValue, prefix string, missing *[]string) {
+	if concrete := msg.Concrete(); concrete != msg {
+		missingRequired(concrete, prefix+"["+concrete.TypeURL()+"].", missing)
+		return
+	}
+
 	ty := msg.Type()
 	if ty.IsZero() || ty.IsAny() {
 		return
 	}
 
 	for field := range seq.Values(ty.Members()) {
-		if isRequired(field) && msg.Field(field).IsZero() {
+		if !msg.Field(field).IsZero() {
+			continue
+		}
+		switch {
+		case isRequired(field):
 			*missing = append(*missing, prefix+field.Name())
+		case ty.IsMapEntry() && field.Number() == tags.MapEntry_Value && field.Element().IsMessage():
+			// An unset map value is an empty message.
+			for valueField := range seq.Values(field.Element().Members()) {
+				if isRequired(valueField) {
+					*missing = append(*missing, prefix+field.Name()+"."+valueField.Name())
+				}
+			}
 		}
 	}
 
@@ -813,6 +829,25 @@ func missingRequiredInValue(value Value, prefix string, missing *[]string) {
 		}
 		missingRequired(elem.AsMessage(), elemName+".", missing)
 	}
+}
+
+// hasErrorsIn reports whether an error was already diagnosed within any of
+// the options that set value. Such errors may have dropped fields from value.
+func hasErrorsIn(value Value, r *report.Report) bool {
+	for i := range r.Diagnostics {
+		d := &r.Diagnostics[i]
+		if d.Level() > report.Error {
+			continue
+		}
+		primary := d.Primary()
+		for span := range seq.Values(value.OptionSpans()) {
+			span := span.Span()
+			if primary.File == span.File && primary.Start >= span.Start && primary.End <= span.End {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // isRequired reports whether m is a required field, either by label or by

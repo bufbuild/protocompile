@@ -68,3 +68,13 @@ message M {
 // Accepted.
 option (ok1) = { a: "a" b: "b" };
 option (ok2) = { z: 1 f { a: "a" b: "b" } r { a: "a" b: "b" } };
+
+extend google.protobuf.FileOptions {
+  optional Outer map_unset = 20013;
+  optional Foo bad = 20014;
+}
+
+// Rejected: an unset map value is an empty message.
+option (map_unset) = { z: 1 m { key: "k" } };
+// Rejected only for the mismatched type of a.
+option (bad) = { a: 1 b: "b" };
