@@ -118,10 +118,15 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 			// value.
 			if z.base10() {
 				v = pow5(v, exp)
+				exact = pow5Exact(w, exp)
 			}
 
 			// Directly update the exponent to add the missing power of 5.
 			v = math.Ldexp(v, exp)
+			if z.base2() {
+				// Ldexp rounds if the result is subnormal.
+				exact = math.Ldexp(v, -exp) == float64(w)
+			}
 
 			break
 		}
@@ -134,19 +139,23 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		fallthrough
 	default:
 		if z.base2() {
-			// We can do direct conversion, but rounding will always occur.
-			// We want to start with the high 54 bits of the mantissa, then
-			// multiply by an appropriate power of 2. Starting with the high
-			// 54, rather than the 53 that fit into a binary64 mantissa, ensures
-			// we get the correct rounding when converting to float64.
+			// Rounding to a float64 only needs the top 64 bits plus whether
+			// any bit below them is set. When one is, fold it into bit 0,
+			// which is always below the rounding position.
+			top, shift, sticky := msb64(z.get())
+			if sticky {
+				top |= 1
+			}
 
-			bits := mantBits64 + 1
-			w := bigx.MSBs(make([]big.Word, 0, 1), z.get(), uint(bits))
-			v = float64(bigx.Uint64(w))
+			// big.Float rounds to nearest even, including into the subnormal
+			// range, so the result is correctly rounded.
+			var x big.Float
+			x.SetUint64(top)
+			x.SetMantExp(&x, int(z.exp)-z.digits()+shift)
 
-			// If w is d.dddd * 2^e, w is d.dddd * 2^53. We need to multiply
-			// by 2^(e-53).
-			v = math.Ldexp(v, int(z.exp)-bits)
+			var acc big.Accuracy
+			v, acc = x.Float64()
+			exact = !sticky && acc == big.Exact
 			break
 		}
 
@@ -262,6 +271,49 @@ func nanPayload(sign bool, x uint64) float64 {
 
 func finite(x float64) bool {
 	return !math.IsInf(x, 0) && !math.IsNaN(x)
+}
+
+// msb64 returns the 64 most significant bits of m and the number of bits
+// below them. sticky reports whether any of those lower bits are set.
+func msb64(m []big.Word) (top uint64, shift int, sticky bool) {
+	const w = bits.UintSize
+	if len(m) == 0 {
+		return 0, 0, false
+	}
+	n := (len(m)-1)*w + bits.Len(uint(m[len(m)-1]))
+	shift = max(0, n-64)
+
+	for i := len(m) - 1; i >= 0; i-- {
+		lo := i * w
+		word := uint64(m[i])
+		switch {
+		case lo >= shift:
+			top |= word << uint(lo-shift)
+		case lo+w > shift:
+			drop := uint(shift - lo)
+			top |= word >> drop
+			sticky = word&(1<<drop-1) != 0
+		default:
+			sticky = word != 0
+		}
+		if sticky {
+			// Every bit of top is above this word, so we're done.
+			break
+		}
+	}
+	return top, shift, sticky
+}
+
+// pow5Exact returns whether w * 5^n is exactly representable as a float64,
+// for -maxPow5 <= n <= maxPow5.
+func pow5Exact(w uint64, n int) bool {
+	if n < 0 {
+		return w%uint64(pow5s[-n]) == 0
+	}
+	// 5^n is odd, so only the odd part of w can push the product past the
+	// width of a float64 mantissa.
+	hi, lo := bits.Mul64(w>>bits.TrailingZeros64(w), uint64(pow5s[n]))
+	return hi == 0 && lo <= maxMant64
 }
 
 // pow5s holds 5^n for each n where 5^n is exactly representable as a float64.

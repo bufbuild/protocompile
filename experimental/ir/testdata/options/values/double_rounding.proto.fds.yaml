@@ -1,0 +1,16 @@
+file:
+- name: "testdata/options/values/double_rounding.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  extension:
+  - name: "x"
+    number: 50000
+    label: LABEL_REPEATED
+    type: TYPE_DOUBLE
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
+  options.$unknown: |
+    50000: {
+      `000000000000004400000000000000c4000000000000004401000000000000440200000000000044`
+      `0000000000003046`
+    }

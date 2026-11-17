@@ -1,0 +1,19 @@
+//% descriptor: true
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+// Integer literals wider than 64 bits must round to the nearest double,
+// with ties to even.
+option (x) = 36893488147419103231;  // 2^65 - 1
+option (x) = -36893488147419103231;
+option (x) = 36893488147419107328;  // 2^65 + 2^12, tie rounds down to even
+option (x) = 36893488147419107329;  // 2^65 + 2^12 + 1, rounds up
+option (x) = 36893488147419115520;  // 2^65 + 3*2^12, tie rounds up to even
+option (x) = 1267650600228229401496703205375;  // 2^100 - 1
+
+extend google.protobuf.FileOptions {
+    repeated double x = 50000;
+}

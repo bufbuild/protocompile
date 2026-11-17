@@ -125,15 +125,6 @@ func Shr(z, x []big.Word, y uint) []big.Word {
 	return bz.Rsh(bx, y).Bits()
 }
 
-// MSBs sets z to the n highest bits of x.
-func MSBs(z, x []big.Word, n uint) []big.Word {
-	bz := new(big.Int).SetBits(z)
-	bx := new(big.Int).SetBits(x)
-
-	shift := max(0, bx.BitLen()-int(n))
-	return bz.Rsh(bx, uint(shift)).Bits()
-}
-
 // Cmp unsigned-compares x and y.
 func Cmp(x, y []big.Word) int {
 	bx := new(big.Int).SetBits(x)

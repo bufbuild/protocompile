@@ -17,6 +17,8 @@ package decimal
 import (
 	"fmt"
 	"math"
+	"math/big"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -1080,6 +1082,15 @@ func TestFloat64(t *testing.T) {
 		"1e55", "1e-55", "1e87", "2.5e-310",
 		"1e-30", "3.14159265358979e40", "1.1754942e-38",
 		"1e22", "1e-22", "0.1", "9007199254740993e-5",
+
+		// Base 2 mantissas wider than a float64 mantissa: halfway, halfway
+		// with sticky bits, carries into the exponent, and overflow.
+		"0x1.00000000000008p0", "0x1.00000000000018p0",
+		"0x1.000000000000080000000000001p0", "0x1.fffffffffffff8p0",
+		"0x1.fffffffffffff8p1023", "0x1.fffffffffffff7ffffffffp1023",
+		"0x1.00000000000000000001p-1074", "0x1.fffffffffffffffffff8p-1075",
+		"0x3.0000000000000000001p-1075", "0x1.00000000000008p-1022",
+		"0x1.8p-1075", "0x3p-1075", "0x1p-1075",
 	}
 	// Sweep every power of ten with a few mantissas, to cover each entry of
 	// the power-of-five tables.
@@ -1097,4 +1108,107 @@ func TestFloat64(t *testing.T) {
 		want, _ := strconv.ParseFloat(s, 64)
 		assert.Equal(t, math.Float64bits(want), math.Float64bits(got), "%s: got %v, want %v", s, got, want)
 	}
+}
+
+func TestFloat64Exact(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in    string
+		want  float64
+		exact bool
+	}{
+		{in: "0.5", want: 0.5, exact: true},
+		{in: "1.5e3", want: 1500, exact: true},
+		{in: "390625e-8", want: 0x1p-8, exact: true},
+		{in: "9007199254740992e1", want: 0x1.4p56, exact: true},
+		{in: "0x1p-1074", want: 0x1p-1074, exact: true},
+		{in: "0x1.0000000000001p-1022", want: 0x1.0000000000001p-1022, exact: true},
+
+		{in: "0.1", want: 0.1},
+		{in: "1e-5", want: 1e-5},
+		{in: "1_000.000_1", want: 1000.0001},
+		{in: "123456789012345e10", want: 123456789012345e10},
+		{in: "9007199254740991e1", want: 9007199254740991e1},
+		{in: "0x3p-1075", want: 0x1p-1073},
+		{in: "0x1p-1075", want: 0},
+		{in: "0x1.0000000000001p-1023", want: 0x1p-1023},
+	}
+
+	for _, tt := range tests {
+		z, err := new(Decimal).Parse(tt.in)
+		require.NoError(t, err, tt.in)
+
+		got, exact := z.Float64()
+		assert.Equal(t, math.Float64bits(tt.want), math.Float64bits(got), "%s: got %x, want %x", tt.in, got, tt.want)
+		assert.Equal(t, tt.exact, exact, tt.in)
+	}
+}
+
+func TestFloat64Int(t *testing.T) {
+	t.Parallel()
+
+	// Integers are stored with a base 2 exponent, so these do not go through
+	// strconv.ParseFloat.
+	tests := []struct {
+		in    string
+		want  float64
+		exact bool
+	}{
+		{in: "18446744073709551615", want: 0x1p64},
+		{in: "36893488147419103231", want: 0x1p65},               // 2^65 - 1
+		{in: "36893488147419107328", want: 0x1p65},               // Tie, rounds to even.
+		{in: "36893488147419107329", want: 0x1.0000000000001p65}, // Above tie.
+		{in: "36893488147419115520", want: 0x1.0000000000002p65}, // Tie, rounds to even.
+		{in: "36893488147419111424", want: 0x1.0000000000001p65, exact: true},
+		{in: "1267650600228229401496703205376", want: 0x1p100, exact: true},
+	}
+
+	for _, tt := range tests {
+		x, ok := new(big.Int).SetString(tt.in, 10)
+		require.True(t, ok, tt.in)
+
+		for _, neg := range []bool{false, true} {
+			x := new(big.Int).Set(x)
+			want := tt.want
+			if neg {
+				x.Neg(x)
+				want = -want
+			}
+
+			got, exact := new(Decimal).ReuseInt(x).Float64()
+			assert.Equal(t, math.Float64bits(want), math.Float64bits(got), "%v: got %x, want %x", x, got, want)
+			assert.Equal(t, tt.exact, exact, x)
+		}
+	}
+}
+
+func TestFloat64Wide(t *testing.T) {
+	// Not parallel: this measures allocation.
+
+	// 2^1000 plus 2^947 is halfway between two float64 values. A single bit
+	// far below decides the rounding, and so does an exact tie.
+	tie := new(big.Int).Lsh(big.NewInt(1), 1000)
+	tie.SetBit(tie, 947, 1)
+	got, exact := new(Decimal).ReuseInt(tie).Float64()
+	assert.Equal(t, math.Float64bits(0x1p1000), math.Float64bits(got))
+	assert.False(t, exact)
+
+	above := new(big.Int).SetBit(new(big.Int).Set(tie), 3, 1)
+	got, exact = new(Decimal).ReuseInt(above).Float64()
+	assert.Equal(t, math.Float64bits(0x1.0000000000001p1000), math.Float64bits(got))
+	assert.False(t, exact)
+
+	// Converting must not copy the mantissa: 100 calls on a 100 KB mantissa
+	// would allocate 10 MB if it did.
+	// The low bit is set so the mantissa keeps its full width.
+	wideInt := new(big.Int).Lsh(big.NewInt(1), 800_000)
+	wide := new(Decimal).ReuseInt(wideInt.SetBit(wideInt, 0, 1))
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for range 100 {
+		wide.Float64()
+	}
+	runtime.ReadMemStats(&after)
+	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(1<<20))
 }
