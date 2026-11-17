@@ -345,12 +345,9 @@ func validateOptionTargets(f *File, r *report.Report) {
 }
 
 func validateOptionTargetsInValue(m MessageValue, decl source.Span, target OptionTarget, r *report.Report) {
-	if m.IsZero() {
+	// Targets are not checked inside the expanded value of an Any.
+	if m.IsZero() || m.TypeURL() != "" {
 		return
-	}
-
-	if c := m.Concrete(); c != m {
-		validateOptionTargetsInValue(c, decl, target, r)
 	}
 
 	for value := range m.Fields() {
@@ -418,7 +415,9 @@ func validateOptionTargetsInValue(m MessageValue, decl source.Span, target Optio
 			continue // Don't recurse and generate a mess of diagnostics.
 		}
 
-		validateOptionTargetsInValue(value.AsMessage(), decl, target, r)
+		for elem := range seq.Values(value.Elements()) {
+			validateOptionTargetsInValue(elem.AsMessage(), decl, target, r)
+		}
 	}
 }
 
