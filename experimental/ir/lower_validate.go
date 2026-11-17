@@ -1363,7 +1363,9 @@ func looksLikeGroup(m Member) bool {
 // message literal are delimited.
 func validateGroupKeys(v Value, r *report.Report) {
 	field := v.Field()
-	if !looksLikeGroup(field) || field.IsGroup() {
+	// A type named the same as its field is a duplicate symbol, reported
+	// elsewhere; there is no distinct type name to reject here.
+	if !looksLikeGroup(field) || field.IsGroup() || field.Element().Name() == field.Name() {
 		return
 	}
 	encoding, _ := field.FeatureSet().Lookup(field.Context().builtins().FeatureGroup).Value().AsInt()

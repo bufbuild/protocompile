@@ -44,4 +44,12 @@ error: mismatched types
    = note: expected: `test.Wrong` field
               found: message type `test.Bar`
 
-encountered 3 errors and 1 warning
+error: `quux` declared multiple times
+  --> test.proto:50:11
+   |
+49 |   quux quux = 1;
+   |        ---- ...also declared here, now as a message field
+50 |   message quux { string name = 1; }
+   |           ^^^^ first here, as a message type
+
+encountered 4 errors and 1 warning

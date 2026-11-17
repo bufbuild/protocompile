@@ -47,6 +47,14 @@ files:
       option (foo) = { bar { name: "abc" } };
       option (p2) = { group { name: "abc" } };
     }
+
+    // Same name as its field.
+    message Dup {
+      quux quux = 1;
+      message quux { string name = 1; }
+    }
+    extend google.protobuf.MessageOptions { Dup dup = 10004; }
+    message C { option (dup) = { quux { name: "abc" } }; }
 - path: "proto2.proto"
   import: true
   text: |
