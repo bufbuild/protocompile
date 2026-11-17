@@ -1,0 +1,14 @@
+error: cannot resolve message field name for `foo.bar.a`
+  --> testdata/options/literal_extension_partial.proto:9:32
+   |
+ 4 | extend google.protobuf.MessageOptions { optional a msga = 10000; }
+   |                                         ----------
+   |                                          |
+   |                                          expected `a` field due to this
+ 5 | message a { extensions 1 to 100; }
+...
+ 8 | message m0 { option (msga) = { [bar.k]: 1 }; }
+ 9 | message m1 { option (msga) = { [foo.bar.k]: 1 }; }
+   |                                ^^^^^^^^^^^^^^ field referenced here
+
+encountered 1 error

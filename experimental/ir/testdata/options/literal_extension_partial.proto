@@ -1,0 +1,9 @@
+syntax = "proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message a { extensions 1 to 100; }
+extend a { optional int32 k = 1; }
+message foo {}
+message m0 { option (msga) = { [bar.k]: 1 }; }
+message m1 { option (msga) = { [foo.bar.k]: 1 }; }
