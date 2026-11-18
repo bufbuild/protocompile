@@ -118,10 +118,23 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 		//nolint:gocritic // This is a switch for consistency with the rest of the file.
 		switch next.Keyword() {
 		case keyword.To:
+			to := c.Next()
+			var end ast.ExprAny
+			if enterExpr(p, to) {
+				end = parseExprInfix(p, c, taxa.Noun(keyword.To).After(), ast.ExprAny{}, prec)
+			} else {
+				// Parse the rest of the chain without recursing.
+				end = parseExprInfix(p, c, taxa.Noun(keyword.To).After(), ast.ExprAny{}, prec+1)
+				for c.Peek().Keyword() == keyword.To {
+					c.Next()
+					parseExprInfix(p, c, taxa.Noun(keyword.To).After(), ast.ExprAny{}, prec+1)
+				}
+			}
+			p.exprDepth--
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
-				To:    c.Next(),
-				End:   parseExprInfix(p, c, taxa.Noun(keyword.To).After(), ast.ExprAny{}, prec),
+				To:    to,
+				End:   end,
 			}).AsAny()
 		}
 
@@ -285,13 +298,24 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 // The caller is responsible for decrementing p.exprDepth when exiting the
 // expression.
 func enterExpr(p *parser, tok token.Token) bool {
-	p.exprDepth++
-	if p.exprDepth <= internal.MaxExpressionNestingDepth {
+	return enterNested(p, &p.exprDepth, taxa.Expr, tok)
+}
+
+// enterNested tracks the nesting depth of a recursive production, such as an
+// expression or a type. It returns false if the limit is
+// exceeded, reporting a diagnostic at tok only for the first production that
+// crosses the threshold.
+//
+// The caller is responsible for decrementing *depth when exiting the
+// production.
+func enterNested(p *parser, depth *int, what taxa.Noun, tok token.Token) bool {
+	*depth++
+	if *depth <= internal.MaxExpressionNestingDepth {
 		return true
 	}
-	if p.exprDepth == internal.MaxExpressionNestingDepth+1 {
-		p.Errorf("expression nesting depth must be at most %d", internal.MaxExpressionNestingDepth).Apply(
-			report.Snippetf(tok.LeafSpan(), "this expression exceeds the nesting limit"),
+	if *depth == internal.MaxExpressionNestingDepth+1 {
+		p.Errorf("%s nesting depth must be at most %d", what, internal.MaxExpressionNestingDepth).Apply(
+			report.Snippetf(tok.LeafSpan(), "this %s exceeds the nesting limit", what),
 		)
 	}
 	return false
