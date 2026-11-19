@@ -28,6 +28,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -266,7 +267,6 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 					taxa.Package,
 				),
 			)
-			return
 		}
 		fallthrough
 	default:
@@ -289,8 +289,8 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 	}
 
 	legalizePath(p, taxa.Package.In(), decl.Path(), pathOptions{
-		MaxBytes:      512,
-		MaxComponents: 101,
+		MaxBytes:      internal.MaxPackageBytes,
+		MaxComponents: internal.MaxPackageComponents,
 	})
 }
 
