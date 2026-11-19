@@ -3,7 +3,6 @@
 # Protocompile
 
 [![Build](https://github.com/bufbuild/protocompile/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/bufbuild/protocompile/actions/workflows/ci.yaml)
-[![Report Card](https://goreportcard.com/badge/github.com/bufbuild/protocompile)](https://goreportcard.com/report/github.com/bufbuild/protocompile)
 [![GoDoc](https://pkg.go.dev/badge/github.com/bufbuild/protocompile.svg)](https://pkg.go.dev/github.com/bufbuild/protocompile)
 
 This repo contains a parsing/linking engine for Protocol Buffers, written in pure Go. It is suitable as an alternative
