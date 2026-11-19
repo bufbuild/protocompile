@@ -15,11 +15,13 @@
 package source
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf16"
+	"unicode/utf8"
 	_ "unsafe" // For go:linkname.
 
 	"github.com/bufbuild/protocompile/experimental/source/length"
@@ -35,7 +37,7 @@ import (
 type File struct {
 	path, text string
 
-	once sync.Once
+	once, checkpointsOnce sync.Once
 	// A prefix sum of the line lengths of text. Given a byte offset, it is possible
 	// to recover which line that offset is on by performing a binary search on this
 	// list.
@@ -43,6 +45,22 @@ type File struct {
 	// Alternatively, this slice can be interpreted as the index after each \n in the
 	// original file.
 	lineIndex []int
+
+	// Column checkpoints on long lines, sorted by offset. See [checkpoint].
+	checkpoints []checkpoint
+}
+
+// checkpointStride is the minimum distance in bytes between two checkpoints
+// on the same line. Lines no longer than this have no checkpoints.
+const checkpointStride = 256
+
+// checkpoint records the column of an offset on a long line in each unit, so
+// that computing a location only needs to measure the text after the nearest
+// preceding checkpoint, rather than everything since the start of the line.
+type checkpoint struct {
+	offset, runes, utf16 int
+	// Terminal width with and without escaping non-printable characters.
+	width, widthEscaped int
 }
 
 // NewFile constructs a new source file.
@@ -183,22 +201,29 @@ func location(f *File, offset int, units length.Unit, allowNonPrint bool) Locati
 		line--
 	}
 
-	chunk := f.Text()[lines[line]:offset]
+	cp := f.checkpoint(lines[line], offset)
+	chunk := f.Text()[cp.offset:offset]
 	var column int
 	switch units {
 	case length.Runes:
+		column = cp.runes
 		for range chunk {
 			column++
 		}
 	case length.Bytes:
-		column = len(chunk)
+		column = offset - lines[line]
 	case length.UTF16:
+		column = cp.utf16
 		for _, r := range chunk {
 			column += utf16.RuneLen(r)
 		}
 	case length.TermWidth:
 		w := &unicodex.Width{
+			Column:         cp.width,
 			EscapeNonPrint: !allowNonPrint,
+		}
+		if !allowNonPrint {
+			w.Column = cp.widthEscaped
 		}
 		_, _ = w.WriteString(chunk)
 		column = w.Column
@@ -272,4 +297,59 @@ func (f *File) lines() []int {
 		f.lineIndex = append(f.lineIndex, next)
 	})
 	return f.lineIndex
+}
+
+// checkpoint returns the last checkpoint at or before offset on the line that
+// starts at start, or a checkpoint for start itself if there is none.
+func (f *File) checkpoint(start, offset int) checkpoint {
+	f.checkpointsOnce.Do(f.buildCheckpoints)
+
+	i, exact := slices.BinarySearchFunc(f.checkpoints, offset, func(cp checkpoint, offset int) int {
+		return cmp.Compare(cp.offset, offset)
+	})
+	if !exact {
+		i--
+	}
+	if i < 0 || f.checkpoints[i].offset < start {
+		return checkpoint{offset: start}
+	}
+	return f.checkpoints[i]
+}
+
+func (f *File) buildCheckpoints() {
+	text := f.Text()
+	lines := f.lines()
+	for i, start := range lines {
+		end := len(text)
+		if i+1 < len(lines) {
+			end = lines[i+1]
+		}
+
+		cp := checkpoint{offset: start}
+		width := unicodex.Width{}
+		escaped := unicodex.Width{EscapeNonPrint: true}
+		for next := start + checkpointStride; next < end; next++ {
+			// Only place checkpoints between two ASCII bytes other than \r\n.
+			// That is always a grapheme cluster boundary, so measuring the
+			// line in two pieces gives the same column as measuring it whole.
+			if text[next-1] >= utf8.RuneSelf || text[next] >= utf8.RuneSelf ||
+				(text[next-1] == '\r' && text[next] == '\n') {
+				continue
+			}
+
+			chunk := text[cp.offset:next]
+			for _, r := range chunk {
+				cp.runes++
+				cp.utf16 += utf16.RuneLen(r)
+			}
+			_, _ = width.WriteString(chunk)
+			_, _ = escaped.WriteString(chunk)
+			cp.offset = next
+			cp.width = width.Column
+			cp.widthEscaped = escaped.Column
+			f.checkpoints = append(f.checkpoints, cp)
+
+			next += checkpointStride - 1
+		}
+	}
 }
