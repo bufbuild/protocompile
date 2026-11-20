@@ -17,7 +17,9 @@ package lexer
 import (
 	"math/big"
 	"math/bits"
+	"strings"
 
+	"github.com/bufbuild/protocompile/internal/ext/bigx"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
 
@@ -51,13 +53,16 @@ func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
 				continue
 			}
 
-			// We overflowed, so we need to spill into a big.Float.
+			// We overflowed, so we need to spill into a big.Int. It is filled
+			// in below once every digit has been checked, because multiplying
+			// the digits in one at a time is quadratic in their number.
 			result.big = new(big.Int)
-			result.big.SetUint64(result.small)
 		}
+	}
 
-		result.big.Mul(result.big, big.NewInt(int64(base)))
-		result.big.Add(result.big, big.NewInt(int64(digit)))
+	if result.big != nil {
+		digits = strings.ReplaceAll(digits, "_", "")
+		result.big.SetBits(bigx.SetString(nil, digits, int(base)))
 	}
 	return result, true
 }
