@@ -1,0 +1,30 @@
+error: implicit-presence fields cannot specify defaults
+  --> testdata/fields/default_implicit.proto:9:20
+   |
+ 9 |     string s1 = 1 [default = "abc"];
+   |                    ^^^^^^^
+   = help: set `features.field_presence` to `EXPLICIT` to use a custom default
+
+error: implicit-presence fields cannot specify defaults
+  --> testdata/fields/default_implicit.proto:10:20
+   |
+10 |     string s2 = 2 [default = "abc", features.field_presence = IMPLICIT];
+   |                    ^^^^^^^
+   = help: set `features.field_presence` to `EXPLICIT` to use a custom default
+
+error: implicit-presence fields cannot specify defaults
+  --> testdata/fields/default_implicit.proto:11:18
+   |
+11 |     int32 i = 3 [default = 1];
+   |                  ^^^^^^^
+   = help: set `features.field_presence` to `EXPLICIT` to use a custom default
+
+warning: required fields are deprecated
+  --> testdata/fields/default_implicit.proto:15:63
+   |
+15 |     string s4 = 5 [default = "abc", features.field_presence = LEGACY_REQUIRED];
+   |                                                               ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+encountered 3 errors and 1 warning

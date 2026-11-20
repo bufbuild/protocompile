@@ -6,7 +6,7 @@ package buf.test;
 
 import "google/protobuf/descriptor.proto";
 
-option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+option features = {[buf.test.x]: {a: true, b: true, c: true, d: true, e: true, f: true}};
 
 extend google.protobuf.FeatureSet {
     Features x = 9995;

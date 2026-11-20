@@ -21,3 +21,7 @@ enum Enum {
     option features = {};
     X = 1 [features = {}];
 }
+
+message Ranges {
+    extensions 1 to 100 [features = {}];
+}

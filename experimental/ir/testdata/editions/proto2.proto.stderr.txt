@@ -100,4 +100,13 @@ error: `features` cannot be set in "proto2"
 22 |     X = 1 [features = {}];
    |            ^^^^^^^^
 
-encountered 8 errors and 1 warning
+error: `features` cannot be set in "proto2"
+  --> testdata/editions/proto2.proto:26:26
+   |
+ 3 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+26 |     extensions 1 to 100 [features = {}];
+   |                          ^^^^^^^^
+
+encountered 9 errors and 1 warning
