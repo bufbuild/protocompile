@@ -165,9 +165,8 @@ func lexNumber(l *lexer) token.Token {
 			meta.Base = 10
 			meta.Prefix = 0
 		}
-		// Positive decimal exponents are not necessarily floats, but a hex
-		// literal with an exponent always is.
-		meta.IsFloat = strings.ContainsAny(digits, ".-") || (base == 16 && expBase == 2)
+		// Float is any decimal or exponent.
+		meta.IsFloat = strings.ContainsAny(digits, ".-") || expIdx != -1
 		meta.ThousandsSep = strings.Contains(digits, "_")
 
 		var err error
@@ -227,10 +226,11 @@ func lexNumber(l *lexer) token.Token {
 	case result.big != nil:
 		token.MutateMeta[tokenmeta.Number](tok).Big = new(decimal.Decimal).ReuseInt(result.big)
 
-	case base == 10 && !result.hasThousands:
+	case base == 10 && !result.hasThousands && suffix == "":
 		// We explicitly do not call SetValue for the most common case of base
 		// 10 integers, because that is handled for us on-demand in AsInt. This
-		// is a memory consumption optimization.
+		// is a memory consumption optimization. A suffix allocates metadata,
+		// which disables the on-demand path, so Word must be set.
 
 	default:
 		token.MutateMeta[tokenmeta.Number](tok).Word = result.small

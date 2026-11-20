@@ -1,0 +1,84 @@
+error: mismatched types
+  --> exponent.proto:17:7
+   |
+17 |   B = 1e3;
+   |       ^^^ expected `int32`, found floating-point literal
+   |
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:18:7
+   |
+18 |   C = 2E3;
+   |       ^^^ expected `int32`, found floating-point literal
+   |
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:22:22
+   |
+22 |   optional int32 a = 1e1;
+   |                      ^^^
+   |                      |
+   |                      expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:23:12
+   |
+23 |   reserved 5e3;
+   |            ^^^ expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:24:20
+   |
+24 |   reserved 6000 to 7e3;
+   |                    ^^^ expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:25:14
+   |
+25 |   extensions 8e3;
+   |              ^^^ expected field number, found floating-point literal
+   |
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:28:15
+   |
+10 |   optional int32 io = 50001;
+   |   -------------- expected due to this
+11 |   optional Opt mo = 50002;
+...
+28 | option (io) = 1e3;
+   |               ^^^ expected `int32`, found floating-point literal
+   |
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> exponent.proto:29:20
+   |
+ 6 |   optional int32 i = 1;
+   |   -------------- expected due to this
+ 7 |   optional double d = 2;
+...
+28 | option (io) = 1e3;
+29 | option (mo) = { i: 1e3 d: 1e3 }; // only `i` is rejected
+   |                    ^^^ expected `int32`, found floating-point literal
+   |
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+encountered 8 errors

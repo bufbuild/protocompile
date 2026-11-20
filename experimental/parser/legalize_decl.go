@@ -243,6 +243,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			fallthrough
 
 		case ast.ExprKindPrefixed, ast.ExprKindRange:
+			legalizeRangeNumbers(p, expr)
 			tags = append(tags, expr)
 
 		default:
@@ -320,5 +321,20 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			fmt.Sprintf("split the %s", taxa.Reserved),
 			edits...,
 		))
+	}
+}
+
+// legalizeRangeNumbers legalizes the number literals in a range element, which
+// may be a number, a negated number, or a range of those.
+func legalizeRangeNumbers(p *parser, expr ast.ExprAny) {
+	switch expr.Kind() {
+	case ast.ExprKindLiteral:
+		legalizeLiteral(p, expr.AsLiteral())
+	case ast.ExprKindPrefixed:
+		legalizeRangeNumbers(p, expr.AsPrefixed().Expr())
+	case ast.ExprKindRange:
+		start, end := expr.AsRange().Bounds()
+		legalizeRangeNumbers(p, start)
+		legalizeRangeNumbers(p, end)
 	}
 }

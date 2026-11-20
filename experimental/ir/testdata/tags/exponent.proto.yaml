@@ -1,0 +1,35 @@
+# A number with an exponent is a floating-point literal, even if its value is
+# an integer, so it can't be used where an integer is required.
+files:
+- path: "exponent.proto"
+  text: |
+    syntax = "proto2";
+    package test;
+    import "google/protobuf/descriptor.proto";
+
+    message Opt {
+      optional int32 i = 1;
+      optional double d = 2;
+    }
+    extend google.protobuf.FileOptions {
+      optional int32 io = 50001;
+      optional Opt mo = 50002;
+      optional double do = 50003;
+    }
+
+    enum E {
+      A = 0;
+      B = 1e3;
+      C = 2E3;
+    }
+
+    message M {
+      optional int32 a = 1e1;
+      reserved 5e3;
+      reserved 6000 to 7e3;
+      extensions 8e3;
+    }
+
+    option (io) = 1e3;
+    option (mo) = { i: 1e3 d: 1e3 }; // only `i` is rejected
+    option (do) = 1e3; // exponents are fine for floating-point values

@@ -79,7 +79,7 @@ func (n NumberToken) Prefix() source.Span {
 // Suffix returns an arbitrary suffix attached to this number (the suffix will
 // have no whitespace before the end of the digits).
 func (n NumberToken) Suffix() source.Span {
-	if n.Raw() == nil || n.Raw().Prefix == 0 {
+	if n.Raw() == nil || n.Raw().Suffix == 0 {
 		return source.Span{}
 	}
 

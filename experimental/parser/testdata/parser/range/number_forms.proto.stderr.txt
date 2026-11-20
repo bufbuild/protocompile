@@ -1,0 +1,45 @@
+error: unsupported base for integer literal
+  --> testdata/parser/range/number_forms.proto:6:14
+  help: use a hexadecimal literal instead
+   |
+ 6 | -     reserved 0b11;
+ 6 | +     reserved 0x3;
+   |
+   = note: Protobuf does not support binary literals
+
+error: unsupported base for integer literal
+  --> testdata/parser/range/number_forms.proto:7:14
+  help: remove the `o`
+   |
+ 7 | -     reserved 0o7;
+ 7 | +     reserved 07;
+   |
+   = note: octal literals are prefixed with `0`, not `0o`
+
+error: integer literal contains underscores
+  --> testdata/parser/range/number_forms.proto:8:14
+  help: remove these underscores
+   |
+ 8 | -     reserved 1_0;
+ 8 | +     reserved 10;
+   |
+   = note: Protobuf does not support Go/Java/Rust-style thousands separators
+
+error: unrecognized suffix for integer literal
+  --> testdata/parser/range/number_forms.proto:9:16
+  help: delete it
+   |
+ 9 | -     reserved 10u;
+ 9 | +     reserved 10;
+   |
+
+error: integer literal contains underscores
+  --> testdata/parser/range/number_forms.proto:10:16
+  help: remove these underscores
+   |
+10 | -     extensions 1_0;
+10 | +     extensions 10;
+   |
+   = note: Protobuf does not support Go/Java/Rust-style thousands separators
+
+encountered 5 errors

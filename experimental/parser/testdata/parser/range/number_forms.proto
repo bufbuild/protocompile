@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package test;
+
+message M {
+    reserved 0b11;
+    reserved 0o7;
+    reserved 1_0;
+    reserved 10u;
+    extensions 1_0;
+
+    // Hex and octal integers are allowed.
+    reserved 0x10, 010 to 012;
+    extensions 0x20 to max;
+}
