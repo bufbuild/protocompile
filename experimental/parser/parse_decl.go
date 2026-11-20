@@ -94,12 +94,15 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	mark := c.Mark()
 	ty, path := parseTypeAndPath(p, c, in.In())
 
-	// Extract a putative leading keyword from this. Note that a field's type,
-	// if relative, cannot start with any of the following identifiers:
+	// Extract a putative leading keyword from this. Note that in a message
+	// body, a field's type, if relative, cannot start with any of the
+	// following identifiers:
 	//
 	// message enum oneof reserved
 	// extensions extend option
 	// optional required repeated
+	//
+	// Oneof and extend bodies allow most of these, see legalizeLeadingKeyword.
 	//
 	// This is used here to disambiguated between a generic DeclDef and one of
 	// the other decl nodes.

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+message group {
+  message Bar {}
+}
+
+message Foo {
+  group a = 1;
+  optional group b = 2;
+  repeated group.Bar c = 3;
+  .group d = 4;
+  optional .group.Bar e = 5;
+}
+
+extend google.protobuf.MessageOptions {
+  group x = 10101;
+  group.Bar y = 10102;
+  .group z = 10103;
+}

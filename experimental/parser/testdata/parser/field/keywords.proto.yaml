@@ -30,12 +30,10 @@ decls:
         name.components: [{ ident: "option" }]
         value.literal.int_value: 5
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "message" }]
         type.path.components: [{ ident: "message" }]
         value.literal.int_value: 6
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "enum" }]
         type.path.components: [{ ident: "enum" }]
         value.literal.int_value: 7
@@ -45,17 +43,14 @@ decls:
         type.path.components: [{ ident: "service" }]
         value.literal.int_value: 8
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "extend" }]
         type.path.components: [{ ident: "extend" }]
         value.literal.int_value: 9
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "group" }]
         type.path.components: [{ ident: "group" }]
         value.literal.int_value: 10
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "oneof" }]
         type.path.components: [{ ident: "oneof" }]
         value.literal.int_value: 11
@@ -65,12 +60,10 @@ decls:
         type.path.components: [{ ident: "map" }]
         value.literal.int_value: 12
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "extensions" }]
         type.path.components: [{ ident: "extensions" }]
         value.literal.int_value: 13
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "reserved" }]
         type.path.components: [{ ident: "reserved" }]
         value.literal.int_value: 14
@@ -112,21 +105,18 @@ decls:
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 4
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "option" }]
         type.path.components:
         - ident: "option"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 5
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "message" }]
         type.path.components:
         - ident: "message"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 6
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "enum" }]
         type.path.components:
         - ident: "enum"
@@ -140,21 +130,18 @@ decls:
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 8
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "extend" }]
         type.path.components:
         - ident: "extend"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 9
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "group" }]
         type.path.components:
         - ident: "group"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 10
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "oneof" }]
         type.path.components:
         - ident: "oneof"
@@ -168,14 +155,12 @@ decls:
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 12
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "extensions" }]
         type.path.components:
         - ident: "extensions"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 13
     - def:
-        kind: KIND_FIELD
         name.components: [{ ident: "reserved" }]
         type.path.components:
         - ident: "reserved"
@@ -188,3 +173,212 @@ decls:
         - ident: "rpc"
         - { ident: "X", separator: SEPARATOR_DOT }
         value.literal.int_value: 15
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M3" }]
+    body.decls:
+    - def:
+        name.components: [{ ident: "optional" }]
+        type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        name.components: [{ ident: "repeated" }]
+        type.path.components: [{ ident: "repeated" }]
+        value.literal.int_value: 2
+    - def:
+        name.components: [{ ident: "required" }]
+        type.path.components: [{ ident: "required" }]
+        value.literal.int_value: 3
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        name.components: [{ ident: "optional" }]
+        type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        name.components: [{ ident: "repeated" }]
+        type.path.components: [{ ident: "repeated" }]
+        value.literal.int_value: 2
+    - def:
+        name.components: [{ ident: "required" }]
+        type.path.components: [{ ident: "required" }]
+        value.literal.int_value: 3
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M4" }]
+    body.decls:
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "x" }]
+        body.decls:
+        - def:
+            name.components: [{ ident: "optional" }]
+            type.path.components: [{ ident: "optional" }]
+            value.literal.int_value: 1
+        - def:
+            name.components: [{ ident: "repeated" }]
+            type.path.components: [{ ident: "repeated" }]
+            value.literal.int_value: 2
+        - def:
+            name.components: [{ ident: "required" }]
+            type.path.components: [{ ident: "required" }]
+            value.literal.int_value: 3
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M5" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "a" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "optional" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "b" }]
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "message" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "c" }]
+        type.path.components: [{ ident: "message", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 3
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "d" }]
+        type.path.components: [{ ident: "optional", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 4
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "e" }]
+        type.path.components:
+        - ident: "test"
+        - { ident: "message", separator: SEPARATOR_DOT }
+        value.literal.int_value: 5
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "f" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "X", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 6
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "o" }]
+        type.path.components:
+        - { ident: "option", separator: SEPARATOR_DOT }
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 7
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "r" }]
+        type.path.components: [{ ident: "reserved", separator: SEPARATOR_DOT }]
+        value.literal.int_value: 8
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.path.components:
+        - { ident: "extensions", separator: SEPARATOR_DOT }
+        value.literal.int_value: 9
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "x" }]
+        body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "g" }]
+            type.path.components: [{ ident: "message" }]
+            value.literal.int_value: 10
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "h" }]
+            type.path.components: [{ ident: "enum" }]
+            value.literal.int_value: 11
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "i" }]
+            type.path.components: [{ ident: "oneof" }]
+            value.literal.int_value: 12
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "j" }]
+            type.path.components: [{ ident: "extend" }]
+            value.literal.int_value: 13
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "r2" }]
+            type.path.components:
+            - ident: "reserved"
+            - { ident: "X", separator: SEPARATOR_DOT }
+            value.literal.int_value: 14
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x2" }]
+            type.path.components:
+            - ident: "extensions"
+            - { ident: "X", separator: SEPARATOR_DOT }
+            value.literal.int_value: 15
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M6" }]
+    body.decls:
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "x" }]
+        body.decls:
+        - def:
+            name.components: [{ ident: "a" }]
+            type.path.components:
+            - ident: "option"
+            - { ident: "X", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "k" }]
+        type.path.components: [{ ident: "message" }]
+        value.literal.int_value: 20
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "l" }]
+        type.path.components: [{ ident: "enum" }]
+        value.literal.int_value: 21
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "m" }]
+        type.path.components: [{ ident: "oneof" }]
+        value.literal.int_value: 22
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "n" }]
+        type.path.components: [{ ident: "extend" }]
+        value.literal.int_value: 23
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "o" }]
+        type.path.components:
+        - ident: "option"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 24
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "r" }]
+        type.path.components:
+        - ident: "reserved"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 25
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.path.components:
+        - ident: "extensions"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 26
