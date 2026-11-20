@@ -408,11 +408,18 @@ again:
 		}
 
 		// Otherwise kick off full symbol resolution.
+		//
+		// Extension names in brackets are resolved relative to the scope
+		// containing the literal's message type.
+		scope := e.scope
+		if hasBrackets {
+			scope = ty.FullName().Parent()
+		}
 		sym := symbolRef{
 			File:   e.File,
 			Report: nil, // Suppress diagnostics.
 
-			scope: e.scope,
+			scope: scope,
 			name:  FullName(path),
 			span:  expr.Key(),
 		}.resolve()

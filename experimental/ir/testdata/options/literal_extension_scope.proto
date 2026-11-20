@@ -1,0 +1,19 @@
+syntax = "proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message a {
+  extensions 1 to 100;
+  message b { message c { extend a { repeated int32 i = 1; } } }
+  message d { message e { extend a { repeated int32 j = 2; } } }
+  extend a { repeated int32 k = 3; }
+  message m0 { option (msga) = { [b.c.i]: 1 }; }
+  message m1 { option (msga) = { [d.e.j]: 1 }; }
+  message m2 { option (msga) = { [a.d.e.j]: 1 }; }
+  message m3 { option (msga) = { [e.j]: 1 }; }
+  message m4 { option (msga) = { [k]: 1 }; }
+  message m5 { option (msga) = { [a.k]: 1 }; }
+  message m6 { option (msga) = { [bar.a.k]: 1 }; }
+  message m7 { option (msga) = { [foo.bar.a.k]: 1 }; }
+  message m8 { option (msga) = { [bar.a.d.e.j]: 1 }; }
+}

@@ -327,6 +327,13 @@ func (r symbolRef) resolve() Symbol {
 		found, expected = r.imported.resolve(r.File, r.scope, r.name, r.skipIfNot, nil)
 	}
 
+	// A partial name whose first component resolves to a scope that does not
+	// contain the rest of the name is not found, even though resolve falls
+	// back to another symbol for diagnostics.
+	if r.Report == nil && expected != "" {
+		return Symbol{}
+	}
+
 	sym := GetRef(r.File, found)
 	if r.Report != nil {
 		d := r.diagnoseLookup(sym, expected)
