@@ -108,6 +108,17 @@ warning: redundant custom default
    = help: fields without a custom default will default to the zero value,
            making this option redundant
 
+error: mismatched types
+  --> testdata/fields/default.proto:40:26
+   |
+40 |     E e2 = 42 [default = 1];
+   |     -                    ^ expected `buf.test.M.E`, found integer literal
+   |     |
+   |     expected due to this
+   |
+   = note: expected: enum type `buf.test.M.E`
+              found: integer literal
+
 warning: redundant custom default
   --> testdata/fields/default.proto:41:26
    |
@@ -148,4 +159,4 @@ error: expected singular scalar- or enum-typed field, found message type
    = help: custom defaults are only for non-repeated fields that have a
            non-message type
 
-encountered 6 errors and 8 warnings
+encountered 7 errors and 8 warnings

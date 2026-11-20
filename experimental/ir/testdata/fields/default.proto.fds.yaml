@@ -134,7 +134,6 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".buf.test.M.E"
-      default_value: "E1"
       json_name: "e2"
     - name: "e3"
       number: 43
