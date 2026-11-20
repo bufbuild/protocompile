@@ -1,0 +1,96 @@
+warning: non-canonical floating-point literal
+  --> testdata/options/values/float_ident.proto:23:19
+   |
+23 | option (x) = { d: iNf f: [-INFINITY, NaN] };
+   |                   ^^^
+  help: replace with `inf`
+   |
+23 | - option (x) = { d: iNf f: [-INFINITY, NaN] };
+23 | + option (x) = { d: inf f: [-INFINITY, NaN] };
+   |
+   = note: within message expressions only, some floating-point literals are
+           case-insensitive
+
+warning: non-canonical floating-point literal
+  --> testdata/options/values/float_ident.proto:23:28
+   |
+23 | option (x) = { d: iNf f: [-INFINITY, NaN] };
+   |                            ^^^^^^^^
+  help: replace with `inf`
+   |
+23 | - option (x) = { d: iNf f: [-INFINITY, NaN] };
+23 | + option (x) = { d: iNf f: [-inf, NaN] };
+   |
+   = note: within message expressions only, some floating-point literals are
+           case-insensitive
+
+warning: non-canonical floating-point literal
+  --> testdata/options/values/float_ident.proto:23:38
+   |
+23 | option (x) = { d: iNf f: [-INFINITY, NaN] };
+   |                                      ^^^
+  help: replace with `nan`
+   |
+23 | - option (x) = { d: iNf f: [-INFINITY, NaN] };
+23 | + option (x) = { d: iNf f: [-INFINITY, nan] };
+   |
+   = note: within message expressions only, some floating-point literals are
+           case-insensitive
+
+error: cannot find `foo` in this scope
+  --> testdata/options/values/float_ident.proto:26:20
+   |
+26 | option (x2) = { d: foo };
+   |                    ^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `foo` in this scope
+  --> testdata/options/values/float_ident.proto:27:21
+   |
+27 | option (x3) = { d: -foo };
+   |                     ^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `Infin` in this scope
+  --> testdata/options/values/float_ident.proto:28:22
+   |
+28 | option (x4) = { f: [-Infin, nanx, Infinityx] };
+   |                      ^^^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `nanx` in this scope
+  --> testdata/options/values/float_ident.proto:28:29
+   |
+28 | option (x4) = { f: [-Infin, nanx, Infinityx] };
+   |                             ^^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `Infinityx` in this scope
+  --> testdata/options/values/float_ident.proto:28:35
+   |
+28 | option (x4) = { f: [-Infin, nanx, Infinityx] };
+   |                                   ^^^^^^^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `foo` in this scope
+  --> testdata/options/values/float_ident.proto:31:14
+   |
+31 | option (y) = foo;
+   |              ^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+error: cannot find `foo` in this scope
+  --> testdata/options/values/float_ident.proto:32:16
+   |
+32 | option (y2) = -foo;
+   |                ^^^ not found in this scope
+   |
+   = help: the full name of this scope is `buf.test`
+
+encountered 7 errors and 3 warnings
