@@ -1,0 +1,105 @@
+warning: using `<...>` for message expression is not recommended
+  --> testdata/options/values/message_twice.proto:19:35
+   |
+19 | message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+   |                                   ^^^^^^^^
+  help: use `{...}` instead
+   |
+19 | - message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+19 | + message Angle { option (mo) = { m { a: 1 } m < a: 2 > }; }
+   |
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
+
+warning: using `<...>` for message expression is not recommended
+  --> testdata/options/values/message_twice.proto:19:46
+   |
+19 | message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+   |                                              ^^^^^^^^
+  help: use `{...}` instead
+   |
+19 | - message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+19 | + message Angle { option (mo) = { m < a: 1 > m { a: 2 } }; }
+   |
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
+
+error: message field `test.Msg.m` set multiple times
+  --> testdata/options/values/message_twice.proto:18:44
+   |
+ 8 |   Msg m = 3;
+   |       - not a repeated field
+ 9 |   int32 a = 1;
+...
+18 | message Same { option (mo) = { m: { a: 1 } m: { a: 2 } }; }
+   |                                -           ^ ... also set here
+   |                                |
+   |                                first set here...
+   |
+   = note: a non-`repeated` option may be set at most once
+
+error: message field `test.Msg.m` set multiple times
+  --> testdata/options/values/message_twice.proto:19:44
+   |
+ 8 |   Msg m = 3;
+   |       - not a repeated field
+ 9 |   int32 a = 1;
+...
+18 | message Same { option (mo) = { m: { a: 1 } m: { a: 2 } }; }
+19 | message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+   |                                 -          ^ ... also set here
+   |                                 |
+   |                                 first set here...
+   |
+   = note: a non-`repeated` option may be set at most once
+
+error: message field `test.Msg.m` set multiple times
+  --> testdata/options/values/message_twice.proto:20:51
+   |
+ 8 |   Msg m = 3;
+   |       - not a repeated field
+ 9 |   int32 a = 1;
+...
+19 | message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+20 | message Nested { option (mo) = { m: { m: { a: 1 } m: { a: 2 } } }; }
+   |                                       -           ^ ... also set here
+   |                                       |
+   |                                       first set here...
+   |
+   = note: a non-`repeated` option may be set at most once
+
+error: message field `test.Msg.m` set multiple times
+  --> testdata/options/values/message_twice.proto:21:56
+   |
+ 8 |   Msg m = 3;
+   |       - not a repeated field
+ 9 |   int32 a = 1;
+...
+20 | message Nested { option (mo) = { m: { m: { a: 1 } m: { a: 2 } } }; }
+21 | message Interleaved { option (mo) = { m: { a: 1 } a: 5 m: { b: 2 } }; }
+   |                                       -                ^ ... also set here
+   |                                       |
+   |                                       first set here...
+   |
+   = note: a non-`repeated` option may be set at most once
+
+error: message field `test.Msg.m` set multiple times
+  --> testdata/options/values/message_twice.proto:22:45
+   |
+ 8 |   Msg m = 3;
+   |       - not a repeated field
+ 9 |   int32 a = 1;
+...
+21 | message Interleaved { option (mo) = { m: { a: 1 } a: 5 m: { b: 2 } }; }
+22 | message Empty { option (mo) = { m: { a: 1 } m: {} }; }
+   |                                 -           ^ ... also set here
+   |                                 |
+   |                                 first set here...
+   |
+   = note: a non-`repeated` option may be set at most once
+
+encountered 5 errors and 2 warnings

@@ -1,0 +1,29 @@
+edition = "2023";
+
+package test;
+
+import "google/protobuf/descriptor.proto";
+
+message Msg {
+  Msg m = 3;
+  int32 a = 1;
+  int32 b = 2;
+  repeated Msg r = 4;
+}
+
+extend google.protobuf.MessageOptions {
+  Msg mo = 50001;
+}
+
+message Same { option (mo) = { m: { a: 1 } m: { a: 2 } }; }
+message Angle { option (mo) = { m < a: 1 > m < a: 2 > }; }
+message Nested { option (mo) = { m: { m: { a: 1 } m: { a: 2 } } }; }
+message Interleaved { option (mo) = { m: { a: 1 } a: 5 m: { b: 2 } }; }
+message Empty { option (mo) = { m: { a: 1 } m: {} }; }
+
+// Legal: repeated fields, and dotted paths merge.
+message Repeated { option (mo) = { r: { a: 1 } r: { a: 2 } }; }
+message Dotted {
+  option (mo).m.a = 1;
+  option (mo).m.b = 2;
+}
