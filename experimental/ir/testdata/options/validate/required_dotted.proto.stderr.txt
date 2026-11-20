@@ -1,0 +1,77 @@
+warning: required fields are deprecated
+  --> testdata/options/validate/required_dotted.proto:8:3
+   |
+ 8 |   required string a = 1;
+   |   ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+warning: required fields are deprecated
+  --> testdata/options/validate/required_dotted.proto:9:3
+   |
+ 9 |   required string b = 2;
+   |   ^^^^^^^^
+   = help: do not attempt to change this to `optional` if the field is already
+           in-use; doing so is a wire protocol break
+
+error: missing required fields: (buf.test.f1).b
+  --> testdata/options/validate/required_dotted.proto:57:8
+   |
+57 | option (f1).a = "a";
+   |        ^^^^
+
+error: missing required fields: (buf.test.nested).inner.b
+  --> testdata/options/validate/required_dotted.proto:58:8
+   |
+58 | option (nested).inner.a = "a";
+   |        ^^^^^^^^
+
+error: missing required fields: (buf.test.lit).inner.b
+  --> testdata/options/validate/required_dotted.proto:59:8
+   |
+59 | option (lit).inner = { a: "a" };
+   |        ^^^^^
+
+error: missing required fields: (buf.test.mf).b
+  --> testdata/options/validate/required_dotted.proto:68:10
+   |
+68 |   option (mf).a = "a";
+   |          ^^^^
+
+error: missing required fields: (buf.test.ff).b
+  --> testdata/options/validate/required_dotted.proto:69:25
+   |
+69 |   optional int32 x = 1 [(ff).a = "a"];
+   |                         ^^^^
+
+error: missing required fields: (buf.test.of).b
+  --> testdata/options/validate/required_dotted.proto:71:12
+   |
+71 |     option (of).a = "a";
+   |            ^^^^
+
+error: missing required fields: (buf.test.ef).b
+  --> testdata/options/validate/required_dotted.proto:77:10
+   |
+77 |   option (ef).a = "a";
+   |          ^^^^
+
+error: missing required fields: (buf.test.evf).b
+  --> testdata/options/validate/required_dotted.proto:78:10
+   |
+78 |   X = 0 [(evf).a = "a"];
+   |          ^^^^^
+
+error: missing required fields: (buf.test.sf).b
+  --> testdata/options/validate/required_dotted.proto:82:10
+   |
+82 |   option (sf).a = "a";
+   |          ^^^^
+
+error: missing required fields: (buf.test.mtf).b
+  --> testdata/options/validate/required_dotted.proto:84:12
+   |
+84 |     option (mtf).a = "a";
+   |            ^^^^^
+
+encountered 10 errors and 2 warnings

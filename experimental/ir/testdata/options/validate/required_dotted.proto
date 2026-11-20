@@ -1,0 +1,94 @@
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+  required string a = 1;
+  required string b = 2;
+}
+
+message Outer {
+  optional Foo inner = 1;
+}
+
+extend google.protobuf.FileOptions {
+  optional Foo f1 = 20000;
+  optional Foo f2 = 20001;
+  optional Foo f3 = 20002;
+  optional Foo f4 = 20003;
+  optional Foo f5 = 20004;
+  optional Outer nested = 20005;
+  optional Outer ok_nested = 20006;
+  optional Outer lit = 20007;
+  optional Outer lit_then_dotted = 20008;
+}
+
+extend google.protobuf.MessageOptions {
+  optional Foo mf = 20000;
+}
+
+extend google.protobuf.FieldOptions {
+  optional Foo ff = 20000;
+}
+
+extend google.protobuf.EnumOptions {
+  optional Foo ef = 20000;
+}
+
+extend google.protobuf.EnumValueOptions {
+  optional Foo evf = 20000;
+}
+
+extend google.protobuf.ServiceOptions {
+  optional Foo sf = 20000;
+}
+
+extend google.protobuf.MethodOptions {
+  optional Foo mtf = 20000;
+}
+
+extend google.protobuf.OneofOptions {
+  optional Foo of = 20000;
+}
+
+// Rejected.
+option (f1).a = "a";
+option (nested).inner.a = "a";
+option (lit).inner = { a: "a" };
+
+// Accepted: a literal completed by a later dotted option.
+option (f3) = { a: "a" };
+option (f3).b = "b";
+option (lit_then_dotted).inner = { a: "a" };
+option (lit_then_dotted).inner.b = "b";
+
+message M {
+  option (mf).a = "a";
+  optional int32 x = 1 [(ff).a = "a"];
+  oneof o {
+    option (of).a = "a";
+    int32 y = 2;
+  }
+}
+
+enum E {
+  option (ef).a = "a";
+  X = 0 [(evf).a = "a"];
+}
+
+service S {
+  option (sf).a = "a";
+  rpc R(M) returns (M) {
+    option (mtf).a = "a";
+  }
+}
+
+// Accepted.
+option (f4).a = "a";
+option (f4).b = "b";
+option (f2).b = "b";
+option (f2).a = "a";
+option (ok_nested).inner.a = "a";
+option (ok_nested).inner.b = "b";

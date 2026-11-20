@@ -1,0 +1,25 @@
+edition = "2023";
+
+package buf.test;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+  string a = 1 [features.field_presence = LEGACY_REQUIRED];
+  string b = 2 [features.field_presence = LEGACY_REQUIRED];
+  string c = 3;
+}
+
+extend google.protobuf.FileOptions {
+  Foo foo = 20000;
+  Foo ok = 20001;
+  google.protobuf.Any any = 20002;
+}
+
+// Rejected.
+option (foo) = { a: "a" };
+option (any) = { [type.googleapis.com/buf.test.Foo] { b: "b" } };
+
+// Accepted.
+option (ok) = { a: "a" b: "b" };

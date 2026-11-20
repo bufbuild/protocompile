@@ -1,0 +1,30 @@
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal_2023.proto:9:43
+   |
+ 9 |   string a = 1 [features.field_presence = LEGACY_REQUIRED];
+   |                                           ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+warning: required fields are deprecated
+  --> testdata/options/validate/required_literal_2023.proto:10:43
+   |
+10 |   string b = 2 [features.field_presence = LEGACY_REQUIRED];
+   |                                           ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+error: missing required fields: (buf.test.foo).b
+  --> testdata/options/validate/required_literal_2023.proto:21:8
+   |
+21 | option (foo) = { a: "a" };
+   |        ^^^^^^^^^^^^^^^^^^
+
+error: missing required fields:
+       (buf.test.any).[type.googleapis.com/buf.test.Foo].a
+  --> testdata/options/validate/required_literal_2023.proto:22:8
+   |
+22 | option (any) = { [type.googleapis.com/buf.test.Foo] { b: "b" } };
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+encountered 2 errors and 2 warnings
