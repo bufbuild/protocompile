@@ -31,9 +31,16 @@ func TestLocation(t *testing.T) {
 		"foo\nbar\ncat: 🐈‍⬛\ntail",
 	)
 
+	crlf := source.NewFile("crlf", "ab\r\ncd")
+
 	tests := []struct {
 		loc  source.Location
 		unit length.Unit
+		// line and column, if set, are passed to InverseLocation, which
+		// clamps them to loc.
+		line, column int
+		// file, if set, replaces the default file.
+		file *source.File
 	}{
 		{loc: source.Location{0, 1, 1}, unit: length.Bytes},
 		{loc: source.Location{0, 1, 1}, unit: length.UTF16},
@@ -59,16 +66,32 @@ func TestLocation(t *testing.T) {
 		{loc: source.Location{28, 4, 5}, unit: length.UTF16},
 		{loc: source.Location{28, 4, 5}, unit: length.Runes},
 		{loc: source.Location{28, 4, 5}, unit: length.Bytes},
+
+		{loc: source.Location{3, 1, 4}, unit: length.Bytes, line: 1, column: 99},
+		{loc: source.Location{3, 1, 4}, unit: length.UTF16, line: 1, column: 99},
+		{loc: source.Location{3, 1, 4}, unit: length.Runes, line: 1, column: 99},
+		{loc: source.Location{28, 4, 5}, unit: length.UTF16, line: 4, column: 99},
+		{loc: source.Location{28, 4, 5}, unit: length.UTF16, line: 99, column: 1},
+		{loc: source.Location{2, 1, 3}, unit: length.UTF16, line: 1, column: 99, file: crlf},
+		{loc: source.Location{2, 1, 3}, unit: length.Bytes, line: 1, column: 99, file: crlf},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
+			file := file
+			if test.file != nil {
+				file = test.file
+			}
 			t.Logf("%q | %q", file.Text()[:test.loc.Offset], file.Text()[test.loc.Offset:])
 			assert.Equal(t, test.loc, file.Location(test.loc.Offset, test.unit), "offset/%s -> line/col", test.unit)
 
+			line, column := test.loc.Line, test.loc.Column
+			if test.line != 0 {
+				line, column = test.line, test.column
+			}
 			if test.unit != length.TermWidth {
-				assert.Equal(t, test.loc, file.InverseLocation(test.loc.Line, test.loc.Column, test.unit), "line/col -> offset/%s", test.unit)
+				assert.Equal(t, test.loc, file.InverseLocation(line, column, test.unit), "line/col -> offset/%s", test.unit)
 			}
 		})
 	}
