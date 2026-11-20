@@ -17,6 +17,7 @@ package ir
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -46,17 +47,12 @@ import (
 // to surface diagnostics for `a.Foo.bar`..
 func DedupExportedSymbols(r *report.Report, files ...*File) {
 	nameToSymbols := map[intern.ID][]Symbol{}
+	packages := map[intern.ID]struct{}{}
 	var names []intern.ID
 
 	for _, file := range files {
 		for sym := range seq.Values(file.ExportedSymbols()) {
-			// We ignore package declarations, since the same package declaration could be made
-			// multiple times.
-			if sym.Kind() == SymbolKindPackage {
-				continue
-			}
-
-			// We also ignore exported symbols from public imports.
+			// We ignore exported symbols from public imports.
 			if sym.Context() != file {
 				continue
 			}
@@ -64,6 +60,15 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 			fqn := sym.InternedFullName()
 			if _, ok := nameToSymbols[fqn]; !ok {
 				names = append(names, fqn)
+			}
+
+			// The same package may be declared by many files, so only keep
+			// the first one. It can still conflict with a non-package symbol.
+			if sym.Kind() == SymbolKindPackage {
+				if mapsx.Contains(packages, fqn) {
+					continue
+				}
+				packages[fqn] = struct{}{}
 			}
 			nameToSymbols[fqn] = append(nameToSymbols[fqn], sym)
 		}
@@ -87,7 +92,8 @@ func DedupExportedSymbols(r *report.Report, files ...*File) {
 }
 
 // enclosingName returns the full name of the declaration that syntactically
-// encloses sym, or zero if it is declared at the top level of its file.
+// encloses sym, or zero if it is declared at the top level of its file. For a
+// package, this is its parent package.
 func enclosingName(sym Symbol) intern.ID {
 	switch {
 	case sym.Kind().IsType():
@@ -98,6 +104,9 @@ func enclosingName(sym Symbol) intern.ID {
 		return sym.AsOneof().Container().InternedFullName()
 	case sym.Kind() == SymbolKindMethod:
 		return sym.AsMethod().Service().InternedFullName()
+	case sym.Kind() == SymbolKindPackage:
+		parent, _ := sym.Context().session.intern.Query(string(sym.FullName().Parent()))
+		return parent
 	default:
 		return 0
 	}

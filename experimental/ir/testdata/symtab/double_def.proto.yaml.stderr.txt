@@ -59,16 +59,21 @@ error: `Main` declared multiple times
            "dep/priv.proto" declares `dep.foo.Main` but it is not directly
            imported
 
-error: `Foo` declared multiple times
+error: `dep.foo.Foo` declared multiple times
   --> main.proto:11:9
    |
 11 | message Foo {
    |         ^^^ first here, as a message type
    |
+  ::: main2.proto:2:1
+   |
+ 2 | package dep.foo.Foo;
+   | -------------------- ...also declared here, now as a `package` declaration
+   |
   ::: dep/foo.proto:6:9
    |
  6 | message Foo {}
-   |         --- ...also declared here
+   |         --- ...and then here as a message type
    |
    = help: symbol names must be unique across all files; for example,
            "main.proto" declares `dep.foo.Foo` but it is not directly imported

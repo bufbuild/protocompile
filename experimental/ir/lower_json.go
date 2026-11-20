@@ -16,6 +16,7 @@ package ir
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -86,6 +87,14 @@ func populateJSONNames(file *File, r *report.Report) {
 			name, custom := option.AsString()
 			if custom {
 				field.Raw().jsonName = file.session.intern.Intern(name)
+				// This form is reserved for extensions in JSON.
+				if strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]") {
+					r.Errorf("custom JSON name `%s` cannot start with `[` and end with `]`", name).Apply(
+						report.Snippet(option.ValueAST()),
+						report.Helpf("this form is reserved for representing extensions in JSON"),
+					)
+					continue
+				}
 			}
 
 			prev, ok := names.AddID(field.Raw().jsonName, field)
