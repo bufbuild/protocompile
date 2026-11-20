@@ -41,6 +41,7 @@ option (x) = {
     // Type-checking errors.
     f32: ["foo", true, {}, [], 0 to 1]
     f64: ["foo", true, {}, [], 0 to 1]
+    f64: [0x10, 010] // Message literals only allow decimal.
 };
 
 option (y) = inf;
@@ -50,6 +51,14 @@ option (y) = Infinity;
 option (y) = nan;
 option (y) = NaN;
 option (y) = NAN;
+
+// Hex and octal integers are allowed.
+option (y) = 0x10;
+option (y) = 0X1F;
+option (y) = -0x10;
+option (y) = 0x1e3;
+option (y) = 010;
+option (y) = 0x10000000000000000; // Out of range.
 
 message Foo {
     repeated float f32 = 1;

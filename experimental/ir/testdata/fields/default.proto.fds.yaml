@@ -74,6 +74,12 @@ file:
       type: TYPE_FLOAT
       default_value: "0"
       json_name: "f6"
+    - name: "f7"
+      number: 17
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "16"
+      json_name: "f7"
     - name: "s1"
       number: 21
       label: LABEL_OPTIONAL
@@ -99,6 +105,12 @@ file:
       type: TYPE_STRING
       default_value: ""
       json_name: "s4"
+    - name: "s5"
+      number: 25
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      default_value: "😀"
+      json_name: "s5"
     - name: "b1"
       number: 31
       label: LABEL_OPTIONAL

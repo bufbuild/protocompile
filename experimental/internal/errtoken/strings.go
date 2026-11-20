@@ -19,6 +19,7 @@ package errtoken
 import (
 	"fmt"
 	"strconv"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -93,8 +94,16 @@ func (e InvalidEscape) Diagnose(d *report.Diagnostic) {
 		}
 
 		value, _ := strconv.ParseUint(text[2:], 16, 32)
+		if c == 'u' && utf16.IsSurrogate(rune(value)) {
+			d.Apply(
+				report.Snippetf(e.Span, "unpaired UTF-16 surrogate"),
+				report.Helpf("a `\\u` escape in the range U+D800 to U+DBFF must be "+
+					"followed by one in the range U+DC00 to U+DFFF"),
+			)
+			return
+		}
 		if !utf8.ValidRune(rune(value)) {
-			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
+			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+D800 to U+DFFF"))
 			return
 		}
 		return

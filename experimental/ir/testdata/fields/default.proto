@@ -19,11 +19,13 @@ message M {
     float f4 = 14 [default = nan];
     float f5 = 15 [default = -0];
     float f6 = 16 [default = 0];
+    double f7 = 17 [default = 0x10];
 
     string s1 = 21 [default = "foo"];
     string s2 = 22 [default = "\x63\xff"];
     string s3 = 23 [default = "\x63\xff", features.utf8_validation = NONE];
     string s4 = 24 [default = ""];
+    string s5 = 25 [default = "\ud83d\ude00"];
 
     bool b1 = 31 [default = true];
     bool b2 = 32 [default = 1];
