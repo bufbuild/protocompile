@@ -20,6 +20,7 @@ message M {
     optional float f12 = 12 [default = -0.0];               // -0
     optional float f13 = 13 [default = 123456789];          // 123456792
     optional float f14 = 14 [default = 3e-39];              // 3.00000065e-39
+    optional float f15 = 15 [default = 0.05e2];             // 5
 
     optional double d1 = 21 [default = 1234567];                  // 1234567
     optional double d2 = 22 [default = 0.1];                      // 0.1
@@ -33,4 +34,8 @@ message M {
     optional double d10 = 30 [default = -0.0];                    // -0
     optional double d11 = 31 [default = 1e100];                   // 1e+100
     optional double d12 = 32 [default = 0.6666666666666666];      // 0.66666666666666663
+    optional double d13 = 33 [default = 0.05e2];                  // 5
+    optional double d14 = 34 [default = 0.01e-5];                 // 1e-07
+    optional double d15 = 35 [default = 0.05e0];                  // 0.05
+    optional double d16 = 36 [default = 0.000123e10];             // 1230000
 }
