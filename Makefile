@@ -60,6 +60,14 @@ test: $(PROTOC) ## Run unit tests
 	$(GO) test $(if $(filter 386,$(GOARCH)),,-race) -cover ./...
 	$(GO) test -tags protolegacy ./...
 
+.PHONY: fuzz
+fuzz: $(PROTOC) ## Run fuzz tests
+	$(GO) test -v -fuzz=FuzzRoundTrip -fuzztime=30s ./experimental/internal/protoscope/assembler
+	$(GO) test -v -fuzz=FuzzParse -fuzztime=30s ./experimental/internal/protoscope/parser
+	$(GO) test -v -fuzz=FuzzDisassemble -fuzztime=30s ./experimental/internal/protoscope/disassembler
+	$(GO) test -v -fuzz=FuzzAssemble -fuzztime=30s ./experimental/protoscope
+	$(GO) test -v -fuzz=FuzzDisassemble -fuzztime=30s ./experimental/protoscope
+
 .PHONY: benchmarks
 benchmarks: $(PROTOC) ## Run benchmarks
 	$(GO) test -bench=. -benchmem -v ./experimental/benchmark
