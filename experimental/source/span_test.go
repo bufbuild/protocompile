@@ -15,12 +15,18 @@
 package source_test
 
 import (
+	"math/rand/v2"
+	"strings"
 	"testing"
+	"time"
+	"unicode/utf16"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/source/length"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
 
 func TestLocation(t *testing.T) {
@@ -72,4 +78,84 @@ func TestLocation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLocationLongLine(t *testing.T) {
+	t.Parallel()
+
+	// Measures the column from the start of the line, which is what Location
+	// computed before it used checkpoints.
+	reference := func(text string, offset int, unit length.Unit) source.Location {
+		start := strings.LastIndexByte(text[:offset], '\n') + 1
+		chunk := text[start:offset]
+		column := 0
+		switch unit {
+		case length.Bytes:
+			column = len(chunk)
+		case length.Runes:
+			for range chunk {
+				column++
+			}
+		case length.UTF16:
+			for _, r := range chunk {
+				column += utf16.RuneLen(r)
+			}
+		case length.TermWidth:
+			w := &unicodex.Width{}
+			_, _ = w.WriteString(chunk)
+			column = w.Column
+		}
+		return source.Location{
+			Offset: offset,
+			Line:   strings.Count(text[:offset], "\n") + 1,
+			Column: column + 1,
+		}
+	}
+
+	pieces := []string{
+		"a", "b", " ", "  ", "\t", "\r", "\n", "\r\n", "\x01", "\xff", "é",
+		"e\u0301", "\u0301", "\u4e2d", "🐈‍⬛", "\u200d", "🇺🇸", "🇺", "\u0600", "\U0001F44D\U0001F3FD",
+	}
+	rng := rand.New(rand.NewPCG(1, 2))
+	for range 20 {
+		var b strings.Builder
+		for b.Len() < 4000 {
+			// Mostly ASCII, so that long lines get checkpoints.
+			if rng.IntN(4) != 0 {
+				b.WriteString(pieces[rng.IntN(3)])
+			} else {
+				piece := pieces[rng.IntN(len(pieces))]
+				if piece == "\n" || piece == "\r\n" {
+					if rng.IntN(8) != 0 {
+						continue
+					}
+				}
+				b.WriteString(piece)
+			}
+		}
+		text := b.String()
+		file := source.NewFile("test", text)
+		for offset := 1; offset <= len(text); offset++ {
+			for _, unit := range []length.Unit{length.Bytes, length.Runes, length.UTF16, length.TermWidth} {
+				want := reference(text, offset, unit)
+				if got := file.Location(offset, unit); got != want {
+					t.Fatalf("offset %d/%s: got %v, want %v", offset, unit, got, want)
+				}
+			}
+		}
+	}
+
+	if internal.IsRace {
+		t.Skip("skipping long line timing because race detector is enabled")
+	}
+	// Measuring each column from the start of the line made this quadratic.
+	text := strings.Repeat("optional int32 a = 1; ", 1<<14)
+	file := source.NewFile("test", text)
+	start := time.Now()
+	for offset := 0; offset < len(text); offset += 16 {
+		for _, unit := range []length.Unit{length.Runes, length.UTF16, length.TermWidth} {
+			file.Location(offset, unit)
+		}
+	}
+	assert.Less(t, time.Since(start), 5*time.Second)
 }
