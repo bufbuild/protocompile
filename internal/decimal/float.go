@@ -240,7 +240,7 @@ func (z *Decimal) float(x *big.Float) *big.Float {
 		scale.SetPrec(scale.Prec() + uint(pow5.BitLen()) + 2)
 		scale.SetInt(pow5)
 
-		x.SetPrec(max(x.Prec(), scale.Prec(), uint(z.exp)))
+		x.SetPrec(max(x.Prec(), scale.Prec()))
 		if digits > 0 {
 			x.Mul(x, scale)
 		} else {
