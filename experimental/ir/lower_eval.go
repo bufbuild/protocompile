@@ -664,6 +664,19 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			continue
 		}
 
+		// The parser only checks the elements of an array missing a `:`, so
+		// an empty one must be diagnosed here.
+		if expr.Colon().IsZero() &&
+			expr.Value().Kind() == ast.ExprKindArray &&
+			expr.Value().AsArray().Elements().Len() == 0 &&
+			!field.Element().IsMessage() {
+			e.Errorf("missing `:` before %s", taxa.Array).Apply(
+				report.Snippet(expr.Key()),
+				report.Snippetf(expr.Value(), "this %s is empty", taxa.Array),
+				report.Notef("the `:` can only be omitted if the field is message-typed"),
+			)
+		}
+
 		copied := args
 		copied.textFormat = true
 		copied.isConcreteAny = false

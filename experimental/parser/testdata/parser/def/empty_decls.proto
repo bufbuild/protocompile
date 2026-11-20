@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package test;
+
+;
+
+message M {
+    ;
+    optional int32 a = 1;;
+    extensions 100 to 200;
+    oneof o {
+        ;
+        int32 b = 2;;
+        ;
+    }
+    optional group G = 3 {
+        ;
+    }
+}
+
+enum E {
+    ;
+    A = 0;;
+}
+
+service S {
+    ;
+    rpc F(M) returns (M) {
+        ;
+    }
+    ;
+}
+
+extend M {
+    ;
+    optional int32 c = 100;;
+    ;
+}

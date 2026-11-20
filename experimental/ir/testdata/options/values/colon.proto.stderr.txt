@@ -1,0 +1,105 @@
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:31:10
+   |
+31 |     foos []
+   |          ^^
+  help: delete this message field value
+   |
+31 | -     foos []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:33:11
+   |
+33 |     foos: []
+   |           ^^
+  help: delete this message field value
+   |
+33 | -     foos: []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:34:11
+   |
+34 |     strs: []
+   |           ^^
+  help: delete this message field value
+   |
+34 | -     strs: []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:39:10
+   |
+39 |     strs []
+   |          ^^
+  help: delete this message field value
+   |
+39 | -     strs []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:40:10
+   |
+40 |     foos []
+   |          ^^
+  help: delete this message field value
+   |
+40 | -     foos []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+warning: empty array expression has no effect
+  --> testdata/options/values/colon.proto:41:10
+   |
+41 |     ints []
+   |          ^^
+  help: delete this message field value
+   |
+41 | -     ints []
+   |
+   = note: repeated fields do not distinguish "empty" and "missing" states
+
+error: unexpected string literal in array expression
+  --> testdata/options/values/colon.proto:42:11
+   |
+42 |     strs ["x"]
+   |     ----  ^^^ expected message expression
+   |      |
+   |      because this message field value is missing a `:`
+   |
+   = note: the `:` can be omitted in a message field value, but only if the
+           value is a message expression or a array expression of them
+
+error: unexpected integer literal in array expression
+  --> testdata/options/values/colon.proto:43:11
+   |
+43 |     ints [1]
+   |     ----  ^ expected message expression
+   |      |
+   |      because this message field value is missing a `:`
+   |
+   = note: the `:` can be omitted in a message field value, but only if the
+           value is a message expression or a array expression of them
+
+error: missing `:` before array expression
+  --> testdata/options/values/colon.proto:39:5
+   |
+39 |     strs []
+   |     ^^^^ -- this array expression is empty
+   |
+   = note: the `:` can only be omitted if the field is message-typed
+
+error: missing `:` before array expression
+  --> testdata/options/values/colon.proto:41:5
+   |
+41 |     ints []
+   |     ^^^^ -- this array expression is empty
+   |
+   = note: the `:` can only be omitted if the field is message-typed
+
+encountered 4 errors and 6 warnings

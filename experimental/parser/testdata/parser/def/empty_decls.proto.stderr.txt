@@ -1,0 +1,98 @@
+error: unexpected empty declaration within oneof definition
+  --> testdata/parser/def/empty_decls.proto:12:9
+   |
+11 | /     oneof o {
+12 | |         ;
+   | |         ^ this empty declaration...
+13 | |         int32 b = 2;;
+14 | |         ;
+15 | |     }
+   | \_____- ...cannot be declared within this oneof definition
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+error: unexpected empty declaration within oneof definition
+  --> testdata/parser/def/empty_decls.proto:13:21
+   |
+11 | /     oneof o {
+12 | |         ;
+13 | |         int32 b = 2;;
+   | |                     ^ this empty declaration...
+14 | |         ;
+15 | |     }
+   | \_____- ...cannot be declared within this oneof definition
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+error: unexpected empty declaration within oneof definition
+  --> testdata/parser/def/empty_decls.proto:14:9
+   |
+11 | /     oneof o {
+12 | |         ;
+13 | |         int32 b = 2;;
+14 | |         ;
+   | |         ^ this empty declaration...
+15 | |     }
+   | \_____- ...cannot be declared within this oneof definition
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+warning: group syntax is deprecated
+  --> testdata/parser/def/empty_decls.proto:16:14
+   |
+16 |     optional group G = 3 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: unexpected empty declaration within message extension block
+  --> testdata/parser/def/empty_decls.proto:35:5
+   |
+34 | / extend M {
+35 | |     ;
+   | |     ^ this empty declaration...
+36 | |     optional int32 c = 100;;
+37 | |     ;
+38 | | }
+   | \_- ...cannot be declared within this message extension block
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+error: unexpected empty declaration within message extension block
+  --> testdata/parser/def/empty_decls.proto:36:28
+   |
+34 | / extend M {
+35 | |     ;
+36 | |     optional int32 c = 100;;
+   | |                            ^ this empty declaration...
+37 | |     ;
+38 | | }
+   | \_- ...cannot be declared within this message extension block
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+error: unexpected empty declaration within message extension block
+  --> testdata/parser/def/empty_decls.proto:37:5
+   |
+34 | / extend M {
+35 | |     ;
+36 | |     optional int32 c = 100;;
+37 | |     ;
+   | |     ^ this empty declaration...
+38 | | }
+   | \_- ...cannot be declared within this message extension block
+   |
+   = help: this empty declaration can only appear within one of file scope,
+           message definition, enum definition, service definition, group
+           definition, or service method
+
+encountered 6 errors and 1 warning

@@ -1,0 +1,72 @@
+file:
+- name: "testdata/options/values/colon.proto"
+  package: "buf.test.colon"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "s"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "s"
+    - name: "strs"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_STRING
+      json_name: "strs"
+    - name: "foos"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.colon.Foo"
+      json_name: "foos"
+    - name: "foo"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.colon.Foo"
+      json_name: "foo"
+    - name: "ints"
+      number: 5
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "ints"
+    - name: "i"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "i"
+    - name: "e"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.colon.E"
+      json_name: "e"
+  enum_type: [{ name: "E", value: [{ name: "A", number: 0 }] }]
+  extension:
+  - name: "opt"
+    number: 50000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.colon.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "opt"
+  - name: "opt2"
+    number: 50001
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.colon.Foo"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "opt2"
+  options.$unknown: |
+    50000: {
+      4: {}
+      3: {}
+      3: {}
+      3: {}
+    }
+    50001: {
+      2: {"x"}
+      5: 1
+    }
