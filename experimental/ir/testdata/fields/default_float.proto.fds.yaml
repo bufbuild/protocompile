@@ -88,6 +88,12 @@ file:
       type: TYPE_FLOAT
       default_value: "3.00000065e-39"
       json_name: "f14"
+    - name: "f15"
+      number: 15
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "5"
+      json_name: "f15"
     - name: "d1"
       number: 21
       label: LABEL_OPTIONAL
@@ -160,3 +166,27 @@ file:
       type: TYPE_DOUBLE
       default_value: "0.66666666666666663"
       json_name: "d12"
+    - name: "d13"
+      number: 33
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "5"
+      json_name: "d13"
+    - name: "d14"
+      number: 34
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1e-07"
+      json_name: "d14"
+    - name: "d15"
+      number: 35
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "0.05"
+      json_name: "d15"
+    - name: "d16"
+      number: 36
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      default_value: "1230000"
+      json_name: "d16"

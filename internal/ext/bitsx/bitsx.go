@@ -48,7 +48,9 @@ func NextPowerOfTwo(n uint) uint {
 // AddOverflow computes x + y, returning whether signed overflow occurred.
 func AddOverflow(x, y int) (z int, of bool) {
 	z = x + y
-	of = z < x
+	// Overflow occurs exactly when x and y have the same sign and z has the
+	// opposite sign.
+	of = (x^z)&(y^z) < 0
 	return z, of
 }
 
@@ -65,14 +67,16 @@ func AddSaturate(x, y int) int {
 	return math.MinInt
 }
 
-// MulOverflow computes x + y, returning whether signed overflow occurred.
+// MulOverflow computes x * y, returning whether signed overflow occurred.
 func MulOverflow(x, y int) (z int, of bool) {
 	z = x * y
-	of = x != 0 && z/x != y
+	// MinInt / -1 wraps to MinInt, so the division check alone misses
+	// -1 * MinInt.
+	of = x != 0 && (z/x != y || (x == -1 && y == math.MinInt))
 	return z, of
 }
 
-// MulSaturate computes x + y, saturating on overflow.
+// MulSaturate computes x * y, saturating on overflow.
 func MulSaturate(x, y int) int {
 	z, of := MulOverflow(x, y)
 	if !of {

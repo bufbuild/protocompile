@@ -1080,6 +1080,9 @@ func TestFloat64(t *testing.T) {
 		"1e55", "1e-55", "1e87", "2.5e-310",
 		"1e-30", "3.14159265358979e40", "1.1754942e-38",
 		"1e22", "1e-22", "0.1", "9007199254740993e-5",
+		// Mantissas below one, whose exponent is negative before the explicit one.
+		"0.05e2", "0.01e-5", "0.05e0", "0.000123e10", "0x0.01p4", "0x0.008p-3",
+		"0x0.1p0", "0x0.3p0", "0x.1p0", "0x0.0fp8",
 	}
 	// Sweep every power of ten with a few mantissas, to cover each entry of
 	// the power-of-five tables.
