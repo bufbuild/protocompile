@@ -17,6 +17,7 @@ package decimal
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"strconv"
 	"testing"
 
@@ -1069,6 +1070,26 @@ func TestNonFinite(t *testing.T) {
 	assert.True(t, math.IsNaN(f))
 	assert.Nil(t, n.Int(nil))
 	assert.Equal(t, int64(0x7_ffff_ffff_ffff), n.NaN())
+}
+
+func TestFloatNegativeExponent(t *testing.T) {
+	t.Parallel()
+
+	// The mantissa and power of five of each input fit in 64 bits, so the
+	// result should be the input rounded to 64 bits.
+	for _, in := range []string{"0.01", "0.0625", "1e-10", "123e-15"} {
+		t.Run(in, func(t *testing.T) {
+			t.Parallel()
+			z, err := new(Decimal).Parse(in)
+			require.NoError(t, err)
+			want, _, err := big.ParseFloat(in, 10, 64, big.ToNearestEven)
+			require.NoError(t, err)
+
+			got := z.float(nil)
+			assert.Equal(t, uint(64), got.Prec())
+			assert.Equal(t, want.Text('p', 0), got.Text('p', 0))
+		})
+	}
 }
 
 func TestFloat64(t *testing.T) {
