@@ -26,6 +26,13 @@ import (
 	"github.com/bufbuild/protocompile/internal/tags"
 )
 
+// MaxPackageBytes and MaxPackageComponents are the limits on the size of a
+// package name that the experimental parser enforces.
+const (
+	MaxPackageBytes      = 512
+	MaxPackageComponents = 101
+)
+
 // MaxMessageNestingDepth is the limit on message nesting depth. It matches
 // protoc's internal::cpp::MaxMessageDeclarationNestingDepth. A top-level
 // message has depth 1. Groups and map entries count toward the depth.

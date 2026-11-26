@@ -428,6 +428,65 @@ func TestMessageNestingDepth(t *testing.T) {
 	}
 }
 
+func TestPackageSize(t *testing.T) {
+	t.Parallel()
+
+	components := func(n int) string {
+		return strings.Repeat("a.", n-1) + "a"
+	}
+	for _, test := range []struct {
+		name      string
+		pkg       string
+		misplaced bool
+		tooLarge  bool
+	}{
+		{name: "components/101", pkg: components(101)},
+		{name: "components/102", pkg: components(102), tooLarge: true},
+		{name: "components/20000", pkg: components(20000), tooLarge: true},
+		{name: "bytes/512", pkg: strings.Repeat("a", 512)},
+		{name: "bytes/513", pkg: strings.Repeat("a", 513), tooLarge: true},
+		{name: "misplaced", pkg: components(102), misplaced: true, tooLarge: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			text := "syntax = \"proto3\"; package " + test.pkg + "; message N {} message M { N n = 1; }"
+			if test.misplaced {
+				text = "syntax = \"proto3\"; message N {} package " + test.pkg + "; message M { N n = 1; }"
+			}
+
+			exec := incremental.New()
+			results, diagnostics, err := incremental.Run(t.Context(), exec, queries.IR{
+				Opener: &source.Openers{
+					source.NewMap(map[string]*source.File{"test.proto": source.NewFile("test.proto", text)}),
+					source.WKTs(),
+				},
+				Session: new(ir.Session),
+				Path:    "test.proto",
+			})
+			require.NoError(t, err)
+			require.NoError(t, results[0].Fatal)
+			var errors int
+			for _, diagnostic := range diagnostics.Diagnostics {
+				if diagnostic.Level() > report.Error {
+					continue
+				}
+				errors++
+				assert.Equal(t, "path in `package` declaration is too large", diagnostic.Message())
+			}
+			file := results[0].Value
+			require.NotNil(t, file)
+			if test.tooLarge {
+				// The package is reported by the parser and not lowered.
+				assert.Equal(t, 1, errors)
+				assert.Empty(t, file.Package())
+			} else {
+				assert.Zero(t, errors)
+				assert.Equal(t, test.pkg, string(file.Package()))
+			}
+		})
+	}
+}
+
 func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 	set := new(compilerpb.SymbolSet)
 	set.Tables = make(map[string]*compilerpb.SymbolTable)

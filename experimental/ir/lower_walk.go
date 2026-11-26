@@ -44,7 +44,14 @@ type walker struct {
 // This operation performs no name resolution.
 func (w *walker) walk() {
 	if pkg := w.AST().Package(); !pkg.IsZero() {
-		w.File.pkg = w.session.intern.Intern(pkg.Path().Canonicalized())
+		name := pkg.Path().Canonicalized()
+		// The parser reports packages over the size limit. Lower the file
+		// without one: every parent package becomes a symbol and name lookups
+		// try every parent scope, which is quadratic in the package's length.
+		if len(name) <= pcinternal.MaxPackageBytes &&
+			strings.Count(name, ".") < pcinternal.MaxPackageComponents {
+			w.File.pkg = w.session.intern.Intern(name)
+		}
 	}
 	w.pkg = w.Package()
 
