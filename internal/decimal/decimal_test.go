@@ -1112,6 +1112,18 @@ func TestFloat64(t *testing.T) {
 			inputs = append(inputs, fmt.Sprintf("%se%d", mant, exp))
 		}
 	}
+	// Hex mantissas wider than a float64 mantissa: the bits below the
+	// rounding bit must still round up a value just above a halfway point.
+	inputs = append(inputs,
+		"0x9000007c24d666p0", "0xab552fa82fbf86758bf5c97d2d2a3p0", "0x893eac3c5a6baeb6cp0",
+		"0x1.000000000000081p0", "0x1.00000000000008p0", "0x1.000000000000180p0",
+		"0x1.0000000000000801p-1060", "0x1.fffffffffffff8p1023",
+	)
+	for _, mant := range []string{"0x1.000000000000081", "0x1.fffffffffffff801", "0x123456789abcdef0123"} {
+		for exp := -1100; exp <= 1030; exp += 7 {
+			inputs = append(inputs, fmt.Sprintf("%sp%d", mant, exp))
+		}
+	}
 
 	for _, s := range inputs {
 		d, err := new(Decimal).Parse(s)

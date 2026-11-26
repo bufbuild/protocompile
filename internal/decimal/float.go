@@ -134,19 +134,15 @@ func (z *Decimal) Float64() (v float64, exact bool) {
 		fallthrough
 	default:
 		if z.base2() {
-			// We can do direct conversion, but rounding will always occur.
-			// We want to start with the high 54 bits of the mantissa, then
-			// multiply by an appropriate power of 2. Starting with the high
-			// 54, rather than the 53 that fit into a binary64 mantissa, ensures
-			// we get the correct rounding when converting to float64.
-
-			bits := mantBits64 + 1
-			w := bigx.MSBs(make([]big.Word, 0, 1), z.get(), uint(bits))
-			v = float64(bigx.Uint64(w))
-
-			// If w is d.dddd * 2^e, w is d.dddd * 2^53. We need to multiply
-			// by 2^(e-53).
-			v = math.Ldexp(v, int(z.exp)-bits)
+			// The value is mant * 2^(exp - bitlen(mant)), so it only needs
+			// one rounding step. big.Float rounds to nearest even using every
+			// bit of the mantissa, and also rounds subnormals and overflow
+			// correctly. Truncating the mantissa first, then rounding, would
+			// round down values just above a halfway point.
+			mant := new(big.Int).SetBits(z.get())
+			x := new(big.Float).SetInt(mant)
+			x.SetMantExp(x, int(z.exp)-mant.BitLen())
+			v, _ = x.Float64()
 			break
 		}
 
