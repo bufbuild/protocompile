@@ -26,6 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -283,6 +284,14 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 // parseBody parses a ({}-delimited) body of declarations.
 func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 	body := p.NewDeclBody(braces)
+	if p.bodyDepth >= internal.MaxExpressionNestingDepth {
+		// Valid files never nest bodies this deeply, so legalizing the
+		// enclosing declarations reports an error, such as the message nesting
+		// limit or a declaration that is not allowed in its parent. Skip the
+		// contents without recursing.
+		return body
+	}
+	p.bodyDepth++
 
 	// Drain the contents of the body into it. Remember,
 	// parseDecl must always make progress if there is more to
@@ -294,6 +303,7 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 		}
 	}
 
+	p.bodyDepth--
 	return body
 }
 

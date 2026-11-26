@@ -183,30 +183,36 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			AngleBrackets: angles,
 		})
 
-		delimited[ast.TypeAny]{
-			p:    p,
-			c:    c,
-			what: taxa.Type,
-			in:   taxa.TypeParams,
+		if enterNested(p, &p.typeDepth, taxa.Type, angles) {
+			delimited[ast.TypeAny]{
+				p:    p,
+				c:    c,
+				what: taxa.Type,
+				in:   taxa.TypeParams,
 
-			required: true,
-			exhaust:  false,
-			parse: func(c *token.Cursor) (ast.TypeAny, bool) {
-				ty := parseType(p, c, taxa.TypeParams.In())
-				return ty, !ty.IsZero()
-			},
-			start: canStartPath,
-			stop: func(t token.Token) bool {
-				kw := t.Keyword()
-				return kw == keyword.Gt ||
-					kw == keyword.Assign // Heuristic for stopping reasonably early in the case of map<K, V m = 1;
-			},
-		}.appendTo(generic.Args())
+				required: true,
+				exhaust:  false,
+				parse: func(c *token.Cursor) (ast.TypeAny, bool) {
+					ty := parseType(p, c, taxa.TypeParams.In())
+					return ty, !ty.IsZero()
+				},
+				start: canStartPath,
+				stop: func(t token.Token) bool {
+					kw := t.Keyword()
+					return kw == keyword.Gt ||
+						kw == keyword.Assign // Heuristic for stopping reasonably early in the case of map<K, V m = 1;
+				},
+			}.appendTo(generic.Args())
 
-		// Need to fuse the angle brackets, because the lexer won't do it.
-		if c.Peek().Keyword() == keyword.Gt {
-			token.Fuse(angles, c.Next())
+			// Need to fuse the angle brackets, because the lexer won't do it.
+			if c.Peek().Keyword() == keyword.Gt {
+				token.Fuse(angles, c.Next())
+			}
+		} else {
+			// Skip the type arguments without recursing.
+			skipAngles(c, angles)
 		}
+		p.typeDepth--
 
 		ty = generic.AsAny()
 	}
@@ -231,6 +237,17 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			ty = ast.TypePath{Path: tyPath}.AsAny()
 		}
 	}
+
+	// Each modifier nests ty one level deeper, so drop any that would exceed
+	// the nesting limit.
+	depth := p.typeDepth
+	for i, mod := range mods {
+		if !enterNested(p, &p.typeDepth, taxa.Type, mod) {
+			mods = mods[:i]
+			break
+		}
+	}
+	p.typeDepth = depth
 
 	// Finally, apply any remaining modifiers (in reverse order) to ty.
 	for i := len(mods) - 1; i >= 0; i-- {

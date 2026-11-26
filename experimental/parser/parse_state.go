@@ -37,6 +37,8 @@ type parser struct {
 	parseComplete    bool
 	messageDepth     int
 	exprDepth        int
+	bodyDepth        int
+	typeDepth        int
 }
 
 // classified is a spanner that has been classified by taxa.

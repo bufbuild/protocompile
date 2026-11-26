@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -99,6 +100,11 @@ func TestExprNestingDepth(t *testing.T) {
 			expr:  func(depth int) string { return strings.Repeat("-", depth) + "1" },
 			start: "-",
 		},
+		{
+			name:  "range",
+			expr:  func(depth int) string { return "1" + strings.Repeat(" to 1", depth) },
+			start: "to",
+		},
 	} {
 		for _, depth := range []int{100, 101, 200000} {
 			t.Run(fmt.Sprintf("%s/%d", test.name, depth), func(t *testing.T) {
@@ -111,6 +117,97 @@ func TestExprNestingDepth(t *testing.T) {
 				var depthErrors int
 				for _, diagnostic := range errs.Diagnostics {
 					if diagnostic.Message() != "expression nesting depth must be at most 100" {
+						continue
+					}
+					depthErrors++
+					assert.Equal(t, test.start, diagnostic.Primary().Text())
+				}
+				if depth > 100 {
+					assert.Equal(t, 1, depthErrors)
+				} else {
+					assert.Zero(t, depthErrors)
+				}
+			})
+		}
+	}
+}
+
+func TestBodyNestingDepth(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name string
+		decl func(depth int) string
+	}{
+		{
+			name: "message",
+			decl: func(depth int) string { return strings.Repeat("message M {", depth) + strings.Repeat("}", depth) },
+		},
+		{
+			name: "body",
+			decl: func(depth int) string { return strings.Repeat("{", depth) + strings.Repeat("}", depth) },
+		},
+	} {
+		for _, depth := range []int{100, 101, 200000} {
+			t.Run(fmt.Sprintf("%s/%d", test.name, depth), func(t *testing.T) {
+				t.Parallel()
+				text := "syntax = \"proto3\"; " + test.decl(depth)
+				errs := &report.Report{}
+				file, _ := Parse("test.proto", source.NewFile("test.proto", text), errs)
+
+				// The first body past the limit is kept, but left empty.
+				var got int
+				decls := file.Decls()
+				for decls.Len() > 0 {
+					var body ast.DeclBody
+					switch decl := decls.At(decls.Len() - 1); decl.Kind() {
+					case ast.DeclKindBody:
+						body = decl.AsBody()
+					case ast.DeclKindDef:
+						body = decl.AsDef().Body()
+					}
+					if body.IsZero() {
+						break
+					}
+					got++
+					decls = body.Decls()
+				}
+				assert.Equal(t, min(depth, 101), got)
+			})
+		}
+	}
+}
+
+func TestTypeNestingDepth(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name  string
+		ty    func(depth int) string
+		start string
+	}{
+		{
+			name:  "map",
+			ty:    func(depth int) string { return strings.Repeat("map<", depth) + "int32" + strings.Repeat(">", depth) },
+			start: "<",
+		},
+		{
+			name:  "modifier",
+			ty:    func(depth int) string { return strings.Repeat("optional ", depth) + "int32" },
+			start: "optional",
+		},
+	} {
+		for _, depth := range []int{100, 101, 200000} {
+			t.Run(fmt.Sprintf("%s/%d", test.name, depth), func(t *testing.T) {
+				t.Parallel()
+				// The second field checks that the depth is reset.
+				text := "syntax = \"proto3\"; message M { " + test.ty(depth) + " x = 1; " + test.ty(100) + " y = 2; }"
+				errs := &report.Report{}
+				Parse("test.proto", source.NewFile("test.proto", text), errs)
+
+				var depthErrors int
+				for _, diagnostic := range errs.Diagnostics {
+					if diagnostic.Message() != "type nesting depth must be at most 100" {
 						continue
 					}
 					depthErrors++
