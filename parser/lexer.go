@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -100,6 +101,7 @@ type protoLex struct {
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}
 
 func newLexer(in io.Reader, filename string, handler *reporter.Handler) (*protoLex, error) {
+	size := sizeHint(in)
 	br := bufio.NewReader(in)
 
 	// if file has UTF8 byte order marker preface, consume it
@@ -108,7 +110,7 @@ func newLexer(in io.Reader, filename string, handler *reporter.Handler) (*protoL
 		_, _ = br.Discard(3)
 	}
 
-	contents, err := io.ReadAll(br)
+	contents, err := readAll(br, size)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +119,47 @@ func newLexer(in io.Reader, filename string, handler *reporter.Handler) (*protoL
 		info:    ast.NewFileInfo(filename, contents),
 		handler: handler,
 	}, nil
+}
+
+// sizeHint returns the number of bytes left in r, or 0 if r does not report it.
+func sizeHint(r io.Reader) int {
+	switch r := r.(type) {
+	case interface{ Len() int }:
+		return r.Len()
+	case *os.File:
+		info, err := r.Stat()
+		if err != nil || !info.Mode().IsRegular() {
+			return 0
+		}
+		offset, err := r.Seek(0, io.SeekCurrent)
+		if err != nil || offset > info.Size() {
+			return 0
+		}
+		return int(info.Size() - offset)
+	}
+	return 0
+}
+
+// readAll is like io.ReadAll, but starts with a buffer of size+1 bytes, so
+// that reading a source of a known size needs only one allocation.
+func readAll(r io.Reader, size int) ([]byte, error) {
+	if size <= 0 {
+		return io.ReadAll(r)
+	}
+	data := make([]byte, 0, size+1)
+	for {
+		n, err := r.Read(data[len(data):cap(data)])
+		data = data[:len(data)+n]
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				err = nil
+			}
+			return data, err
+		}
+		if len(data) == cap(data) {
+			data = append(data, 0)[:len(data)]
+		}
+	}
 }
 
 var keywords = map[string]int{
