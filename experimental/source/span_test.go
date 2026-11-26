@@ -92,5 +92,18 @@ func TestInverseLocationOutOfBounds(t *testing.T) {
 		assert.Equal(t, source.Location{8, 3, 1}, file.InverseLocation(10, 3, unit), "%s", unit)
 		assert.Equal(t, source.Location{8, 3, 1}, file.InverseLocation(3, 7, unit), "%s", unit)
 		assert.Equal(t, source.Location{0, 1, 1}, file.InverseLocation(0, 1, unit), "%s", unit)
+		assert.Equal(t, source.Location{3, 1, 4}, file.InverseLocation(1, 99, unit), "%s", unit)
+		assert.Equal(t, source.Location{7, 2, 4}, file.InverseLocation(2, 99, unit), "%s", unit)
+		assert.Equal(t, source.Location{4, 2, 1}, file.InverseLocation(2, 0, unit), "%s", unit)
 	}
+
+	crlf := source.NewFile("crlf", "ab\r\ncd")
+	for _, unit := range []length.Unit{length.Bytes, length.UTF16, length.Runes} {
+		assert.Equal(t, source.Location{2, 1, 3}, crlf.InverseLocation(1, 99, unit), "%s", unit)
+		assert.Equal(t, source.Location{6, 2, 3}, crlf.InverseLocation(2, 99, unit), "%s", unit)
+	}
+
+	cat := source.NewFile("cat", "🐈x\n")
+	assert.Equal(t, source.Location{5, 1, 4}, cat.InverseLocation(1, 99, length.UTF16))
+	assert.Equal(t, source.Location{5, 1, 3}, cat.InverseLocation(1, 99, length.Runes))
 }

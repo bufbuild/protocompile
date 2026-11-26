@@ -105,18 +105,23 @@ func (f *File) Location(offset int, units length.Unit) Location {
 // measure the column width. If units is [TermWidth], this function panics,
 // because inverting a [TermWidth] location is not supported.
 //
-// Positions outside of the file are clamped to the file's bounds.
+// Out of range lines are clamped to the file, and out of range columns to the
+// line, excluding its newline.
 func (f *File) InverseLocation(line, column int, units length.Unit) Location {
 	if f == nil || (line == 1 && column == 1) {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
-
-	offset := inverseLocation(f, line, column, units)
-	if line < 1 || line > len(f.lines()) || offset < 0 || offset > len(f.text) {
-		offset = max(0, min(offset, len(f.text)))
-		return f.Location(offset, units)
+	if line < 1 {
+		return f.Location(0, units)
+	}
+	if line > len(f.lines()) {
+		return f.Location(len(f.text), units)
 	}
 
+	offset, clamped := inverseLocation(f, line, column, units)
+	if clamped {
+		return f.Location(offset, units)
+	}
 	return Location{Line: line, Column: column, Offset: offset}
 }
 
@@ -220,38 +225,42 @@ func location(f *File, offset int, units length.Unit, allowNonPrint bool) Locati
 	}
 }
 
-func inverseLocation(f *File, line, column int, units length.Unit) int {
-	// Find the start the given line.
+// inverseLocation returns the offset of line and column, and whether column
+// was clamped to the line.
+func inverseLocation(f *File, line, column int, units length.Unit) (offset int, clamped bool) {
 	start, end := f.LineOffsets(line)
-	chunk := f.text[start:end]
-	var offset int
+	text, ok := strings.CutSuffix(f.text[start:end], "\n")
+	if ok {
+		text = strings.TrimSuffix(text, "\r")
+	}
+	if column < 1 {
+		return start, true
+	}
+
+	column--
 	switch units {
-	case length.Runes:
-		for offset = range chunk {
-			column--
-			if column <= 0 {
-				break
-			}
-		}
-		offset += column
 	case length.Bytes:
-		offset = column - 1
-	case length.UTF16:
-		var r rune
-		for offset, r = range chunk {
-			column -= utf16.RuneLen(r)
-			if column <= 0 {
-				break
-			}
+		if column <= len(text) {
+			return start + column, false
 		}
-		if column > 0 {
-			offset += column
+	case length.Runes, length.UTF16:
+		for i, r := range text {
+			width := 1
+			if units == length.UTF16 {
+				width = utf16.RuneLen(r)
+			}
+			if column < width {
+				return start + i, false
+			}
+			column -= width
+		}
+		if column == 0 {
+			return start + len(text), false
 		}
 	case length.TermWidth:
 		panic("protocompile/source: passed TermWidth to File.InvertLocation")
 	}
-
-	return start + offset
+	return start + len(text), true
 }
 
 func (f *File) lines() []int {
