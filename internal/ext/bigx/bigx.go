@@ -179,3 +179,51 @@ func TrailingZeros(z []big.Word) int {
 func Format(buf []byte, z []big.Word, base int) []byte {
 	return new(big.Int).SetBits(z).Append(buf, base)
 }
+
+// setStringLeaf is the length at or below which [SetString] hands its input
+// to [big.Int.SetString].
+const setStringLeaf = 256
+
+// SetString sets z to the value of s, read as an unsigned integer in the given
+// base. s must consist only of digits valid in base, with no sign, prefix, or
+// separators. An empty s is zero.
+//
+// [big.Int.SetString] does one multiply-add per word of digits, which is
+// quadratic in len(s) for bases that are not a power of two. Instead, this
+// splits s in two, converts each half, and recombines them as
+// hi*base^len(lo) + lo, so that the cost is that of a few large
+// multiplications.
+func SetString(z []big.Word, s string, base int) []big.Word {
+	var pows []*big.Int // pows[k] is base^(setStringLeaf << k).
+
+	var conv func(z *big.Int, s string) *big.Int
+	conv = func(z *big.Int, s string) *big.Int {
+		if len(s) <= setStringLeaf {
+			if _, ok := z.SetString(s, base); !ok {
+				z.SetUint64(0)
+			}
+			return z
+		}
+
+		// Split off the low setStringLeaf<<k digits, for the largest k that
+		// leaves at least one high digit. The low part is then at least half
+		// of s, and each power of the base is computed only once.
+		k := bits.Len(uint((len(s)-1)/setStringLeaf)) - 1
+		n := setStringLeaf << k
+		for len(pows) <= k {
+			if len(pows) == 0 {
+				pows = append(pows, new(big.Int).Exp(big.NewInt(int64(base)), big.NewInt(setStringLeaf), nil))
+				continue
+			}
+			pow := pows[len(pows)-1]
+			pows = append(pows, new(big.Int).Mul(pow, pow))
+		}
+
+		lo := conv(new(big.Int), s[len(s)-n:])
+		conv(z, s[:len(s)-n])
+		z.Mul(z, pows[k])
+		return z.Add(z, lo)
+	}
+
+	return conv(new(big.Int).SetBits(z), s).Bits()
+}

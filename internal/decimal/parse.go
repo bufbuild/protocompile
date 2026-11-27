@@ -17,9 +17,9 @@ package decimal
 import (
 	"fmt"
 	"math"
-	"math/big"
 	"math/bits"
 	"strconv"
+	"strings"
 
 	"github.com/bufbuild/protocompile/internal/ext/bigx"
 	"github.com/bufbuild/protocompile/internal/ext/bitsx"
@@ -79,6 +79,7 @@ func (z *Decimal) Parse(s string) (*Decimal, error) {
 	var dot, nonzero bool
 	stop := len(s)
 	skip := 0
+	start := i
 mant:
 	for ; i < stop; i++ {
 		b := s[i]
@@ -158,11 +159,17 @@ mant:
 		} else if dot && !nonzero {
 			z.exp -= int32(places)
 		}
-
-		m := z.get()
-		m = bigx.FMAScalar(m, m, big.Word(base), big.Word(d))
-		z.set(m)
 	}
+
+	// Convert all of the mantissa digits at once. Multiplying them in one at a
+	// time is quadratic in the number of digits.
+	digits := strings.Map(func(r rune) rune {
+		if r == '_' || r == '.' {
+			return -1
+		}
+		return r
+	}, s[start:i])
+	z.set(bigx.SetString(z.get(), digits, base))
 
 	if skip > 0 {
 		i = skip

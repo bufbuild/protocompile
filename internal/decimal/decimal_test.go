@@ -19,6 +19,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -809,6 +810,28 @@ func TestParse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseLongMantissa(t *testing.T) {
+	t.Parallel()
+
+	// Mantissa digits must not be multiplied in one at a time, which is
+	// quadratic in their number.
+	const n = 1_000_000
+
+	z, err := new(Decimal).Parse(strings.Repeat("9", n) + ".5")
+	require.NoError(t, err)
+	want := new(big.Int).Exp(big.NewInt(10), big.NewInt(n+1), nil)
+	want.Sub(want, big.NewInt(5))
+	assert.Zero(t, want.Cmp(new(big.Int).SetBits(z.get())))
+	assert.EqualValues(t, n, z.exp)
+
+	z, err = new(Decimal).Parse("0x" + strings.Repeat("f", n))
+	require.NoError(t, err)
+	want = new(big.Int).Lsh(big.NewInt(1), 4*n)
+	want.Sub(want, big.NewInt(1))
+	assert.Zero(t, want.Cmp(new(big.Int).SetBits(z.get())))
+	assert.EqualValues(t, 4*n, z.exp)
 }
 
 func TestIsInt(t *testing.T) {
